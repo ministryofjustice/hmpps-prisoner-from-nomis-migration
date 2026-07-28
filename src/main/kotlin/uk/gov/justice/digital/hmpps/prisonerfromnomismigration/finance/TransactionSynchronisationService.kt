@@ -13,7 +13,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.TransactionIdBufferRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -76,15 +75,12 @@ class TransactionSynchronisationService(
       telemetryClient.trackEvent("transactions-synchronisation-updated-skipped", event.toTelemetryProperties())
       return
     }
-
+    // It is safe to sync an update which has no Dps mapping (it could be a historical update i.e. insert occurred before sync to dps began)
+    // We treat it like an insert and Dps uses the Timestamp to determine whether to adjust the balance
     transactionMappingService.getMappingGivenNomisIdOrNull(event.transactionId)
-      ?.let {
-        transactionIdCheck(event, requestId, "updated")
-      }
-      ?: run {
-        telemetryClient.trackEvent("transactions-synchronisation-updated-failed", event.toTelemetryProperties())
-        throw IllegalStateException("Received OFFENDER_TRANSACTIONS-UPDATED for a transaction that has never been created")
-      }
+      ?: telemetryClient.trackEvent("transactions-synchronisation-updated-missing-mapping", event.toTelemetryProperties())
+
+    transactionIdCheck(event, requestId, "updated")
   }
 
   suspend fun resynchronisePrisonerTransaction(nomisTransactionId: Long) {
@@ -169,14 +165,12 @@ class TransactionSynchronisationService(
       return
     }
 
+    // It is safe to sync an update which has no Dps mapping (it could be a historical update i.e. insert occurred before sync to dps began)
+    // We treat it like an insert and Dps uses the Timestamp to determine whether to adjust the balance
     transactionMappingService.getMappingGivenNomisIdOrNull(event.transactionId)
-      ?.let {
-        transactionIdCheck(event.toTransactionEvent(), requestId, "updated")
-      }
-      ?: run {
-        telemetryClient.trackEvent("transactions-synchronisation-updated-failed", event.toTransactionEvent().toTelemetryProperties())
-        throw IllegalStateException("Received GL_TRANSACTIONS-UPDATED for a transaction that has never been created")
-      }
+      ?: telemetryClient.trackEvent("transactions-synchronisation-updated-missing-mapping", event.toTransactionEvent().toTelemetryProperties())
+
+    transactionIdCheck(event.toTransactionEvent(), requestId, "updated")
   }
 
   enum class MappingResponse {
@@ -251,15 +245,6 @@ private fun OffenderTransactionDto.toTransactionEvent() = TransactionEvent(
   caseload = caseloadId,
   offenderIdDisplay = offenderNo,
   bookingId = bookingId,
-  auditModuleName = null,
-)
-
-private fun GeneralLedgerTransactionDto.toTransactionEvent() = TransactionEvent(
-  transactionId = transactionId,
-  entrySequence = transactionEntrySequence,
-  caseload = caseloadId,
-  offenderIdDisplay = null,
-  bookingId = null,
   auditModuleName = null,
 )
 

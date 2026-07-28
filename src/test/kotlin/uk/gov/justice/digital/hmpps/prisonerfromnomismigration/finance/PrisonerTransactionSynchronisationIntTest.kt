@@ -36,7 +36,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.TransactionIdBufferRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
-import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
 import java.util.AbstractMap.SimpleEntry
 import java.util.UUID
 
@@ -682,6 +681,12 @@ class PrisonerTransactionSynchronisationIntTest(
       @Nested
       @DisplayName("No mapping exists")
       inner class HappyPathNoMapping {
+        val receipt = SyncTransactionReceipt(
+          synchronizedTransactionId = dpsTransactionUuid,
+          requestId = UUID.randomUUID(),
+          action = SyncTransactionReceipt.Action.CREATED,
+        )
+
         @BeforeEach
         fun setUp() {
           financeNomisApiMockServer.stubGetPrisonerTransaction(
@@ -689,6 +694,8 @@ class PrisonerTransactionSynchronisationIntTest(
             transactionId = NOMIS_TRANSACTION_ID,
           )
           financeMappingApiMockServer.stubGetByNomisId(mapping = null)
+          financeApi.stubPostPrisonerTransaction(receipt)
+          financeMappingApiMockServer.stubPostMapping()
 
           financeOffenderEventsQueue.sendMessage(
             offenderTransactionEvent(
@@ -696,7 +703,7 @@ class PrisonerTransactionSynchronisationIntTest(
               messageUuid,
             ),
           )
-          await untilCallTo { awsSqsFinanceOffenderEventsDlqClient.countMessagesOnQueue(financeQueueOffenderEventsDlqUrl).get() } matches { it == 1 }
+          waitForAnyProcessingToComplete("transactions-synchronisation-updated-success")
         }
 
         @Test
@@ -708,15 +715,15 @@ class PrisonerTransactionSynchronisationIntTest(
         }
 
         @Test
-        fun `will not update transaction in DPS`() {
-          financeApi.verify(0, postRequestedFor(urlPathEqualTo("/sync/offender-transactions")))
+        fun `will update transaction in DPS - as it is treated as an insert`() {
+          financeApi.verify(postRequestedFor(urlPathEqualTo("/sync/offender-transactions")))
         }
 
         @Test
-        fun `will track a telemetry event for failure`() {
+        fun `will track a telemetry event for missing mapping`() {
           await untilAsserted {
             verify(telemetryClient, atLeastOnce()).trackEvent(
-              eq("transactions-synchronisation-updated-failed"),
+              eq("transactions-synchronisation-updated-missing-mapping"),
               check {
                 assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
@@ -727,20 +734,28 @@ class PrisonerTransactionSynchronisationIntTest(
               isNull(),
             )
           }
-          // and will not create mapping between DPS and NOMIS ids as it already exists
-          financeMappingApiMockServer.verify(
-            0,
-            postRequestedFor(urlPathEqualTo("/mapping/transactions")),
-          )
         }
 
         @Test
-        fun `the event is placed on dead letter queue`() {
+        fun `will track a telemetry event for success`() {
           await untilAsserted {
-            assertThat(
-              awsSqsFinanceOffenderEventsDlqClient.countAllMessagesOnQueue(financeQueueOffenderEventsDlqUrl).get(),
-            ).isEqualTo(1)
+            verify(telemetryClient).trackEvent(
+              eq("transactions-synchronisation-updated-success"),
+              check {
+                assertThat(it["nomisTransactionId"]).isEqualTo(NOMIS_TRANSACTION_ID.toString())
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["dpsTransactionId"]).isEqualTo(DPS_TRANSACTION_ID)
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
           }
+        }
+
+        @Test
+        fun `will create mapping between DPS and NOMIS ids`() {
+          financeMappingApiMockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/transactions")))
         }
       }
 

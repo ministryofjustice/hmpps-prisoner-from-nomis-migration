@@ -10,9 +10,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
-import org.awaitility.kotlin.matches
 import org.awaitility.kotlin.untilAsserted
-import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -35,8 +33,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMess
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.TransactionIdBufferRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
-import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
-import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
 import java.util.AbstractMap.SimpleEntry
 import java.util.UUID
 
@@ -583,9 +579,22 @@ class PrisonTransactionSynchronisationIntTest : FinanceIntegrationTestBase() {
     @Nested
     @DisplayName("No mapping exists")
     inner class HappyPathNoMapping {
+      val receipt = SyncTransactionReceipt(
+        synchronizedTransactionId = dpsTransactionUuid,
+        requestId = UUID.randomUUID(),
+        action = SyncTransactionReceipt.Action.UPDATED,
+      )
+
       @BeforeEach
       fun setUp() {
+        financeNomisApiMockServer.stubGetPrisonerTransaction(
+          transactionId = NOMIS_TRANSACTION_ID,
+          bookingId = BOOKING_ID,
+        )
         financeMappingApiMockServer.stubGetByNomisId(mapping = null)
+
+        financeApi.stubPostPrisonerTransaction(receipt)
+        financeMappingApiMockServer.stubPostMapping()
 
         financeOffenderEventsQueue.sendMessage(
           glTransactionEvent(
@@ -593,7 +602,7 @@ class PrisonTransactionSynchronisationIntTest : FinanceIntegrationTestBase() {
             messageUuid,
           ),
         )
-        await untilCallTo { awsSqsFinanceOffenderEventsDlqClient.countMessagesOnQueue(financeQueueOffenderEventsDlqUrl).get() } matches { it == 1 }
+        waitForAnyProcessingToComplete("transactions-synchronisation-updated-success")
       }
 
       @Test
@@ -605,39 +614,47 @@ class PrisonTransactionSynchronisationIntTest : FinanceIntegrationTestBase() {
       }
 
       @Test
-      fun `will not update transaction in DPS`() {
-        financeApi.verify(0, postRequestedFor(urlPathEqualTo("/sync/offender-transactions")))
+      fun `will update transaction in DPS`() {
+        financeApi.verify(postRequestedFor(urlPathEqualTo("/sync/offender-transactions")))
       }
 
       @Test
-      fun `will track a telemetry event for failure`() {
+      fun `will track a telemetry event for missing mapping`() {
         await untilAsserted {
           verify(telemetryClient, atLeastOnce()).trackEvent(
-            eq("transactions-synchronisation-updated-failed"),
+            eq("transactions-synchronisation-updated-missing-mapping"),
             check {
-              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
-              assertThat(it["nomisTransactionId"]).isEqualTo(NOMIS_TRANSACTION_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo(PrisonerTransactionSynchronisationIntTest.OFFENDER_ID_DISPLAY)
+              assertThat(it["bookingId"]).isEqualTo(PrisonerTransactionSynchronisationIntTest.BOOKING_ID.toString())
+              assertThat(it["nomisTransactionId"]).isEqualTo(PrisonerTransactionSynchronisationIntTest.NOMIS_TRANSACTION_ID.toString())
               assertThat(it).doesNotContainKey("dpsTransactionId")
               assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
             },
             isNull(),
           )
         }
-        // and will not create mapping between DPS and NOMIS ids as it already exists
-        financeMappingApiMockServer.verify(
-          0,
-          postRequestedFor(urlPathEqualTo("/mapping/transactions")),
-        )
       }
 
       @Test
-      fun `the event is placed on dead letter queue`() {
+      fun `will track a telemetry event for success`() {
         await untilAsserted {
-          assertThat(
-            awsSqsFinanceOffenderEventsDlqClient.countAllMessagesOnQueue(financeQueueOffenderEventsDlqUrl).get(),
-          ).isEqualTo(1)
+          verify(telemetryClient, atLeastOnce()).trackEvent(
+            eq("transactions-synchronisation-updated-success"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["nomisTransactionId"]).isEqualTo(NOMIS_TRANSACTION_ID.toString())
+              assertThat(it["dpsTransactionId"]).isEqualTo(DPS_TRANSACTION_ID)
+              assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+            },
+            isNull(),
+          )
         }
+      }
+
+      @Test
+      fun `will create mapping between DPS and NOMIS ids`() {
+        financeMappingApiMockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/transactions")))
       }
     }
 
