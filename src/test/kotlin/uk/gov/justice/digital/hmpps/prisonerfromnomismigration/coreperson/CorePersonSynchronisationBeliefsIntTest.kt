@@ -68,8 +68,11 @@ class CorePersonSynchronisationBeliefsIntTest(
 
         @BeforeEach
         fun setup() {
-          nomisApi.stubGetOffenderReligions(prisonNumber = "A1234AA", religions = multipleBeliefs())
-          mappingApiMock.stubExistsReligionMappingByNomisPrisonNumber(nomisPrisonNumber = "A1234AA", exists = false)
+          // The only time we should be acting on an insert event is when there is one unmapped belief.
+          // Otherwise, we should be acting on the update only.
+          nomisApi.stubGetOffenderReligions(prisonNumber = "A1234AA", religions = listOf(offenderBelief1))
+          // There should be no mappings for this offender
+          mappingApiMock.stubExistsReligionMappingByNomisPrisonNumber("A1234AA", false)
           cprApi.stubSyncCreateOffenderBelief("A1234AA")
           mappingApiMock.stubCreateReligionMapping()
         }
@@ -78,30 +81,27 @@ class CorePersonSynchronisationBeliefsIntTest(
         inner class HappyPathNoFailures {
           @Test
           fun `should sync new belief to CPR`() = runTest {
-            sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 2, eventType = "INSERTED")
+            sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
               .also { waitForAnyProcessingToComplete() }
 
             verifyNomis(offenderNo = "A1234AA")
             verifyMappingExists(nomisPrisonNumber = "A1234AA")
             cprApi.verify(
               postRequestedFor(urlPathEqualTo("/person/prison/A1234AA/religion"))
-                .withRequestBodyJsonPath("nomisReligionId", 2)
-                .withRequestBodyJsonPath("current", false)
-                .withRequestBodyJsonPath("religionCode", "DRU")
-                .withRequestBodyJsonPath("changeReasonKnown", true)
-                .withRequestBodyJsonPath("comments", "No longer believes in Zoroastrianism")
-                .withRequestBodyJsonPath("startDate", "2016-08-02")
+                .withRequestBodyJsonPath("nomisReligionId", 1)
+                .withRequestBodyJsonPath("current", true)
+                .withRequestBodyJsonPath("religionCode", "ZORO")
+                .withRequestBodyJsonPath("changeReasonKnown", false)
+                .withRequestBodyJsonPath("startDate", "2015-08-02")
                 .withRequestBodyJsonPath("createUserId", "KOFEADDY")
-                .withRequestBodyJsonPath("createDateTime", "2016-08-01T10:55:00")
-                .withRequestBodyJsonPath("modifyUserId", "KOFE_MOD")
-                .withRequestBodyJsonPath("modifyDateTime", "2017-08-01T10:55:00"),
+                .withRequestBodyJsonPath("createDateTime", "2016-08-01T10:55:00"),
             )
             verifyMappingSaved()
 
             verifyTelemetry(
               "coreperson-beliefs-synchronisation-created-success",
               offenderNo = "A1234AA",
-              nomisId = 2,
+              nomisId = 1,
             )
           }
         }
@@ -116,7 +116,7 @@ class CorePersonSynchronisationBeliefsIntTest(
               @BeforeEach
               fun setUp() {
                 mappingApiMock.stubCreateReligionMappingFailureFollowedBySuccess()
-
+                mappingApiMock.stubExistsReligionMappingByNomisPrisonNumber("A1234AA", false)
                 sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
                   .also { waitForAnyProcessingToComplete("coreperson-beliefs-synchronisation-mapping-created") }
 
@@ -171,7 +171,7 @@ class CorePersonSynchronisationBeliefsIntTest(
                     userMessage = "Duplicate mapping",
                   ),
                 )
-
+                mappingApiMock.stubExistsReligionMappingByNomisPrisonNumber("A1234AA", false)
                 sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
                   .also { waitForAnyProcessingToComplete("coreperson-beliefs-synchronisation-duplicate") }
               }
@@ -221,7 +221,7 @@ class CorePersonSynchronisationBeliefsIntTest(
 
           @BeforeEach
           fun setUp() {
-            mappingApiMock.stubExistsReligionMappingByNomisPrisonNumber(nomisPrisonNumber = "A1234AA", exists = true)
+            mappingApiMock.stubExistsReligionMappingByNomisPrisonNumber(nomisPrisonNumber = "A1234AA", exists = true) // qqRP TODO
             sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
               .also { waitForAnyProcessingToComplete() }
           }
@@ -275,7 +275,7 @@ class CorePersonSynchronisationBeliefsIntTest(
         @Test
         fun `will track telemetry`() {
           verify(telemetryClient).trackEvent(
-            eq("coreperson-beliefs-synchronisation-updated-skipped"),
+            eq("coreperson-beliefs-synchronisation-updated-created-skipped"),
             check {
               assertThat(it["prisonNumber"]).isEqualTo("A1234AA")
               assertThat(it["nomisId"]).isEqualTo("1")
@@ -286,11 +286,68 @@ class CorePersonSynchronisationBeliefsIntTest(
       }
 
       @Nested
-      inner class HappyPath {
+      inner class HappyPathCreate {
+        @BeforeEach
+        fun setup() {
+          // We should act on an update event to create when we find an unmapped active belief
+          nomisApi.stubGetOffenderReligions(prisonNumber = "A1234AA", religions = multipleBeliefs())
+          // Active belief has no mapping
+          mappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 1, nomisPrisonNumber = "A1234AA", null)
+          mappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 2, nomisPrisonNumber = "A1234AA")
+          cprApi.stubSyncCreateOffenderBelief("A1234AA")
+          mappingApiMock.stubCreateReligionMapping()
+          // Event is based on the previously active belief
+          sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 2, eventType = "UPDATED")
+            .also { waitForAnyProcessingToComplete("coreperson-beliefs-synchronisation-created-success") }
+        }
+
+        @Test
+        fun `should sync new belief to CPR`() = runTest {
+          verifyNomis(offenderNo = "A1234AA")
+          verifyMappingCheck(nomisId = 1)
+          cprApi.verify(
+            postRequestedFor(urlPathEqualTo("/person/prison/A1234AA/religion"))
+              .withRequestBodyJsonPath("nomisReligionId", 1)
+              .withRequestBodyJsonPath("current", true)
+              .withRequestBodyJsonPath("religionCode", "ZORO")
+              .withRequestBodyJsonPath("changeReasonKnown", false)
+              .withRequestBodyJsonPath("startDate", "2015-08-02")
+              .withRequestBodyJsonPath("createUserId", "KOFEADDY")
+              .withRequestBodyJsonPath("createDateTime", "2016-08-01T10:55:00"),
+          )
+          verifyMappingSaved()
+
+          verifyTelemetry(
+            "coreperson-beliefs-synchronisation-created-success",
+            offenderNo = "A1234AA",
+            nomisId = 1,
+          )
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("coreperson-beliefs-synchronisation-created-success"),
+            check {
+              assertThat(it["prisonNumber"]).isEqualTo("A1234AA")
+              assertThat(it["nomisId"]).isEqualTo("1")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class HappyPathUpdate {
 
         @BeforeEach
         fun setup() {
-          nomisApi.stubGetOffenderReligions(prisonNumber = "A1234AA", religions = multipleBeliefs())
+          // We should act on an update event to do a simple update of the comment when there is already a mapping.
+          val multipleBeliefs = multipleBeliefs()
+          nomisApi.stubGetOffenderReligions(prisonNumber = "A1234AA", religions = multipleBeliefs)
+          // Active belief already has a mapping
+          mappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 1, nomisPrisonNumber = "A1234AA")
+          // This is the belief that is having its comment updated
           mappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 2, nomisPrisonNumber = "A1234AA")
           cprApi.stubSyncUpdateOffenderBelief("A1234AA", "123456")
           sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 2, eventType = "UPDATED")
@@ -299,7 +356,7 @@ class CorePersonSynchronisationBeliefsIntTest(
 
         @Test
         fun `should sync belief to CPR`() = runTest {
-          verifyNomis(offenderNo = "A1234AA")
+          verifyNomis(offenderNo = "A1234AA", 2)
           verifyMappingCheck(nomisId = 2)
           cprApi.verify(
             putRequestedFor(urlPathEqualTo("/person/prison/A1234AA/religion/123456"))
