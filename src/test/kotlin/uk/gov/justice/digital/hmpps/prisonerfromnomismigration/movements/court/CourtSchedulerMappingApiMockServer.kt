@@ -307,7 +307,7 @@ class CourtSchedulerMappingApiMockServer(private val jsonMapper: JsonMapper) {
     prisonerNumber: String = "A1234BC",
     bookingId: Long = 12345,
     nomisEventId: Long = 1,
-    dpsCourtAppearanceId: UUID = UUID.randomUUID(),
+    dpsCourtAppearanceId: UUID? = UUID.randomUUID(),
     nomisMovementOutSeq: Int = 3,
     dpsMovementOutId: UUID = UUID.randomUUID(),
     nomisMovementInSeq: Int = 4,
@@ -490,7 +490,7 @@ fun courtSchedulerPrisonerMappings(prisonerNumber: String = "A1234BC") = CourtSc
 fun courtSchedulerPrisonerIdMappings(
   bookingId: Long = 12345,
   nomisEventId: Long = 1,
-  dpsCourtAppearanceId: UUID = UUID.randomUUID(),
+  dpsCourtAppearanceId: UUID? = UUID.randomUUID(),
   nomisMovementOutSeq: Int = 3,
   dpsMovementOutId: UUID = UUID.randomUUID(),
   nomisMovementInSeq: Int = 4,
@@ -501,7 +501,7 @@ fun courtSchedulerPrisonerIdMappings(
   dpsUnscheduledMovementInId: UUID = UUID.randomUUID(),
 ) = CourtSchedulerPrisonerMappingIdsDto(
   prisonerNumber = "A1234BC",
-  schedules = listOf(CourtScheduleMappingIdsDto(nomisEventId, dpsCourtAppearanceId)),
+  schedules = listOfNotNull(dpsCourtAppearanceId?.let { CourtScheduleMappingIdsDto(nomisEventId, dpsCourtAppearanceId) }),
   movements = listOf(
     CourtMovementMappingIdsDto(bookingId, nomisMovementOutSeq, dpsMovementOutId),
     CourtMovementMappingIdsDto(bookingId, nomisMovementInSeq, dpsMovementInId),
