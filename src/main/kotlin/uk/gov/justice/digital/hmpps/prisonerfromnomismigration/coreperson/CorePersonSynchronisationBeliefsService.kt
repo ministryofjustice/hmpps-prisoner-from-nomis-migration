@@ -23,8 +23,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import kotlin.collections.plus
 
 private const val TELEMETRY_PREFIX = "coreperson-beliefs-synchronisation"
+typealias Telemetry = MutableMap<String, Any>
 
 @Service
 class CorePersonSynchronisationBeliefsService(
@@ -39,66 +41,77 @@ class CorePersonSynchronisationBeliefsService(
   }
 
   suspend fun offenderBeliefCreated(event: OffenderBeliefEvent) {
-    val telemetryName = "$TELEMETRY_PREFIX-created"
     val (offenderIdDisplay) = event
     val telemetry = telemetryOf(
       "prisonNumber" to offenderIdDisplay,
       "nomisId" to event.offenderBeliefId,
     )
     if (event.originatesInDpsOrHasMissingAudit) {
-      telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-created-skipped", telemetry)
     } else {
       val mapping = religionsMappingService.getReligionByNomisIdOrNull(event.offenderBeliefId)
       if (mapping != null) {
         telemetryClient.trackEvent(
-          "$telemetryName-ignored",
+          "$TELEMETRY_PREFIX-created-ignored",
           telemetry + ("cprId" to mapping.cprId),
         )
       } else {
-        track(telemetryName, telemetry) {
-          getNomisOffenderBelief(event).apply {
-            corePersonCprApiService.syncCreateOffenderBelief(
-              prisonNumber = offenderIdDisplay,
-              religion = this,
-            ).also {
-              tryToCreateMapping(
-                ReligionMappingDto(
-                  nomisPrisonNumber = offenderIdDisplay,
-                  cprId = it.religionMappings.cprReligionId,
-                  nomisId = event.offenderBeliefId,
-                  mappingType = ReligionMappingDto.MappingType.NOMIS_CREATED,
-                ),
-                telemetry = telemetry + ("cprId" to it.religionMappings.cprReligionId),
-              )
-            }
-          }
-        }
+        // There is no mapping so we cannot ignore this as there will be no update because no beliefs exist yet.
+        createBelief(telemetry, getNomisOffenderBelief(event), offenderIdDisplay, event.offenderBeliefId)
       }
     }
   }
 
   suspend fun offenderBeliefUpdated(event: OffenderBeliefEvent) {
-    val telemetryName = "$TELEMETRY_PREFIX-updated"
     val (offenderIdDisplay) = event
     val telemetry = telemetryOf(
       "prisonNumber" to offenderIdDisplay,
       "nomisId" to event.offenderBeliefId,
     )
     if (event.originatesInDpsOrHasMissingAudit) {
-      telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-updated-created-skipped", telemetry)
     } else {
-      track(telemetryName, telemetry) {
-        religionsMappingService.getReligionByNomisId(nomisReligionId = event.offenderBeliefId)
-          .also { mapping ->
-            telemetry["cprId"] = mapping.cprId
-            event.toPrisonReligionUpdateRequest().apply {
-              corePersonCprApiService.syncUpdateOffenderBelief(
-                offenderIdDisplay,
-                mapping.cprId,
-                this,
-              )
+      val allBeliefs = corePersonNomisApiService.getOffenderReligions(event.offenderIdDisplay)
+      val currentBelief = allBeliefs.first()
+      val currentBeliefMapping = religionsMappingService.getReligionByNomisIdOrNull(currentBelief.beliefId)
+      if (currentBeliefMapping != null) {Ï
+        // This event can only be a simple update of the comments field.
+        track("$TELEMETRY_PREFIX-updated", telemetry) {
+          religionsMappingService.getReligionByNomisId(nomisReligionId = event.offenderBeliefId)
+            .also { mapping ->
+              telemetry["cprId"] = mapping.cprId
+              event.toPrisonReligionUpdateRequest().apply {
+                corePersonCprApiService.syncUpdateOffenderBelief(
+                  offenderIdDisplay,
+                  mapping.cprId,
+                  this,
+                )
+              }
             }
-          }
+        }
+      } else {
+        // This event indicates a new active belief has been created.
+        telemetry += ("nomisId" to currentBelief.beliefId)
+        createBelief(telemetry, currentBelief.toPrisonReligionHistory(true), offenderIdDisplay, currentBelief.beliefId)
+      }
+    }
+  }
+
+  suspend fun createBelief(telemetry: Telemetry, prisonerReligionHistory: PrisonReligionHistory, offenderIdDisplay: String, offenderBeliefId: Long) = track("$TELEMETRY_PREFIX-created", telemetry) {
+    prisonerReligionHistory.apply {
+      corePersonCprApiService.syncCreateOffenderBelief(
+        prisonNumber = offenderIdDisplay,
+        religion = this,
+      ).also {
+        tryToCreateMapping(
+          ReligionMappingDto(
+            nomisPrisonNumber = offenderIdDisplay,
+            cprId = it.religionMappings.cprReligionId,
+            nomisId = offenderBeliefId,
+            mappingType = ReligionMappingDto.MappingType.NOMIS_CREATED,
+          ),
+          telemetry = telemetry + ("cprId" to it.religionMappings.cprReligionId),
+        )
       }
     }
   }
@@ -132,21 +145,25 @@ class CorePersonSynchronisationBeliefsService(
     mappingType = ReligionsMigrationMappingDto.MappingType.NOMIS_CREATED,
   )
 
-  suspend fun getNomisOffenderBelief(event: OffenderBeliefEvent): PrisonReligionHistory = corePersonNomisApiService.getOffenderReligions(event.offenderIdDisplay).mapIndexed { i, r ->
-    PrisonReligionHistory(
-      nomisReligionId = r.beliefId.toString(),
-      current = i == 0,
-      comments = r.comments,
-      startDate = r.startDate,
-      endDate = r.endDate,
-      religionCode = PrisonReligionHistory.ReligionCode.valueOf(r.belief.code),
-      changeReasonKnown = r.changeReason ?: false,
-      createDateTime = r.audit.createDatetime,
-      createUserId = r.audit.createUsername,
-      modifyDateTime = r.audit.modifyDatetime,
-      modifyUserId = r.audit.modifyUserId,
-    )
-  }.first { it.nomisReligionId == event.offenderBeliefId.toString() }
+  suspend fun getNomisOffenderBelief(event: OffenderBeliefEvent): PrisonReligionHistory = getNomisOffenderBeliefs(event).first { it.nomisReligionId == event.offenderBeliefId.toString() }
+
+  suspend fun getNomisOffenderBeliefs(event: OffenderBeliefEvent): List<PrisonReligionHistory> = corePersonNomisApiService.getOffenderReligions(event.offenderIdDisplay).mapIndexed { i, r ->
+    r.toPrisonReligionHistory(i == 0)
+  }
+
+  suspend fun OffenderBelief.toPrisonReligionHistory(current: Boolean): PrisonReligionHistory = PrisonReligionHistory(
+    nomisReligionId = beliefId.toString(),
+    current = current,
+    comments = comments,
+    startDate = startDate,
+    endDate = endDate,
+    religionCode = PrisonReligionHistory.ReligionCode.valueOf(belief.code),
+    changeReasonKnown = changeReason ?: false,
+    createDateTime = audit.createDatetime,
+    createUserId = audit.createUsername,
+    modifyDateTime = audit.modifyDatetime,
+    modifyUserId = audit.modifyUserId,
+  )
 
   suspend fun OffenderBeliefEvent.toPrisonReligionUpdateRequest(): PrisonReligionUpdateRequest = corePersonNomisApiService.getOffenderReligions(offenderIdDisplay)
     .mapIndexed { i, r -> Pair(i == 0, r) }
