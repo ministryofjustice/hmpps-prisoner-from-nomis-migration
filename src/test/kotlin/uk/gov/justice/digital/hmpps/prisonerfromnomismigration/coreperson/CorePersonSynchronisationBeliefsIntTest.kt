@@ -68,11 +68,11 @@ class CorePersonSynchronisationBeliefsIntTest(
 
         @BeforeEach
         fun setup() {
-          // The only time we should be acting on an insert event is when there is one mapped belief.
+          // The only time we should be acting on an insert event is when there is one unmapped belief.
           // Otherwise, we should be acting on the update only.
           nomisApi.stubGetOffenderReligions(prisonNumber = "A1234AA", religions = listOf(offenderBelief1))
-          // There should be no mapping for this belief
-          mappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 1, nomisPrisonNumber = "A1234AA", mapping = null)
+          // There should be no mappings for this offender
+          mappingApiMock.stubExistsReligionMappingByNomisPrisonNumber("A1234AA", false)
           cprApi.stubSyncCreateOffenderBelief("A1234AA")
           mappingApiMock.stubCreateReligionMapping()
         }
@@ -85,7 +85,7 @@ class CorePersonSynchronisationBeliefsIntTest(
               .also { waitForAnyProcessingToComplete() }
 
             verifyNomis(offenderNo = "A1234AA")
-            verifyMappingCheck(nomisId = 1)
+            verifyMappingExists(nomisPrisonNumber = "A1234AA")
             cprApi.verify(
               postRequestedFor(urlPathEqualTo("/person/prison/A1234AA/religion"))
                 .withRequestBodyJsonPath("nomisReligionId", 1)
@@ -116,12 +116,12 @@ class CorePersonSynchronisationBeliefsIntTest(
               @BeforeEach
               fun setUp() {
                 mappingApiMock.stubCreateReligionMappingFailureFollowedBySuccess()
-
+                mappingApiMock.stubExistsReligionMappingByNomisPrisonNumber("A1234AA", false)
                 sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
                   .also { waitForAnyProcessingToComplete("coreperson-beliefs-synchronisation-mapping-created") }
 
                 verifyNomis(offenderNo = "A1234AA")
-                verifyMappingCheck(nomisId = 1)
+                verifyMappingExists(nomisPrisonNumber = "A1234AA")
                 verifyCpr()
               }
 
@@ -171,7 +171,7 @@ class CorePersonSynchronisationBeliefsIntTest(
                     userMessage = "Duplicate mapping",
                   ),
                 )
-
+                mappingApiMock.stubExistsReligionMappingByNomisPrisonNumber("A1234AA", false)
                 sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
                   .also { waitForAnyProcessingToComplete("coreperson-beliefs-synchronisation-duplicate") }
               }
@@ -221,7 +221,7 @@ class CorePersonSynchronisationBeliefsIntTest(
 
           @BeforeEach
           fun setUp() {
-            mappingApiMock.stubGetReligionByNomisIdOrNull(nomisId = 1, nomisPrisonNumber = "A1234AA")
+            mappingApiMock.stubExistsReligionMappingByNomisPrisonNumber(nomisPrisonNumber = "A1234AA", exists = true) // qqRP TODO
             sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
               .also { waitForAnyProcessingToComplete() }
           }
@@ -248,7 +248,6 @@ class CorePersonSynchronisationBeliefsIntTest(
               check {
                 assertThat(it["prisonNumber"]).isEqualTo("A1234AA")
                 assertThat(it["nomisId"]).isEqualTo("1")
-                assertThat(it["cprId"]).isEqualTo("123456")
               },
               isNull(),
             )
@@ -392,6 +391,11 @@ class CorePersonSynchronisationBeliefsIntTest(
   private fun verifyCpr(count: Int = 1) {
     cprApi.verify(count, postRequestedFor(urlPathMatching("/person/prison/A1234AA/religion")))
   }
+
+  private fun verifyMappingExists(nomisPrisonNumber: String = "") {
+    mappingApiMock.verify(getRequestedFor(urlPathMatching("/mapping/core-person-religion/religion/nomis-prison-number/$nomisPrisonNumber/exists")))
+  }
+
   private fun verifyMappingCheck(nomisId: Long = 1) {
     mappingApiMock.verify(getRequestedFor(urlPathMatching("/mapping/core-person-religion/religion/nomis-id/$nomisId")))
   }

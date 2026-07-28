@@ -8,6 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEventMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEventMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncUser
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.EDIT_EXTERNAL_MOVEMENTS_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -28,6 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.util.*
+import kotlin.collections.set
 
 private const val TELEMETRY_PREFIX: String = "${CRT_TELEMETRY_PREFIX}-movement"
 
@@ -36,6 +38,7 @@ class CourtSchedulerSyncMovementService(
   override val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
   private val mappingApi: CourtSchedulerMappingApiService,
+  private val sentencingMappingApi: CourtSentencingMappingApiService,
   private val nomisApi: CourtSchedulerNomisApiService,
   private val dpsApi: CourtSchedulerDpsApiService,
   private val migrationService: CourtSchedulerMigrationService,
@@ -102,14 +105,23 @@ class CourtSchedulerSyncMovementService(
     dpsCourtMovementId: UUID? = null,
   ): SyncCourtEventMovement {
     val nomis = nomisApi.getCourtMovementOut(prisonerNumber, bookingId, movementSeq)
-    val dpsCourtAppearanceId = nomis.courtScheduleOutId
+    val (dpsCourtAppearanceId, dpsSentencingCourtAppearanceId) = nomis.courtScheduleOutId
       ?.also { telemetry["nomisEventId"] = it }
-      ?.let {
-        tryFetchParent { mappingApi.getCourtScheduleMappingOrNull(it)?.dpsCourtAppearanceId }
-          .also { telemetry["dpsCourtAppearanceId"] = it }
-      }
+      ?.let { findDpsId(nomis.caseId, nomis.courtScheduleOutId, telemetry) }
+      ?: (null to null)
 
-    return nomis.toDpsRequest(dpsCourtAppearanceScheduleId = dpsCourtAppearanceId, dpsCourtMovementId = dpsCourtMovementId)
+    return nomis.toDpsRequest(dpsCourtMovementId, dpsCourtAppearanceId, dpsSentencingCourtAppearanceId)
+  }
+
+  private suspend fun findDpsId(nomisCaseId: Long?, nomisEventId: Long, telemetry: MutableMap<String, Any>): Pair<UUID?, String?> = if (nomisCaseId == null) {
+    tryFetchParent { mappingApi.getCourtScheduleMappingOrNull(nomisEventId)?.dpsCourtAppearanceId }
+      .also { telemetry["dpsCourtAppearanceId"] = it }
+      .let { it to null }
+  } else {
+    telemetry["nomisCourtCaseId"] = nomisCaseId
+    tryFetchParent { sentencingMappingApi.getCourtAppearanceOrNullByNomisId(nomisEventId)?.dpsCourtAppearanceId }
+      .also { telemetry["dpsSentencingCourtAppearanceId"] = it }
+      .let { null to it }
   }
 
   private suspend fun courtMovementInRequest(
@@ -120,14 +132,12 @@ class CourtSchedulerSyncMovementService(
     dpsCourtMovementId: UUID? = null,
   ): SyncCourtEventMovement {
     val nomis = nomisApi.getCourtMovementIn(prisonerNumber, bookingId, movementSeq)
-    val dpsCourtAppearanceId = nomis.courtScheduleOutId
+    val (dpsCourtAppearanceId, dpsSentencingCourtAppearanceId) = nomis.courtScheduleOutId
       ?.also { telemetry["nomisEventId"] = it }
-      ?.let {
-        tryFetchParent { mappingApi.getCourtScheduleMappingOrNull(it)?.dpsCourtAppearanceId }
-          .also { telemetry["dpsCourtAppearanceId"] = it }
-      }
+      ?.let { findDpsId(nomis.caseId, nomis.courtScheduleOutId, telemetry) }
+      ?: (null to null)
 
-    return nomis.toDpsRequest(dpsCourtAppearanceScheduleId = dpsCourtAppearanceId, dpsCourtMovementId = dpsCourtMovementId)
+    return nomis.toDpsRequest(dpsCourtMovementId, dpsCourtAppearanceId, dpsSentencingCourtAppearanceId)
   }
 
   suspend fun courtMovementUpdated(event: ExternalMovementEvent) {
@@ -227,6 +237,7 @@ class CourtSchedulerSyncMovementService(
 private fun CourtMovementOut.toDpsRequest(
   dpsCourtMovementId: UUID? = null,
   dpsCourtAppearanceScheduleId: UUID? = null,
+  dpsSentencingCourtAppearanceScheduleId: String? = null,
 ) = SyncCourtEventMovement(
   movement = CourtEventMovement(
     directionCode = "OUT",
@@ -239,6 +250,7 @@ private fun CourtMovementOut.toDpsRequest(
     fromAgencyId = fromPrison,
     toAgencyId = toCourt ?: MISSING_COURT,
     commentText = this.commentText,
+    dpsCourtAppearanceExternalReference = "$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceScheduleId",
   ),
   occurredAt = this.audit.modifyDatetime ?: this.audit.createDatetime,
   user = SyncUser(
@@ -250,6 +262,7 @@ private fun CourtMovementOut.toDpsRequest(
 private fun CourtMovementIn.toDpsRequest(
   dpsCourtMovementId: UUID? = null,
   dpsCourtAppearanceScheduleId: UUID? = null,
+  dpsSentencingCourtAppearanceScheduleId: String? = null,
 ) = SyncCourtEventMovement(
   movement = CourtEventMovement(
     directionCode = "IN",
@@ -262,6 +275,7 @@ private fun CourtMovementIn.toDpsRequest(
     fromAgencyId = fromCourt ?: MISSING_COURT,
     toAgencyId = toPrison,
     commentText = this.commentText,
+    dpsCourtAppearanceExternalReference = "$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceScheduleId",
   ),
   occurredAt = this.audit.modifyDatetime ?: this.audit.createDatetime,
   user = SyncUser(

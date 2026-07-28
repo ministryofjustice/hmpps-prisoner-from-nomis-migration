@@ -48,11 +48,11 @@ class CorePersonSynchronisationBeliefsService(
     if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-created-skipped", telemetry)
     } else {
-      val mapping = religionsMappingService.getReligionByNomisIdOrNull(event.offenderBeliefId)
-      if (mapping != null) {
+      val mappingExists = religionsMappingService.existsReligionMappingByNomisPrisonNumber(event.offenderIdDisplay)
+      if (mappingExists) {
         telemetryClient.trackEvent(
           "$TELEMETRY_PREFIX-created-ignored",
-          telemetry + ("cprId" to mapping.cprId),
+          telemetry,
         )
       } else {
         // There is no mapping so we cannot ignore this as there will be no update because no beliefs exist yet.

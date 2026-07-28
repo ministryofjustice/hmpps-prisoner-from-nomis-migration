@@ -43,4 +43,6 @@ class ReligionsMappingService(@Qualifier("mappingApiWebClient") webClient: WebCl
     api.replaceMappings(mappings)
       .awaitSingle()
   }
+
+  suspend fun existsReligionMappingByNomisPrisonNumber(prisonNumber: String): Boolean = api.existsReligionMappingByNomisPrisonNumber(prisonNumber).awaitSingle().exists
 }
