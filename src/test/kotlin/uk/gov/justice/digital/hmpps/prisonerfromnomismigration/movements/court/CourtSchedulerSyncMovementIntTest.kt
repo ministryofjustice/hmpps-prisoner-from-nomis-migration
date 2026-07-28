@@ -106,6 +106,7 @@ class CourtSchedulerSyncMovementIntTest(
           assertThat(movement.directionCode).isEqualTo("OUT")
           assertThat(movement.fromAgencyId).isEqualTo("BXI")
           assertThat(movement.toAgencyId).isEqualTo("LEEDMC")
+          assertThat(movement.dpsCourtAppearanceExternalReference).isNull()
           assertThat(user.username).isEqualTo("SYS")
           assertThat(user.activeCaseloadId).isEqualTo("MDI")
         }
@@ -178,6 +179,7 @@ class CourtSchedulerSyncMovementIntTest(
           assertThat(movement.dpsId).isNull()
           assertThat(movement.dpsCourtAppearanceScheduleId).isEqualTo(dpsCourtAppearanceId)
           assertThat(movement.offenderBookId).isEqualTo(12345)
+          assertThat(movement.dpsCourtAppearanceExternalReference).isNull()
         }
       }
 
@@ -674,6 +676,7 @@ class CourtSchedulerSyncMovementIntTest(
           assertThat(movement.movementReasonCode).isEqualTo("CRT")
           assertThat(movement.directionCode).isEqualTo("OUT")
           assertThat(movement.fromAgencyId).isEqualTo("BXI")
+          assertThat(movement.dpsCourtAppearanceExternalReference).isNull()
           assertThat(movement.toAgencyId).isEqualTo("LEEDMC")
           assertThat(user.username).isEqualTo("SYS")
           assertThat(user.activeCaseloadId).isEqualTo("MDI")
@@ -728,6 +731,7 @@ class CourtSchedulerSyncMovementIntTest(
         ).apply {
           assertThat(movement.dpsId).isEqualTo(dpsCourtMovementId)
           assertThat(movement.dpsCourtAppearanceScheduleId).isEqualTo(dpsCourtAppearanceId)
+          assertThat(movement.dpsCourtAppearanceExternalReference).isNull()
         }
       }
 
@@ -1058,6 +1062,7 @@ class CourtSchedulerSyncMovementIntTest(
           assertThat(movement.directionCode).isEqualTo("IN")
           assertThat(movement.fromAgencyId).isEqualTo("LEEDMC")
           assertThat(movement.toAgencyId).isEqualTo("BXI")
+          assertThat(movement.dpsCourtAppearanceExternalReference).isNull()
           assertThat(user.username).isEqualTo("SYS")
           assertThat(user.activeCaseloadId).isEqualTo("MDI")
         }
@@ -1129,6 +1134,7 @@ class CourtSchedulerSyncMovementIntTest(
         ).apply {
           assertThat(movement.dpsId).isNull()
           assertThat(movement.dpsCourtAppearanceScheduleId).isEqualTo(dpsCourtAppearanceId)
+          assertThat(movement.dpsCourtAppearanceExternalReference).isNull()
         }
       }
 
@@ -1370,6 +1376,7 @@ class CourtSchedulerSyncMovementIntTest(
           assertThat(movement.directionCode).isEqualTo("IN")
           assertThat(movement.fromAgencyId).isEqualTo("LEEDMC")
           assertThat(movement.toAgencyId).isEqualTo("BXI")
+          assertThat(movement.dpsCourtAppearanceExternalReference).isNull()
           assertThat(user.username).isEqualTo("SYS")
           assertThat(user.activeCaseloadId).isEqualTo("MDI")
         }
@@ -1423,6 +1430,7 @@ class CourtSchedulerSyncMovementIntTest(
         ).apply {
           assertThat(movement.dpsId).isEqualTo(dpsCourtMovementId)
           assertThat(movement.dpsCourtAppearanceScheduleId).isEqualTo(dpsCourtAppearanceId)
+          assertThat(movement.dpsCourtAppearanceExternalReference).isNull()
           assertThat(movement.directionCode).isEqualTo("IN")
         }
       }
