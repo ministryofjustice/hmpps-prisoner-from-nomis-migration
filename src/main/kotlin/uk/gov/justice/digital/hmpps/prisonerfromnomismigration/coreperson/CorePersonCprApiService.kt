@@ -1,8 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.PrisonApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.SysconSyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDisabilityStatus
@@ -51,8 +53,8 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncUpdateOffenderBelief(prisonNumber: String, cprReligionId: String, religion: PrisonReligionUpdateRequest): PrisonReligionSaveResponse = personApi
+  suspend fun syncUpdateOffenderBelief(prisonNumber: String, cprReligionId: String, religion: PrisonReligionUpdateRequest): ResponseEntity<Void> = personApi
     .prepare(personApi.updatePrisonReligionRequestConfig(prisonNumber, cprReligionId, religion))
     .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
+    .awaitBodilessEntity()
 }
