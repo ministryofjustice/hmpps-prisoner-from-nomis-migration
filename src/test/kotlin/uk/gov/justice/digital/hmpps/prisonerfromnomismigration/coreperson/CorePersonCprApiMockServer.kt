@@ -93,7 +93,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubSyncCreateOffenderBelief(
     prisonNumber: String = "A1234BC",
-    status: HttpStatus = HttpStatus.OK,
+    status: HttpStatus = HttpStatus.CREATED,
     response: PrisonReligionSaveResponse = syncCorePersonReligionResponse(prisonNumber, 12345L),
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
@@ -103,7 +103,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(status.value())
             .withHeader("Content-Type", "application/json")
-            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) response else error)),
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.CREATED) response else error)),
         ),
     )
   }
@@ -111,17 +111,14 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubSyncUpdateOffenderBelief(
     prisonNumber: String = "A1234BC",
     cprId: String = "cprId",
-    status: HttpStatus = HttpStatus.OK,
-    response: PrisonReligionSaveResponse = syncCorePersonReligionResponse(prisonNumber, 12345L),
-    error: ErrorResponse = ErrorResponse(status = status.value()),
+    status: HttpStatus = HttpStatus.NO_CONTENT,
   ) {
     stubFor(
       put("/person/prison/$prisonNumber/religion/$cprId")
         .willReturn(
           aResponse()
             .withStatus(status.value())
-            .withHeader("Content-Type", "application/json")
-            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) response else error)),
+            .withHeader("Content-Type", "application/json"),
         ),
     )
   }
