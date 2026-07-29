@@ -18,6 +18,7 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
@@ -216,7 +217,7 @@ class CourtSchedulerSyncMovementIntTest(
         mappingApi.stubGetCourtScheduleMapping(nomisEventId = 567L, NOT_FOUND)
 
         sendMessage(courtMovementEvent(direction = "OUT", inserted = true))
-          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-inserted-awaiting-parent") }
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-inserted-awaiting-parent", times = 2) }
       }
 
       @Test
@@ -234,7 +235,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should publish failure telemetry with DPS court appearance ID`() {
-        verify(telemetryClient).trackEvent(
+        verify(telemetryClient, times(2)).trackEvent(
           eq("court-scheduler-sync-movement-inserted-awaiting-parent"),
           check {
             assertThat(it["nomisEventId"]).isEqualTo("567")
@@ -335,7 +336,7 @@ class CourtSchedulerSyncMovementIntTest(
         sentencingMappingApi.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
 
         sendMessage(courtMovementEvent(direction = "OUT", inserted = true))
-          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-inserted-awaiting-parent") }
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-inserted-awaiting-parent", times = 2) }
       }
 
       @Test
@@ -363,7 +364,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should publish failure telemetry with DPS court appearance ID`() {
-        verify(telemetryClient).trackEvent(
+        verify(telemetryClient, times(2)).trackEvent(
           eq("court-scheduler-sync-movement-inserted-awaiting-parent"),
           check {
             assertThat(it["nomisEventId"]).isEqualTo("567")
@@ -831,7 +832,7 @@ class CourtSchedulerSyncMovementIntTest(
         mappingApi.stubGetCourtScheduleMapping(567L, NOT_FOUND)
 
         sendMessage(courtMovementEvent(direction = "OUT", inserted = false))
-          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-updated-awaiting-parent") }
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-updated-awaiting-parent", times = 2) }
       }
 
       @Test
@@ -849,7 +850,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should publish failure telemetry`() {
-        verify(telemetryClient).trackEvent(
+        verify(telemetryClient, times(2)).trackEvent(
           eq("court-scheduler-sync-movement-updated-awaiting-parent"),
           check {
             assertThat(it["nomisEventId"]).isEqualTo("567")
@@ -974,7 +975,7 @@ class CourtSchedulerSyncMovementIntTest(
         dpsApi.stubDeleteCourtMovementError(dpsCourtMovementId, 400)
 
         sendMessage(courtMovementEvent(deleted = true, direction = "OUT"))
-          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-deleted-error") }
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-deleted-error", times = 2) }
       }
 
       @Test
@@ -997,7 +998,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should create error telemetry`() {
-        verify(telemetryClient).trackEvent(
+        verify(telemetryClient, times(2)).trackEvent(
           eq("court-scheduler-sync-movement-deleted-error"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
@@ -1171,7 +1172,7 @@ class CourtSchedulerSyncMovementIntTest(
         mappingApi.stubGetCourtScheduleMapping(nomisEventId = 567L, status = NOT_FOUND)
 
         sendMessage(courtMovementEvent(direction = "IN", inserted = true))
-          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-inserted-awaiting-parent") }
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-inserted-awaiting-parent", times = 2) }
       }
 
       @Test
@@ -1189,7 +1190,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should publish success telemetry with court appearance ID`() {
-        verify(telemetryClient).trackEvent(
+        verify(telemetryClient, times(2)).trackEvent(
           eq("court-scheduler-sync-movement-inserted-awaiting-parent"),
           check {
             assertThat(it["nomisEventId"]).isEqualTo("567")
@@ -1290,7 +1291,7 @@ class CourtSchedulerSyncMovementIntTest(
         sentencingMappingApi.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
 
         sendMessage(courtMovementEvent(direction = "IN", inserted = true))
-          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-inserted-awaiting-parent") }
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-movement-inserted-awaiting-parent", times = 2) }
       }
 
       @Test
@@ -1318,7 +1319,7 @@ class CourtSchedulerSyncMovementIntTest(
 
       @Test
       fun `should publish success telemetry with court appearance ID`() {
-        verify(telemetryClient).trackEvent(
+        verify(telemetryClient, times(2)).trackEvent(
           eq("court-scheduler-sync-movement-inserted-awaiting-parent"),
           check {
             assertThat(it["nomisEventId"]).isEqualTo("567")
