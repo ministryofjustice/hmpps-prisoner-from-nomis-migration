@@ -7,7 +7,7 @@
       "name" : "Move a prisoner Team",
       "email" : "Moveaprisoner-gg@justice.gov.uk"
     },
-    "version" : "2026-07-20.168.a3d37e2"
+    "version" : "2026-07-30.174.ab8adb0"
   },
   "servers" : [ {
     "url" : "/",
@@ -2604,6 +2604,11 @@
             "description" : "Whether the container is currently held in the prisoner's current prison. False flags property left behind at a prison the prisoner has moved on from",
             "example" : true
           },
+          "receivingPrisonId" : {
+            "type" : [ "string", "null" ],
+            "description" : "Id of the prison this container is due to arrive at, when it is incoming there: either due for transfer out (owner has moved but property is still at its holding prison) or transferred out but not yet logged at the destination (awaiting). Null once reconciled or when not incoming",
+            "example" : "MDI"
+          },
           "containerType" : {
             "type" : "string",
             "description" : "Type of container",
@@ -2864,13 +2869,13 @@
       "PagePrisonerPropertyGroupDto" : {
         "type" : "object",
         "properties" : {
-          "totalPages" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "totalElements" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
@@ -3012,7 +3017,7 @@
           "dueToBeReturned" : {
             "type" : "integer",
             "format" : "int32",
-            "description" : "Number of containers due to be returned (flagged after the prisoner's release)",
+            "description" : "Number of containers due to be returned: those flagged after the prisoner's release, plus stored containers whose owner has a confirmed release date within a day",
             "example" : 36
           },
           "dueToBeDisposed" : {
@@ -3083,13 +3088,13 @@
       "PageBoxLocationDto" : {
         "type" : "object",
         "properties" : {
-          "totalPages" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "totalElements" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "size" : {
             "type" : "integer",
