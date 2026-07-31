@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-07-27.340.3a0170a"
+    "version" : "2026-07-30.352.2f2a2f7"
   },
   "servers" : [ {
     "url" : "/",
@@ -520,7 +520,7 @@
       "post" : {
         "tags" : [ "CSRA Assessment" ],
         "summary" : "Starts a new initial CSRA assessment",
-        "description" : "Creates a draft assessment for the prisoner and records who started it. Returns 409 if an assessment is already in progress. Requires role ROLE_CSRA_REVIEW__RW",
+        "description" : "Creates a draft assessment for the prisoner and records who started it. Returns the new assessment's id, which identifies it for the provisional and final stages, along with the prisoner's current rating — which is unchanged by starting an assessment and so may refer to an earlier review. Returns 409 if an assessment is already in progress. Requires role ROLE_CSRA_REVIEW__RW",
         "operationId" : "startAssessment",
         "parameters" : [ {
           "name" : "prisonerNumber",
@@ -538,7 +538,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/CsraCurrentRating"
+                  "$ref" : "#/components/schemas/CsraAssessmentStarted"
                 }
               }
             }
@@ -895,7 +895,7 @@
       "get" : {
         "tags" : [ "CSRA Review" ],
         "summary" : "Returns prisoners who recently arrived at a prison",
-        "description" : "Prisoners who arrived at the prison in the last N days (default 3) and are still in the establishment, most recent first, with their arrival type and time. Arrivals come from prison-api movements; anyone no longer in the establishment is excluded via the prisoner-search roll. One row per prisoner (their most recent arrival). Requires role ROLE_CSRA_REVIEW__R",
+        "description" : "Prisoners who arrived at the prison in the last N days (default 3) and are still in the establishment, grouped into a section per calendar day, most recent day first. Every day in the window is returned even when nobody arrived on it. Admissions, transfers in and returns from court or temporary absence all count as arrivals. Arrivals come from prison-api movements; anyone no longer in the establishment is excluded via the prisoner-search roll, which also supplies each prisoner's name and current location. One row per prisoner per day (their latest arrival that day). Requires role ROLE_CSRA_REVIEW__R",
         "operationId" : "getRecentArrivals",
         "parameters" : [ {
           "name" : "prisonId",
@@ -914,20 +914,21 @@
           "schema" : {
             "type" : "integer",
             "format" : "int32",
-            "default" : 3
+            "default" : 3,
+            "minimum" : 1
           },
           "example" : 3
         }, {
           "name" : "arrivalTypes",
           "in" : "query",
-          "description" : "Only include these arrival types",
+          "description" : "Only include these arrival types. Omit for all arrivals; multiple types match any of them. The per-type counts are unaffected by this filter",
           "required" : false,
           "schema" : {
             "type" : "array",
             "items" : {
               "type" : "string",
               "description" : "The type of arrival into a prison",
-              "enum" : [ "NEW_ADMISSION", "TRANSFER_IN" ]
+              "enum" : [ "NEW_ADMISSION", "TRANSFER_IN", "COURT_RETURN", "TEMPORARY_ABSENCE_RETURN" ]
             }
           }
         } ],
@@ -2005,6 +2006,23 @@
         },
         "required" : [ "bookingId", "id", "nomisSequence" ]
       },
+      "CsraAssessmentStarted" : {
+        "type" : "object",
+        "description" : "The assessment that was started, alongside the prisoner's current rating",
+        "properties" : {
+          "assessmentId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The id of the assessment just started. Use this to submit the provisional and final stages.",
+            "example" : "de91dfa7-821f-4552-a427-bf2f32eafeb0"
+          },
+          "currentRating" : {
+            "$ref" : "#/components/schemas/CsraCurrentRating",
+            "description" : "The prisoner's current CSRA rating, which is unaffected by starting a new assessment and so may refer to an earlier review"
+          }
+        },
+        "required" : [ "assessmentId", "currentRating" ]
+      },
       "DlqMessage" : {
         "type" : "object",
         "properties" : {
@@ -2328,6 +2346,26 @@
         },
         "required" : [ "content", "totalResults" ]
       },
+      "CsraArrivalDay" : {
+        "type" : "object",
+        "description" : "One calendar day of the window, with the arrivals on that day",
+        "properties" : {
+          "date" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The day",
+            "example" : "2026-07-09"
+          },
+          "arrivals" : {
+            "type" : "array",
+            "description" : "The arrivals on this day matching the filter, latest first; empty when nobody arrived",
+            "items" : {
+              "$ref" : "#/components/schemas/CsraArrivalRow"
+            }
+          }
+        },
+        "required" : [ "arrivals", "date" ]
+      },
       "CsraArrivalRow" : {
         "type" : "object",
         "description" : "A prisoner who arrived at the prison",
@@ -2356,7 +2394,7 @@
           "arrivalType" : {
             "type" : "string",
             "description" : "The type of arrival",
-            "enum" : [ "NEW_ADMISSION", "TRANSFER_IN" ],
+            "enum" : [ "NEW_ADMISSION", "TRANSFER_IN", "COURT_RETURN", "TEMPORARY_ABSENCE_RETURN" ],
             "example" : "NEW_ADMISSION"
           },
           "arrivedAt" : {
@@ -2367,8 +2405,8 @@
           },
           "location" : {
             "type" : [ "string", "null" ],
-            "description" : "The prisoner's location on arrival (reception or a cell)",
-            "example" : "Reception"
+            "description" : "Where the prisoner is now — a cell, or a location code such as RECP for reception. This is their current location, not where they were put on arrival",
+            "example" : "C-2-005"
           }
         },
         "required" : [ "arrivalType", "arrivedAt", "prisonerNumber" ]
@@ -2377,17 +2415,17 @@
         "type" : "object",
         "description" : "Prisoners who have arrived at a prison within the recent window and are still in the establishment",
         "properties" : {
-          "arrivals" : {
+          "days" : {
             "type" : "array",
-            "description" : "The arrivals matching the filter, most recent first",
+            "description" : "One section per calendar day in the window, most recent day first. Every day is present even when nobody arrived on it, so the screen can show its per-day empty state",
             "items" : {
-              "$ref" : "#/components/schemas/CsraArrivalRow"
+              "$ref" : "#/components/schemas/CsraArrivalDay"
             }
           },
           "totalResults" : {
             "type" : "integer",
             "format" : "int32",
-            "description" : "The number of arrivals matching the filter",
+            "description" : "The number of arrivals matching the filter across the whole window. Zero means no arrivals matched, which is what drives the filtered empty state",
             "example" : 10
           },
           "arrivalTypeCounts" : {
@@ -2411,7 +2449,7 @@
             "example" : "2026-07-09"
           }
         },
-        "required" : [ "arrivalTypeCounts", "arrivals", "fromDate", "toDate", "totalResults" ]
+        "required" : [ "arrivalTypeCounts", "days", "fromDate", "toDate", "totalResults" ]
       },
       "CsraPrisonRatingSummary" : {
         "type" : "object",
