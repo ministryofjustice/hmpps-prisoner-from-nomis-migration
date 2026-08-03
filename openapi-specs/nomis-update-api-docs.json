@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-07-27.4257.958bad4"
+    "version" : "2026-07-31.4322.f588748"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -133,6 +133,58 @@
         } ],
         "responses" : {
           "200" : {
+            "description" : "repair successful",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtCaseRepairResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : { }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to call endpoint",
+            "content" : { }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "summary" : "Synchronises an appearance for an appearance from DPS to NOMIS",
+        "description" : "Used when an appearance with an existing mapping needs synchronising to nomis, so emergency use only. Mappings should not exist. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairAppearanceCreateToNomis",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "courtCaseId",
+          "in" : "path",
+          "description" : "The DPS ID of the related court case",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the related court case"
+          }
+        }, {
+          "name" : "appearanceId",
+          "in" : "path",
+          "description" : "The DPS ID of the appearance to be resynchronised",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the appearance to be resynchronised"
+          }
+        } ],
+        "responses" : {
+          "201" : {
             "description" : "repair successful",
             "content" : {
               "application/json" : {
