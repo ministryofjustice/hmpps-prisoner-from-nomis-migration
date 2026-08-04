@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-07-30.352.2f2a2f7"
+    "version" : "2026-08-03.368.b118504"
   },
   "servers" : [ {
     "url" : "/",
@@ -520,7 +520,7 @@
       "post" : {
         "tags" : [ "CSRA Assessment" ],
         "summary" : "Starts a new initial CSRA assessment",
-        "description" : "Creates a draft assessment for the prisoner and records who started it. Returns the new assessment's id, which identifies it for the provisional and final stages, along with the prisoner's current rating — which is unchanged by starting an assessment and so may refer to an earlier review. Returns 409 if an assessment is already in progress. Requires role ROLE_CSRA_REVIEW__RW",
+        "description" : "Creates a draft assessment for the prisoner and records who started it and where. Returns the new assessment's id, which identifies it for the provisional and final stages, along with the prisoner's current rating — which is unchanged by starting an assessment and so may refer to an earlier review. The prison is required: it is what puts the draft on that prison's assessments-in-progress worklist. Returns 409 if an assessment is already in progress. Requires role ROLE_CSRA_REVIEW__RW",
         "operationId" : "startAssessment",
         "parameters" : [ {
           "name" : "prisonerNumber",
@@ -532,6 +532,16 @@
           },
           "example" : "A1234BC"
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CsraAssessmentStartRequest"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "201" : {
             "description" : "The draft assessment was started",
@@ -539,6 +549,16 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/CsraAssessmentStarted"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid request — no prison supplied",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1856,6 +1876,8 @@
             "example" : "CSR"
           },
           "calculatedLevel" : {
+            "description" : "The calculated CSRA level",
+            "example" : "STANDARD",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/CsraLevel"
             }, {
@@ -1873,6 +1895,8 @@
             "example" : "A"
           },
           "committeeCode" : {
+            "description" : "The assessment committee code",
+            "example" : "REVIEW",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/CsraCommitteeCode"
             }, {
@@ -1907,6 +1931,8 @@
             "minLength" : 1
           },
           "reviewLevel" : {
+            "description" : "The review CSRA level",
+            "example" : "STANDARD",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/CsraLevel"
             }, {
@@ -1914,6 +1940,8 @@
             } ]
           },
           "approvedLevel" : {
+            "description" : "The approved CSRA level",
+            "example" : "STANDARD",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/CsraLevel"
             }, {
@@ -1927,6 +1955,8 @@
             "example" : "2025-12-08"
           },
           "evaluationResultCode" : {
+            "description" : "Approved or rejected indicator",
+            "example" : "APP",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/CsraEvaluationResultCode"
             }, {
@@ -1934,6 +1964,8 @@
             } ]
           },
           "reviewCommitteeCode" : {
+            "description" : "The review/approval committee code",
+            "example" : "REVIEW",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/CsraCommitteeCode"
             }, {
@@ -2022,6 +2054,19 @@
           }
         },
         "required" : [ "assessmentId", "currentRating" ]
+      },
+      "CsraAssessmentStartRequest" : {
+        "type" : "object",
+        "description" : "What is needed to start an initial CSRA assessment",
+        "properties" : {
+          "prisonId" : {
+            "type" : "string",
+            "description" : "The prison the assessment is being started at",
+            "example" : "LEI",
+            "minLength" : 1
+          }
+        },
+        "required" : [ "prisonId" ]
       },
       "DlqMessage" : {
         "type" : "object",
@@ -2154,6 +2199,48 @@
         },
         "required" : [ "prisonId", "prisonName" ]
       },
+      "CsraLegacyDetail" : {
+        "type" : "object",
+        "description" : "Legacy NOMIS detail for a migrated review. Present only on rows that came from NOMIS; when present, prefer its comments over the row's resolved reviewComment.",
+        "properties" : {
+          "level" : {
+            "type" : [ "string", "null" ],
+            "description" : "The raw NOMIS level this review resolved to. Renders legacy 'Low risk'/'Medium risk' rows, which both collapse to STANDARD in the row's rating.",
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "example" : "LOW"
+          },
+          "assessmentComment" : {
+            "type" : [ "string", "null" ],
+            "description" : "The assessment comment recorded in NOMIS"
+          },
+          "assessmentDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Date the assessment was recorded in NOMIS",
+            "example" : "2013-07-14"
+          },
+          "approvalStatus" : {
+            "type" : [ "string", "null" ],
+            "description" : "What became of the review at approval. Absent when it never went through approval, which is the common case.",
+            "enum" : [ "APPROVED", "NOT_APPROVED" ]
+          },
+          "approvalComment" : {
+            "type" : [ "string", "null" ],
+            "description" : "The approval comment recorded in NOMIS"
+          },
+          "approvalCommitteeComment" : {
+            "type" : [ "string", "null" ],
+            "description" : "The approval committee's comment recorded in NOMIS"
+          },
+          "approvalDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date the review was evaluated or approved in NOMIS",
+            "example" : "2013-07-14"
+          }
+        },
+        "required" : [ "assessmentDate" ]
+      },
       "CsraReviewHistory" : {
         "type" : "object",
         "description" : "A prisoner's CSRA history: whole-history summary counts plus a filtered, paginated list of reviews",
@@ -2270,7 +2357,7 @@
           },
           "reviewComment" : {
             "type" : [ "string", "null" ],
-            "description" : "The review/assessment comment, if any",
+            "description" : "The review/assessment comment, if any. Where `legacy` is present, prefer its assessmentComment and approvalComment — NOMIS records the two separately and this field resolves them to one.",
             "example" : "PNC checked. No issues found."
           },
           "prisonId" : {
@@ -2278,11 +2365,24 @@
             "description" : "The prison the CSRA was recorded at",
             "example" : "LEI"
           },
+          "prisonName" : {
+            "type" : [ "string", "null" ],
+            "description" : "The name of the prison the CSRA was recorded at, falling back to the id if it cannot be resolved",
+            "example" : "Leeds (HMP)"
+          },
           "recordedDate" : {
             "type" : "string",
             "format" : "date",
             "description" : "The date the rating was recorded",
             "example" : "2025-10-11"
+          },
+          "legacy" : {
+            "description" : "Legacy NOMIS detail. Present only on reviews migrated from NOMIS, so its presence identifies the row as legacy.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraLegacyDetail"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
         "required" : [ "id", "rating", "recordedDate", "type" ]
