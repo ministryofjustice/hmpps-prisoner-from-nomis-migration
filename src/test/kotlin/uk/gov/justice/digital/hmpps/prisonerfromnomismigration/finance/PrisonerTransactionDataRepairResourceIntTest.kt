@@ -66,7 +66,7 @@ class PrisonerTransactionDataRepairResourceIntTest(
         val receipt = SyncTransactionReceipt(
           synchronizedTransactionId = dpsTransactionId,
           requestId = dpsTransactionId,
-          action = SyncTransactionReceipt.Action.UPDATED,
+          action = SyncTransactionReceipt.Action.PROCESSED,
         )
 
         @BeforeEach

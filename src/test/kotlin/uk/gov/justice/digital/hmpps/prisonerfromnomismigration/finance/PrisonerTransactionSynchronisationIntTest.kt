@@ -217,7 +217,7 @@ class PrisonerTransactionSynchronisationIntTest(
         val receipt = SyncTransactionReceipt(
           synchronizedTransactionId = dpsTransactionUuid,
           requestId = UUID.randomUUID(),
-          action = SyncTransactionReceipt.Action.UPDATED,
+          action = SyncTransactionReceipt.Action.PROCESSED,
         )
 
         @BeforeEach
