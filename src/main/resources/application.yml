@@ -197,7 +197,7 @@ allocations:
     count: 9
 
 finance:
-  transactions.forwardingDelaySeconds: 5
+  transactions.forwardingDelaySeconds: 20
 
 courtsentencing:
   mapping-retry:
