@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-03.1827.5f8ae01"
+    "version" : "2026-08-04.1831.076e490"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -25394,7 +25394,7 @@
             "description" : "Date the container will be disposed of"
           }
         },
-        "required" : [ "containerCode", "sealMark" ]
+        "required" : [ "containerCode" ]
       },
       "UpdateVisitBalanceRequest" : {
         "type" : "object",
@@ -29113,7 +29113,7 @@
             "description" : "Date the container will be disposed of"
           }
         },
-        "required" : [ "active", "containerCode", "offenderNo", "prisonId", "sealMark" ]
+        "required" : [ "active", "containerCode", "offenderNo", "prisonId" ]
       },
       "CreateVisitBalanceAdjustmentRequest" : {
         "type" : "object",
