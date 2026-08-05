@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-03.368.b118504"
+    "version" : "2026-08-04.378.d6ad8f0"
   },
   "servers" : [ {
     "url" : "/",
@@ -635,7 +635,7 @@
       "get" : {
         "tags" : [ "CSRA Review" ],
         "summary" : "Returns CSRA review for this ID",
-        "description" : "Requires role ROLE_CSRA_REVIEW__R",
+        "description" : "Returns a single review with its full detail. For a review migrated from NOMIS this includes a legacy block carrying the question/answer set captured at migration, the committee and approval data, and the level NOMIS itself displays. The legacy block is absent for a review created in DPS, and its presence is how a consumer tells the two apart. Requires role ROLE_CSRA_REVIEW__R",
         "operationId" : "getCsraReview",
         "parameters" : [ {
           "name" : "id",
@@ -656,7 +656,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/CsraReview"
+                  "$ref" : "#/components/schemas/CsraReviewDetail"
                 }
               }
             }
@@ -1528,6 +1528,13 @@
             "type" : [ "boolean", "null" ],
             "description" : "Evidence of kidnap, hostage taking or false imprisonment"
           },
+          "offenceEvidence" : {
+            "type" : "array",
+            "description" : "The evidence behind each offence answered Yes — where it was found and what it was. At most one entry per offence.",
+            "items" : {
+              "$ref" : "#/components/schemas/CsraOffenceEvidence"
+            }
+          },
           "officerSpokeToPrisoner" : {
             "type" : [ "boolean", "null" ],
             "description" : "Whether an officer has had a conversation with the prisoner about sharing a cell"
@@ -1536,17 +1543,37 @@
             "type" : [ "boolean", "null" ],
             "description" : "Whether the prisoner is likely to cause harm to a cellmate"
           },
+          "likelyToHarmCellmateDetail" : {
+            "type" : [ "string", "null" ],
+            "description" : "Details of the risk, captured when likelyToHarmCellmate is true",
+            "example" : "Has threatened previous cellmates."
+          },
           "significantlyVulnerable" : {
             "type" : [ "boolean", "null" ],
             "description" : "Whether the prisoner is significantly vulnerable to assault by others"
+          },
+          "significantlyVulnerableDetail" : {
+            "type" : [ "string", "null" ],
+            "description" : "Details of the risk, captured when significantlyVulnerable is true",
+            "example" : "Prisoner says they have autism and struggles with social interactions."
           },
           "causeForConcernSharing" : {
             "type" : [ "boolean", "null" ],
             "description" : "Whether observed behaviour gives cause for concern about sharing a cell"
           },
+          "causeForConcernSharingDetail" : {
+            "type" : [ "string", "null" ],
+            "description" : "Details of the risk, captured when causeForConcernSharing is true",
+            "example" : "Aggressive towards staff on the wing."
+          },
           "otherHighRiskIndicators" : {
             "type" : [ "boolean", "null" ],
             "description" : "Whether there are any other indicators the prisoner is high risk"
+          },
+          "otherHighRiskIndicatorsDetail" : {
+            "type" : [ "string", "null" ],
+            "description" : "Details of the risk, captured when otherHighRiskIndicators is true",
+            "example" : "Intelligence report received from the security team."
           },
           "seenByHealthcare" : {
             "type" : [ "boolean", "null" ],
@@ -1555,6 +1582,11 @@
           "healthcareIncreasedRisk" : {
             "type" : [ "boolean", "null" ],
             "description" : "Whether healthcare identified signs of increased risk"
+          },
+          "healthcareIncreasedRiskDetail" : {
+            "type" : [ "string", "null" ],
+            "description" : "A brief summary of why healthcare consider the prisoner an increased risk, captured when healthcareIncreasedRisk is true",
+            "example" : "Diagnosed autism; shared accommodation likely to cause significant distress."
           },
           "riskTo" : {
             "type" : "array",
@@ -1571,7 +1603,41 @@
             }
           }
         },
-        "required" : [ "assessmentComment", "prisonId", "rating", "riskTo", "vulnerabilities" ]
+        "required" : [ "assessmentComment", "offenceEvidence", "prisonId", "rating", "riskTo", "vulnerabilities" ]
+      },
+      "CsraOffenceEvidence" : {
+        "type" : "object",
+        "description" : "The evidence behind a Yes to an offence question",
+        "properties" : {
+          "offence" : {
+            "type" : "string",
+            "description" : "The offence question this evidence relates to",
+            "enum" : [ "MURDER_MANSLAUGHTER", "ASSISTING_SUICIDE", "SEXUAL_ASSAULT", "REPEATED_VIOLENCE", "PREJUDICE_MOTIVATED", "ARSON", "KIDNAP_HOSTAGE" ],
+            "example" : "MURDER_MANSLAUGHTER"
+          },
+          "sources" : {
+            "type" : "array",
+            "description" : "Where the evidence was found. Include OTHER to name a source in otherSourceDetail.",
+            "example" : [ "PNC", "DPS" ],
+            "items" : {
+              "type" : "string",
+              "description" : "Where the evidence for an offence answer was found",
+              "enum" : [ "PNC", "WARRANT", "DPS", "PER", "OTHER" ]
+            },
+            "uniqueItems" : true
+          },
+          "otherSourceDetail" : {
+            "type" : [ "string", "null" ],
+            "description" : "Names the source when OTHER is selected",
+            "example" : "Police intelligence report"
+          },
+          "details" : {
+            "type" : [ "string", "null" ],
+            "description" : "Free text describing the evidence found",
+            "example" : "Convicted of manslaughter of a fellow prisoner in 2019."
+          }
+        },
+        "required" : [ "offence", "sources" ]
       },
       "CsraRiskToDetail" : {
         "type" : "object",
@@ -1697,9 +1763,58 @@
             "format" : "date-time",
             "description" : "When the current assessment was started",
             "example" : "2026-06-26T11:20:00"
+          },
+          "type" : {
+            "type" : [ "string", "null" ],
+            "description" : "Whether the rating came from an assessment or a review. Absent when there is no rating.",
+            "enum" : [ "FULL", "HEALTH", "LOCATE", "RATING", "RECEPTION", "REVIEW", "CSRA_INITIAL_REVIEW", "CSRA_REVIEW" ],
+            "example" : "CSRA_INITIAL_REVIEW"
+          },
+          "inProgress" : {
+            "description" : "The assessment or review currently in progress, if any. Absent when nothing is in progress.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraInProgressReview"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
         "required" : [ "prisonerNumber", "provisional", "riskTo", "status", "vulnerabilities" ]
+      },
+      "CsraInProgressReview" : {
+        "type" : "object",
+        "description" : "An assessment or review in progress, reported alongside the current rating",
+        "properties" : {
+          "reviewId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The id of the in-progress assessment or review. Point 'Continue' and 'Cancel' at this.",
+            "example" : "de91dfa7-821f-4552-a427-bf2f32eafeb0"
+          },
+          "type" : {
+            "type" : "string",
+            "description" : "Whether this is an assessment or a review — the card is captioned accordingly",
+            "enum" : [ "FULL", "HEALTH", "LOCATE", "RATING", "RECEPTION", "REVIEW", "CSRA_INITIAL_REVIEW", "CSRA_REVIEW" ],
+            "example" : "CSRA_INITIAL_REVIEW"
+          },
+          "startedBy" : {
+            "type" : [ "string", "null" ],
+            "description" : "The username that started it",
+            "example" : "BPONDS"
+          },
+          "startedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When it was started",
+            "example" : "2026-06-26T11:20:00"
+          },
+          "prisonId" : {
+            "type" : [ "string", "null" ],
+            "description" : "The prison it was started at",
+            "example" : "LEI"
+          }
+        },
+        "required" : [ "reviewId", "type" ]
       },
       "SetActiveAgencyRequest" : {
         "type" : "object",
@@ -2101,9 +2216,104 @@
         },
         "required" : [ "messages", "messagesFoundCount", "messagesReturnedCount" ]
       },
-      "CsraReview" : {
+      "CsraCommittee" : {
         "type" : "object",
-        "description" : "A cell sharing risk assessment review",
+        "description" : "A NOMIS committee, with the wording NOMIS displays for it",
+        "properties" : {
+          "code" : {
+            "type" : "string",
+            "description" : "The NOMIS committee code",
+            "enum" : [ "GOV", "MED", "OCA", "RECP", "REVIEW", "SECSTATE", "SECUR" ],
+            "example" : "REVIEW"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "The committee's display name",
+            "example" : "Review Board"
+          }
+        },
+        "required" : [ "code", "name" ]
+      },
+      "CsraLegacyReviewDetail" : {
+        "type" : "object",
+        "description" : "The legacy NOMIS detail for a migrated review, including its questions and answers",
+        "properties" : {
+          "level" : {
+            "type" : [ "string", "null" ],
+            "description" : "The raw NOMIS level this review resolved to. Renders legacy 'Low risk'/'Medium risk' records, which both collapse to STANDARD in the review's result.",
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "example" : "LOW"
+          },
+          "approvalStatus" : {
+            "type" : [ "string", "null" ],
+            "description" : "What became of the review at approval. Absent when it never went through approval, which is the common case.",
+            "enum" : [ "APPROVED", "NOT_APPROVED" ]
+          },
+          "calculatedResult" : {
+            "type" : [ "string", "null" ],
+            "description" : "The level NOMIS calculated from the answers given",
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "example" : "STANDARD"
+          },
+          "approvedResult" : {
+            "type" : [ "string", "null" ],
+            "description" : "The level approved for this review — NOMIS's reviewed level, which is what it displays as the approved result",
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "example" : "STANDARD"
+          },
+          "assessmentComment" : {
+            "type" : [ "string", "null" ],
+            "description" : "The assessment comment recorded in NOMIS"
+          },
+          "approvalCommitteeComment" : {
+            "type" : [ "string", "null" ],
+            "description" : "The approval committee's comment. This is the comment the legacy screens label 'Approval comments'."
+          },
+          "approvalComment" : {
+            "type" : [ "string", "null" ],
+            "description" : "The review level comment recorded in NOMIS. Not shown on the legacy screens; prefer approvalCommitteeComment."
+          },
+          "approvalDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date the review was evaluated or approved in NOMIS",
+            "example" : "2013-07-14"
+          },
+          "assessmentCommittee" : {
+            "description" : "The committee that carried out the assessment",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraCommittee"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "approvalCommittee" : {
+            "description" : "The committee that approved the review",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraCommittee"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "nextReviewDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The next review date NOMIS recorded on this review. Null for records migrated before we stored it per review.",
+            "example" : "2014-07-14"
+          },
+          "questions" : {
+            "type" : "array",
+            "description" : "The questions asked and the answers given, in the order NOMIS supplied them. Note this is not necessarily the order the legacy NOMIS screens display, which sorts by a question sequence we do not receive.",
+            "items" : {
+              "$ref" : "#/components/schemas/CsraReviewQuestion"
+            }
+          }
+        },
+        "required" : [ "questions" ]
+      },
+      "CsraReviewDetail" : {
+        "type" : "object",
+        "description" : "A CSRA review with the detail needed to render its full record",
         "properties" : {
           "id" : {
             "type" : "string",
@@ -2121,6 +2331,11 @@
             "description" : "The prison the assessment took place at (may be absent for older records)",
             "example" : "LEI"
           },
+          "prisonName" : {
+            "type" : [ "string", "null" ],
+            "description" : "The name of the prison the assessment took place at, falling back to the id when it is not a known prison",
+            "example" : "Leeds (HMP)"
+          },
           "assessmentDate" : {
             "type" : "string",
             "format" : "date",
@@ -2131,7 +2346,7 @@
             "type" : "string",
             "description" : "The type of assessment",
             "enum" : [ "FULL", "HEALTH", "LOCATE", "RATING", "RECEPTION", "REVIEW", "CSRA_INITIAL_REVIEW", "CSRA_REVIEW" ],
-            "example" : "RATING"
+            "example" : "CSRA_INITIAL_REVIEW"
           },
           "interimResult" : {
             "type" : [ "string", "null" ],
@@ -2160,12 +2375,12 @@
           "createdAt" : {
             "type" : "string",
             "format" : "date-time",
-            "description" : "When the review was created",
+            "description" : "When the review was created. For a migrated review this is NOMIS's own creation timestamp.",
             "example" : "2025-11-22T12:34:56"
           },
           "createdBy" : {
             "type" : "string",
-            "description" : "The username that created the review",
+            "description" : "The username that created the review. For a migrated review this is the NOMIS assessor.",
             "example" : "NQP56Y"
           },
           "lastModifiedAt" : {
@@ -2178,9 +2393,41 @@
             "type" : [ "string", "null" ],
             "description" : "The username that last updated the review",
             "example" : "NQP56Y"
+          },
+          "legacy" : {
+            "description" : "The legacy NOMIS detail. Present only for a migrated review; its presence is what identifies the review as legacy.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraLegacyReviewDetail"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
         "required" : [ "assessmentDate", "createdAt", "createdBy", "id", "prisonerNumber", "type" ]
+      },
+      "CsraReviewQuestion" : {
+        "type" : "object",
+        "description" : "A question asked in a legacy NOMIS CSRA review and the answer given",
+        "properties" : {
+          "question" : {
+            "type" : "string",
+            "description" : "The question as recorded in NOMIS, falling back to its code where NOMIS supplied no text",
+            "example" : "Select Risk Rating"
+          },
+          "answer" : {
+            "type" : [ "string", "null" ],
+            "description" : "The answer given. Absent where the question was not answered.",
+            "example" : "Standard (No immediate risk of severe violence but risk may need to be reviewed)"
+          },
+          "additionalAnswers" : {
+            "type" : "array",
+            "description" : "Any further answers, where more than one was given to the same question",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "additionalAnswers", "question" ]
       },
       "CsraEstablishment" : {
         "type" : "object",
