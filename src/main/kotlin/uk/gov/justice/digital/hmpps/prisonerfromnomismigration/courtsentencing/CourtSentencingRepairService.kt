@@ -293,17 +293,10 @@ class CourtSentencingRepairService(
       if (existingMapping != null) {
         // If mapped but not associated to this appearance, associate it
         if (!dpsChargeIdsPresent.contains(existingMapping.dpsCourtChargeId)) {
-          val nomisCharge = nomisCourtAppearance.courtEventCharges.firstOrNull { it.offenderCharge.id == nomisChargeId }
-            ?: nomisApiService.getCourtEventCharge(
-              offenderNo = offenderNo,
-              offenderChargeId = nomisChargeId,
-              eventId = eventId,
-            )
-
           dpsApiService.associateExistingCourtCharge(
             courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
             chargeId = existingMapping.dpsCourtChargeId,
-            charge = nomisCharge.toDpsCharge(),
+            charge = courtEventCharge.toDpsCharge(),
           )
           addedAssociations.add(existingMapping.dpsCourtChargeId)
         }
@@ -321,16 +314,13 @@ class CourtSentencingRepairService(
       }
     }
 
+    telemetry["nomisCharges"] = nomisChargeIdsPresent.joinToString(",")
+    telemetry["dpsChargesRemoved"] = removed.joinToString(",")
+    telemetry["dpsChargeAssociationsAdded"] = addedAssociations.joinToString(",")
+
     telemetryClient.trackEvent(
       "court-sentencing-prisoner-court-appearance-charges-repaired",
-      mapOf(
-        "offenderNo" to offenderNo,
-        "nomisCaseId" to caseId.toString(),
-        "nomisCourtAppearanceId" to eventId.toString(),
-        "nomisCharges" to nomisChargeIdsPresent.joinToString(","),
-        "dpsChargesRemoved" to removed.joinToString(","),
-        "dpsChargeAssociationsAdded" to addedAssociations.joinToString(","),
-      ),
+      telemetry,
       null,
     )
   }
