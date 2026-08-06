@@ -49,7 +49,7 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .awaitBodyOrLogAndRethrowBadRequest()
 
   suspend fun syncCreateOffenderBelief(prisonNumber: String, religion: PrisonReligionHistory): PrisonReligionSaveResponse = personApi
-    .prepare(personApi.savePrisonReligionRequestConfig(prisonNumber, religion))
+    .prepare(personApi.savePrisonReligion1RequestConfig(prisonNumber, religion))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
