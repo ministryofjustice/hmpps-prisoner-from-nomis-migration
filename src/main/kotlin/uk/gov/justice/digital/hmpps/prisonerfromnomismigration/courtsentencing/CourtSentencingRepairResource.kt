@@ -190,6 +190,26 @@ class CourtSentencingRepairResource(
     )
   }
 
+  @PutMapping("/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair-charges")
+  @Operation(
+    summary = "Synchronises charges for a court appearance to DPS",
+    description = "Deletes unmapped charges from DPS and adds or associates any missing charges for the specified NOMIS court appearance. Requires PRISONER_FROM_NOMIS__UPDATE__RW",
+  )
+  suspend fun prisonerCourtAppearanceRepairCharges(
+    @PathVariable
+    offenderNo: String,
+    @PathVariable
+    caseId: Long,
+    @PathVariable
+    eventId: Long,
+  ) {
+    courtSentencingRepairService.repairCourtAppearanceCharges(
+      offenderNo = offenderNo,
+      caseId = caseId,
+      eventId = eventId,
+    )
+  }
+
   @PutMapping("/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-info-numbers")
   @Operation(
     summary = "Updates court info number for a court case",

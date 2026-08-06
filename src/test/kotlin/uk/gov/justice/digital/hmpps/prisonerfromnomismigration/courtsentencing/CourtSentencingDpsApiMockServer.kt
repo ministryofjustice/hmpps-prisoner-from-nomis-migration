@@ -22,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyChargeCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtAppearanceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyPeriodLengthCreatedResponse
@@ -35,7 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDate
-import java.util.*
+import java.util.UUID
 
 class CourtSentencingDpsApiExtension :
   BeforeAllCallback,
@@ -228,6 +229,30 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     stubFor(
       get("/legacy/court-case/$courtCaseId/reconciliation")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(CourtSentencingDpsApiExtension.jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubGetCourtAppearance(
+    courtAppearanceId: String = UUID.randomUUID().toString(),
+    response: LegacyCourtAppearance = LegacyCourtAppearance(
+      lifetimeUuid = UUID.randomUUID(),
+      courtCaseUuid = courtAppearanceId,
+      prisonerId = "A1234AA",
+      courtCode = "SHFCC",
+      appearanceDate = LocalDate.parse("2020-01-01"),
+      appearanceTime = "10:00",
+      charges = emptyList(),
+      nomisAppearanceTypeCode = "1001",
+    ),
+  ) {
+    stubFor(
+      get("/legacy/court-appearance/$courtAppearanceId")
         .willReturn(
           aResponse()
             .withStatus(200)

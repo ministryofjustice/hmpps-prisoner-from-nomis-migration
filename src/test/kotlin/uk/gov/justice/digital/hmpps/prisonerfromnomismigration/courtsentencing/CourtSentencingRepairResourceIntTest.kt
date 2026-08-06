@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
@@ -24,6 +25,8 @@ import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.reconciliationCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.reconciliationCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCharge
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
@@ -37,7 +40,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtOrderResponse
 import java.time.LocalDate
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 
 private const val DPS_SENTENCE_ID = "c1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
 private const val DPS_TERM_ID = "d5c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3d"
@@ -46,6 +49,7 @@ private const val DPS_APPEARANCE_ID = "d8c1e3e3-3e3e-3e3e-3e3e-3e3e3e3d7d7d"
 private const val NOMIS_COURT_CASE_ID = 1234L
 private const val NOMIS_COURT_APPEARANCE_ID = 5555L
 private const val NOMIS_COURT_CHARGE_ID = 8888L
+private const val NOMIS_COURT_CHARGE_2_ID = 9999L
 private const val NOMIS_BOOKING_ID = 12344321L
 private const val DPS_CHARGE_ID = "f1c1e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e"
 private const val DPS_CHARGE_2_ID = "d1c1e2e2-2e3e-3e3e-3e3e-3e3e3e3e3e3e"
@@ -109,7 +113,8 @@ class CourtSentencingRepairResourceIntTest(
 
       @Test
       fun `will recreate mappings`() {
-        val mapping: CourtCaseBatchMappingDto = CourtSentencingMappingApiMockServer.getRequestBody(postRequestedFor(urlPathMatching("/mapping/court-sentencing/prisoner/$offenderNo/court-cases")))
+        val mapping: CourtCaseBatchMappingDto =
+          CourtSentencingMappingApiMockServer.getRequestBody(postRequestedFor(urlPathMatching("/mapping/court-sentencing/prisoner/$offenderNo/court-cases")))
         assertThat(mapping.label).hasSize(19)
       }
     }
@@ -173,7 +178,12 @@ class CourtSentencingRepairResourceIntTest(
 
       @Test
       internal fun `must have valid token`() {
-        webTestClient.put().uri("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/status/repair", offenderNo, bookingId, caseId)
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/status/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+        )
           .header("Content-Type", "application/json")
           .exchange()
           .expectStatus().isUnauthorized
@@ -181,7 +191,12 @@ class CourtSentencingRepairResourceIntTest(
 
       @Test
       internal fun `must have correct role`() {
-        webTestClient.put().uri("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/status/repair", offenderNo, bookingId, caseId)
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/status/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+        )
           .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
           .header("Content-Type", "application/json")
           .exchange()
@@ -207,7 +222,12 @@ class CourtSentencingRepairResourceIntTest(
 
         dpsCourtSentencingServer.stubPutCourtCaseForUpdate(courtCaseId = dpsCaseId)
 
-        webTestClient.put().uri("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/status/repair", offenderNo, bookingId, caseId)
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/status/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+        )
           .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
           .header("Content-Type", "application/json")
           .exchange()
@@ -837,8 +857,14 @@ class CourtSentencingRepairResourceIntTest(
             ),
           ),
         )
-        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(1, dpsCourtAppearanceId = dpsCourtAppearanceId1.toString())
-        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(2, dpsCourtAppearanceId = dpsCourtAppearanceId2.toString())
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          1,
+          dpsCourtAppearanceId = dpsCourtAppearanceId1.toString(),
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          2,
+          dpsCourtAppearanceId = dpsCourtAppearanceId2.toString(),
+        )
 
         dpsCourtSentencingServer.stubDeleteCourtAppearance(dpsCourtAppearanceId3.toString())
 
@@ -1096,8 +1122,317 @@ class CourtSentencingRepairResourceIntTest(
       }
     }
   }
-}
 
+  @Nested
+  @DisplayName("PUT /prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair-charges")
+  inner class RepairCourtAppearanceCharges {
+    val offenderNo = "A1234KT"
+    val caseId = NOMIS_COURT_CASE_ID
+    val eventId = NOMIS_COURT_APPEARANCE_ID
+
+    @Nested
+    inner class Security {
+
+      @Test
+      internal fun `must have valid token`() {
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair-charges",
+          offenderNo,
+          caseId,
+          eventId,
+        )
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      internal fun `must have correct role`() {
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair-charges",
+          offenderNo,
+          caseId,
+          eventId,
+        )
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isForbidden
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      internal fun setup() {
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = eventId,
+          dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+        )
+
+        courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+          offenderNo = offenderNo,
+          courtAppearanceId = eventId,
+          courtEventCharges = listOf(
+            courtEventChargeResponse(
+              eventId = eventId,
+              offenderChargeId = NOMIS_COURT_CHARGE_ID,
+            ),
+          ),
+        )
+
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+          nomisCourtChargeId = NOMIS_COURT_CHARGE_ID,
+          dpsCourtChargeId = DPS_CHARGE_ID,
+        )
+
+        // 1 unmapped charge
+        dpsCourtSentencingServer.stubGetCourtAppearance(
+          courtAppearanceId = DPS_APPEARANCE_ID,
+          response = LegacyCourtAppearance(
+            lifetimeUuid = UUID.fromString(DPS_APPEARANCE_ID),
+            courtCaseUuid = DPS_CASE_ID,
+            prisonerId = offenderNo,
+            courtCode = "SHFCC",
+            appearanceDate = LocalDate.parse("2020-01-01"),
+            appearanceTime = "10:00",
+            charges = listOf(
+              LegacyCharge(
+                prisonerId = offenderNo,
+                courtCaseUuid = DPS_CASE_ID,
+                lifetimeUuid = UUID.fromString(DPS_CHARGE_2_ID),
+                offenceCode = "AN100",
+              ),
+            ),
+            nomisAppearanceTypeCode = "1001",
+          ),
+        )
+
+        dpsCourtSentencingServer.stubRemoveCourtCharge(
+          chargeId = DPS_CHARGE_2_ID,
+          courtAppearanceId = DPS_APPEARANCE_ID,
+        )
+        dpsCourtSentencingServer.stubPutCourtChargeForAddExistingChargeToAppearance(
+          courtChargeId = DPS_CHARGE_ID,
+          courtAppearanceId = DPS_APPEARANCE_ID,
+        )
+
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair-charges",
+          offenderNo,
+          caseId,
+          eventId,
+        )
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+      }
+
+      @Test
+      fun `will remove unmapped dps charge and associate mapped nomis charge and track telemetry`() {
+        dpsCourtSentencingServer.verify(deleteRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_APPEARANCE_ID/charge/$DPS_CHARGE_2_ID")))
+        dpsCourtSentencingServer.verify(putRequestedFor(urlPathEqualTo("/legacy/court-appearance/$DPS_APPEARANCE_ID/charge/$DPS_CHARGE_ID")))
+
+        verify(telemetryClient).trackEvent(
+          eq("court-sentencing-prisoner-court-appearance-charges-repaired"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisCaseId"]).isEqualTo(caseId.toString())
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(eventId.toString())
+            assertThat(it["dpsChargesRemoved"]).isEqualTo(DPS_CHARGE_2_ID)
+            assertThat(it["dpsChargeAssociationsAdded"]).isEqualTo(DPS_CHARGE_ID)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class UnmappedExtraChargeInNomis {
+      @BeforeEach
+      internal fun setup() {
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = eventId,
+          dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+        )
+
+        courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+          offenderNo = offenderNo,
+          courtAppearanceId = eventId,
+          courtEventCharges = listOf(
+            courtEventChargeResponse(
+              eventId = eventId,
+              offenderChargeId = NOMIS_COURT_CHARGE_ID,
+            ),
+            courtEventChargeResponse(
+              eventId = eventId,
+              offenderChargeId = NOMIS_COURT_CHARGE_2_ID,
+            ),
+          ),
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisIdNotFoundThreeTimeFollowedBySuccess(
+          nomisChargeId = NOMIS_COURT_CHARGE_ID,
+          dpsChargeId = DPS_CHARGE_ID,
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(NOMIS_COURT_CHARGE_2_ID, DPS_CHARGE_2_ID)
+
+        courtSentencingMappingApiMockServer.stubPostCourtChargeMapping()
+
+        courtSentencingNomisApiMockServer.stubGetCourtEventCharge(
+          offenderChargeId = NOMIS_COURT_CHARGE_ID,
+          courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          offenderNo = offenderNo,
+        )
+
+        dpsCourtSentencingServer.stubPostCourtChargeForCreate(
+          courtChargeId = DPS_CHARGE_ID,
+          courtCaseId = DPS_CASE_ID,
+          offenderNo = offenderNo,
+        )
+
+        // 1 unmapped charge
+        dpsCourtSentencingServer.stubGetCourtAppearance(
+          courtAppearanceId = DPS_APPEARANCE_ID,
+          response = LegacyCourtAppearance(
+            lifetimeUuid = UUID.fromString(DPS_APPEARANCE_ID),
+            courtCaseUuid = DPS_CASE_ID,
+            prisonerId = offenderNo,
+            courtCode = "SHFCC",
+            appearanceDate = LocalDate.parse("2020-01-01"),
+            appearanceTime = "10:00",
+            charges = listOf(
+              LegacyCharge(
+                prisonerId = offenderNo,
+                courtCaseUuid = DPS_CASE_ID,
+                lifetimeUuid = UUID.fromString(DPS_CHARGE_2_ID),
+                offenceCode = "AN100",
+              ),
+            ),
+            nomisAppearanceTypeCode = "1001",
+          ),
+        )
+
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair-charges",
+          offenderNo,
+          caseId,
+          eventId,
+        )
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+      }
+
+      @Test
+      fun `will associate new nomis charge and track telemetry`() {
+        dpsCourtSentencingServer.verify(0, deleteRequestedFor(anyUrl()))
+        dpsCourtSentencingServer.verify(0, putRequestedFor(anyUrl()))
+        dpsCourtSentencingServer.verify(postRequestedFor(urlPathEqualTo("/legacy/charge")))
+
+        verify(telemetryClient).trackEvent(
+          eq("court-sentencing-prisoner-court-appearance-charges-repaired"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisCaseId"]).isEqualTo(caseId.toString())
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(eventId.toString())
+            assertThat(it["dpsChargesRemoved"]).isEmpty()
+            assertThat(it["dpsChargeAssociationsAdded"]).isEqualTo(DPS_CHARGE_ID)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class ChargesAreCorrectNoUpdateRequired {
+      @BeforeEach
+      internal fun setup() {
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = eventId,
+          dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+        )
+
+        courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+          offenderNo = offenderNo,
+          courtAppearanceId = eventId,
+          courtEventCharges = listOf(
+            courtEventChargeResponse(
+              eventId = eventId,
+              offenderChargeId = NOMIS_COURT_CHARGE_ID,
+            ),
+          ),
+        )
+
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+          nomisCourtChargeId = NOMIS_COURT_CHARGE_ID,
+          dpsCourtChargeId = DPS_CHARGE_ID,
+        )
+
+        courtSentencingMappingApiMockServer.stubPostCourtChargeMapping()
+
+        // charge exists in dps
+        dpsCourtSentencingServer.stubGetCourtAppearance(
+          courtAppearanceId = DPS_APPEARANCE_ID,
+          response = LegacyCourtAppearance(
+            lifetimeUuid = UUID.fromString(DPS_APPEARANCE_ID),
+            courtCaseUuid = DPS_CASE_ID,
+            prisonerId = offenderNo,
+            courtCode = "SHFCC",
+            appearanceDate = LocalDate.parse("2020-01-01"),
+            appearanceTime = "10:00",
+            charges = listOf(
+              LegacyCharge(
+                prisonerId = offenderNo,
+                courtCaseUuid = DPS_CASE_ID,
+                lifetimeUuid = UUID.fromString(DPS_CHARGE_ID),
+                offenceCode = "AN100",
+              ),
+            ),
+            nomisAppearanceTypeCode = "1001",
+          ),
+        )
+
+        dpsCourtSentencingServer.stubPostCourtChargeForCreate(
+          courtChargeId = DPS_CHARGE_ID,
+          courtCaseId = DPS_CASE_ID,
+          offenderNo = offenderNo,
+        )
+
+        webTestClient.put().uri(
+          "/prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair-charges",
+          offenderNo,
+          caseId,
+          eventId,
+        )
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+      }
+
+      @Test
+      fun `no updates`() {
+        dpsCourtSentencingServer.verify(0, deleteRequestedFor(anyUrl()))
+        dpsCourtSentencingServer.verify(0, putRequestedFor(anyUrl()))
+        dpsCourtSentencingServer.verify(0, postRequestedFor(anyUrl()))
+
+        verify(telemetryClient).trackEvent(
+          eq("court-sentencing-prisoner-court-appearance-charges-repaired"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisCaseId"]).isEqualTo(caseId.toString())
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(eventId.toString())
+            assertThat(it["dpsChargesRemoved"]).isEmpty()
+            assertThat(it["dpsChargeAssociationsAdded"]).isEmpty()
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+}
 private fun dpsMigrationCreateResponse(): MigrationCreateCourtCasesResponse {
   val courtCaseIds: List<MigrationCreateCourtCaseResponse> = listOf(
     MigrationCreateCourtCaseResponse(courtCaseUuid = "99C", caseId = 1L),

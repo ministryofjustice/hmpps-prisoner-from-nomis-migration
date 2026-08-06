@@ -300,6 +300,69 @@ class CourtSentencingMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetCourtChargeByNomisIdNotFoundThreeTimeFollowedBySuccess(
+    nomisChargeId: Long = 123456,
+    dpsChargeId: String = UUID.randomUUID().toString(),
+    mapping: CourtChargeMappingDto = CourtChargeMappingDto(
+      nomisCourtChargeId = nomisChargeId,
+      dpsCourtChargeId = dpsChargeId,
+      mappingType = CourtChargeMappingDto.MappingType.MIGRATED,
+    ),
+  ) {
+    val scenarioName = "Court charge get scenario"
+    val firstNotFoundScenario = "Cause Court charge create not found 1"
+    val secondNotFoundScenario = "Cause Court charge create not found 2"
+    val successScenario = "Cause Court charge create Success"
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/court-sentencing/court-charges/nomis-court-charge-id/$nomisChargeId"))
+        .inScenario(scenarioName)
+        .whenScenarioStateIs(STARTED)
+        .willReturn(
+          aResponse()
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withHeader("Content-Type", "application/json"),
+        )
+        .willSetStateTo(firstNotFoundScenario),
+    )
+
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/court-sentencing/court-charges/nomis-court-charge-id/$nomisChargeId"))
+        .inScenario(scenarioName)
+        .whenScenarioStateIs(firstNotFoundScenario)
+        .willReturn(
+          aResponse()
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withHeader("Content-Type", "application/json"),
+        )
+        .willSetStateTo(secondNotFoundScenario),
+    )
+
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/court-sentencing/court-charges/nomis-court-charge-id/$nomisChargeId"))
+        .inScenario(scenarioName)
+        .whenScenarioStateIs(secondNotFoundScenario)
+        .willReturn(
+          aResponse()
+            .withStatus(HttpStatus.NOT_FOUND.value())
+            .withHeader("Content-Type", "application/json"),
+        )
+        .willSetStateTo(successScenario),
+    )
+
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/court-sentencing/court-charges/nomis-court-charge-id/$nomisChargeId"))
+        .inScenario(scenarioName)
+        .whenScenarioStateIs(successScenario)
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(jsonMapper.writeValueAsString(mapping)),
+        )
+        .willSetStateTo(successScenario),
+    )
+  }
+
   fun stubGetCourtAppearanceByNomisId(
     status: HttpStatus,
     error: ErrorResponse = ErrorResponse(status = status.value()),
@@ -498,6 +561,21 @@ class CourtSentencingMappingApiMockServer(private val jsonMapper: JsonMapper) {
           .withBody(
             jsonMapper.writeValueAsString(ErrorResponse(HttpStatus.NOT_FOUND.value())),
           ),
+      ),
+    )
+  }
+
+  fun stubGetCourtChargeByNomisId(
+    nomisCourtChargeId: Long,
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/court-sentencing/court-charges/nomis-court-charge-id/$nomisCourtChargeId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }

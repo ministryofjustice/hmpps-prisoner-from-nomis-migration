@@ -250,6 +250,91 @@ class CourtSentencingRepairService(
     )
   }
 
+  suspend fun repairCourtAppearanceCharges(offenderNo: String, caseId: Long, eventId: Long) {
+    val telemetry = mutableMapOf(
+      "nomisCourtAppearanceId" to eventId.toString(),
+      "offenderNo" to offenderNo,
+      "nomisCaseId" to caseId.toString(),
+    )
+
+    val nomisCourtAppearance = nomisApiService.getCourtAppearance(offenderNo = offenderNo, courtAppearanceId = eventId)
+
+    val courtAppearanceMapping = mappingApiService.getCourtAppearanceOrNullByNomisId(eventId)
+      ?: throw uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry("Court appearance mapping not found for event $eventId")
+    telemetry["dpsCourtAppearanceId"] = courtAppearanceMapping.dpsCourtAppearanceId
+
+    val dpsAppearance = dpsApiService.getCourtAppearance(courtAppearanceMapping.dpsCourtAppearanceId)
+
+    val dpsChargeIdsPresent = dpsAppearance.charges.map { it.lifetimeUuid.toString() }.toMutableSet()
+
+    val nomisChargeIdsPresent = nomisCourtAppearance.courtEventCharges.map { it.offenderCharge.id }.toSet()
+    val expectedDpsChargeIds = nomisCourtAppearance.courtEventCharges.mapNotNull { courtEventCharge ->
+      mappingApiService.getOffenderChargeOrNullByNomisId(courtEventCharge.offenderCharge.id)?.dpsCourtChargeId
+    }.toSet()
+
+    // Remove any DPS charges on the appearance that are unmapped
+    val dpsChargeIdsToRemove = dpsChargeIdsPresent - expectedDpsChargeIds
+    val removed = mutableListOf<String>()
+    dpsChargeIdsToRemove.forEach { chargeId ->
+      dpsApiService.removeCourtChargeAssociation(
+        courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
+        chargeId = chargeId,
+      )
+      removed.add(chargeId)
+    }
+
+    val addedAssociations = mutableListOf<String>()
+
+    // Ensure all NOMIS charges are present and associated
+    nomisCourtAppearance.courtEventCharges.forEach { courtEventCharge ->
+      val nomisChargeId = courtEventCharge.offenderCharge.id
+      val existingMapping = mappingApiService.getOffenderChargeOrNullByNomisId(nomisChargeId)
+
+      if (existingMapping != null) {
+        // If mapped but not associated to this appearance, associate it
+        if (!dpsChargeIdsPresent.contains(existingMapping.dpsCourtChargeId)) {
+          val nomisCharge = nomisCourtAppearance.courtEventCharges.firstOrNull { it.offenderCharge.id == nomisChargeId }
+            ?: nomisApiService.getCourtEventCharge(
+              offenderNo = offenderNo,
+              offenderChargeId = nomisChargeId,
+              eventId = eventId,
+            )
+
+          dpsApiService.associateExistingCourtCharge(
+            courtAppearanceId = courtAppearanceMapping.dpsCourtAppearanceId,
+            chargeId = existingMapping.dpsCourtChargeId,
+            charge = nomisCharge.toDpsCharge(),
+          )
+          addedAssociations.add(existingMapping.dpsCourtChargeId)
+        }
+      } else {
+        // map the nomis charge and create in dps
+        courtSentencingSynchronisationService.nomisCourtChargeInserted(
+          eventId = eventId,
+          chargeId = nomisChargeId,
+          offenderNo = offenderNo,
+        ).also {
+          mappingApiService.getOffenderChargeOrNullByNomisId(nomisChargeId)?.dpsCourtChargeId?.let { dpsId ->
+            addedAssociations.add(dpsId)
+          }
+        }
+      }
+    }
+
+    telemetryClient.trackEvent(
+      "court-sentencing-prisoner-court-appearance-charges-repaired",
+      mapOf(
+        "offenderNo" to offenderNo,
+        "nomisCaseId" to caseId.toString(),
+        "nomisCourtAppearanceId" to eventId.toString(),
+        "nomisCharges" to nomisChargeIdsPresent.joinToString(","),
+        "dpsChargesRemoved" to removed.joinToString(","),
+        "dpsChargeAssociationsAdded" to addedAssociations.joinToString(","),
+      ),
+      null,
+    )
+  }
+
   suspend fun repairCourtCaseInfoNumbersByCaseId(offenderNo: String, caseId: Long) {
     courtSentencingSynchronisationService.nomisCaseIdentifiersUpdated(
       eventName = "OFFENDER_CASE_IDENTIFIERS-UPDATED",
