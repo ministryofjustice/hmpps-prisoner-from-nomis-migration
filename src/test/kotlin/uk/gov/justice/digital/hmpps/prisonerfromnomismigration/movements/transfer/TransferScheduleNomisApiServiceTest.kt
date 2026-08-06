@@ -38,7 +38,7 @@ class TransferScheduleNomisApiServiceTest {
   @Nested
   inner class GetTransferScheduleOut {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       transferScheduleNomisApiMockServer.stubGetTransferScheduleOut(offenderNo = "A1234BC", eventId = 1)
 
       apiService.getTransferScheduleOut(offenderNo = "A1234BC", eventId = 1)
