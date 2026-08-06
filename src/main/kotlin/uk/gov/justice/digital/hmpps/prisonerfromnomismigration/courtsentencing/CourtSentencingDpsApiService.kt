@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.client.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCases
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCasesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyChargeCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtAppearanceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCourtCaseCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCharge
@@ -77,6 +78,11 @@ class CourtSentencingDpsApiService(
   suspend fun getCourtCase(courtCaseId: String): ReconciliationCourtCase = webClient
     .get()
     .uri("/legacy/court-case/{courtCaseId}/reconciliation", courtCaseId)
+    .retrieve()
+    .awaitBody()
+
+  suspend fun getCourtAppearance(id: String): LegacyCourtAppearance = webClient.get()
+    .uri("/legacy/court-appearance/{id}", id)
     .retrieve()
     .awaitBody()
 
