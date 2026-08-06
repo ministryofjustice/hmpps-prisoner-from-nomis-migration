@@ -302,7 +302,7 @@ class CsraSyncIntTest(
               },
               isNull(),
             )
-            verify(telemetryClient, times(1)).trackEvent(
+            verify(telemetryClient, times(2)).trackEvent(
               eq("csras-mapping-created-failure"),
               check {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
