@@ -120,7 +120,7 @@ class CsraMigrationService(
           telemetryClient.trackEvent("csras-migration-entity-migrated", telemetry)
         }
     } catch (e: Exception) {
-      telemetry["error"] = e.message ?: "unknown error"
+      telemetry["error"] = e.message ?: e.javaClass.name
       telemetryClient.trackEvent("csras-migration-entity-failed", telemetry)
       throw e
     }

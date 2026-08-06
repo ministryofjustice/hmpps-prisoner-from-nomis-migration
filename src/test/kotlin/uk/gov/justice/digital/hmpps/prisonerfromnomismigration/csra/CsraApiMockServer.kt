@@ -5,14 +5,18 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.jsonResponse
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.status
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension.Companion.csraApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraMigrationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.SyncResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import java.util.UUID
 
 class CsraApiExtension :
   BeforeAllCallback,
@@ -57,6 +61,34 @@ class CsraApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubMigrateCsras(offenderNo: String, status: Int, error: ErrorResponse = ErrorResponse(status = status)) {
     stubFor(post("/nomis-sync/migrate/$offenderNo").willReturn(jsonResponse(error, status)))
+  }
+
+  fun stubSyncCsraCreate(offenderId: String, dpsId: String) {
+    csraApi.stubFor(
+      post("/nomis-sync/sync/$offenderId").willReturn(
+        jsonResponse(
+          SyncResult(created = true, csraReviewId = UUID.fromString(dpsId)),
+          201,
+        ),
+      ),
+    )
+  }
+
+  fun stubSyncCsraCreateError(offenderId: String) {
+    csraApi.stubFor(
+      post("/nomis-sync/sync/$offenderId").willReturn(status(500)),
+    )
+  }
+
+  fun stubSyncCsraUpdate(offenderId: String, dpsId: String) {
+    csraApi.stubFor(
+      post("/nomis-sync/sync/$offenderId").willReturn(
+        jsonResponse(
+          SyncResult(created = false, csraReviewId = UUID.fromString(dpsId)),
+          200,
+        ),
+      ),
+    )
   }
 
   fun stubHealthPing(status: Int) {

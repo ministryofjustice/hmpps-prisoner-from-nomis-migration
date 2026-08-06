@@ -27,7 +27,6 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
-import software.amazon.awssdk.services.sqs.SqsAsyncClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension.Companion.csraApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiMockServer.Companion.WIREMOCK_PORT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraMigrationResponse
@@ -37,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import uk.gov.justice.hmpps.sqs.HmppsQueue
 import uk.gov.justice.hmpps.sqs.countMessagesOnQueue
 import java.time.Duration
 import java.util.UUID
@@ -50,10 +50,8 @@ class CsraMigrationIntTest(
   @Autowired private val csrasMappingApiMockServer: CsraMappingApiMockServer,
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
 ) : CsraIntegrationTestBase() {
-  private val csraQueueMigrationDlqUrl by lazy { csraMigrationQueue.dlqUrl as String }
-  private val awsSqsCsraMigrationDlqClient by lazy { csraMigrationQueue.sqsDlqClient as SqsAsyncClient }
-
-  override fun resetTelemetryClient() {}
+  // override fun resetTelemetryClient() {}
+  override fun getQueues(): List<HmppsQueue> = listOf(csraMigrationQueue)
 
   internal fun setupMigrationTest() = runBlocking {
     migrationHistoryRepository.deleteAll()
@@ -149,10 +147,8 @@ class CsraMigrationIntTest(
             ),
           ),
         )
-        // csrasMappingApiMockServer.stubGetMappings(listOf())
         csrasMappingApiMockServer.stubPostMappings(OFFENDER_NUMBER1)
         csrasMappingApiMockServer.stubPostMappings(OFFENDER_NUMBER2)
-        // csrasMappingApiMockServer.stubMigrationCount(recordsMigrated = 2)
         migrationResult = performMigration()
       }
 

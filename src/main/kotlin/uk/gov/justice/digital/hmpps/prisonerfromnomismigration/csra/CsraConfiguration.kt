@@ -18,7 +18,6 @@ class CsraConfiguration(
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
   @Value("\${api.timeout:30s}") val timeout: Duration,
 ) {
-
   @Bean
   fun csraApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(apiBaseUri, healthTimeout)
 
