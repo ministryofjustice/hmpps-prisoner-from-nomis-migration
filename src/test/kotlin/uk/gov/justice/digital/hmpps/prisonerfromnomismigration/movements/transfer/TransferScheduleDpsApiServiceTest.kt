@@ -31,7 +31,7 @@ class TransferScheduleDpsApiServiceTest {
   inner class SyncTransferSchedule {
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       dpsTransferSchedulerServer.stubSyncTransferSchedule("A1234BC")
 
       apiService.syncTransferSchedule("A1234BC", syncTransferRequest())
