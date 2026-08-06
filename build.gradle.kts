@@ -251,6 +251,11 @@ val models = listOf(
     testPackageName = "officialvisits",
     url = "https://official-visits-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
   ),
+  ModelConfiguration(
+    name = "transfer-schedule",
+    packageName = "transferschedule",
+    url = "https://transfer-scheduler-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+  ),
 )
 
 tasks {
