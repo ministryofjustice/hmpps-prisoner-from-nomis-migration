@@ -31,6 +31,7 @@ generic-service:
     API_BASE_URL_ORGANISATIONS: https://organisations-api.hmpps.service.justice.gov.uk
     API_BASE_URL_MOVEMENTS_TAPS: https://external-movements-api.hmpps.service.justice.gov.uk
     API_BASE_URL_MOVEMENTS_COURT: https://court-appearance-scheduler-api.hmpps.service.justice.gov.uk
+    API_BASE_URL_MOVEMENTS_TRANSFER: https://transfer-scheduler-api.hmpps.service.justice.gov.uk
     API_BASE_URL_OFFICIALVISITS: https://official-visits-api.hmpps.service.justice.gov.uk
     FEATURE_EVENT_CSRA_ASSESSMENT-UPDATED: false
     FEATURE_EVENT_STAFF_MEMBERS-INSERTED: false
