@@ -57,12 +57,12 @@ class PrisonerBalanceNomisApiServiceTest {
 
       val rootOffenderIds = apiService.getRootOffenderIdsToMigrate(prisonId = null, pageNumber = 0, pageSize = 20)
 
-      assertThat(rootOffenderIds.content).hasSize(3)
-      assertThat(rootOffenderIds.content).containsExactly(10000, 10001, 10002)
-      assertThat(rootOffenderIds.metadata.size).isEqualTo(10)
-      assertThat(rootOffenderIds.metadata.number).isEqualTo(0)
-      assertThat(rootOffenderIds.metadata.totalElements).isEqualTo(3)
-      assertThat(rootOffenderIds.metadata.totalPages).isEqualTo(1)
+      assertThat(rootOffenderIds?.content).hasSize(3)
+      assertThat(rootOffenderIds?.content).containsExactly(10000, 10001, 10002)
+      assertThat(rootOffenderIds?.page?.propertySize).isEqualTo(10)
+      assertThat(rootOffenderIds?.page?.number).isEqualTo(0)
+      assertThat(rootOffenderIds?.page?.totalElements).isEqualTo(3)
+      assertThat(rootOffenderIds?.page?.totalPages).isEqualTo(1)
     }
 
     @Test
@@ -75,6 +75,34 @@ class PrisonerBalanceNomisApiServiceTest {
         getRequestedFor(
           urlEqualTo("/finance/prisoners/ids?page=0&size=3&prisonId=BXI"),
         ),
+      )
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /finance/prisoners/ids/all-from-id")
+  inner class GetPrisonerBalanceIdentifiersFromId {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetPrisonerBalanceIdentifiersFromId(content = listOf(1234))
+
+      apiService.getPrisonerBalanceIdentifiersFromId(rootOffender = 0, prisonId = null, pageSize = 20)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will call the Nomis endpoint`() = runTest {
+      mockServer.stubGetPrisonerBalanceIdentifiersFromId(content = listOf(1234), rootOffenderId = 99)
+
+      apiService.getPrisonerBalanceIdentifiersFromId(rootOffender = 99, prisonId = null, pageSize = 30)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/finance/prisoners/ids/all-from-id"))
+          .withQueryParam("rootOffenderId", equalTo("99"))
+          .withQueryParam("pageSize", equalTo("30")),
       )
     }
   }

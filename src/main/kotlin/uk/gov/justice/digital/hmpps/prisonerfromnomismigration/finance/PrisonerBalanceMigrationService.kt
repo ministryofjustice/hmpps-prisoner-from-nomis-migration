@@ -17,8 +17,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerBalanceMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAccountDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastIdMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -33,14 +33,20 @@ class PrisonerBalanceMigrationService(
   val dpsApiService: FinanceDpsApiService,
   jsonMapper: JsonMapper,
   @Value($$"${prisonerbalance.page.size:1000}") pageSize: Long,
+  @Value($$"${prisonerbalance.parallel.count:8}") getIdsParallelCount: Int,
   @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value($$"${complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${complete-check.count}") completeCheckCount: Int,
-) : ByPageNumberMigrationService<PrisonerBalanceMigrationFilter, Long, PrisonerBalanceMappingDto>(
+  @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
+) : ByLastIdMigrationService<PrisonerBalanceMigrationFilter, Long, PrisonerBalanceMappingDto>(
   mappingService = prisonerBalanceMappingService,
   migrationType = MigrationType.PRISONER_BALANCE,
   pageSize = pageSize,
+  getIdsParallelCount = getIdsParallelCount,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
+  completeCheckRetrySeconds = completeCheckRetrySeconds,
+  completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
   jsonMapper = jsonMapper,
 ) {
   private companion object {
@@ -59,13 +65,29 @@ class PrisonerBalanceMigrationService(
     pageSize = pageSize,
   )
 
+  override suspend fun getPageOfIdsFromId(
+    lastId: Long?,
+    migrationFilter: PrisonerBalanceMigrationFilter,
+    pageSize: Long,
+  ): List<Long> = prisonerBalanceNomisApiService.getPrisonerBalanceIdentifiersFromId(
+    rootOffender = lastId ?: 0,
+    prisonId = migrationFilter.prisonId,
+    pageSize = pageSize,
+  )?.rootOffenderIds ?: emptyList()
+
+  override fun compare(first: Long, second: Long?): Int = first.compareTo(second ?: Long.MAX_VALUE)
+
   override suspend fun getPageOfIds(
     migrationFilter: PrisonerBalanceMigrationFilter,
     pageSize: Long,
     pageNumber: Long,
-  ): List<Long> = getIds(migrationFilter, pageSize, pageNumber).content
+  ): List<Long> = prisonerBalanceNomisApiService.getRootOffenderIdsToMigrate(
+    prisonId = migrationFilter.prisonId,
+    pageSize = pageSize,
+    pageNumber = pageNumber,
+  )?.content ?: emptyList()
 
-  override suspend fun getTotalNumberOfIds(migrationFilter: PrisonerBalanceMigrationFilter): Long = getIds(migrationFilter, 1, 0).metadata.totalElements
+  override suspend fun getTotalNumberOfIds(migrationFilter: PrisonerBalanceMigrationFilter): Long = getIds(migrationFilter, 1, 0)?.page?.totalElements ?: 0
 
   override suspend fun migrateNomisEntity(context: MigrationContext<Long>) {
     val nomisRootOffenderId = context.body
@@ -133,7 +155,7 @@ class PrisonerBalanceMigrationService(
   }
   override fun parseContextFilter(json: String): MigrationMessage<*, PrisonerBalanceMigrationFilter> = jsonMapper.readValue(json)
 
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<PrisonerBalanceMigrationFilter, ByPageNumber>> = jsonMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<PrisonerBalanceMigrationFilter, ByLastId<Long>>> = jsonMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, Long> = jsonMapper.readValue(json)
 

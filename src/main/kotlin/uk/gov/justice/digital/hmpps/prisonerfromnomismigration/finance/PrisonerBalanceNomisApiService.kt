@@ -5,18 +5,20 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.PrisonerBalanceResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagedModelLong
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePagedModel
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.typeReference
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RootOffenderIdsWithLast
 
 @Service
 class PrisonerBalanceNomisApiService(@Qualifier("nomisApiWebClient") webClient: WebClient) {
   private val api = PrisonerBalanceResourceApi(webClient)
 
-  suspend fun getRootOffenderIdsToMigrate(prisonId: String?, pageNumber: Long, pageSize: Long): RestResponsePagedModel<Long> = api
-    .prepare(api.getPrisonerBalanceIdentifiersRequestConfig(page = pageNumber.toInt(), size = pageSize.toInt(), sort = null, prisonId = if (prisonId != null) listOf(prisonId) else null))
-    .retrieve()
-    .bodyToMono(typeReference<RestResponsePagedModel<Long>>())
+  suspend fun getRootOffenderIdsToMigrate(prisonId: String?, pageNumber: Long, pageSize: Long): PagedModelLong? = api
+    .getPrisonerBalanceIdentifiers(page = pageNumber.toInt(), size = pageSize.toInt(), sort = null, prisonId = if (prisonId != null) listOf(prisonId) else null)
+    .awaitSingle()
+
+  suspend fun getPrisonerBalanceIdentifiersFromId(rootOffender: Long, prisonId: String?, pageSize: Long): RootOffenderIdsWithLast? = api
+    .getPrisonerBalanceIdentifiersFromId(rootOffenderId = rootOffender, pageSize = pageSize.toInt(), prisonId = if (prisonId != null) listOf(prisonId) else null)
     .awaitSingle()
 
   suspend fun getPrisonerBalanceForMigration(rootOffenderId: Long): PrisonerBalanceDto = api
