@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -13,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagedModelLong
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAccountDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RootOffenderIdsWithLast
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -36,13 +38,36 @@ class PrisonerBalanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
                 page = PageMetadata(
                   propertySize = pageSize,
                   number = 0,
-                  totalPages = totalElements,
+                  totalPages = (totalElements + pageSize - 1) / pageSize,
                   totalElements = totalElements,
                 ),
               ),
             ),
           ),
       ),
+    )
+  }
+
+  fun stubGetPrisonerBalanceIdentifiersFromId(
+    content: List<Long>,
+    rootOffenderId: Long = 0,
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/finance/prisoners/ids/all-from-id"))
+        .withQueryParam("rootOffenderId", equalTo(rootOffenderId.toString()))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              jsonMapper.writeValueAsString(
+                RootOffenderIdsWithLast(
+                  rootOffenderIds = content,
+                  lastOffenderId = content.lastOrNull() ?: rootOffenderId,
+                ),
+              ),
+            ),
+        ),
     )
   }
 
