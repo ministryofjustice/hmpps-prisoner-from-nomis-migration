@@ -19,7 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 /**
  * See https://dsdmoj.atlassian.net/browse/MAP-3113
  */
-fun CsraGetDto.toDPSCreateCsra() = NomisCsraReview(
+fun CsraGetDto.toDPSCsra() = NomisCsraReview(
   bookingId = bookingId,
   nomisSequence = sequence,
   assessmentPrisonId = assessmentCreationLocation,

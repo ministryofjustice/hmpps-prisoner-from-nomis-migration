@@ -5,7 +5,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -13,6 +12,8 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.anyMap
+import org.mockito.ArgumentMatchers.matches
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -22,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension.Companion.csraApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CsraMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 
@@ -43,7 +45,7 @@ class CsraSyncIntTest(
     @DisplayName("When CSRA was created in DPS")
     inner class DPSCreated {
       @BeforeEach
-      fun setUp() = runTest {
+      fun setUp() {
         awsSqsCsraEventClient.sendMessage(
           csraEventQueueUrl,
           csraEvent(
@@ -98,77 +100,72 @@ class CsraSyncIntTest(
               offenderNo = OFFENDER_ID_DISPLAY,
             ),
           )
+          waitForCompletion()
         }
 
         @Test
         fun `will POST CSRA to DPS`() {
-          await untilAsserted {
-            csraApi.verify(
-              1,
-              postRequestedFor(anyUrl())
-                .withRequestBodyJsonPath("review.bookingId", equalTo(BOOKING_ID.toString()))
-                .withRequestBodyJsonPath("review.nomisSequence", equalTo(SEQUENCE.toString()))
-                .withRequestBodyJsonPath("review.assessmentDate", "2021-02-03")
-                .withRequestBodyJsonPath("review.assessmentPrisonId", "SWI")
-                .withRequestBodyJsonPath("review.assessmentType", "CSR")
-                .withRequestBodyJsonPath("review.calculatedLevel", "STANDARD")
-                .withRequestBodyJsonPath("review.score", "1001")
-                .withRequestBodyJsonPath("review.status", "A")
-                .withRequestBodyJsonPath("review.committeeCode", "GOV")
-                .withRequestBodyJsonPath("review.nextReviewDate", "2021-02-03")
-                .withRequestBodyJsonPath("review.comment", "comment")
-                .withRequestBodyJsonPath("review.placementPrisonId", "placementAgencyId")
-                .withRequestBodyJsonPath("review.createdDateTime", "2024-11-03T04:05:06")
-                .withRequestBodyJsonPath("review.createdBy", "me")
-                .withRequestBodyJsonPath("review.reviewLevel", "LOW")
-                .withRequestBodyJsonPath("review.approvedLevel", "MED")
-                .withRequestBodyJsonPath("review.evaluationDate", "2021-02-03")
-                .withRequestBodyJsonPath("review.evaluationResultCode", "APP")
-                .withRequestBodyJsonPath("review.reviewCommitteeCode", "SECSTATE")
-                .withRequestBodyJsonPath("review.reviewCommitteeComment", "reviewCommitteeComment")
-                .withRequestBodyJsonPath("review.reviewPlacementPrisonId", "reviewPlacementAgencyId")
-                .withRequestBodyJsonPath("review.reviewComment", "reviewComment")
-                .withRequestBodyJsonPath("review.reviewDetails[0].code", "CODE1")
-                .withRequestBodyJsonPath("review.reviewDetails[0].description", "section description")
-                .withRequestBodyJsonPath("review.reviewDetails[0].questions[0].code", "CODE2")
-                .withRequestBodyJsonPath("review.reviewDetails[0].questions[0].description", "question description")
-                .withRequestBodyJsonPath("review.reviewDetails[0].questions[0].responses[0].code", "CODE3")
-                .withRequestBodyJsonPath("review.reviewDetails[0].questions[0].responses[0].answer", "answer")
-                .withRequestBodyJsonPath(
-                  "review.reviewDetails[0].questions[0].responses[0].comment",
-                  "response comment",
-                ),
-            )
-          }
+          csraApi.verify(
+            1,
+            postRequestedFor(anyUrl())
+              .withRequestBodyJsonPath("review.bookingId", equalTo(BOOKING_ID.toString()))
+              .withRequestBodyJsonPath("review.nomisSequence", equalTo(SEQUENCE.toString()))
+              .withRequestBodyJsonPath("review.assessmentDate", "2021-02-03")
+              .withRequestBodyJsonPath("review.assessmentPrisonId", "SWI")
+              .withRequestBodyJsonPath("review.assessmentType", "CSR")
+              .withRequestBodyJsonPath("review.calculatedLevel", "STANDARD")
+              .withRequestBodyJsonPath("review.score", "1001")
+              .withRequestBodyJsonPath("review.status", "A")
+              .withRequestBodyJsonPath("review.committeeCode", "GOV")
+              .withRequestBodyJsonPath("review.nextReviewDate", "2021-02-03")
+              .withRequestBodyJsonPath("review.comment", "comment")
+              .withRequestBodyJsonPath("review.placementPrisonId", "placementAgencyId")
+              .withRequestBodyJsonPath("review.createdDateTime", "2024-11-03T04:05:06")
+              .withRequestBodyJsonPath("review.createdBy", "me")
+              .withRequestBodyJsonPath("review.reviewLevel", "LOW")
+              .withRequestBodyJsonPath("review.approvedLevel", "MED")
+              .withRequestBodyJsonPath("review.evaluationDate", "2021-02-03")
+              .withRequestBodyJsonPath("review.evaluationResultCode", "APP")
+              .withRequestBodyJsonPath("review.reviewCommitteeCode", "SECSTATE")
+              .withRequestBodyJsonPath("review.reviewCommitteeComment", "reviewCommitteeComment")
+              .withRequestBodyJsonPath("review.reviewPlacementPrisonId", "reviewPlacementAgencyId")
+              .withRequestBodyJsonPath("review.reviewComment", "reviewComment")
+              .withRequestBodyJsonPath("review.reviewDetails[0].code", "CODE1")
+              .withRequestBodyJsonPath("review.reviewDetails[0].description", "section description")
+              .withRequestBodyJsonPath("review.reviewDetails[0].questions[0].code", "CODE2")
+              .withRequestBodyJsonPath("review.reviewDetails[0].questions[0].description", "question description")
+              .withRequestBodyJsonPath("review.reviewDetails[0].questions[0].responses[0].code", "CODE3")
+              .withRequestBodyJsonPath("review.reviewDetails[0].questions[0].responses[0].answer", "answer")
+              .withRequestBodyJsonPath(
+                "review.reviewDetails[0].questions[0].responses[0].comment",
+                "response comment",
+              ),
+          )
         }
 
         @Test
         fun `will create mapping between DPS and NOMIS ids`() {
-          await untilAsserted {
-            csraMappingApiMockServer.verify(
-              postRequestedFor(urlPathEqualTo("/mapping/csras"))
-                .withRequestBodyJsonPath("dpsCsraId", equalTo(DPS_ID))
-                .withRequestBodyJsonPath("nomisBookingId", equalTo(BOOKING_ID.toString()))
-                .withRequestBodyJsonPath("nomisSequence", equalTo(SEQUENCE.toString()))
-                .withRequestBodyJsonPath("offenderNo", equalTo(OFFENDER_ID_DISPLAY)),
-            )
-          }
+          csraMappingApiMockServer.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/csras"))
+              .withRequestBodyJsonPath("dpsCsraId", equalTo(DPS_ID))
+              .withRequestBodyJsonPath("nomisBookingId", equalTo(BOOKING_ID.toString()))
+              .withRequestBodyJsonPath("nomisSequence", equalTo(SEQUENCE.toString()))
+              .withRequestBodyJsonPath("offenderNo", equalTo(OFFENDER_ID_DISPLAY)),
+          )
         }
 
         @Test
         fun `will track a telemetry event for success`() {
-          await untilAsserted {
-            verify(telemetryClient).trackEvent(
-              eq("csras-synchronisation-created-success"),
-              check {
-                assertThat(it["dpsCsraId"]).isEqualTo(DPS_ID)
-                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
-                assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
-                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
-              },
-              isNull(),
-            )
-          }
+          verify(telemetryClient).trackEvent(
+            eq("csras-synchronisation-created-success"),
+            check {
+              assertThat(it["dpsCsraId"]).isEqualTo(DPS_ID)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            },
+            isNull(),
+          )
         }
       }
 
@@ -318,6 +315,145 @@ class CsraSyncIntTest(
       }
     }
   }
+
+  @Nested
+  @DisplayName("ASSESSMENT-UPDATED")
+  inner class Updated {
+    @Nested
+    @DisplayName("When property was updated in DPS")
+    inner class DPSUpdated {
+
+      @BeforeEach
+      fun setUp() {
+        awsSqsCsraEventClient.sendMessage(
+          csraEventQueueUrl,
+          csraEvent(
+            eventType = "ASSESSMENT-UPDATED",
+            bookingId = BOOKING_ID,
+            assessmentSeq = SEQUENCE,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        )
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("csras-synchronisation-updated-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
+            },
+            isNull(),
+          )
+        }
+
+        // will not bother getting mapping
+        csraMappingApiMockServer.verify(0, getRequestedFor(anyUrl()))
+        // will not call DPS sync
+        csraApi.verify(0, postRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("When CSRA was created in NOMIS")
+    inner class NomisCreated {
+      @Nested
+      inner class HappyPath {
+        @BeforeEach
+        fun setUp() {
+          csraMappingApiMockServer.stubGetByNomisId(
+            bookingId = BOOKING_ID,
+            sequence = SEQUENCE,
+            CsraMappingDto(
+              dpsCsraId = DPS_ID,
+              nomisBookingId = BOOKING_ID,
+              nomisSequence = SEQUENCE,
+              offenderNo = OFFENDER_ID_DISPLAY,
+              mappingType = CsraMappingDto.MappingType.NOMIS_CREATED,
+            ),
+          )
+          csraNomisApiMockServer.stubGetCsra(bookingId = BOOKING_ID, sequence = SEQUENCE)
+          csraApi.stubSyncCsraUpdate(OFFENDER_ID_DISPLAY, DPS_ID)
+
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(
+              eventType = "ASSESSMENT-UPDATED",
+              bookingId = BOOKING_ID,
+              assessmentSeq = SEQUENCE,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+          waitForCompletion()
+        }
+
+        @Test
+        fun `will POST CSRA to DPS`() {
+          csraApi.verify(
+            1,
+            postRequestedFor(anyUrl())
+              .withRequestBodyJsonPath("csraReviewId", equalTo(DPS_ID))
+              .withRequestBodyJsonPath("review.bookingId", equalTo(BOOKING_ID.toString()))
+              .withRequestBodyJsonPath("review.nomisSequence", equalTo(SEQUENCE.toString()))
+              .withRequestBodyJsonPath("review.assessmentDate", "2021-02-03")
+              .withRequestBodyJsonPath("review.assessmentPrisonId", "SWI")
+              .withRequestBodyJsonPath("review.assessmentType", "CSR")
+              .withRequestBodyJsonPath("review.calculatedLevel", "STANDARD")
+              .withRequestBodyJsonPath("review.score", "1001")
+              .withRequestBodyJsonPath("review.status", "A")
+              .withRequestBodyJsonPath("review.committeeCode", "GOV")
+              .withRequestBodyJsonPath("review.nextReviewDate", "2021-02-03")
+              .withRequestBodyJsonPath("review.comment", "comment")
+              .withRequestBodyJsonPath("review.placementPrisonId", "placementAgencyId")
+              .withRequestBodyJsonPath("review.createdDateTime", "2024-11-03T04:05:06")
+              .withRequestBodyJsonPath("review.createdBy", "me")
+              .withRequestBodyJsonPath("review.reviewLevel", "LOW")
+              .withRequestBodyJsonPath("review.approvedLevel", "MED")
+              .withRequestBodyJsonPath("review.evaluationDate", "2021-02-03")
+              .withRequestBodyJsonPath("review.evaluationResultCode", "APP")
+              .withRequestBodyJsonPath("review.reviewCommitteeCode", "SECSTATE")
+              .withRequestBodyJsonPath("review.reviewCommitteeComment", "reviewCommitteeComment")
+              .withRequestBodyJsonPath("review.reviewPlacementPrisonId", "reviewPlacementAgencyId")
+              .withRequestBodyJsonPath("review.reviewComment", "reviewComment")
+              .withRequestBodyJsonPath("review.reviewDetails[0].code", "CODE1")
+              .withRequestBodyJsonPath("review.reviewDetails[0].description", "section description")
+              .withRequestBodyJsonPath("review.reviewDetails[0].questions[0].code", "CODE2")
+              .withRequestBodyJsonPath("review.reviewDetails[0].questions[0].description", "question description")
+              .withRequestBodyJsonPath("review.reviewDetails[0].questions[0].responses[0].code", "CODE3")
+              .withRequestBodyJsonPath("review.reviewDetails[0].questions[0].responses[0].answer", "answer")
+              .withRequestBodyJsonPath(
+                "review.reviewDetails[0].questions[0].responses[0].comment",
+                "response comment",
+              ),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          verify(telemetryClient).trackEvent(
+            eq("csras-synchronisation-updated-success"),
+            check {
+              assertThat(it["dpsCsraId"]).isEqualTo(DPS_ID)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+  }
+
+  private fun waitForCompletion() {
+    await untilAsserted {
+      verify(telemetryClient).trackEvent(matches("csras-synchronisation-(cre|upd)ated-success"), anyMap(), isNull())
+    }
+  }
 }
 
 fun csraEvent(
@@ -328,7 +464,7 @@ fun csraEvent(
   auditModuleName: String? = "OIDSTUFF",
 ) = """{
   "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z",
-  "Message": "{\"eventType\":\"$eventType\",\"assessmentType\":\"CSR\",\"eventDatetime\":\"2024-07-10T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"$eventType\",\"assessmentSeq\": $assessmentSeq,\"auditModuleName\":\"$auditModuleName\" }",
+  "Message": "{\"eventType\":\"$eventType\",\"assessmentType\":\"CSR\",\"eventDatetime\":\"2024-07-10T15:00:25.489964\",\"bookingId\": $bookingId,\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"$eventType\",\"assessmentSeq\": $assessmentSeq,\"auditModuleName\":\"$auditModuleName\" }",
   "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events",
   "MessageAttributes": {
     "eventType": {"Type": "String", "Value": "$eventType"},
