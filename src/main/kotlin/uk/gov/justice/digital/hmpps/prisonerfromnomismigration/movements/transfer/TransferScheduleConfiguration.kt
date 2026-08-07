@@ -13,6 +13,8 @@ class TransferScheduleConfiguration(
   @Value("\${api.base.url.movements-transfer}") val transferSchedulerUrl: String,
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
   @Value("\${api.movements-transfer-timeout:10s}") val dpsTimeout: Duration,
+  @Value("\${api.movements-transfer-mapping-timeout:60s}") val mappingTimeout: Duration,
+  @Value("\${api.base.url.mapping}") val mappingApiBaseUri: String,
 ) {
 
   @Bean
@@ -20,4 +22,7 @@ class TransferScheduleConfiguration(
     authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
     builder: WebClient.Builder,
   ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "movements-transfer-api", url = transferSchedulerUrl, dpsTimeout)
+
+  @Bean
+  fun transferScheduleMappingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "nomis-mapping-api", url = mappingApiBaseUri, mappingTimeout)
 }
