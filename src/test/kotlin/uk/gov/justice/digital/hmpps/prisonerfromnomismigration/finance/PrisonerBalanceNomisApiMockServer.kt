@@ -38,7 +38,7 @@ class PrisonerBalanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
                 page = PageMetadata(
                   propertySize = pageSize,
                   number = 0,
-                  totalPages = (totalElements / pageSize) + 1,
+                  totalPages = (totalElements + pageSize - 1) / pageSize,
                   totalElements = totalElements,
                 ),
               ),

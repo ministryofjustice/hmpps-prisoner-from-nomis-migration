@@ -73,7 +73,7 @@ class PrisonerBalanceMigrationService(
     rootOffender = lastId ?: 0,
     prisonId = migrationFilter.prisonId,
     pageSize = pageSize,
-  )?.rootOffenderIds ?: emptyList()
+  )!!.rootOffenderIds!!
 
   override fun compare(first: Long, second: Long?): Int = first.compareTo(second ?: Long.MAX_VALUE)
 

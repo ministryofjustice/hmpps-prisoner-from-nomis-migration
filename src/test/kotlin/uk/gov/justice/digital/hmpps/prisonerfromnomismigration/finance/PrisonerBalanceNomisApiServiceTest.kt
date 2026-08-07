@@ -55,7 +55,7 @@ class PrisonerBalanceNomisApiServiceTest {
     fun `will return rootOffenderIds and paging data`() = runTest {
       mockServer.stubGetRootOffenderIdsToMigrate(3, 10)
 
-      val rootOffenderIds = apiService.getRootOffenderIdsToMigrate(prisonId = null, pageNumber = 0, pageSize = 20)
+      val rootOffenderIds = apiService.getRootOffenderIdsToMigrate(prisonId = null, pageNumber = 0, pageSize = 10)
 
       assertThat(rootOffenderIds?.content).hasSize(3)
       assertThat(rootOffenderIds?.content).containsExactly(10000, 10001, 10002)
