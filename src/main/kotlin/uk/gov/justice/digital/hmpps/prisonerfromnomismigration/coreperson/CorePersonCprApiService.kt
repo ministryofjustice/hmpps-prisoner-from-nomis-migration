@@ -49,12 +49,12 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .awaitBodyOrLogAndRethrowBadRequest()
 
   suspend fun syncCreateOffenderBelief(prisonNumber: String, religion: PrisonReligionHistory): PrisonReligionSaveResponse = personApi
-    .prepare(personApi.savePrisonReligionRequestConfig(prisonNumber, religion))
+    .prepare(personApi.savePrisonReligionSysconRequestConfig(prisonNumber, religion))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
   suspend fun syncUpdateOffenderBelief(prisonNumber: String, cprReligionId: String, religion: PrisonReligionUpdateRequest): ResponseEntity<Void> = personApi
-    .prepare(personApi.updatePrisonReligionRequestConfig(prisonNumber, cprReligionId, religion))
+    .prepare(personApi.updatePrisonReligionSysconRequestConfig(prisonNumber, cprReligionId, religion))
     .retrieve()
     .awaitBodilessEntity()
 }
