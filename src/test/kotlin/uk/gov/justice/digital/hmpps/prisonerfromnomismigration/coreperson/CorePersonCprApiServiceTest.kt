@@ -72,7 +72,7 @@ class CorePersonCprApiServiceTest {
       apiService.syncCreateOffenderBelief("A1234BC", prisonReligionRequest())
 
       cprCorePersonServer.verify(
-        postRequestedFor(urlPathEqualTo("/person/prison/A1234BC/religion")),
+        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/religion")),
       )
     }
 
@@ -121,7 +121,7 @@ class CorePersonCprApiServiceTest {
       apiService.syncUpdateOffenderBelief("A1234BC", "cprId", prisonReligionUpdateRequest())
 
       cprCorePersonServer.verify(
-        putRequestedFor(urlPathEqualTo("/person/prison/A1234BC/religion/cprId")),
+        putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/religion/cprId")),
       )
     }
 
