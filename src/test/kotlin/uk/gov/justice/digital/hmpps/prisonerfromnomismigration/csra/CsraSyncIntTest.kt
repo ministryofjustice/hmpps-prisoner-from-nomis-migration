@@ -5,7 +5,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
-import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -46,7 +45,7 @@ class CsraSyncIntTest(
     @DisplayName("When CSRA was created in DPS")
     inner class DPSCreated {
       @BeforeEach
-      fun setUp() = runTest {
+      fun setUp() {
         awsSqsCsraEventClient.sendMessage(
           csraEventQueueUrl,
           csraEvent(
@@ -325,7 +324,7 @@ class CsraSyncIntTest(
     inner class DPSUpdated {
 
       @BeforeEach
-      fun setUp() = runTest {
+      fun setUp() {
         awsSqsCsraEventClient.sendMessage(
           csraEventQueueUrl,
           csraEvent(
@@ -465,7 +464,7 @@ fun csraEvent(
   auditModuleName: String? = "OIDSTUFF",
 ) = """{
   "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z",
-  "Message": "{\"eventType\":\"$eventType\",\"assessmentType\":\"CSR\",\"eventDatetime\":\"2024-07-10T15:00:25.489964\",\"bookingId\": \"$bookingId\",\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"$eventType\",\"assessmentSeq\": $assessmentSeq,\"auditModuleName\":\"$auditModuleName\" }",
+  "Message": "{\"eventType\":\"$eventType\",\"assessmentType\":\"CSR\",\"eventDatetime\":\"2024-07-10T15:00:25.489964\",\"bookingId\": $bookingId,\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"$eventType\",\"assessmentSeq\": $assessmentSeq,\"auditModuleName\":\"$auditModuleName\" }",
   "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events",
   "MessageAttributes": {
     "eventType": {"Type": "String", "Value": "$eventType"},
