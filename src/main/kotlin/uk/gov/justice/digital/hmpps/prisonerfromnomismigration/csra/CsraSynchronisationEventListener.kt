@@ -8,6 +8,7 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSRA_SYNC_QUEUE_ID
 import java.time.LocalDateTime
@@ -46,13 +47,15 @@ class CsraSynchronisationEventListener(
             log.info("Feature switch is disabled for csra event {}", eventType)
           }
         }
+
+        RETRY_SYNCHRONISATION_MAPPING.name -> csraSyncService.retryCreateMapping(sqsMessage.Message.fromJson())
       }
     }
   }
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
 }
 
-data class AssessmentUpdateEvent(
+data class AssessmentEvent(
   val eventType: String,
   val eventDatetime: LocalDateTime,
   val offenderIdDisplay: String,

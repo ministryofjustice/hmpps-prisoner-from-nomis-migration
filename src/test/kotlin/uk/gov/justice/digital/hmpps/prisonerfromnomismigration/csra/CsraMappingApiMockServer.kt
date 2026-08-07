@@ -166,6 +166,10 @@ class CsraMappingApiMockServer(private val jsonMapper: JsonMapper) {
     mappingApi.stubFor(post("/mapping/csras").willReturn(jsonResponse(error, 409)))
   }
 
+  fun stubPostMappingFailureFollowedBySuccess() {
+    mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/csras", successResponse = status(201))
+  }
+
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)

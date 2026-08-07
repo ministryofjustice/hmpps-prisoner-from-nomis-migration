@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.status
+import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
@@ -28,14 +29,23 @@ import java.time.LocalDateTime
 @Component
 class CsraNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetCsra(
-    csraId: Long = 1001,
-    bookingId: Long = 123456,
-    csra: CsraGetDto = csraGetDto(bookingId),
+    bookingId: Long,
+    sequence: Int = 1,
+    body: CsraGetDto = csraGetDto(bookingId),
   ) {
     nomisApi.stubFor(
-      get(urlEqualTo("/csras/$csraId")).willReturn(
-        okJson(jsonMapper.writeValueAsString(csra)),
-      ),
+      get(urlEqualTo("/prisoners/booking-id/$bookingId/csra/$sequence"))
+        .willReturn(okJson(jsonMapper.writeValueAsString(body))),
+    )
+  }
+
+  fun stubGetCsraError(
+    bookingId: Long,
+    sequence: Int = 1,
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/prisoners/booking-id/$bookingId/csra/$sequence"))
+        .willReturn(status(500)),
     )
   }
 

@@ -11,7 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CsraMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AssessmentType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
@@ -27,10 +27,8 @@ class CsraSyncService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  val csraTypeNames = AssessmentType.entries.map { it.name }
-
-  suspend fun create(event: AssessmentUpdateEvent) {
-    if (event.assessmentType !in csraTypeNames) {
+  suspend fun create(event: AssessmentEvent) {
+    if (event.assessmentType == "CATEGORY") {
       return
     }
     if (event.auditModuleName.originatesInDps()) {
@@ -63,17 +61,17 @@ class CsraSyncService(
     } catch (e: Exception) {
       telemetryClient.trackEvent(
         "csras-synchronisation-created-failed",
-        event.toTelemetryProperties() + mapOf("error" to (e.message ?: "unknown error")),
+        event.toTelemetryProperties() + ("error" to (e.message ?: e.javaClass.name)),
       )
       throw e
     }
   }
 
-  suspend fun update(event: AssessmentUpdateEvent) {
+  suspend fun update(event: AssessmentEvent) {
     // TODO()
   }
 
-  suspend fun delete(event: AssessmentUpdateEvent) {
+  suspend fun delete(event: AssessmentEvent) {
     // TODO()
   }
 
@@ -82,7 +80,7 @@ class CsraSyncService(
     MAPPING_FAILED,
   }
 
-  suspend fun tryToCreateMapping(event: AssessmentUpdateEvent, csraId: String): MappingResponse {
+  private suspend fun tryToCreateMapping(event: AssessmentEvent, csraId: String): MappingResponse {
     val mapping = CsraMappingDto(
       dpsCsraId = csraId,
       nomisBookingId = event.bookingId,
@@ -91,25 +89,7 @@ class CsraSyncService(
       mappingType = CsraMappingDto.MappingType.NOMIS_CREATED,
     )
     try {
-      csraMappingApiService.createMapping(
-        mapping,
-        object : ParameterizedTypeReference<DuplicateErrorResponse<CsraMappingDto>>() {},
-      ).also {
-        if (it.isError) {
-          val duplicateErrorDetails = (it.errorResponse!!).moreInfo
-          telemetryClient.trackEvent(
-            "csras-from-nomis-synch-duplicate",
-            mapOf(
-              "duplicateDpsCsraId" to duplicateErrorDetails.duplicate.dpsCsraId,
-              "duplicateBookingId" to duplicateErrorDetails.duplicate.nomisBookingId.toString(),
-              "duplicateSequence" to duplicateErrorDetails.duplicate.nomisSequence.toString(),
-              "existingDpsCsraId" to duplicateErrorDetails.existing.dpsCsraId,
-              "existingBookingId" to duplicateErrorDetails.existing.nomisBookingId.toString(),
-              "existingSequence" to duplicateErrorDetails.existing.nomisSequence.toString(),
-            ),
-          )
-        }
-      }
+      createMapping(mapping)
       return MappingResponse.MAPPING_CREATED
     } catch (e: Exception) {
       log.error(
@@ -120,14 +100,49 @@ class CsraSyncService(
         messageType = RETRY_SYNCHRONISATION_MAPPING.name,
         synchronisationType = SynchronisationType.CSRAS,
         message = mapping,
-        telemetryAttributes = event.toTelemetryProperties(csraId),
+        telemetryAttributes = event.toTelemetryProperties(csraId) + ("original-error" to (e.message ?: e.javaClass.name)),
       )
       return MappingResponse.MAPPING_FAILED
     }
   }
+
+  private suspend fun createMapping(mapping: CsraMappingDto) {
+    csraMappingApiService.createMapping(
+      mapping,
+      object : ParameterizedTypeReference<DuplicateErrorResponse<CsraMappingDto>>() {},
+    ).also {
+      if (it.isError) {
+        val duplicateErrorDetails = (it.errorResponse!!).moreInfo
+        telemetryClient.trackEvent(
+          "csras-from-nomis-sync-duplicate",
+          mapOf(
+            "duplicateDpsCsraId" to duplicateErrorDetails.duplicate.dpsCsraId,
+            "duplicateBookingId" to duplicateErrorDetails.duplicate.nomisBookingId.toString(),
+            "duplicateSequence" to duplicateErrorDetails.duplicate.nomisSequence.toString(),
+            "existingDpsCsraId" to duplicateErrorDetails.existing.dpsCsraId,
+            "existingBookingId" to duplicateErrorDetails.existing.nomisBookingId.toString(),
+            "existingSequence" to duplicateErrorDetails.existing.nomisSequence.toString(),
+          ),
+        )
+      }
+    }
+  }
+
+  suspend fun retryCreateMapping(retryMessage: InternalMessage<CsraMappingDto>) {
+    try {
+      createMapping(retryMessage.body)
+      telemetryClient.trackEvent("csras-mapping-created-success", retryMessage.telemetryAttributes)
+    } catch (e: Exception) {
+      telemetryClient.trackEvent(
+        "csras-mapping-created-failure",
+        retryMessage.telemetryAttributes + ("error" to (e.message ?: e.javaClass.name)),
+      )
+      throw e
+    }
+  }
 }
 
-private fun AssessmentUpdateEvent.toTelemetryProperties(
+private fun AssessmentEvent.toTelemetryProperties(
   dpsCsraId: String? = null,
   mappingFailed: Boolean? = null,
 ) = mapOf(
@@ -138,5 +153,5 @@ private fun AssessmentUpdateEvent.toTelemetryProperties(
   if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap()
   )
 
-private fun AssessmentUpdateEvent.auditMissing() = auditModuleName == null
-private fun AssessmentUpdateEvent.isSourcedFromDPS() = auditModuleName.originatesInDps()
+private fun AssessmentEvent.auditMissing() = auditModuleName == null
+private fun AssessmentEvent.isSourcedFromDPS() = auditModuleName.originatesInDps()
