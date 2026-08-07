@@ -98,7 +98,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     stubFor(
-      post("/person/prison/$prisonNumber/religion")
+      post("/syscon-sync/person/$prisonNumber/religion")
         .willReturn(
           aResponse()
             .withStatus(status.value())
@@ -114,7 +114,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     status: HttpStatus = HttpStatus.NO_CONTENT,
   ) {
     stubFor(
-      put("/person/prison/$prisonNumber/religion/$cprId")
+      put("/syscon-sync/person/$prisonNumber/religion/$cprId")
         .willReturn(
           aResponse()
             .withStatus(status.value())

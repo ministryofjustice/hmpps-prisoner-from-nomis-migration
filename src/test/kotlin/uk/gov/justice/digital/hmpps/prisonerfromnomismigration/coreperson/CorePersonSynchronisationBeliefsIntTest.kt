@@ -87,7 +87,7 @@ class CorePersonSynchronisationBeliefsIntTest(
             verifyNomis(offenderNo = "A1234AA")
             verifyMappingExists(nomisPrisonNumber = "A1234AA")
             cprApi.verify(
-              postRequestedFor(urlPathEqualTo("/person/prison/A1234AA/religion"))
+              postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234AA/religion"))
                 .withRequestBodyJsonPath("nomisReligionId", 1)
                 .withRequestBodyJsonPath("current", true)
                 .withRequestBodyJsonPath("religionCode", "ZORO")
@@ -306,7 +306,7 @@ class CorePersonSynchronisationBeliefsIntTest(
           verifyNomis(offenderNo = "A1234AA")
           verifyMappingCheck(nomisId = 1)
           cprApi.verify(
-            postRequestedFor(urlPathEqualTo("/person/prison/A1234AA/religion"))
+            postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234AA/religion"))
               .withRequestBodyJsonPath("nomisReligionId", 1)
               .withRequestBodyJsonPath("current", true)
               .withRequestBodyJsonPath("religionCode", "ZORO")
@@ -359,7 +359,7 @@ class CorePersonSynchronisationBeliefsIntTest(
           verifyNomis(offenderNo = "A1234AA")
           verifyMappingCheck(nomisId = 2)
           cprApi.verify(
-            putRequestedFor(urlPathEqualTo("/person/prison/A1234AA/religion/123456"))
+            putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234AA/religion/123456"))
               .withRequestBodyJsonPath("comments", "No longer believes in Zoroastrianism")
               .withRequestBodyJsonPath("modifyUserId", "KOFE_MOD")
               .withRequestBodyJsonPath("modifyDateTime", "2017-08-01T10:55:00"),
@@ -387,7 +387,7 @@ class CorePersonSynchronisationBeliefsIntTest(
     nomisApi.verify(count, getRequestedFor(urlPathMatching("/core-person/$offenderNo/religions")))
   }
   private fun verifyCpr(count: Int = 1) {
-    cprApi.verify(count, postRequestedFor(urlPathMatching("/person/prison/A1234AA/religion")))
+    cprApi.verify(count, postRequestedFor(urlPathMatching("/syscon-sync/person/A1234AA/religion")))
   }
 
   private fun verifyMappingExists(nomisPrisonNumber: String = "") {
