@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra
 
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -13,5 +14,7 @@ class CsraMappingApiService(
 ) : MigrationMapping<CsraMappingDto>("/mapping/csras", webClient) {
   private val api = CsraMappingResourceApi(webClient)
 
-  // TODO
+  suspend fun getMappingByNomisId(bookingId: Long, sequence: Int) = api
+    .getCsraMappingByNomisId(bookingId = bookingId, sequence = sequence)
+    .awaitSingle()
 }
