@@ -314,7 +314,6 @@ class CsraMigrationIntTest(
     inner class ErrorDpsFailure {
       @BeforeAll
       fun setUp() {
-        println("START OF SETUP")
         setupMigrationTest()
 
         nomisApi.stubGetPrisonerIds(
@@ -332,12 +331,10 @@ class CsraMigrationIntTest(
         await untilCallTo {
           awsSqsCsraMigrationDlqClient.countMessagesOnQueue(csraQueueMigrationDlqUrl).get()
         } matches { it == 1 }
-        println("END OF SETUP")
       }
 
       @Test
       fun `will POST the csras to DPS twice as per dlqMaxReceiveCount, but not mappings`() {
-        println("START OF 'will POST the csras' TEST")
         await untilAsserted {
           csraApi.verify(
             2,
@@ -348,12 +345,10 @@ class CsraMigrationIntTest(
             postRequestedFor(urlPathEqualTo("/mapping/csras/${OFFENDER_NUMBER1}/all")),
           )
         }
-        println("END OF 'will POST the csras' TEST")
       }
 
       @Test
       fun `failure telemetry is posted`() {
-        println("START OF 'failure telemetry' TEST")
         verify(telemetryClient, atLeast(2)).trackEvent(
           eq("csras-migration-entity-failed"),
           check {
