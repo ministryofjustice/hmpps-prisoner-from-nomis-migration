@@ -86,7 +86,7 @@ class CsraMigrationService(
       val csrasToMigrate = csraNomisApiService
         .getCsras(offenderNo)
         .csras
-        .map { it.toDPSCreateCsra() }
+        .map { it.toDPSCsra() }
 
       csraApiService.migratePrisoner(offenderNo, csrasToMigrate)
         .also { migrationResultList ->

@@ -7,22 +7,29 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CsraMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.util.UUID
+
+private const val TELEMETRY_PREFIX = "csras-synchronisation"
 
 @Service
 class CsraSyncService(
   private val csraNomisApiService: CsraNomisApiService,
   private val csraDpsApiService: CsraDpsApiService,
   private val csraMappingApiService: CsraMappingApiService,
-  private val telemetryClient: TelemetryClient,
+  override val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
-) {
+) : TelemetryEnabled {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
@@ -31,17 +38,14 @@ class CsraSyncService(
     if (event.assessmentType == "CATEGORY") {
       return
     }
-    if (event.auditModuleName.originatesInDps()) {
-      telemetryClient.trackEvent("csras-synchronisation-created-skipped", event.toTelemetryProperties())
-      return
-    } else if (event.auditMissing()) {
-      telemetryClient.trackEvent("csras-synchronisation-created-skipped-null", event.toTelemetryProperties())
+    if (event.originatesInDpsOrHasMissingAudit) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-created-skipped", event.toTelemetryProperties())
       return
     }
     try {
       val nomisCsra = csraNomisApiService.getCsra(event.bookingId, event.assessmentSeq)
 
-      csraDpsApiService.sync(event.offenderIdDisplay, CsraSyncRequest(nomisCsra.toDPSCreateCsra()))
+      csraDpsApiService.sync(event.offenderIdDisplay, CsraSyncRequest(nomisCsra.toDPSCsra()))
         .apply {
           if (!this.created) {
             throw IllegalStateException("Csra ${event.bookingId} already exists in DPS")
@@ -50,7 +54,7 @@ class CsraSyncService(
           tryToCreateMapping(event, this.csraReviewId.toString())
             .also { mappingCreateResult ->
               telemetryClient.trackEvent(
-                "csras-synchronisation-created-success",
+                "$TELEMETRY_PREFIX-created-success",
                 event.toTelemetryProperties(
                   dpsCsraId = this.csraReviewId.toString(),
                   mappingFailed = mappingCreateResult == MappingResponse.MAPPING_FAILED,
@@ -60,7 +64,7 @@ class CsraSyncService(
         }
     } catch (e: Exception) {
       telemetryClient.trackEvent(
-        "csras-synchronisation-created-failed",
+        "$TELEMETRY_PREFIX-created-failed",
         event.toTelemetryProperties() + ("error" to (e.message ?: e.javaClass.name)),
       )
       throw e
@@ -68,7 +72,31 @@ class CsraSyncService(
   }
 
   suspend fun update(event: AssessmentEvent) {
-    // TODO()
+    val telemetryName = "$TELEMETRY_PREFIX-updated"
+    val (_, _, offenderIdDisplay, bookingId, assessmentSeq) = event
+    val telemetry = telemetryOf(
+      "bookingId" to bookingId.toString(),
+      "sequence" to assessmentSeq.toString(),
+      "offenderNo" to offenderIdDisplay,
+    )
+    if (event.originatesInDpsOrHasMissingAudit) {
+      telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
+      return
+    }
+    track(telemetryName, telemetry) {
+      val nomisData = csraNomisApiService.getCsra(bookingId, assessmentSeq)
+      csraMappingApiService.getMappingByNomisId(bookingId, assessmentSeq)
+        .also { mapping ->
+          telemetry["dpsCsraId"] = mapping.dpsCsraId
+          csraDpsApiService.sync(
+            offenderIdDisplay,
+            CsraSyncRequest(
+              review = nomisData.toDPSCsra(),
+              csraReviewId = UUID.fromString(mapping.dpsCsraId),
+            ),
+          )
+        }
+    }
   }
 
   suspend fun delete(event: AssessmentEvent) {
