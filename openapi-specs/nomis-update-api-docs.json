@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-04.4359.90ae44f"
+    "version" : "2026-08-07.4412.548f65c"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -181,6 +181,26 @@
           "schema" : {
             "type" : "string",
             "description" : "The DPS ID of the appearance to be resynchronised"
+          }
+        }, {
+          "name" : "force-clone",
+          "in" : "query",
+          "description" : "Force clone of case when on old booking, used for future dated appearance only",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false,
+            "description" : "Force clone of case when on old booking, used for future dated appearance only"
+          }
+        }, {
+          "name" : "force-prevent-clone",
+          "in" : "query",
+          "description" : "Prevent clone of case when on old booking",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false,
+            "description" : "Prevent clone of case when on old booking"
           }
         } ],
         "responses" : {
