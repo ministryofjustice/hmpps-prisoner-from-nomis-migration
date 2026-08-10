@@ -77,6 +77,20 @@ class PrisonerBalanceNomisApiServiceTest {
         ),
       )
     }
+
+    @Test
+    internal fun `will not pass prisonId when set to an empty string`() = runTest {
+      mockServer.stubGetRootOffenderIdsToMigrate(1, 20)
+
+      apiService.getRootOffenderIdsToMigrate(prisonId = "", pageNumber = 0, pageSize = 3)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/finance/prisoners/ids"))
+          .withQueryParam("page", equalTo("0"))
+          .withQueryParam("size", equalTo("3"))
+          .withoutQueryParam("prisonId"),
+      )
+    }
   }
 
   @Nested
@@ -103,6 +117,20 @@ class PrisonerBalanceNomisApiServiceTest {
         getRequestedFor(urlPathEqualTo("/finance/prisoners/ids/all-from-id"))
           .withQueryParam("rootOffenderId", equalTo("99"))
           .withQueryParam("pageSize", equalTo("30")),
+      )
+    }
+
+    @Test
+    internal fun `will not pass prisonId when set to an empty string`() = runTest {
+      mockServer.stubGetPrisonerBalanceIdentifiersFromId(content = listOf(1234), rootOffenderId = 99)
+
+      apiService.getPrisonerBalanceIdentifiersFromId(rootOffender = 99, prisonId = "", pageSize = 30)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/finance/prisoners/ids/all-from-id"))
+          .withQueryParam("rootOffenderId", equalTo("99"))
+          .withQueryParam("pageSize", equalTo("30"))
+          .withoutQueryParam("prisonId"),
       )
     }
   }

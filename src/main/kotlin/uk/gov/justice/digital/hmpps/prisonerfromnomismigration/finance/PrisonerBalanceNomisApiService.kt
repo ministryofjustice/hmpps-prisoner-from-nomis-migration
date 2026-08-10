@@ -14,11 +14,11 @@ class PrisonerBalanceNomisApiService(@Qualifier("nomisApiWebClient") webClient: 
   private val api = PrisonerBalanceResourceApi(webClient)
 
   suspend fun getRootOffenderIdsToMigrate(prisonId: String?, pageNumber: Long, pageSize: Long): PagedModelLong? = api
-    .getPrisonerBalanceIdentifiers(page = pageNumber.toInt(), size = pageSize.toInt(), sort = null, prisonId = if (prisonId != null) listOf(prisonId) else null)
+    .getPrisonerBalanceIdentifiers(page = pageNumber.toInt(), size = pageSize.toInt(), sort = null, prisonId = prisonId.takeUnless { it.isNullOrBlank() }?.let(::listOf))
     .awaitSingle()
 
   suspend fun getPrisonerBalanceIdentifiersFromId(rootOffender: Long, prisonId: String?, pageSize: Long): RootOffenderIdsWithLast? = api
-    .getPrisonerBalanceIdentifiersFromId(rootOffenderId = rootOffender, pageSize = pageSize.toInt(), prisonId = if (prisonId != null) listOf(prisonId) else null)
+    .getPrisonerBalanceIdentifiersFromId(rootOffenderId = rootOffender, pageSize = pageSize.toInt(), prisonId = prisonId.takeUnless { it.isNullOrBlank() }?.let(::listOf))
     .awaitSingle()
 
   suspend fun getPrisonerBalanceForMigration(rootOffenderId: Long): PrisonerBalanceDto = api
