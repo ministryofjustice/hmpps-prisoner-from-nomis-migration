@@ -21,3 +21,12 @@ internal fun String.toDpsUser() = when (this) {
   "PRISONER_MANAGER_API" -> "SYS"
   else -> this
 }
+
+data class ScheduledMovementEvent(
+  val eventId: Long,
+  val bookingId: Long,
+  val offenderIdDisplay: String,
+  val eventMovementType: MovementType,
+  val directionCode: DirectionCode,
+  override val auditModuleName: String,
+) : EventAudited

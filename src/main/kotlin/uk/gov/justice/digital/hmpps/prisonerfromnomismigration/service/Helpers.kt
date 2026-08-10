@@ -50,6 +50,7 @@ const val PRISONERRESTRICTIONS_DOMAIN_SYNC_QUEUE_ID = "domaineventprisonerrestri
 const val PROPERTY_SYNC_QUEUE_ID = "eventproperty"
 const val SENTENCING_ADJUSTMENTS_SYNC_QUEUE_ID = "eventsentencing"
 const val STAFF_SYNC_QUEUE_ID = "eventstaff"
+const val TRANSFERCHEDULER_SYNC_QUEUE_ID = "eventtransfermovements"
 const val VISITS_SYNC_QUEUE_ID = "eventvisits"
 const val VISIT_BALANCE_SYNC_QUEUE_ID = "eventvisitbalance"
 
