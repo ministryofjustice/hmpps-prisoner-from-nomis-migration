@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-08-06.4519.918293a"
+    "version" : "2026-08-07.4551.2a28577"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -1754,6 +1754,60 @@
           }
         }
       },
+      "CanonicalSearchIdentifiers" : {
+        "type" : "object",
+        "properties" : {
+          "crn" : {
+            "type" : [ "string", "null" ]
+          },
+          "prisonNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "defendantId" : {
+            "type" : [ "string", "null" ]
+          },
+          "cid" : {
+            "type" : [ "string", "null" ]
+          },
+          "pncs" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "cros" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "nationalInsuranceNumbers" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "driverLicenseNumbers" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "arrestSummonsNumbers" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "otherIdentifiers" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "arrestSummonsNumbers", "cros", "driverLicenseNumbers", "nationalInsuranceNumbers", "otherIdentifiers", "pncs" ]
+      },
       "CanonicalSex" : {
         "type" : "object",
         "properties" : {
@@ -1817,10 +1871,7 @@
             }
           },
           "identifiers" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/SearchIdentifier"
-            }
+            "$ref" : "#/components/schemas/CanonicalSearchIdentifiers"
           },
           "sourceSystem" : {
             "type" : "string",
@@ -1851,22 +1902,6 @@
           }
         },
         "required" : [ "addresses", "aliases", "identifiers", "linkedRecords", "name", "sourceSystem", "status" ]
-      },
-      "SearchIdentifier" : {
-        "type" : "object",
-        "properties" : {
-          "type" : {
-            "type" : "string",
-            "enum" : [ "PNC", "CRO", "NATIONAL_INSURANCE_NUMBER", "DRIVER_LICENSE_NUMBER", "ARREST_SUMMONS_NUMBER", "AAMR", "ACC", "APNC", "AMRL", "ASN", "URN", "DRL", "DNOMS", "XIMMN", "XNOMS", "IMMN", "DOFF", "LCRN", "LBCN", "LIFN", "MFCRN", "MTCRN", "MSVN", "NHS", "NOMS", "OTHR", "PCRN", "PARN", "PST", "AI02", "PRNOMS", "SPNC", "NPNC", "VISO", "YCRN", "UNKNOWN" ]
-          },
-          "value" : {
-            "type" : [ "string", "null" ]
-          },
-          "comment" : {
-            "type" : [ "string", "null" ]
-          }
-        },
-        "required" : [ "type" ]
       },
       "SearchName" : {
         "type" : "object",
