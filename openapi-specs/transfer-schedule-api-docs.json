@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-06.184.90d33a1"
+    "version" : "2026-08-07.197.0f34aef"
   },
   "servers" : [ {
     "url" : "https://transfer-scheduler-api-dev.hmpps.service.justice.gov.uk",
@@ -538,6 +538,34 @@
           }
         }
       }
+    },
+    "/integrations/transfers/{id}" : {
+      "get" : {
+        "tags" : [ "Integrations" ],
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_TRANSFER_SCHEDULER__TRANSFER__RO\n* ROLE_TRANSFER_SCHEDULER__TRANSFER__RW",
+        "operationId" : "getTransferForIntegration",
+        "parameters" : [ {
+          "name" : "id",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IntegrationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components" : {
@@ -637,6 +665,21 @@
             "comments" : {
               "type" : "string",
               "nullable" : true
+            }
+          }
+        } ]
+      },
+      "ApplyScheduleStart" : {
+        "required" : [ "start" ],
+        "type" : "object",
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/TransferAction"
+        }, {
+          "type" : "object",
+          "properties" : {
+            "start" : {
+              "type" : "string",
+              "format" : "date-time"
             }
           }
         } ]
@@ -741,21 +784,6 @@
           }
         } ]
       },
-      "RescheduleTransfer" : {
-        "required" : [ "start" ],
-        "type" : "object",
-        "allOf" : [ {
-          "$ref" : "#/components/schemas/TransferAction"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "start" : {
-              "type" : "string",
-              "format" : "date-time"
-            }
-          }
-        } ]
-      },
       "ScheduleTransfer" : {
         "required" : [ "start" ],
         "type" : "object",
@@ -809,6 +837,8 @@
               }, {
                 "$ref" : "#/components/schemas/ApplyScheduleComments"
               }, {
+                "$ref" : "#/components/schemas/ApplyScheduleStart"
+              }, {
                 "$ref" : "#/components/schemas/ApplyTransit"
               }, {
                 "$ref" : "#/components/schemas/CancelTransfer"
@@ -820,8 +850,6 @@
                 "$ref" : "#/components/schemas/MakeUnscheduled"
               }, {
                 "$ref" : "#/components/schemas/PlanTransfer"
-              }, {
-                "$ref" : "#/components/schemas/RescheduleTransfer"
               }, {
                 "$ref" : "#/components/schemas/ScheduleTransfer"
               } ]
@@ -1066,7 +1094,7 @@
         }
       },
       "SyncMovement" : {
-        "required" : [ "destinationCode", "escortCode", "fromAgyLocId", "logisticsCode", "movementReasonCode", "occurredAt", "reasonCode", "toAgyLocId" ],
+        "required" : [ "escortCode", "fromAgyLocId", "movementReasonCode", "occurredAt", "toAgyLocId" ],
         "type" : "object",
         "properties" : {
           "dpsId" : {
@@ -1110,15 +1138,6 @@
             "nullable" : true
           },
           "commentText" : {
-            "type" : "string"
-          },
-          "reasonCode" : {
-            "type" : "string"
-          },
-          "destinationCode" : {
-            "type" : "string"
-          },
-          "logisticsCode" : {
             "type" : "string"
           }
         }
@@ -1498,7 +1517,7 @@
         }
       },
       "PlanningSearchRequest" : {
-        "required" : [ "page", "size", "sort", "stage", "startAndEndType" ],
+        "required" : [ "page", "priorityCodes", "size", "sort", "stage", "startAndEndType" ],
         "type" : "object",
         "allOf" : [ {
           "$ref" : "#/components/schemas/PrisonTransferSearchRequest"
@@ -1535,12 +1554,11 @@
         } ]
       },
       "PrisonTransferSearchRequest" : {
-        "required" : [ "destinationCodes", "logisticsCodes", "page", "reasonCodes", "size", "sort", "stage", "statusCodes" ],
+        "required" : [ "page", "size", "sort", "stage" ],
         "type" : "object",
         "properties" : {
           "stage" : {
-            "type" : "string",
-            "enum" : [ "PLANNING", "SCHEDULED", "UNSCHEDULED" ]
+            "type" : "string"
           },
           "destinationCodes" : {
             "uniqueItems" : true,
@@ -1596,7 +1614,11 @@
           }
         },
         "discriminator" : {
-          "propertyName" : "stage"
+          "propertyName" : "stage",
+          "mapping" : {
+            "PLANNING" : "#/components/schemas/PlanningSearchRequest",
+            "SCHEDULED" : "#/components/schemas/ScheduledSearchRequest"
+          }
         }
       },
       "ScheduledSearchRequest" : {
@@ -1822,6 +1844,110 @@
             "items" : {
               "$ref" : "#/components/schemas/SyncMovement"
             }
+          }
+        }
+      },
+      "IntegrationMovement" : {
+        "required" : [ "occurredAt" ],
+        "type" : "object",
+        "properties" : {
+          "occurredAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "comments" : {
+            "type" : "string",
+            "nullable" : true
+          }
+        }
+      },
+      "IntegrationPlan" : {
+        "required" : [ "priority", "requestedOn" ],
+        "type" : "object",
+        "properties" : {
+          "requestedOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "priority" : {
+            "$ref" : "#/components/schemas/CodedDescription"
+          },
+          "comments" : {
+            "type" : "string",
+            "nullable" : true
+          }
+        }
+      },
+      "IntegrationResponse" : {
+        "required" : [ "data" ],
+        "type" : "object",
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/IntegrationTransfer"
+          }
+        }
+      },
+      "IntegrationSchedule" : {
+        "required" : [ "start" ],
+        "type" : "object",
+        "properties" : {
+          "start" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "comments" : {
+            "type" : "string",
+            "nullable" : true
+          }
+        }
+      },
+      "IntegrationTransfer" : {
+        "required" : [ "id", "personIdentifier", "prisonCode", "reason", "status" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "personIdentifier" : {
+            "type" : "string"
+          },
+          "prisonCode" : {
+            "type" : "string"
+          },
+          "status" : {
+            "$ref" : "#/components/schemas/CodedDescription"
+          },
+          "reason" : {
+            "$ref" : "#/components/schemas/CodedDescription"
+          },
+          "destinationCode" : {
+            "type" : "string",
+            "nullable" : true
+          },
+          "logistics" : {
+            "nullable" : true,
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/CodedDescription"
+            } ]
+          },
+          "plan" : {
+            "nullable" : true,
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/IntegrationPlan"
+            } ]
+          },
+          "schedule" : {
+            "nullable" : true,
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/IntegrationSchedule"
+            } ]
+          },
+          "movement" : {
+            "nullable" : true,
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/IntegrationMovement"
+            } ]
           }
         }
       }
