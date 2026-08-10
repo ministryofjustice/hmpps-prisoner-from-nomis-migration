@@ -196,6 +196,8 @@ hmpps.sqs:
       dlqMaxReceiveCount: 1
     eventcourtmovements:
       dlqMaxReceiveCount: 2
+    eventtransfermovements:
+      dlqMaxReceiveCount: 2
     domaineventpersonalrelationships:
       dlqMaxReceiveCount: 1
     eventofficialvisits:

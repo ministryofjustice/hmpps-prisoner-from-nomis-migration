@@ -10,8 +10,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_MAPPING_TAP_APPLICATION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_MAPPING_TAP_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRetryMappingMessageTypes.RETRY_MAPPING_TAP_SCHEDULE
@@ -84,15 +82,6 @@ data class MovementApplicationEvent(
   val movementApplicationId: Long,
   val bookingId: Long,
   val offenderIdDisplay: String,
-  override val auditModuleName: String,
-) : EventAudited
-
-data class ScheduledMovementEvent(
-  val eventId: Long,
-  val bookingId: Long,
-  val offenderIdDisplay: String,
-  val eventMovementType: MovementType,
-  val directionCode: DirectionCode,
   override val auditModuleName: String,
 ) : EventAudited
 
