@@ -1,24 +1,41 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer
 
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
+import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.mockito.kotlin.any
+import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.verify
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension.Companion.dpsTransferSchedulerServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ReferenceId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncTransferRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisSyncApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
+import java.util.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class TransferSchedulerSyncScheduleIntTest : TransferSchedulerIntegrationTestBase() {
+class TransferSchedulerSyncScheduleIntTest(
+  @Autowired private val mappingApi: TransferScheduleMappingApiMockServer,
+  @Autowired private val nomisApi: TransferScheduleNomisApiMockServer,
+) : TransferSchedulerIntegrationTestBase() {
 
   private val dpsApi = dpsTransferSchedulerServer
 
@@ -26,7 +43,6 @@ class TransferSchedulerSyncScheduleIntTest : TransferSchedulerIntegrationTestBas
 
   private fun setUpTestClass() {
     NomisApiExtension.resetAndDisableResetBeforeEach()
-    NomisSyncApiExtension.resetAndDisableResetBeforeEach()
     MappingApiExtension.resetAndDisableResetBeforeEach()
     TransferScheduleDpsApiExtension.resetAndDisableResetBeforeEach()
 
@@ -36,6 +52,7 @@ class TransferSchedulerSyncScheduleIntTest : TransferSchedulerIntegrationTestBas
   @Nested
   @DisplayName("SCHEDULED_EXT_MOVE-INSERTED")
   inner class TransferScheduleCreated {
+    private val dpsId = UUID.randomUUID()
 
     @Nested
     inner class HappyPath {
@@ -43,15 +60,76 @@ class TransferSchedulerSyncScheduleIntTest : TransferSchedulerIntegrationTestBas
       fun setUp() {
         setUpTestClass()
 
+        mappingApi.stubGetTransferScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
+        nomisApi.stubGetTransferScheduleOut(offenderNo = "A1234BC", eventId = 123L)
+        dpsApi.stubSyncTransferSchedule(personIdentifier = "A1234BC", response = ReferenceId(dpsId))
+        mappingApi.stubCreateTransferScheduleMapping()
+
         sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-INSERTED"))
           .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")))
+      }
+
+      @Test
+      fun `should get NOMIS court event`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/transfers/schedule/out/123")))
+      }
+
+      @Test
+      fun `should create DPS scheduled movement`() {
+        TransferScheduleDpsApiMockServer.getRequestBody<SyncTransferRequest>(
+          putRequestedFor(urlPathEqualTo("/sync/transfers/A1234BC")),
+        ).apply {
+          assertThat(transfer.dpsId).isNull()
+          assertThat(transfer.eventId).isEqualTo(123L)
+          assertThat(transfer.schedule!!.start).isCloseTo(LocalDateTime.now().minusDays(1), within(5, ChronoUnit.MINUTES))
+          assertThat(transfer.schedule.eventSubType).isEqualTo("TRN")
+          assertThat(transfer.schedule.eventStatus).isEqualTo("SCH")
+          assertThat(transfer.schedule.commentText).isEqualTo("transfer schedule comment")
+          assertThat(transfer.schedule.hiddenCommentText).isEqualTo("hidden transfer schedule comment")
+          assertThat(transfer.schedule.agyLocId).isEqualTo("BXI")
+          assertThat(transfer.schedule.toAgyLocId).isEqualTo("LEI")
+          assertThat(transfer.schedule.outcomeReasonCode).isEqualTo("ADMI")
+          assertThat(transfer.schedule.escortCode).isEqualTo("U")
+          assertThat(transfer.waitlist!!.requestDate).isEqualTo("${LocalDate.now().minusDays(1)}")
+          assertThat(transfer.waitlist.waitListStatus).isEqualTo("PEND")
+          assertThat(transfer.waitlist.statusDate).isEqualTo("${LocalDate.now().minusDays(1)}")
+          assertThat(transfer.waitlist.transferPriority).isEqualTo("3")
+          assertThat(transfer.waitlist.approved).isTrue
+          assertThat(transfer.waitlist.approvedUsername).isEqualTo("A_USER")
+          assertThat(transfer.waitlist.outcomeReasonCode?.value).isEqualTo("TRANS")
+          assertThat(transfer.waitlist.commentText1).isEqualTo("some waitlist comment")
+          assertThat(syncUser.username).isEqualTo("SYS")
+          assertThat(syncUser.activeCaseloadId).isEqualTo("MDI")
+        }
+      }
+
+      @Test
+      fun `should create mapping`() {
+        mappingApi.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule"))
+            .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("bookingId", 12345)
+            .withRequestBodyJsonPath("nomisEventId", 123)
+            .withRequestBodyJsonPath("dpsTransferScheduleId", dpsId)
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
       }
 
       @Test
       fun `should raise telemetry`() = runTest {
         verify(telemetryClient).trackEvent(
           eq("transfer-scheduler-sync-schedule-inserted-success"),
-          any(),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["dpsTransferScheduleId"]).isEqualTo("$dpsId")
+          },
           isNull(),
         )
       }
@@ -63,7 +141,7 @@ class TransferSchedulerSyncScheduleIntTest : TransferSchedulerIntegrationTestBas
     event,
   )
 
-  private fun transferScheduleEvent(eventType: String, auditModuleName: String = "OCUCANTR", nomisEventType: String = "TRN", direction: String = "OUT", eventId: Long = 45678) = // language=JSON
+  private fun transferScheduleEvent(eventType: String, auditModuleName: String = "OCUCANTR", nomisEventType: String = "TRN", eventId: Long = 123) = // language=JSON
     """{
          "Type" : "Notification",
          "MessageId" : "57126174-e2d7-518f-914e-0056a63363b0",

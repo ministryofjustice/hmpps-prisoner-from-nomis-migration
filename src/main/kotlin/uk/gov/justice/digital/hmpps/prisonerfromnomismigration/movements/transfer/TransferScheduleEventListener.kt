@@ -12,7 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompl
 import java.util.concurrent.CompletableFuture
 
 @Service
-class TransferSchedulerEventListener(
+class TransferScheduleEventListener(
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
   private val transferScheduleService: TransferScheduleSyncScheduleService,
@@ -33,7 +33,7 @@ class TransferSchedulerEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "transfermovements")) {
             @Suppress("UNUSED_EXPRESSION")
             when (eventType) {
-              "SCHEDULED_EXT_MOVE-INSERTED" -> transferScheduleService.syncTransferScheduleOutInserted(sqsMessage.Message.fromJson())
+              "SCHEDULED_EXT_MOVE-INSERTED" -> transferScheduleService.scheduledMovementInserted(sqsMessage.Message.fromJson())
               "SCHEDULED_EXT_MOVE-UPDATED" -> {}
               "SCHEDULED_EXT_MOVE-DELETED" -> {}
               "EXTERNAL_MOVEMENT-CHANGED" -> {}
