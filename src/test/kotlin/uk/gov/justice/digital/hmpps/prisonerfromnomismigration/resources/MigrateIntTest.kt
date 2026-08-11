@@ -95,21 +95,24 @@ class MigrateIntTest : SqsIntegrationTestBase() {
       nomisApiMock.stubGetRootOffenderIdsToMigrate(
         totalElements = 2,
         pageSize = 10,
-        firstRootOffenderId = 10000L,
+        firstRootOffenderId = 1L,
       )
+      nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 2, totalElements = 2)
+      nomisApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 0, toRootOffenderId = 2)
+
       mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
-        nomisRootOffenderId = 10000,
+        nomisRootOffenderId = 1,
         dpsId = "A0001BC",
         mapping = null,
       )
       mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
-        nomisRootOffenderId = 10001,
+        nomisRootOffenderId = 2,
         dpsId = "A0002BC",
         mapping = null,
       )
 
       nomisApiMock.stubGetPrisonerBalance(
-        rootOffenderId = 10000,
+        rootOffenderId = 1,
         prisonerBalance = prisonerBalance(prisonNumber = "A0001BC").copy(
           accounts = listOf(
             PrisonerAccountDto(
@@ -124,7 +127,7 @@ class MigrateIntTest : SqsIntegrationTestBase() {
         ),
       )
       nomisApiMock.stubGetPrisonerBalance(
-        rootOffenderId = 10001,
+        rootOffenderId = 2,
         prisonerBalance = prisonerBalance(prisonNumber = "A0002BC").copy(
           accounts = listOf(
             PrisonerAccountDto(
