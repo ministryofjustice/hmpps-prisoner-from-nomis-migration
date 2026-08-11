@@ -12,6 +12,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -21,6 +22,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension.Companion.dpsTransferSchedulerServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleNomisApiMockServer.Companion.transferScheduleWaitlistResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ReferenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncTransferRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
@@ -127,6 +132,297 @@ class TransferSchedulerSyncScheduleIntTest(
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["dpsTransferScheduleId"]).isEqualTo("$dpsId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class HappyPathNoWaitlist {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
+        nomisApi.stubGetTransferScheduleOut(offenderNo = "A1234BC", eventId = 123L, waitlist = null)
+        dpsApi.stubSyncTransferSchedule(personIdentifier = "A1234BC", response = ReferenceId(dpsId))
+        mappingApi.stubCreateTransferScheduleMapping()
+
+        sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-INSERTED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should create DPS scheduled movement without waitlist`() {
+        TransferScheduleDpsApiMockServer.getRequestBody<SyncTransferRequest>(
+          putRequestedFor(urlPathEqualTo("/sync/transfers/A1234BC")),
+        ).apply {
+          assertThat(transfer.dpsId).isNull()
+          assertThat(transfer.eventId).isEqualTo(123L)
+          assertThat(transfer.schedule).isNotNull
+          assertThat(transfer.waitlist).isNull()
+        }
+      }
+
+      @Test
+      fun `should raise telemetry`() = runTest {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-schedule-inserted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["dpsTransferScheduleId"]).isEqualTo("$dpsId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenWaitlistCreatedMoreRecently {
+      private val waitlistCreatedTime = LocalDateTime.now()
+      private val scheduleCreatedTime = LocalDateTime.now().minusDays(1)
+
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
+        nomisApi.stubGetTransferScheduleOut(
+          offenderNo = "A1234BC",
+          eventId = 123L,
+          createUsername = "SCHEDULE_USER",
+          createDateTime = scheduleCreatedTime,
+          waitlist = transferScheduleWaitlistResponse(
+            createUsername = "WAITLIST_USER",
+            createDateTime = waitlistCreatedTime,
+          ),
+        )
+        dpsApi.stubSyncTransferSchedule(personIdentifier = "A1234BC", response = ReferenceId(dpsId))
+        mappingApi.stubCreateTransferScheduleMapping()
+
+        sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-INSERTED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should create DPS scheduled movement with audit from waitlist`() {
+        TransferScheduleDpsApiMockServer.getRequestBody<SyncTransferRequest>(
+          putRequestedFor(urlPathEqualTo("/sync/transfers/A1234BC")),
+        ).apply {
+          assertThat(transfer.dpsId).isNull()
+          assertThat(transfer.eventId).isEqualTo(123L)
+          assertThat(syncUser.username).isEqualTo("WAITLIST_USER")
+          assertThat(occurredAt).isEqualTo(waitlistCreatedTime)
+        }
+      }
+    }
+
+    @Nested
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-INSERTED", "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT check mapping`() {
+        mappingApi.verify(
+          count = 0,
+          getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")),
+        )
+      }
+
+      @Test
+      fun `should NOT create DPS scheduled transfer`() {
+        dpsApi.verify(
+          0,
+          putRequestedFor(urlPathEqualTo("/sync/transfers/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should raise telemetry`() = runTest {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-schedule-inserted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferScheduleMapping(nomisEventId = 123L)
+
+        sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-INSERTED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")))
+      }
+
+      @Test
+      fun `should NOT create DPS scheduled transfer`() {
+        dpsApi.verify(
+          0,
+          putRequestedFor(urlPathEqualTo("/sync/transfers/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should raise telemetry`() = runTest {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-schedule-inserted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class DuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
+        nomisApi.stubGetTransferScheduleOut(offenderNo = "A1234BC", eventId = 123L)
+        dpsApi.stubSyncTransferSchedule(personIdentifier = "A1234BC", response = ReferenceId(dpsId))
+        mappingApi.stubCreateTransferScheduleMappingConflict(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              existing = TransferScheduleMappingDto(
+                prisonerNumber = "A1234BC",
+                bookingId = 12345,
+                nomisEventId = 123,
+                dpsTransferScheduleId = dpsId,
+                mappingType = TransferScheduleMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              duplicate = TransferScheduleMappingDto(
+                prisonerNumber = "A1234BC",
+                bookingId = 12345,
+                nomisEventId = 999,
+                dpsTransferScheduleId = dpsId,
+                mappingType = TransferScheduleMappingDto.MappingType.NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+
+        sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-INSERTED"))
+          .also { waitForAnyProcessingToComplete("transfer-scheduler-sync-schedule-inserted-duplicate") }
+      }
+
+      @Test
+      fun `should create DPS scheduled movement a single time`() {
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/transfers/A1234BC")))
+      }
+
+      @Test
+      fun `should create mapping a single time`() {
+        mappingApi.verify(postRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule")))
+      }
+
+      @Test
+      fun `should raise success telemetry`() = runTest {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-schedule-inserted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["dpsTransferScheduleId"]).isEqualTo("$dpsId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should raise duplicate telemetry`() = runTest {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-schedule-inserted-duplicate"),
+          check {
+            assertThat(it["existingOffenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["existingBookingId"]).isEqualTo("12345")
+            assertThat(it["existingNomisEventId"]).isEqualTo("123")
+            assertThat(it["existingDpsTransferScheduleId"]).isEqualTo("$dpsId")
+            assertThat(it["duplicateOffenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["duplicateBookingId"]).isEqualTo("12345")
+            assertThat(it["duplicateNomisEventId"]).isEqualTo("999")
+            assertThat(it["duplicateDpsTransferScheduleId"]).isEqualTo("$dpsId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingRetry {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
+        nomisApi.stubGetTransferScheduleOut(offenderNo = "A1234BC", eventId = 123L)
+        dpsApi.stubSyncTransferSchedule(personIdentifier = "A1234BC", response = ReferenceId(dpsId))
+        mappingApi.stubCreateTransferScheduleMappingFailureFollowedBySuccess()
+
+        sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-INSERTED"))
+          .also { waitForAnyProcessingToComplete("transfer-scheduler-sync-schedule-mapping-retry-created") }
+      }
+
+      @Test
+      fun `should create DPS scheduled movement`() {
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/transfers/A1234BC")))
+      }
+
+      @Test
+      fun `should create mapping on 2nd call`() {
+        mappingApi.verify(
+          count = 2,
+          postRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule")),
+        )
+      }
+
+      @Test
+      fun `should raise telemetry`() = runTest {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-schedule-inserted-success"),
+          any(),
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should raise mapping retry telemetry`() = runTest {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-schedule-mapping-retry-created"),
+          check {
             assertThat(it["nomisEventId"]).isEqualTo("123")
             assertThat(it["dpsTransferScheduleId"]).isEqualTo("$dpsId")
           },
