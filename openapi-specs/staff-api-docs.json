@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-07-21.148.5257686"
+    "version" : "2026-07-27.162.1b7c636"
   },
   "servers" : [ {
     "url" : "https://prison-users-api-dev.prison.service.justice.gov.uk",
@@ -89,6 +89,85 @@
         },
         "security" : [ {
           "ROLE_PRISON_USERS_API__SYNC__RW" : [ ]
+        } ]
+      }
+    },
+    "/users/basic/find-by-usernames" : {
+      "post" : {
+        "tags" : [ "user-resource" ],
+        "summary" : "Get user basic details",
+        "description" : "Information on specific users. Requires role ROLE_MAINTAIN_ACCESS_ROLES_ADMIN or ROLE_MAINTAIN_ACCESS_ROLES or ROLE_MANAGE_NOMIS_USER_ACCOUNT or ROLE_VIEW_NOMIS_STAFF_DETAILS",
+        "operationId" : "getUserBasicDetailsByUsernames",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "array",
+                "description" : "Usernames",
+                "example" : [ "username1", "username2" ],
+                "items" : {
+                  "type" : "string",
+                  "description" : "Usernames",
+                  "example" : [ "username1", "username2" ]
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "User Information Returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "object",
+                  "additionalProperties" : {
+                    "$ref" : "#/components/schemas/UserBasicDetails"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Incorrect request to get user information",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to get a user",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "MAINTAIN_ACCESS_ROLES_ADMIN" : [ ]
+        }, {
+          "MAINTAIN_ACCESS_ROLES" : [ ]
+        }, {
+          "MANAGE_NOMIS_USER_ACCOUNT" : [ ]
+        }, {
+          "VIEW_NOMIS_STAFF_DETAILS" : [ ]
         } ]
       }
     },
@@ -630,6 +709,48 @@
         },
         "required" : [ "status" ]
       },
+      "UserBasicDetails" : {
+        "type" : "object",
+        "description" : "Basic User Information",
+        "properties" : {
+          "username" : {
+            "type" : "string",
+            "description" : "Username",
+            "example" : "testuser1"
+          },
+          "staffId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Staff ID",
+            "example" : 324323
+          },
+          "firstName" : {
+            "type" : "string",
+            "description" : "First name of the user",
+            "example" : "John"
+          },
+          "lastName" : {
+            "type" : "string",
+            "description" : "Last name of the user",
+            "example" : "Smith"
+          },
+          "activeCaseloadId" : {
+            "type" : [ "string", "null" ],
+            "description" : "Active Caseload of the user",
+            "example" : "BXI"
+          },
+          "enabled" : {
+            "type" : "boolean",
+            "description" : "User is enabled flag"
+          },
+          "accountStatus" : {
+            "type" : [ "string", "null" ],
+            "description" : "Status of the user",
+            "example" : "OPEN"
+          }
+        },
+        "required" : [ "enabled", "firstName", "lastName", "staffId", "username" ]
+      },
       "MigratedUser" : {
         "type" : "object",
         "description" : "Single NOMIS user details",
@@ -947,48 +1068,6 @@
         },
         "required" : [ "accountType", "active", "caseloads", "username" ]
       },
-      "UserBasicDetails" : {
-        "type" : "object",
-        "description" : "Basic User Information",
-        "properties" : {
-          "username" : {
-            "type" : "string",
-            "description" : "Username",
-            "example" : "testuser1"
-          },
-          "staffId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Staff ID",
-            "example" : 324323
-          },
-          "firstName" : {
-            "type" : "string",
-            "description" : "First name of the user",
-            "example" : "John"
-          },
-          "lastName" : {
-            "type" : "string",
-            "description" : "Last name of the user",
-            "example" : "Smith"
-          },
-          "activeCaseloadId" : {
-            "type" : [ "string", "null" ],
-            "description" : "Active Caseload of the user",
-            "example" : "BXI"
-          },
-          "enabled" : {
-            "type" : "boolean",
-            "description" : "User is enabled flag"
-          },
-          "accountStatus" : {
-            "type" : [ "string", "null" ],
-            "description" : "Status of the user",
-            "example" : "OPEN"
-          }
-        },
-        "required" : [ "enabled", "firstName", "lastName", "staffId", "username" ]
-      },
       "PrisonUserAccount" : {
         "type" : "object",
         "description" : "User account details",
@@ -1141,7 +1220,7 @@
             "example" : "f59dad25-3f11-4a74-9e03-64d2ee53f498"
           },
           "staffId" : {
-            "type" : "string",
+            "type" : "integer",
             "format" : "int64",
             "description" : "The NOMIS staff id",
             "example" : 123456
