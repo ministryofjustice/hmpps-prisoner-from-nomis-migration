@@ -17,7 +17,9 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension.Companion.dpsTransferSchedulerServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiMockServer.Companion.referenceId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiMockServer.Companion.syncTransferMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiMockServer.Companion.syncTransferRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ReferenceId
 import java.util.*
 
 @ExtendWith(TransferScheduleDpsApiExtension::class)
@@ -73,6 +75,56 @@ class TransferScheduleDpsApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.syncTransferSchedule("A1234BC", syncTransferRequest())
+      }
+    }
+  }
+
+  @Nested
+  inner class SyncTransferMovement {
+
+    @Test
+    internal fun `should pass oauth2 token`() = runTest {
+      dpsTransferSchedulerServer.stubSyncTransferMovement("A1234BC")
+
+      apiService.syncTransferMovement("A1234BC", syncTransferMovementRequest())
+
+      dpsTransferSchedulerServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should call the sync endpoint`() = runTest {
+      dpsTransferSchedulerServer.stubSyncTransferMovement("A1234BC")
+
+      apiService.syncTransferMovement("A1234BC", syncTransferMovementRequest())
+
+      dpsTransferSchedulerServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/transfer-movements/A1234BC"))
+          .withRequestBody(matchingJsonPath("syncUser.username", equalTo("USER")))
+          .withRequestBody(matchingJsonPath("movement.fromAgyLocId", equalTo("BXI")))
+          .withRequestBody(matchingJsonPath("movement.toAgyLocId", equalTo("LEI"))),
+      )
+    }
+
+    @Test
+    fun `should parse the response`() = runTest {
+      val dpsId = UUID.randomUUID()
+      dpsTransferSchedulerServer.stubSyncTransferMovement("A1234BC", ReferenceId(dpsId))
+
+      assertThat(
+        apiService.syncTransferMovement("A1234BC", syncTransferMovementRequest()).dpsId,
+      )
+        .isEqualTo(dpsId)
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      dpsTransferSchedulerServer.stubSyncTransferMovementError("A1234BC", 500)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.syncTransferMovement("A1234BC", syncTransferMovementRequest())
       }
     }
   }
