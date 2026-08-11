@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-08-07.4551.2a28577"
+    "version" : "2026-08-10.4568.bdde10a"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -1495,40 +1495,46 @@
       "PersonSearchRequest" : {
         "type" : "object",
         "properties" : {
-          "fullName" : {
+          "firstName" : {
             "type" : "string"
+          },
+          "lastName" : {
+            "type" : "string"
+          },
+          "middleName" : {
+            "type" : [ "string", "null" ]
           },
           "dateOfBirth" : {
             "type" : "string",
             "format" : "date"
           },
           "firstNameAliases" : {
-            "type" : "array",
+            "type" : [ "array", "null" ],
             "items" : {
               "type" : "string"
             }
           },
           "lastNameAliases" : {
-            "type" : "array",
+            "type" : [ "array", "null" ],
             "items" : {
               "type" : "string"
             }
           },
           "dateOfBirthAliases" : {
-            "type" : "array",
+            "type" : [ "array", "null" ],
             "items" : {
               "type" : "string",
               "format" : "date"
             }
           },
           "postcodes" : {
-            "type" : "array",
+            "type" : [ "array", "null" ],
             "items" : {
               "type" : "string"
             }
           }
         },
-        "required" : [ "dateOfBirth", "dateOfBirthAliases", "firstNameAliases", "fullName", "lastNameAliases", "postcodes" ]
+        "required" : [ "dateOfBirth", "firstName", "lastName" ]
       },
       "CanonicalAddress" : {
         "type" : "object",
