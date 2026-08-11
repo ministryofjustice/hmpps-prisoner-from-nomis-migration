@@ -9,6 +9,7 @@ import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransfersRetryMappingMessageTypes.RETRY_MAPPING_TRANSFER_SCHEDULE
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -43,10 +44,18 @@ class TransferScheduleEventListener(
             log.info("Feature switch is disabled for event {}", eventType)
           }
         }
-        else -> TODO("retryMapping")
+        else -> retryMapping(sqsMessage.Type, sqsMessage.Message)
       }
     }
   }
 
+  private suspend fun retryMapping(type: String, message: String) = when (TransfersRetryMappingMessageTypes.valueOf(type)) {
+    RETRY_MAPPING_TRANSFER_SCHEDULE -> transferScheduleService.retryCreateScheduleMapping(message.fromJson())
+  }
+
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
+}
+
+enum class TransfersRetryMappingMessageTypes {
+  RETRY_MAPPING_TRANSFER_SCHEDULE,
 }

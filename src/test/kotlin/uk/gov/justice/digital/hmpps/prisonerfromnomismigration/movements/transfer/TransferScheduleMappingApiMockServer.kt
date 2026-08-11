@@ -13,7 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
-import java.util.UUID
+import java.util.*
 
 @Component
 class TransferScheduleMappingApiMockServer(private val jsonMapper: JsonMapper) {
@@ -53,6 +53,8 @@ class TransferScheduleMappingApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
   }
+
+  fun stubCreateTransferScheduleMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/transfer-scheduler/schedule")
 
   fun stubGetTransferScheduleMapping(
     nomisEventId: Long = 1L,

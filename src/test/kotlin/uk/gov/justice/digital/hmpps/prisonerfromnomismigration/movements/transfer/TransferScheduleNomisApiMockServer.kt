@@ -23,11 +23,15 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
     offenderNo: String = "A1234BC",
     eventId: Long = 12345L,
     startTime: LocalDateTime = yesterday,
+    createDateTime: LocalDateTime = now,
+    createUsername: String = "PRISONER_MANAGER_API",
     waitlist: TransferScheduleWaitlist? = transferScheduleWaitlistResponse(),
     response: TransferScheduleOut = transferScheduleOutResponse(
       eventId = eventId,
       startTime = startTime,
       waitlist = waitlist,
+      createDateTime = createDateTime,
+      createUsername = createUsername,
     ),
   ) {
     nomisApi.stubFor(
@@ -62,6 +66,10 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
       eventId: Long = 1,
       eventStatus: String = "SCH",
       startTime: LocalDateTime = now,
+      createDateTime: LocalDateTime = now,
+      createUsername: String = "PRISONER_MANAGER_API",
+      modifyDateTime: LocalDateTime? = null,
+      modifyUserId: String? = null,
       waitlist: TransferScheduleWaitlist? = null,
     ) = TransferScheduleOut(
       bookingId = 12345,
@@ -78,9 +86,11 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
       userActiveCaseloadId = "MDI",
       waitlist = waitlist,
       audit = NomisAudit(
-        createDatetime = now,
-        createUsername = "SYS",
+        createDatetime = createDateTime,
+        createUsername = createUsername,
         auditModuleName = "OCCCDCASE",
+        modifyDatetime = modifyDateTime,
+        modifyUserId = modifyUserId,
       ),
     )
 
@@ -88,6 +98,10 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
       status: String = "PEND",
       priority: String = "3",
       approved: Boolean = true,
+      createDateTime: LocalDateTime = yesterday,
+      createUsername: String = "PRISONER_MANAGER_API",
+      modifyDateTime: LocalDateTime? = null,
+      modifyUserId: String? = null,
     ) = TransferScheduleWaitlist(
       requestDate = yesterday.toLocalDate(),
       status = status,
@@ -98,8 +112,10 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
       cancellationReasonCode = "TRANS",
       comment = "some waitlist comment",
       audit = NomisAudit(
-        createDatetime = yesterday,
-        createUsername = "PRISONER_MANAGER_API",
+        createDatetime = createDateTime,
+        createUsername = createUsername,
+        modifyDatetime = modifyDateTime,
+        modifyUserId = modifyUserId,
       ),
     )
   }
