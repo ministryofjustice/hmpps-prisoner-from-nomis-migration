@@ -25,12 +25,12 @@ suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrNullWhenU
   .onErrorResume(WebClientResponseException.UnprocessableContent::class.java) { Mono.empty() }
   .awaitSingleOrNull()
 
-suspend fun <T : Any> Mono<T>.awaitBodyOrLogAndRethrowBadRequest(): T = doOnError(WebClientResponseException.BadRequest::class.java) {
+suspend fun <T : Any> Mono<T>.awaitOrLogAndRethrowBadRequest(): T = doOnError(WebClientResponseException.BadRequest::class.java) {
   log.error("Received Bad Request (400) with body {}", it.responseBodyAsString)
 }.awaitSingle()
 
 suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrLogAndRethrowBadRequest(): T = this.bodyToMono<T>()
-  .awaitBodyOrLogAndRethrowBadRequest()
+  .awaitOrLogAndRethrowBadRequest()
 
 suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrLogAndRethrowError(): T = this.bodyToMono<T>()
   .doOnError(WebClientResponseException::class.java) {
@@ -39,10 +39,7 @@ suspend inline fun <reified T : Any> WebClient.ResponseSpec.awaitBodyOrLogAndRet
   .awaitSingle()
 
 suspend inline fun WebClient.ResponseSpec.awaitBodilessEntityOrLogAndRethrowBadRequest() = this.toBodilessEntity()
-  .doOnError(WebClientResponseException.BadRequest::class.java) {
-    log.error("Received Bad Request (400) with body {}", it.responseBodyAsString)
-  }
-  .awaitSingle()
+  .awaitOrLogAndRethrowBadRequest()
 
 suspend inline fun WebClient.ResponseSpec.awaitBodilessEntityIgnoreNotFound() = this.toBodilessEntity()
   .onErrorResume(WebClientResponseException.NotFound::class.java) {

@@ -17,8 +17,7 @@ generic-service:
     API_BASE_URL_FINANCE: https://prisoner-finance-sync-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_SENTENCING: https://adjustments-api-preprod.hmpps.service.justice.gov.uk
-    # Currently set to self until API ready
-    API_BASE_URL_STAFF: https://prisoner-nomis-migration-preprod.hmpps.service.justice.gov.uk
+    API_BASE_URL_STAFF: https://prison-users-api-preprod.prison.service.justice.gov.uk
     API_BASE_URL_VISITS: https://visit-scheduler-preprod.prison.service.justice.gov.uk
     API_BASE_URL_VISIT_BALANCE: https://hmpps-visit-allocation-api-preprod.prison.service.justice.gov.uk
     API_BASE_URL_ACTIVITIES: https://activities-api-preprod.prison.service.justice.gov.uk
