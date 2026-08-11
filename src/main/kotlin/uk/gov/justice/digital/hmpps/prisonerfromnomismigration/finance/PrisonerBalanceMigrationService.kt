@@ -19,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastIdMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationDivision
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -160,6 +161,8 @@ class PrisonerBalanceMigrationService(
   override fun parseContextNomisId(json: String): MigrationMessage<*, Long> = jsonMapper.readValue(json)
 
   override fun parseContextMapping(json: String): MigrationMessage<*, PrisonerBalanceMappingDto> = jsonMapper.readValue(json)
+
+  override fun parseContextDivisionFilter(json: String): MigrationMessage<*, MigrationDivision<PrisonerBalanceMigrationFilter, Long>> = jsonMapper.readValue(json)
 }
 
 fun PrisonerBalanceDto.toMigrationDto() = PrisonerBalancesSyncRequest(
