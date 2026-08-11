@@ -61,7 +61,7 @@ class TransferScheduleNomisApiServiceTest {
 
     @Test
     fun `will return transfer schedule out`() = runTest {
-      transferScheduleNomisApiMockServer.stubGetTransferScheduleOut(offenderNo = "A1234BC", eventId = 1)
+      transferScheduleNomisApiMockServer.stubGetTransferScheduleOut(offenderNo = "A1234BC", eventId = 1, waitlist = null)
 
       apiService.getTransferScheduleOut(offenderNo = "A1234BC", eventId = 1)
         .apply {
@@ -90,8 +90,8 @@ class TransferScheduleNomisApiServiceTest {
         .apply {
           assertThat(waitlist).isNotNull
           assertThat(waitlist?.status).isEqualTo("PEND")
-          assertThat(waitlist?.priority).isEqualTo("HI")
-          assertThat(waitlist?.approved).isFalse()
+          assertThat(waitlist?.priority).isEqualTo("3")
+          assertThat(waitlist?.approved).isTrue
         }
     }
 

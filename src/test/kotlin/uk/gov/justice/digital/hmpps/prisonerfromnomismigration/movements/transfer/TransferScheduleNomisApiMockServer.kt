@@ -23,9 +23,11 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
     offenderNo: String = "A1234BC",
     eventId: Long = 12345L,
     startTime: LocalDateTime = yesterday,
+    waitlist: TransferScheduleWaitlist? = transferScheduleWaitlistResponse(),
     response: TransferScheduleOut = transferScheduleOutResponse(
       eventId = eventId,
       startTime = startTime,
+      waitlist = waitlist,
     ),
   ) {
     nomisApi.stubFor(
@@ -68,27 +70,33 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
       eventSubType = "TRN",
       eventStatus = eventStatus,
       comment = "transfer schedule comment",
+      hiddenComment = "hidden transfer schedule comment",
       fromPrison = "BXI",
       toPrison = "LEI",
+      cancellationReasonCode = "ADMI",
+      escortCode = "U",
       userActiveCaseloadId = "MDI",
       waitlist = waitlist,
       audit = NomisAudit(
         createDatetime = now,
-        createUsername = "PRISONER_MANAGER_API",
+        createUsername = "SYS",
         auditModuleName = "OCCCDCASE",
       ),
     )
 
     fun transferScheduleWaitlistResponse(
       status: String = "PEND",
-      priority: String = "HI",
-      approved: Boolean = false,
+      priority: String = "3",
+      approved: Boolean = true,
     ) = TransferScheduleWaitlist(
       requestDate = yesterday.toLocalDate(),
       status = status,
       statusDate = yesterday.toLocalDate(),
       priority = priority,
       approved = approved,
+      approvedUserName = "A_USER",
+      cancellationReasonCode = "TRANS",
+      comment = "some waitlist comment",
       audit = NomisAudit(
         createDatetime = yesterday,
         createUsername = "PRISONER_MANAGER_API",
