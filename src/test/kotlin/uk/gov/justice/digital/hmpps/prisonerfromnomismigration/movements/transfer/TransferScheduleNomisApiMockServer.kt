@@ -9,8 +9,10 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.OK
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleNomisApiMockServer.Companion.yesterday
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TransferMovementOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TransferScheduleOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TransferScheduleWaitlist
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -47,6 +49,33 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetTransferScheduleOut(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
       get(urlPathMatching("/movements/.*/transfers/schedule/out/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubGetTransferMovementOut(
+    offenderNo: String = "A1234BC",
+    bookingId: Long = 12345L,
+    sequence: Int = 3,
+    response: TransferMovementOut = transferMovementOutResponse().copy(bookingId = bookingId, sequence = sequence),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/movements/$offenderNo/transfer/movement/out/$bookingId/$sequence")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(OK.value())
+          .withBody(jsonMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetTransferMovementOut(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(urlPathMatching("/movements/.*/transfer/movement/out/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -117,6 +146,24 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
         modifyDatetime = modifyDateTime,
         modifyUserId = modifyUserId,
       ),
+    )
+
+    fun transferMovementOutResponse() = TransferMovementOut(
+      eventId = 123L,
+      bookingId = 12345L,
+      sequence = 3,
+      movementTime = LocalDateTime.now(),
+      movementReason = "28",
+      fromPrison = "BXI",
+      toPrison = "LEI",
+      active = true,
+      audit = NomisAudit(
+        createDatetime = yesterday,
+        createUsername = "PRISONER_MANAGER_API",
+      ),
+      transferScheduleOutId = 123L,
+      escort = "PECS",
+      commentText = "some transfer movement comment",
     )
   }
 }

@@ -113,4 +113,60 @@ class TransferScheduleNomisApiServiceTest {
       }
     }
   }
+
+  @Nested
+  inner class GetTransferMovementOut {
+    @Test
+    internal fun `will pass oauth2 token to service`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetTransferMovementOut(offenderNo = "A1234BC")
+
+      apiService.getTransferMovementOut(offenderNo = "A1234BC", bookingId = 12345L, sequence = 3)
+
+      transferScheduleNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass offender number and movement ID to service`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetTransferMovementOut(offenderNo = "A1234BC")
+
+      apiService.getTransferMovementOut(offenderNo = "A1234BC", bookingId = 12345L, sequence = 3)
+
+      transferScheduleNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/movements/A1234BC/transfer/movement/out/12345/3")),
+      )
+    }
+
+    @Test
+    fun `will return transfer movement out`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetTransferMovementOut(offenderNo = "A1234BC")
+
+      apiService.getTransferMovementOut(offenderNo = "A1234BC", bookingId = 12345L, sequence = 3)
+        .apply {
+          assertThat(bookingId).isEqualTo(12345)
+          assertThat(eventId).isEqualTo(123)
+          assertThat(fromPrison).isEqualTo("BXI")
+          assertThat(toPrison).isEqualTo("LEI")
+        }
+    }
+
+    @Test
+    fun `will throw error when offender does not exist`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetTransferMovementOut(NOT_FOUND)
+
+      assertThrows<WebClientResponseException.NotFound> {
+        apiService.getTransferMovementOut(offenderNo = "A1234BC", bookingId = 12345L, sequence = 3)
+      }
+    }
+
+    @Test
+    fun `will throw error when API returns an error`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetTransferMovementOut(INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getTransferMovementOut(offenderNo = "A1234BC", bookingId = 12345L, sequence = 3)
+      }
+    }
+  }
 }
