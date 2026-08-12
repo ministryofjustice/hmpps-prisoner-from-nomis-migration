@@ -443,7 +443,7 @@ class TransferSchedulerSyncScheduleIntTest(
   }
 
   @Nested
-  @DisplayName("SCHEDULE_EXT_MOVE-UPDATED")
+  @DisplayName("SCHEDULED_EXT_MOVE-UPDATED")
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class TransferScheduleUpdated {
 
