@@ -443,7 +443,7 @@ class TransferSchedulerSyncScheduleIntTest(
   }
 
   @Nested
-  @DisplayName("SCHEDULE_EXT_MOVE-UPDATED")
+  @DisplayName("SCHEDULED_EXT_MOVE-UPDATED")
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class TransferScheduleUpdated {
 
@@ -470,7 +470,7 @@ class TransferSchedulerSyncScheduleIntTest(
       }
 
       @Test
-      fun `should get NOMIS court event`() {
+      fun `should get NOMIS transfer schedule event`() {
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/transfers/schedule/out/123")))
       }
 
@@ -510,8 +510,6 @@ class TransferSchedulerSyncScheduleIntTest(
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class WhenUpdatedInDps {
-      val dpsId = UUID.randomUUID()
-
       @BeforeEach
       fun setUp() {
         setUpTestClass()
