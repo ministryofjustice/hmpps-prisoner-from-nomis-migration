@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-11.1893.459df01"
+    "version" : "2026-08-11.1895.0a67a0c"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -30830,12 +30830,6 @@
             "description" : "Status, active, inactive or provisional",
             "enum" : [ "I", "A", "P" ]
           },
-          "assessmentStaffId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Staff id of user that created the CSRA",
-            "example" : 123456
-          },
           "committeeCode" : {
             "$ref" : "#/components/schemas/AssessmentCommittee",
             "description" : "The assessment committee code (reference code in domain 'ASSESS_COMM')"
@@ -30899,7 +30893,7 @@
             "description" : "Approval Comment text"
           }
         },
-        "required" : [ "assessmentDate", "assessmentStaffId", "calculatedLevel", "createdBy", "createdDateTime", "score", "status", "type" ]
+        "required" : [ "assessmentDate", "calculatedLevel", "createdBy", "createdDateTime", "status", "type" ]
       },
       "EvaluationResultCode" : {
         "type" : "string",
@@ -35375,7 +35369,7 @@
             }
           }
         },
-        "required" : [ "assessmentDate", "assessmentStaffId", "bookingId", "createdBy", "createdDateTime", "score", "sections", "sequence", "status", "type" ]
+        "required" : [ "assessmentDate", "assessmentStaffId", "bookingId", "createdBy", "createdDateTime", "sections", "sequence", "status", "type" ]
       },
       "CsraQuestionDto" : {
         "type" : "object",
