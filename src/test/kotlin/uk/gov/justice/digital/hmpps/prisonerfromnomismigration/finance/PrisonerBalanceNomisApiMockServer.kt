@@ -14,7 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagedModelLong
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAccountDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RootOffenderIdsWithLast
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RootOffenderIdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -48,25 +48,38 @@ class PrisonerBalanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetPrisonerBalanceIdentifiersFromId(
-    content: List<Long>,
-    rootOffenderId: Long = 0,
+  fun stubGetPrisonerBalanceIdentifiersInRange(
+    fromRootOffenderId: Long = 10000L,
+    toRootOffenderId: Long = 10001L,
   ) {
+    val content: List<Long> = (fromRootOffenderId + 1..toRootOffenderId).map { it }
     nomisApi.stubFor(
-      get(urlPathEqualTo("/finance/prisoners/ids/all-from-id"))
-        .withQueryParam("rootOffenderId", equalTo(rootOffenderId.toString()))
+      get(urlPathEqualTo("/finance/prisoners/ids-in-range"))
+        .withQueryParam("fromRootOffenderId", equalTo(fromRootOffenderId.toString()))
+        .withQueryParam("toRootOffenderId", equalTo(toRootOffenderId.toString()))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(
-              jsonMapper.writeValueAsString(
-                RootOffenderIdsWithLast(
-                  rootOffenderIds = content,
-                  lastOffenderId = content.lastOrNull() ?: rootOffenderId,
-                ),
-              ),
-            ),
+            .withBody(jsonMapper.writeValueAsString(content)),
+        ),
+    )
+  }
+
+  fun stubGetAllPrisonersIdRanges(
+    pageSize: Long = 10,
+    totalElements: Long = 20,
+  ) {
+    val content: List<RootOffenderIdRange> = (0..(totalElements / pageSize))
+      .zipWithNext()
+      .map { RootOffenderIdRange(it.first * pageSize, it.second * pageSize) }
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/finance/prisoners/id-ranges"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(jsonMapper.writeValueAsString(content)),
         ),
     )
   }
