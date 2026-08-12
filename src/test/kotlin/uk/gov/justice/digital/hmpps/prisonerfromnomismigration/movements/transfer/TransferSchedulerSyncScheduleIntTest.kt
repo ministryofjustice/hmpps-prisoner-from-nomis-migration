@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer
 
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -20,6 +21,7 @@ import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension.Companion.dpsTransferSchedulerServer
@@ -593,6 +595,160 @@ class TransferSchedulerSyncScheduleIntTest(
       fun `should send event to DLQ`() {
         assertThat(awsSqsTransferMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(transferMovementsQueueOffenderEventsDlqUrl).get())
           .isEqualTo(1)
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("SCHEDULED_EXT_MOVE-DELETED")
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class TransferScheduleDeleted {
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPath {
+      val dpsId = UUID.randomUUID()
+
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferScheduleMapping(nomisEventId = 123L, dpsTransferScheduleId = dpsId)
+        mappingApi.stubDeleteTransferScheduleMapping(nomisEventId = 123L)
+        dpsApi.stubDeleteTransferSchedule(dpsId = dpsId)
+
+        sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-DELETED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")))
+      }
+
+      @Test
+      fun `should delete mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")))
+      }
+
+      @Test
+      fun `should delete DPS transfer`() {
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/transfers/$dpsId")))
+      }
+
+      @Test
+      fun `should create success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-schedule-deleted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["dpsTransferScheduleId"]).isEqualTo("$dpsId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenMappingNotFound {
+      val dpsId = UUID.randomUUID()
+
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
+
+        sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-DELETED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")))
+      }
+
+      @Test
+      fun `should NOT delete mapping`() {
+        mappingApi.verify(
+          count = 0,
+          deleteRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")),
+        )
+      }
+
+      @Test
+      fun `should NOT delete DPS transfer`() {
+        dpsApi.verify(
+          0,
+          deleteRequestedFor(urlPathEqualTo("/sync/transfers/$dpsId")),
+        )
+      }
+
+      @Test
+      fun `should create ignore telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-schedule-deleted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDpsReturnsConflict {
+      val dpsId = UUID.randomUUID()
+
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferScheduleMapping(nomisEventId = 123L, dpsTransferScheduleId = dpsId)
+        mappingApi.stubDeleteTransferScheduleMapping(nomisEventId = 123L)
+        dpsApi.stubDeleteTransferScheduleError(dpsId = dpsId, status = CONFLICT.value())
+
+        sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-DELETED"))
+          .also { waitForAnyProcessingToComplete("transfer-scheduler-sync-schedule-deleted-error", times = 2) }
+      }
+
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")))
+      }
+
+      @Test
+      fun `should NOT delete mapping`() {
+        mappingApi.verify(
+          count = 0,
+          deleteRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")),
+        )
+      }
+
+      @Test
+      fun `should attempt to delete DPS transfer`() {
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/transfers/$dpsId")))
+      }
+
+      @Test
+      fun `should create error telemetry`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("transfer-scheduler-sync-schedule-deleted-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["dpsTransferScheduleId"]).isEqualTo("$dpsId")
+            assertThat(it["error"]).isEqualTo("409 Conflict from DELETE http://localhost:8108/sync/transfers/$dpsId")
+          },
+          isNull(),
+        )
       }
     }
   }
