@@ -510,8 +510,6 @@ class TransferSchedulerSyncScheduleIntTest(
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class WhenUpdatedInDps {
-      val dpsId = UUID.randomUUID()
-
       @BeforeEach
       fun setUp() {
         setUpTestClass()
