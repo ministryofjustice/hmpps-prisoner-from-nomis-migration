@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -75,6 +76,45 @@ class TransferScheduleDpsApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.syncTransferSchedule("A1234BC", syncTransferRequest())
+      }
+    }
+  }
+
+  @Nested
+  inner class DeleteTransferSchedule {
+
+    @Test
+    internal fun `should pass oath2 token`() = runTest {
+      val dpsId = UUID.randomUUID()
+      dpsTransferSchedulerServer.stubDeleteTransferSchedule(dpsId)
+
+      apiService.deleteTransferSchedule(dpsId)
+
+      dpsTransferSchedulerServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should call the endpoint`() = runTest {
+      val dpsId = UUID.randomUUID()
+      dpsTransferSchedulerServer.stubDeleteTransferSchedule(dpsId)
+
+      apiService.deleteTransferSchedule(dpsId)
+
+      dpsTransferSchedulerServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/transfers/$dpsId")),
+      )
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      val dpsId = UUID.randomUUID()
+      dpsTransferSchedulerServer.stubDeleteTransferScheduleError(dpsId)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.deleteTransferSchedule(dpsId)
       }
     }
   }

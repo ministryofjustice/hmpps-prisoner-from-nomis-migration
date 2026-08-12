@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transf
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -149,6 +150,32 @@ class TransferScheduleDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     dpsTransferSchedulerServer.stubFor(
       put("/sync/transfers/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubDeleteTransferSchedule(dpsId: UUID) {
+    dpsTransferSchedulerServer.stubFor(
+      delete("/sync/transfers/$dpsId")
+        .willReturn(
+          aResponse()
+            .withStatus(204),
+        ),
+    )
+  }
+
+  fun stubDeleteTransferScheduleError(
+    dpsId: UUID,
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsTransferSchedulerServer.stubFor(
+      delete("/sync/transfers/$dpsId")
         .willReturn(
           aResponse()
             .withStatus(status)
