@@ -17,6 +17,7 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
@@ -31,6 +32,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
@@ -56,10 +58,12 @@ class TransferSchedulerSyncScheduleIntTest(
 
   @Nested
   @DisplayName("SCHEDULED_EXT_MOVE-INSERTED")
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class TransferScheduleCreated {
     private val dpsId = UUID.randomUUID()
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPath {
       @BeforeEach
       fun setUp() {
@@ -141,6 +145,7 @@ class TransferSchedulerSyncScheduleIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathNoWaitlist {
       @BeforeEach
       fun setUp() {
@@ -183,6 +188,7 @@ class TransferSchedulerSyncScheduleIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class WhenWaitlistCreatedMoreRecently {
       private val waitlistCreatedTime = LocalDateTime.now()
       private val scheduleCreatedTime = LocalDateTime.now().minusDays(1)
@@ -223,6 +229,7 @@ class TransferSchedulerSyncScheduleIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class WhenCreatedInDps {
       @BeforeEach
       fun setUp() {
@@ -263,6 +270,7 @@ class TransferSchedulerSyncScheduleIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class WhenAlreadyCreated {
       @BeforeEach
       fun setUp() {
@@ -302,6 +310,7 @@ class TransferSchedulerSyncScheduleIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class DuplicateMapping {
       @BeforeEach
       fun setUp() {
@@ -382,6 +391,7 @@ class TransferSchedulerSyncScheduleIntTest(
     }
 
     @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class MappingRetry {
       @BeforeEach
       fun setUp() {
@@ -428,6 +438,163 @@ class TransferSchedulerSyncScheduleIntTest(
           },
           isNull(),
         )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("SCHEDULE_EXT_MOVE-UPDATED")
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class TransferScheduleUpdated {
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPath {
+      val dpsId = UUID.randomUUID()
+
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferScheduleMapping(nomisEventId = 123L, dpsTransferScheduleId = dpsId)
+        nomisApi.stubGetTransferScheduleOut(offenderNo = "A1234BC", eventId = 123L)
+        dpsApi.stubSyncTransferSchedule(personIdentifier = "A1234BC", response = ReferenceId(dpsId))
+
+        sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-UPDATED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")))
+      }
+
+      @Test
+      fun `should get NOMIS court event`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/transfers/schedule/out/123")))
+      }
+
+      @Test
+      fun `should update DPS scheduled movement passing DPS ID`() {
+        TransferScheduleDpsApiMockServer.getRequestBody<SyncTransferRequest>(
+          putRequestedFor(urlPathEqualTo("/sync/transfers/A1234BC")),
+        ).apply {
+          assertThat(transfer.dpsId).isEqualTo(dpsId)
+          assertThat(transfer.eventId).isEqualTo(123L)
+        }
+      }
+
+      @Test
+      fun `should NOT create mapping`() {
+        mappingApi.verify(
+          count = 0,
+          postRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule")),
+        )
+      }
+
+      @Test
+      fun `should raise telemetry`() = runTest {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-schedule-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["dpsTransferScheduleId"]).isEqualTo("$dpsId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenUpdatedInDps {
+      val dpsId = UUID.randomUUID()
+
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-UPDATED", "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT check mapping`() {
+        mappingApi.verify(
+          count = 0,
+          getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")),
+        )
+      }
+
+      @Test
+      fun `should NOT update DPS scheduled transfer`() {
+        dpsApi.verify(
+          0,
+          putRequestedFor(urlPathEqualTo("/sync/transfers/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should raise telemetry`() = runTest {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-schedule-updated-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenMappingDoesNotExist {
+      val dpsId = UUID.randomUUID()
+
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
+
+        sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-UPDATED"))
+          .also { waitForAnyProcessingToComplete("transfer-scheduler-sync-schedule-updated-error", times = 2) }
+      }
+
+      @Test
+      fun `should check mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")))
+      }
+
+      @Test
+      fun `should NOT update DPS scheduled transfer`() {
+        dpsApi.verify(
+          0,
+          putRequestedFor(urlPathEqualTo("/sync/transfers/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should raise telemetry`() = runTest {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("transfer-scheduler-sync-schedule-updated-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should send event to DLQ`() {
+        assertThat(awsSqsTransferMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(transferMovementsQueueOffenderEventsDlqUrl).get())
+          .isEqualTo(1)
       }
     }
   }
