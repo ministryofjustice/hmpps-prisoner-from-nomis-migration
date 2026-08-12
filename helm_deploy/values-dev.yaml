@@ -33,6 +33,7 @@ generic-service:
     API_BASE_URL_MOVEMENTS_COURT: https://court-appearance-scheduler-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_MOVEMENTS_TRANSFER: https://transfer-scheduler-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_OFFICIALVISITS: https://official-visits-api-dev.hmpps.service.justice.gov.uk
+    API_BASE_URL_AGENCYREGISTERS: https://prison-register-dev.hmpps.service.justice.gov.uk
     FEATURE_EVENT_PROPERTY_PRISONER_PROPERTY-INSERTED: true
     FEATURE_EVENT_PROPERTY_PRISONER_PROPERTY-UPDATED: true
     FEATURE_EVENT_PROPERTY_PRISONER_PROPERTY-DELETED: true
