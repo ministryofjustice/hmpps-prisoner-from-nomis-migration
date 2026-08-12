@@ -12,7 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.m
 class AgencyRegistersDpsApiService(
   @Qualifier("agencyApiWebClient") private val webClient: WebClient,
 ) {
-  val api = LegacySyncResourceApi(webClient)
+  private val api = LegacySyncResourceApi(webClient)
 
   suspend fun migrateAgency(agencyId: String, request: LegacyAgencyDto): LegacyAgencyResponse = api.migrateAgency(agencyId, request).awaitSingle()
 }
