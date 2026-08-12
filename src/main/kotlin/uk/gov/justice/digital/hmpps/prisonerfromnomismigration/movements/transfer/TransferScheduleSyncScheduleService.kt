@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncTransferRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncWaitlist
+import java.util.UUID
 
 private const val TELEMETRY_PREFIX: String = "${TRANSFER_TELEMETRY_PREFIX}-schedule"
 
@@ -64,9 +65,40 @@ class TransferScheduleSyncScheduleService(
       }
   }
 
-  suspend fun syncTransferScheduleOut(prisonerNumber: String, eventId: Long, telemetry: MutableMap<String, Any>): TransferScheduleMappingDto {
+  suspend fun scheduledMovementUpdated(event: ScheduledMovementEvent) = when (event.eventMovementType) {
+    TRN if (event.directionCode == OUT) -> syncTransferScheduleOutUpdated(event)
+    else -> log.info("Ignoring update of scheduled movement event ID ${event.eventId} with type ${event.eventMovementType} and direction ${event.directionCode} ")
+  }
+
+  suspend fun syncTransferScheduleOutUpdated(event: ScheduledMovementEvent) {
+    val (eventId, bookingId, prisonerNumber) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber,
+      "bookingId" to bookingId,
+      "nomisEventId" to eventId,
+    )
+    if (event.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
+      telemetryClient.trackEvent("${TELEMETRY_PREFIX}-updated-ignored", telemetry)
+      return
+    }
+
+    track("${TELEMETRY_PREFIX}-updated", telemetry) {
+      val existingMapping = mappingApiService.getTransferScheduleMappingOrNull(eventId)
+        ?.also { telemetry["dpsTransferScheduleId"] = it.dpsTransferScheduleId }
+        ?: throw IllegalStateException("No mapping found when handling an update event for scheduled transfer $eventId - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
+
+      syncTransferScheduleOut(prisonerNumber, eventId, telemetry, existingMapping)
+    }
+  }
+
+  suspend fun syncTransferScheduleOut(
+    prisonerNumber: String,
+    eventId: Long,
+    telemetry: MutableMap<String, Any>,
+    existingMapping: TransferScheduleMappingDto? = null,
+  ): TransferScheduleMappingDto {
     val nomis = nomisApiService.getTransferScheduleOut(prisonerNumber, eventId)
-    val dpsId = dpsApiService.syncTransferSchedule(prisonerNumber, nomis.toDpsRequest()).dpsId
+    val dpsId = dpsApiService.syncTransferSchedule(prisonerNumber, nomis.toDpsRequest(existingMapping?.dpsTransferScheduleId)).dpsId
       .also { telemetry["dpsTransferScheduleId"] = it }
     return TransferScheduleMappingDto(prisonerNumber, nomis.bookingId, eventId, dpsId, NOMIS_CREATED)
   }
@@ -117,7 +149,7 @@ class TransferScheduleSyncScheduleService(
   }
 }
 
-fun TransferScheduleOut.toDpsRequest(): SyncTransferRequest {
+fun TransferScheduleOut.toDpsRequest(dpsId: UUID? = null): SyncTransferRequest {
   val (waitlistOccurredAt, waitlistUser) = waitlist?.audit?.modifyDatetime
     ?.let { waitlist.audit.modifyDatetime to waitlist.audit.modifyUserId!! }
     ?: (waitlist?.audit?.createDatetime to waitlist?.audit?.createUsername)
@@ -127,6 +159,7 @@ fun TransferScheduleOut.toDpsRequest(): SyncTransferRequest {
   val useWaitlist = waitlistOccurredAt != null && waitlistOccurredAt > scheduleOccurredAt
   return SyncTransferRequest(
     transfer = SyncTransfer(
+      dpsId = dpsId,
       eventId = eventId,
       schedule = SyncSchedule(
         start = startTime,
