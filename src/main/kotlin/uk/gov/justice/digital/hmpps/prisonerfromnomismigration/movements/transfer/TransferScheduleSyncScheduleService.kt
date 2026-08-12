@@ -118,6 +118,12 @@ class TransferScheduleSyncScheduleService(
       "bookingId" to bookingId,
       "nomisEventId" to eventId,
     )
+
+    if (event.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
+      telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-ignored", telemetry)
+      return
+    }
+
     mappingApiService.getTransferScheduleMappingOrNull(eventId)
       ?.also {
         track("${TELEMETRY_PREFIX}-deleted", telemetry) {

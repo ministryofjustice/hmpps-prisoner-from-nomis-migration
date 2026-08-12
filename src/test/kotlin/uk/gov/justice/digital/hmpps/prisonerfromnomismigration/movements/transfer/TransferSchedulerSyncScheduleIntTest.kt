@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
@@ -645,6 +646,56 @@ class TransferSchedulerSyncScheduleIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["nomisEventId"]).isEqualTo("123")
             assertThat(it["dpsTransferScheduleId"]).isEqualTo("$dpsId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDeletedInDps {
+
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        sendMessage(transferScheduleEvent("SCHEDULED_EXT_MOVE-DELETED", "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT check mapping`() {
+        mappingApi.verify(
+          count = 0,
+          getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")),
+        )
+      }
+
+      @Test
+      fun `should NOT delete mapping`() {
+        mappingApi.verify(
+          count = 0,
+          deleteRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")),
+        )
+      }
+
+      @Test
+      fun `should NOT delete DPS transfer`() {
+        dpsApi.verify(
+          0,
+          deleteRequestedFor(urlPathMatching("/sync/transfers/.*")),
+        )
+      }
+
+      @Test
+      fun `should create ignore telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-schedule-deleted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
           },
           isNull(),
         )
