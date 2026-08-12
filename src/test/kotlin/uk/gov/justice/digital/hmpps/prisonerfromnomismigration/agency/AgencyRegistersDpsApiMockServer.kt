@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -10,6 +11,14 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency.AgencyRegistersDpsApiExtension.Companion.jsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency.AgencyRegistersDpsApiExtension.Companion.legacyAgencyResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyAddressDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyEmailDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyPhoneDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 
 class AgencyRegistersDpsApiExtension :
@@ -29,6 +38,46 @@ class AgencyRegistersDpsApiExtension :
       enableResetBeforeEach = false
       agencyRegistersApi.resetAll()
     }
+
+    fun legacyAgencyDto() = LegacyAgencyDto(
+      agencyType = LegacyAgencyType.COURT,
+      name = "Sheffield Crown Ct",
+      active = true,
+      addresses = listOf(legacyAgencyAddressDto()),
+      emailAddresses = listOf(legacyAgencyEmailDto()),
+      phoneNumbers = listOf(legacyAgencyPhoneDto()),
+      description = "Sheffield Crown Court",
+      inactiveDate = null,
+      cjitCode = "C00SH00",
+      areaCode = "52",
+      regionCode = "YOHUM",
+      geographicalAreaCode = null,
+      payrollRegionCode = null,
+      courtTypeCode = "CC",
+      accessibleAccess = LegacyAgencyDto.AccessibleAccess.BY_ARRANGEMENT_ONLY,
+      contact = null,
+    )
+
+    fun legacyAgencyAddressDto() = LegacyAgencyAddressDto(
+      addressLine1 = "Sheffield Combined Crt Centre, The Law Courts",
+      addressLine2 = "50 West Bar",
+      town = "Sheffield",
+      county = "South Yorkshire",
+      postcode = "S3 8PH",
+      country = "England",
+    )
+
+    fun legacyAgencyEmailDto() = LegacyAgencyEmailDto(
+      address = "sheffield.crown.court@test.com",
+    )
+
+    fun legacyAgencyPhoneDto() = LegacyAgencyPhoneDto(
+      number = "0114 555 9898",
+    )
+
+    fun legacyAgencyResponse() = LegacyAgencyResponse(
+      updated = true,
+    )
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -58,6 +107,17 @@ class AgencyRegistersDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withHeader("Content-Type", "application/json")
           .withBody(if (status == 200) "pong" else "some error")
           .withStatus(status),
+      ),
+    )
+  }
+
+  fun stubMigrateAgency(agencyId: String, response: LegacyAgencyResponse = legacyAgencyResponse()) {
+    stubFor(
+      post("/legacy/migrate/agency/id/$agencyId").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(jsonMapper.writeValueAsString(response))
+          .withStatus(200),
       ),
     )
   }
