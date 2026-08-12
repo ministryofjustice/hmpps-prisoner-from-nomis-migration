@@ -5,6 +5,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -156,6 +157,12 @@ class TapScheduleService(
       "nomisEventId" to eventId,
       "directionCode" to directionCode,
     )
+
+    if (event.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
+      telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-ignored", telemetry)
+      return
+    }
+
     mappingApiService.getTapScheduleMappingOrNull(eventId)?.also {
       track("${TELEMETRY_PREFIX}-deleted", telemetry) {
         telemetry["dpsOccurrenceId"] = it.dpsOccurrenceId
