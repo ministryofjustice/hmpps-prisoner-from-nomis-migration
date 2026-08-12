@@ -36,7 +36,7 @@ class TransferScheduleEventListener(
             when (eventType) {
               "SCHEDULED_EXT_MOVE-INSERTED" -> transferScheduleService.scheduledMovementInserted(sqsMessage.Message.fromJson())
               "SCHEDULED_EXT_MOVE-UPDATED" -> transferScheduleService.scheduledMovementUpdated(sqsMessage.Message.fromJson())
-              "SCHEDULED_EXT_MOVE-DELETED" -> {}
+              "SCHEDULED_EXT_MOVE-DELETED" -> transferScheduleService.transferScheduleDeleted(sqsMessage.Message.fromJson())
               "EXTERNAL_MOVEMENT-CHANGED" -> {}
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }

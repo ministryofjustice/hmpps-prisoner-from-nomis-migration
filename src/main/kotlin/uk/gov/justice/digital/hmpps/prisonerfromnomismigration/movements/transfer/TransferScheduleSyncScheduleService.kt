@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
@@ -11,7 +12,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.DirectionCode.OUT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.TRN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ScheduledMovementEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapScheduleService.Companion.log
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransfersRetryMappingMessageTypes.RETRY_MAPPING_TRANSFER_SCHEDULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferScheduleMappingDto
@@ -25,7 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncTransferRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncWaitlist
-import java.util.UUID
+import java.util.*
 
 private const val TELEMETRY_PREFIX: String = "${TRANSFER_TELEMETRY_PREFIX}-schedule"
 
@@ -37,6 +37,9 @@ class TransferScheduleSyncScheduleService(
   private val queueService: SynchronisationQueueService,
   override val telemetryClient: TelemetryClient,
 ) : TelemetryEnabled {
+  companion object {
+    val log = LoggerFactory.getLogger(this::class.java)
+  }
 
   suspend fun scheduledMovementInserted(event: ScheduledMovementEvent) = when (event.eventMovementType) {
     TRN if (event.directionCode == OUT) -> syncTransferScheduleOutInserted(event)
@@ -101,6 +104,28 @@ class TransferScheduleSyncScheduleService(
     val dpsId = dpsApiService.syncTransferSchedule(prisonerNumber, nomis.toDpsRequest(existingMapping?.dpsTransferScheduleId)).dpsId
       .also { telemetry["dpsTransferScheduleId"] = it }
     return TransferScheduleMappingDto(prisonerNumber, nomis.bookingId, eventId, dpsId, NOMIS_CREATED)
+  }
+
+  suspend fun transferScheduleDeleted(event: ScheduledMovementEvent) = when (event.eventMovementType) {
+    TRN if (event.directionCode == OUT) -> transferScheduleOutDeleted(event)
+    else -> log.info("Ignoring delete of transfer schedule event ID ${event.eventId} with type ${event.eventMovementType} and direction ${event.directionCode} ")
+  }
+
+  suspend fun transferScheduleOutDeleted(event: ScheduledMovementEvent) {
+    val (eventId, bookingId, prisonerNumber) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber,
+      "bookingId" to bookingId,
+      "nomisEventId" to eventId,
+    )
+    mappingApiService.getTransferScheduleMappingOrNull(eventId)
+      ?.also {
+        track("${TELEMETRY_PREFIX}-deleted", telemetry) {
+          telemetry["dpsTransferScheduleId"] = it.dpsTransferScheduleId
+          dpsApiService.deleteTransferSchedule(it.dpsTransferScheduleId)
+          mappingApiService.deleteTransferScheduleMapping(eventId)
+        }
+      } ?: run { telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-ignored", telemetry) }
   }
 
   private suspend fun tryToCreateScheduleMapping(mapping: TransferScheduleMappingDto, telemetry: MutableMap<String, Any>) {
