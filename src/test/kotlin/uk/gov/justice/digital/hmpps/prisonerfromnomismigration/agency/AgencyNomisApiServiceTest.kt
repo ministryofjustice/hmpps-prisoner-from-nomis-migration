@@ -26,7 +26,7 @@ class AgencyNomisApiServiceTest {
   @Nested
   inner class GetAgency {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       mockServer.stubGetAgency(
         agencyId = "SHEFCC",
       )
