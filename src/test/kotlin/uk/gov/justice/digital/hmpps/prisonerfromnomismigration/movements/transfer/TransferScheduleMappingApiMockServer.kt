@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transf
 
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
@@ -119,6 +120,27 @@ class TransferScheduleMappingApiMockServer(private val jsonMapper: JsonMapper) {
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubDeleteTransferScheduleMapping(nomisEventId: Long = 1L) {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/transfer-scheduler/schedule/nomis-id/$nomisEventId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(204),
+      ),
+    )
+  }
+
+  fun stubDeleteTransferScheduleMapping(nomisEventId: Long = 1L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/transfer-scheduler/schedule/nomis-id/$nomisEventId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
           .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )

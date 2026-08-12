@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer
 
+import kotlinx.coroutines.reactive.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
@@ -23,6 +24,9 @@ class TransferScheduleMappingApiService(@Qualifier("transferScheduleMappingApiWe
   suspend fun getTransferScheduleMappingOrNull(nomisEventId: Long): TransferScheduleMappingDto? = scheduleApi.prepare(scheduleApi.getTransferScheduleMappingByNomisIdRequestConfig(nomisEventId))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun deleteTransferScheduleMapping(nomisEventId: Long): Unit = scheduleApi.deleteTransferScheduleMappingByNomisId(nomisEventId)
+    .awaitSingle()
 
   suspend fun createTransferMovementMapping(mapping: TransferMovementMappingDto) = movementApi.prepare(movementApi.createTransferMovementMappingRequestConfig(mapping))
     .retrieve()
