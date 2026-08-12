@@ -56,6 +56,7 @@ class StaffMigrationIntTest(
 ) : StaffIntegrationTestBase() {
   private val dpsApiMock = StaffDpsApiExtension.dpsStaffServer
 
+  // Investigate issue
   override fun resetTelemetryClient() {}
 
   internal fun setupMigrationTest() = runBlocking {
