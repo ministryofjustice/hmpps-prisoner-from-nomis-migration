@@ -470,7 +470,7 @@ class TransferSchedulerSyncScheduleIntTest(
       }
 
       @Test
-      fun `should get NOMIS court event`() {
+      fun `should get NOMIS transfer schedule event`() {
         nomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/A1234BC/transfers/schedule/out/123")))
       }
 
