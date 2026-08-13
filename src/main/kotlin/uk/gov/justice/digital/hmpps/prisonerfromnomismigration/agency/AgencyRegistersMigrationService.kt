@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SimpleMig
 class AgencyRegistersMigrationService(
   @Qualifier("mappingApiWebClient") webClient: WebClient,
   private val agencyNomisApiService: AgencyNomisApiService,
+  private val agencyRegistersDpsApiService: AgencyRegistersDpsApiService,
   jsonMapper: JsonMapper,
   @Value($$"${agencyregisters.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${agencyregisters.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
@@ -34,7 +35,9 @@ class AgencyRegistersMigrationService(
 ) {
 
   override suspend fun migrateNomisEntity(context: MigrationContext<AgencyId>) {
-    TODO("Not yet implemented")
+    val agencyId = context.body.agencyId
+    val agency = agencyNomisApiService.getAgency(agencyId)
+    agencyRegistersDpsApiService.migrateAgency(agencyId, agency.toLegacyAgencyDto())
   }
 
   override suspend fun getIds(): List<AgencyId> {
