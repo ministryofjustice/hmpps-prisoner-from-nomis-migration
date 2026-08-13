@@ -29,8 +29,10 @@ interface EventAudited {
   val originatesInDpsOrHasMissingAudit: Boolean
     get() = auditModuleName.isNullOrEmpty() || auditModuleName?.startsWith(DPS_SYNC_AUDIT_MODULE) == true
 
-  fun auditExactMatchOrHasMissingAudit(audit: String) = auditModuleName.isNullOrEmpty() || auditModuleName == audit
+  fun auditExactMatchOrHasMissingAudit(audit: String) = auditModuleName.auditExactMatchOrHasMissingAudit(audit)
 }
+
+fun String?.auditExactMatchOrHasMissingAudit(audit: String) = isNullOrEmpty() || this == audit
 
 interface TelemetryEnabled {
   val telemetryClient: TelemetryClient

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.auditExactMatchOrHasMissingAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
@@ -75,12 +76,24 @@ class TransferScheduleSyncScheduleService(
 
   suspend fun syncTransferScheduleOutUpdated(event: ScheduledMovementEvent) {
     val (eventId, bookingId, prisonerNumber) = event
+    syncTransferScheduleOutUpdated(prisonerNumber, bookingId, eventId, event.auditModuleName)
+  }
+
+  suspend fun transferWaitlistChanged(event: TransferWaitlistEvent) {
+    val (eventId, bookingId, prisonerNumber) = event
+
+    // In DPS a waitlist is a child of the schedule, so we treat all waitlist events as a schedule update
+    syncTransferScheduleOutUpdated(prisonerNumber, bookingId, eventId, event.auditModuleName)
+  }
+
+  suspend fun syncTransferScheduleOutUpdated(prisonerNumber: String, bookingId: Long, eventId: Long, auditModuleName: String) {
     val telemetry = mutableMapOf<String, Any>(
       "offenderNo" to prisonerNumber,
       "bookingId" to bookingId,
       "nomisEventId" to eventId,
     )
-    if (event.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
+
+    if (auditModuleName.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
       telemetryClient.trackEvent("${TELEMETRY_PREFIX}-updated-ignored", telemetry)
       return
     }
