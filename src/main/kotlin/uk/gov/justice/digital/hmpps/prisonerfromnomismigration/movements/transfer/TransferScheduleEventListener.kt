@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
@@ -37,6 +38,7 @@ class TransferScheduleEventListener(
               "SCHEDULED_EXT_MOVE-INSERTED" -> transferScheduleService.scheduledMovementInserted(sqsMessage.Message.fromJson())
               "SCHEDULED_EXT_MOVE-UPDATED" -> transferScheduleService.scheduledMovementUpdated(sqsMessage.Message.fromJson())
               "SCHEDULED_EXT_MOVE-DELETED" -> transferScheduleService.transferScheduleDeleted(sqsMessage.Message.fromJson())
+              "TRANSFER_WAITLIST-INSERTED", "TRANSFER_WAITLIST-UPDATED", "TRANSFER_WAITLIST-DELETED" -> transferScheduleService.transferWaitlistChanged(sqsMessage.Message.fromJson())
               "EXTERNAL_MOVEMENT-CHANGED" -> {}
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
@@ -59,3 +61,10 @@ class TransferScheduleEventListener(
 enum class TransfersRetryMappingMessageTypes {
   RETRY_MAPPING_TRANSFER_SCHEDULE,
 }
+
+data class TransferWaitlistEvent(
+  val eventId: Long,
+  val bookingId: Long,
+  val offenderIdDisplay: String,
+  override val auditModuleName: String,
+) : EventAudited
