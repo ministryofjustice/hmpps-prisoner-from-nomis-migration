@@ -112,3 +112,6 @@ hmpps.sqs:
     migrationvisitslots:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    migrationagencyregisters:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}

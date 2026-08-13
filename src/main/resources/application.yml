@@ -239,6 +239,11 @@ officialvisits:
     delay-seconds: 180
     count: 9
 
+agencyregisters:
+  complete-check:
+    delay-seconds: 10
+    count: 9
+
 coreperson:
   complete-check:
     delay-seconds: 10
@@ -312,6 +317,9 @@ hmpps.sqs:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationofficialvisits:
+      errorVisibilityTimeout: 1, 1, 1, 10
+      propagateTracing: false
+    migrationagencyregisters:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
 
