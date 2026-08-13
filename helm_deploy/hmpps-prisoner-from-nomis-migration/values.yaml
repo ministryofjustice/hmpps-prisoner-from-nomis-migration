@@ -148,6 +148,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONVISITSLOTS_QUEUE_NAME: "sqs_name"
     sqs-migration-visitslots-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONVISITSLOTS_DLQ_NAME: "sqs_name"
+    sqs-migration-agencyregisters-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONAGENCYREGISTERS_QUEUE_NAME: "sqs_name"
+    sqs-migration-agencyregisters-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONAGENCYREGISTERS_DLQ_NAME: "sqs_name"
     prison-events-visits-queue:
       HMPPS_SQS_QUEUES_EVENTVISITS_QUEUE_NAME: "sqs_name"
     prison-events-visits-dl-queue:
