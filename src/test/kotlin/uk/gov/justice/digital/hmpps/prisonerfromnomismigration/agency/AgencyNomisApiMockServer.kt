@@ -9,6 +9,8 @@ import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
@@ -74,6 +76,13 @@ class AgencyNomisApiMockServer(private val jsonMapper: JsonMapper) {
       id = 1,
       emailAddress = "sheffield.crown.court@test.com",
     )
+
+    fun agencyId() = AgencyId(
+      agencyId = "SHEFCC",
+    )
+    fun agencyIdsResponse() = AgencyIdsResponse(
+      agencyIds = listOf(agencyId()),
+    )
   }
 
   fun stubGetAgency(
@@ -82,6 +91,18 @@ class AgencyNomisApiMockServer(private val jsonMapper: JsonMapper) {
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/agency/$agencyId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(jsonMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+  fun stubGetAgencyIds(
+    response: AgencyIdsResponse = agencyIdsResponse(),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/agency/ids/all")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
