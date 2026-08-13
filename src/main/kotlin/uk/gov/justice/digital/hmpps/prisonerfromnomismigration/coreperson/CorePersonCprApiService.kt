@@ -5,7 +5,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.awaitBodilessEntity
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.PrisonApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.SysconSyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDisabilityStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatus
@@ -21,7 +20,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 @Service
 class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val webClient: WebClient) {
   private val api = SysconSyncApi(webClient)
-  private val personApi = PrisonApi(webClient)
 
   suspend fun migrateCorePersonReligion(prisonNumber: String, request: PrisonReligionRequest): SysconReligionResponseBody = api
     .prepare(api.savePrisonerReligionsRequestConfig(prisonNumber, request))
@@ -48,13 +46,13 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncCreateOffenderBelief(prisonNumber: String, religion: PrisonReligionHistory): PrisonReligionSaveResponse = personApi
-    .prepare(personApi.savePrisonReligionSysconRequestConfig(prisonNumber, religion))
+  suspend fun syncCreateOffenderBelief(prisonNumber: String, religion: PrisonReligionHistory): PrisonReligionSaveResponse = api
+    .prepare(api.savePrisonReligionRequestConfig(prisonNumber, religion))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncUpdateOffenderBelief(prisonNumber: String, cprReligionId: String, religion: PrisonReligionUpdateRequest): ResponseEntity<Void> = personApi
-    .prepare(personApi.updatePrisonReligionSysconRequestConfig(prisonNumber, cprReligionId, religion))
+  suspend fun syncUpdateOffenderBelief(prisonNumber: String, cprReligionId: String, religion: PrisonReligionUpdateRequest): ResponseEntity<Void> = api
+    .prepare(api.updatePrisonReligionRequestConfig(prisonNumber, cprReligionId, religion))
     .retrieve()
     .awaitBodilessEntity()
 }
