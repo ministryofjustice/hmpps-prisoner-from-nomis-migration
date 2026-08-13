@@ -30,6 +30,7 @@ api.base.url:
   movements-court: http://localhost:8106
   property: http://localhost:8107
   movements-transfer: http://localhost:8108
+  agencyregisters: http://localhost:8109
 
 visits:
   page:
@@ -139,6 +140,11 @@ officialvisits:
     count: 1
   page:
     size: 10
+agencyregisters:
+  complete-check:
+    delay-seconds: 0
+    retry-seconds: 0
+    count: 1
 
 spring:
   r2dbc:
@@ -210,6 +216,8 @@ hmpps.sqs:
     migrationofficialvisits:
       dlqMaxReceiveCount: 2
     migrationvisitslots:
+      dlqMaxReceiveCount: 2
+    migrationagencyregisters:
       dlqMaxReceiveCount: 2
     migrationactivities:
       errorVisibilityTimeout: 0

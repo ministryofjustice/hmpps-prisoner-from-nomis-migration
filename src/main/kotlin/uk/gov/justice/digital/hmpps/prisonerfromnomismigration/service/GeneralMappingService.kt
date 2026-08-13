@@ -37,6 +37,7 @@ class GeneralMappingService(
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long = when (migrationType) {
     MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
+    MigrationType.AGENCY_REGISTERS -> 0
     MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
     MigrationType.CORE_PERSON_RELIGION -> religionsMappingService.getMigrationCount(migrationId)

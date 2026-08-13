@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transf
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -16,6 +17,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ReferenceId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncSchedule
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncTransfer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncTransferRequest
@@ -88,6 +91,32 @@ class TransferScheduleDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
 
+    fun syncTransferMovementRequest(
+      dpsId: UUID? = null,
+      dpsTransferId: UUID? = null,
+      nomisBookingId: Long? = 12345L,
+      nomisMovementSeq: Int? = 3,
+    ) = SyncMovementRequest(
+      occurredAt = LocalDateTime.now(),
+      syncUser = SyncUser(
+        username = "USER",
+        activeCaseloadId = "MDI",
+      ),
+      movement = SyncMovement(
+        dpsId = dpsId,
+        dpsTransferId = dpsTransferId,
+        offenderBookId = nomisBookingId,
+        movementSeq = nomisMovementSeq,
+        occurredAt = LocalDateTime.now(),
+        movementReasonCode = "28",
+        escortCode = "PECS",
+        fromAgyLocId = "BXI",
+        toAgyLocId = "LEI",
+        active = true,
+        commentText = "some transfer movement comment",
+      ),
+    )
+
     fun referenceId(id: UUID = UUID.randomUUID()) = ReferenceId(id)
 
     fun stubHealthPing(status: Int) {
@@ -121,6 +150,60 @@ class TransferScheduleDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     dpsTransferSchedulerServer.stubFor(
       put("/sync/transfers/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubDeleteTransferSchedule(dpsId: UUID) {
+    dpsTransferSchedulerServer.stubFor(
+      delete("/sync/transfers/$dpsId")
+        .willReturn(
+          aResponse()
+            .withStatus(204),
+        ),
+    )
+  }
+
+  fun stubDeleteTransferScheduleError(
+    dpsId: UUID,
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsTransferSchedulerServer.stubFor(
+      delete("/sync/transfers/$dpsId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubSyncTransferMovement(personIdentifier: String, response: ReferenceId = referenceId()) {
+    dpsTransferSchedulerServer.stubFor(
+      put("/sync/transfer-movements/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubSyncTransferMovementError(
+    personIdentifier: String,
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsTransferSchedulerServer.stubFor(
+      put("/sync/transfer-movements/$personIdentifier")
         .willReturn(
           aResponse()
             .withStatus(status)

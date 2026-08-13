@@ -847,6 +847,52 @@ class TapScheduleIntTest(
     }
 
     @Nested
+    inner class WhenDeletedInDps {
+      @BeforeEach
+      fun setUp() {
+        sendMessage(tapScheduleEvent("SCHEDULED_EXT_MOVE-DELETED", "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT get mapping`() {
+        mappingApi.verify(
+          count = 0,
+          getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/45678")),
+        )
+      }
+
+      @Test
+      fun `should NOT delete mapping`() {
+        mappingApi.verify(
+          count = 0,
+          deleteRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/45678")),
+        )
+      }
+
+      @Test
+      fun `should NOT delete DPS scheduled movement`() {
+        dpsApi.verify(
+          0,
+          deleteRequestedFor(urlPathEqualTo("/sync/temporary-absence-occurrences/$dpsOccurrenceId")),
+        )
+      }
+
+      @Test
+      fun `should create ignore telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("temporary-absence-sync-scheduled-movement-deleted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["nomisEventId"]).isEqualTo("45678")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
     inner class WhenMappingDoesNotExist {
       @BeforeEach
       fun setUp() {

@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.heal
 
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency.AgencyRegistersDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
@@ -48,6 +49,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsAp
   TapDpsApiExtension::class,
   VisitBalanceDpsApiExtension::class,
   VisitsApiExtension::class,
+  AgencyRegistersDpsApiExtension::class,
 )
 class HealthCheckTest : SqsIntegrationTestBase() {
 
@@ -81,6 +83,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
       .jsonPath("components.tapsApi.status").isEqualTo("UP")
       .jsonPath("components.visitBalanceApi.status").isEqualTo("UP")
       .jsonPath("components.visitsApi.status").isEqualTo("UP")
+      .jsonPath("components.agencyApi.status").isEqualTo("UP")
   }
 
   @Test
@@ -151,5 +154,6 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     OfficialVisitsDpsApiExtension.dpsOfficialVisitsServer.stubHealthPing(status)
     VisitBalanceDpsApiExtension.dpsVisitBalanceServer.stubHealthPing(status)
     VisitsApiExtension.visitsApi.stubHealthPing(status)
+    AgencyRegistersDpsApiExtension.agencyRegistersApi.stubHealthPing(status)
   }
 }

@@ -33,6 +33,7 @@ generic-service:
     API_BASE_URL_MOVEMENTS_COURT: https://court-appearance-scheduler-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_MOVEMENTS_TRANSFER: https://transfer-scheduler-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_OFFICIALVISITS: https://official-visits-api-preprod.hmpps.service.justice.gov.uk
+    API_BASE_URL_AGENCYREGISTERS: https://prison-register-preprod.hmpps.service.justice.gov.uk
     CONTACT-SENTENCING_COURT-EVENT-UPDATE_IGNORE-MISSING: true
     FEATURE_EVENT_STAFF_MEMBERS-INSERTED: false
     FEATURE_EVENT_STAFF_MEMBERS-UPDATED: false
@@ -52,10 +53,13 @@ generic-service:
     FEATURE_EVENT_PROPERTY_PRISONER_PROPERTY-DELETED: false
     FEATURE_COURT-SCHEDULER_IGNORE-DELETED-SENTENCING-EVENTS: true
     FEATURE_COURT-SCHEDULER_IGNORE-INSERT-AND-UPDATE-SENTENCING-EVENTS: true
-    FEATURE_EVENT_EXTERNAL_MOVEMENT-CHANGED: false
-    FEATURE_EVENT_SCHEDULED_EXT_MOVE-INSERTED: false
-    FEATURE_EVENT_SCHEDULED_EXT_MOVE-UPDATED: false
-    FEATURE_EVENT_SCHEDULED_EXT_MOVE-DELETE: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_EXTERNAL_MOVEMENT-CHANGED: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_SCHEDULED_EXT_MOVE-INSERTED: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_SCHEDULED_EXT_MOVE-UPDATED: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_SCHEDULED_EXT_MOVE-DELETE: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_TRANSFER_WAITLIST-INSERTED: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_TRANSFER_WAITLIST-UPDATED: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_TRANSFER_WAITLIST-DELETED: false
 
   scheduledDowntime:
     # Temporarily set to false to enable prisoner transaction reconciliation testing in preprod
@@ -159,6 +163,9 @@ generic-prometheus-alerts:
       - "syscon-devs-preprod-migration_officialvisits_dlq"
       - "syscon-devs-preprod-prisoner_from_nomis_officialvisits_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_officialvisits_dl_queue"
+    agencyregisters:
+      - "syscon-devs-preprod-migration_agencyregisters_queue"
+      - "syscon-devs-preprod-migration_agencyregisters_dlq"
     courtmovements:
       - "syscon-devs-preprod-prisoner_from_nomis_courtmovements_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_courtmovements_dl_queue"

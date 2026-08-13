@@ -67,6 +67,9 @@ dependencies {
 
 kotlin {
   jvmToolchain(25)
+  compilerOptions {
+    freeCompilerArgs.add("-Xcollection-literals")
+  }
 }
 
 @CacheableTask
@@ -255,6 +258,12 @@ val models = listOf(
     name = "transfer-schedule",
     packageName = "transferschedule",
     url = "https://transfer-scheduler-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+  ),
+  ModelConfiguration(
+    name = "agency-registers",
+    packageName = "agencyregisters",
+    testPackageName = "agency",
+    url = "https://prison-register-dev.hmpps.service.justice.gov.uk/v3/api-docs",
   ),
 )
 

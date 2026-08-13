@@ -134,6 +134,11 @@ spring:
             client-id: ${movements.transfer.client.id}
             client-secret: ${movements.transfer.client.secret}
             authorization-grant-type: client_credentials
+          agencyregisters-api:
+            provider: hmpps-auth
+            client-id: ${agencyregisters.client.id}
+            client-secret: ${agencyregisters.client.secret}
+            authorization-grant-type: client_credentials
         provider:
           hmpps-auth:
             token-uri: ${api.base.url.hmpps-auth}/oauth/token
@@ -234,6 +239,11 @@ officialvisits:
     delay-seconds: 180
     count: 9
 
+agencyregisters:
+  complete-check:
+    delay-seconds: 10
+    count: 9
+
 coreperson:
   complete-check:
     delay-seconds: 10
@@ -307,6 +317,9 @@ hmpps.sqs:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationofficialvisits:
+      errorVisibilityTimeout: 1, 1, 1, 10
+      propagateTracing: false
+    migrationagencyregisters:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
 

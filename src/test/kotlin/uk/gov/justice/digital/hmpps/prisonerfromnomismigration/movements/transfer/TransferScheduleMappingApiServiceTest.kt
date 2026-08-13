@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transf
 
 import com.github.tomakehurst.wiremock.client.WireMock.absent
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
@@ -134,6 +135,134 @@ class TransferScheduleMappingApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getTransferScheduleMappingOrNull(1L)
+      }
+    }
+  }
+
+  @Nested
+  inner class DeleteTransferScheduleMappings {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubDeleteTransferScheduleMapping()
+
+      apiService.deleteTransferScheduleMapping(1L)
+
+      mappingApi.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubDeleteTransferScheduleMapping(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.deleteTransferScheduleMapping(1L)
+      }
+    }
+  }
+
+  @Nested
+  inner class CreateTransferMovementMapping {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubCreateTransferMovementMapping()
+
+      apiService.createTransferMovementMapping(transferMovementMapping())
+
+      mappingApi.verify(
+        postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should pass data to service`() = runTest {
+      mappingApi.stubCreateTransferMovementMapping()
+
+      apiService.createTransferMovementMapping(transferMovementMapping())
+
+      mappingApi.verify(
+        postRequestedFor(anyUrl())
+          .withRequestBody(matchingJsonPath("prisonerNumber", equalTo("A1234BC")))
+          .withRequestBody(matchingJsonPath("nomisBookingId", equalTo("12345")))
+          .withRequestBody(matchingJsonPath("nomisMovementSeq", equalTo("3")))
+          .withRequestBody(matchingJsonPath("dpsTransferMovementId", not(absent())))
+          .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
+      )
+    }
+
+    @Test
+    fun `should return error for 409 conflict`() = runTest {
+      val dpsTransferMovementId = UUID.randomUUID()
+      mappingApi.stubCreateTransferMovementMappingConflict(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            existing = transferMovementMapping(nomisBookingId = 12345L, nomisMovementSeq = 3, dpsTransferMovementId = dpsTransferMovementId),
+            duplicate = transferMovementMapping(nomisBookingId = 12345L, nomisMovementSeq = 4, dpsTransferMovementId = dpsTransferMovementId),
+          ),
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          errorCode = 1409,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      apiService.createTransferMovementMapping(transferMovementMapping())
+        .apply {
+          assertThat(isError).isTrue
+          assertThat(errorResponse!!.moreInfo.existing!!).isNotNull
+          assertThat(errorResponse.moreInfo.duplicate).isNotNull
+        }
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubCreateTransferMovementMapping(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.createTransferMovementMapping(transferMovementMapping())
+      }
+    }
+  }
+
+  @Nested
+  inner class GetTransferMovementMapping {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubGetTransferMovementMapping()
+
+      apiService.getTransferMovementMappingOrNull(nomisBookingId = 12345L, nomisMovementSeq = 3)
+
+      mappingApi.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should return mapping`() = runTest {
+      mappingApi.stubGetTransferMovementMapping()
+
+      apiService.getTransferMovementMappingOrNull(nomisBookingId = 12345L, nomisMovementSeq = 3)
+        .also {
+          assertThat(it?.nomisBookingId).isEqualTo(12345L)
+          assertThat(it?.nomisMovementSeq).isEqualTo(3)
+          assertThat(it?.prisonerNumber).isEqualTo("A1234BC")
+        }
+    }
+
+    @Test
+    fun `should return null if not found`() = runTest {
+      mappingApi.stubGetTransferMovementMapping(status = NOT_FOUND)
+
+      apiService.getTransferMovementMappingOrNull(nomisBookingId = 12345L, nomisMovementSeq = 3)
+        .also { assertThat(it).isNull() }
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubGetTransferMovementMapping(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getTransferMovementMappingOrNull(nomisBookingId = 12345L, nomisMovementSeq = 3)
       }
     }
   }

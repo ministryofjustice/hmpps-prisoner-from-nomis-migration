@@ -17,8 +17,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerBalanceMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAccountDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRangeMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastIdMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationDivision
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -33,16 +34,14 @@ class PrisonerBalanceMigrationService(
   val dpsApiService: FinanceDpsApiService,
   jsonMapper: JsonMapper,
   @Value($$"${prisonerbalance.page.size:1000}") pageSize: Long,
-  @Value($$"${prisonerbalance.parallel.count:8}") getIdsParallelCount: Int,
   @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${complete-check.count}") completeCheckCount: Int,
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
-) : ByLastIdMigrationService<PrisonerBalanceMigrationFilter, Long, PrisonerBalanceMappingDto>(
+) : ByIdRangeMigrationService<PrisonerBalanceMigrationFilter, Long, PrisonerBalanceMappingDto>(
   mappingService = prisonerBalanceMappingService,
   migrationType = MigrationType.PRISONER_BALANCE,
   pageSize = pageSize,
-  getIdsParallelCount = getIdsParallelCount,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
   completeCheckRetrySeconds = completeCheckRetrySeconds,
@@ -50,44 +49,28 @@ class PrisonerBalanceMigrationService(
   jsonMapper = jsonMapper,
 ) {
   private companion object {
-    val log: Logger = LoggerFactory.getLogger(this::class.java)
+    private val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
   override suspend fun getMigrationCount(migrationId: String): Long = prisonerBalanceMappingService.getPagedModelMigrationCount(migrationId)
 
-  suspend fun getIds(
-    migrationFilter: PrisonerBalanceMigrationFilter,
-    pageSize: Long,
-    pageNumber: Long,
-  ) = prisonerBalanceNomisApiService.getRootOffenderIdsToMigrate(
+  override suspend fun getTotalNumberOfIds(migrationFilter: PrisonerBalanceMigrationFilter): Long = prisonerBalanceNomisApiService.getRootOffenderIdsToMigrate(
     prisonId = migrationFilter.prisonId,
-    pageNumber = pageNumber,
-    pageSize = pageSize,
-  )
+    pageNumber = 0,
+    pageSize = 1,
+  )?.page?.totalElements ?: 0
 
-  override suspend fun getPageOfIdsFromId(
+  override suspend fun getRangeOfIds(
+    body: PrisonerBalanceMigrationFilter,
+    pageSize: Long,
+  ): List<Pair<Long, Long>> = prisonerBalanceNomisApiService.getAllPrisonersIdRanges(pageSize, body.prisonId)
+    .map { Pair(it.fromRootOffenderId, it.toRootOffenderId) }
+
+  override suspend fun getPageOfIdsFromIdRange(
+    firstId: Long?,
     lastId: Long?,
     migrationFilter: PrisonerBalanceMigrationFilter,
-    pageSize: Long,
-  ): List<Long> = prisonerBalanceNomisApiService.getPrisonerBalanceIdentifiersFromId(
-    rootOffender = lastId ?: 0,
-    prisonId = migrationFilter.prisonId,
-    pageSize = pageSize,
-  )!!.rootOffenderIds!!
-
-  override fun compare(first: Long, second: Long?): Int = first.compareTo(second ?: Long.MAX_VALUE)
-
-  override suspend fun getPageOfIds(
-    migrationFilter: PrisonerBalanceMigrationFilter,
-    pageSize: Long,
-    pageNumber: Long,
-  ): List<Long> = prisonerBalanceNomisApiService.getRootOffenderIdsToMigrate(
-    prisonId = migrationFilter.prisonId,
-    pageSize = pageSize,
-    pageNumber = pageNumber,
-  )?.content ?: emptyList()
-
-  override suspend fun getTotalNumberOfIds(migrationFilter: PrisonerBalanceMigrationFilter): Long = getIds(migrationFilter, 1, 0)?.page?.totalElements ?: 0
+  ): List<Long> = prisonerBalanceNomisApiService.getPrisonerBalanceIdentifiersInRange(firstId!!, lastId!!, migrationFilter.prisonId)
 
   override suspend fun migrateNomisEntity(context: MigrationContext<Long>) {
     val nomisRootOffenderId = context.body
@@ -160,6 +143,8 @@ class PrisonerBalanceMigrationService(
   override fun parseContextNomisId(json: String): MigrationMessage<*, Long> = jsonMapper.readValue(json)
 
   override fun parseContextMapping(json: String): MigrationMessage<*, PrisonerBalanceMappingDto> = jsonMapper.readValue(json)
+
+  override fun parseContextDivisionFilter(json: String): MigrationMessage<*, MigrationDivision<PrisonerBalanceMigrationFilter, Long>> = jsonMapper.readValue(json)
 }
 
 fun PrisonerBalanceDto.toMigrationDto() = PrisonerBalancesSyncRequest(

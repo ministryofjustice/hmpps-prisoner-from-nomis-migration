@@ -61,7 +61,7 @@ class TransferScheduleNomisApiServiceTest {
 
     @Test
     fun `will return transfer schedule out`() = runTest {
-      transferScheduleNomisApiMockServer.stubGetTransferScheduleOut(offenderNo = "A1234BC", eventId = 1)
+      transferScheduleNomisApiMockServer.stubGetTransferScheduleOut(offenderNo = "A1234BC", eventId = 1, waitlist = null)
 
       apiService.getTransferScheduleOut(offenderNo = "A1234BC", eventId = 1)
         .apply {
@@ -90,8 +90,8 @@ class TransferScheduleNomisApiServiceTest {
         .apply {
           assertThat(waitlist).isNotNull
           assertThat(waitlist?.status).isEqualTo("PEND")
-          assertThat(waitlist?.priority).isEqualTo("HI")
-          assertThat(waitlist?.approved).isFalse()
+          assertThat(waitlist?.priority).isEqualTo("3")
+          assertThat(waitlist?.approved).isTrue
         }
     }
 
@@ -110,6 +110,62 @@ class TransferScheduleNomisApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getTransferScheduleOut(offenderNo = "A1234BC", eventId = 1)
+      }
+    }
+  }
+
+  @Nested
+  inner class GetTransferMovementOut {
+    @Test
+    internal fun `will pass oauth2 token to service`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetTransferMovementOut(offenderNo = "A1234BC")
+
+      apiService.getTransferMovementOut(offenderNo = "A1234BC", bookingId = 12345L, sequence = 3)
+
+      transferScheduleNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass offender number and movement ID to service`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetTransferMovementOut(offenderNo = "A1234BC")
+
+      apiService.getTransferMovementOut(offenderNo = "A1234BC", bookingId = 12345L, sequence = 3)
+
+      transferScheduleNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/movements/A1234BC/transfer/movement/out/12345/3")),
+      )
+    }
+
+    @Test
+    fun `will return transfer movement out`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetTransferMovementOut(offenderNo = "A1234BC")
+
+      apiService.getTransferMovementOut(offenderNo = "A1234BC", bookingId = 12345L, sequence = 3)
+        .apply {
+          assertThat(bookingId).isEqualTo(12345)
+          assertThat(eventId).isEqualTo(123)
+          assertThat(fromPrison).isEqualTo("BXI")
+          assertThat(toPrison).isEqualTo("LEI")
+        }
+    }
+
+    @Test
+    fun `will throw error when offender does not exist`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetTransferMovementOut(NOT_FOUND)
+
+      assertThrows<WebClientResponseException.NotFound> {
+        apiService.getTransferMovementOut(offenderNo = "A1234BC", bookingId = 12345L, sequence = 3)
+      }
+    }
+
+    @Test
+    fun `will throw error when API returns an error`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetTransferMovementOut(INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getTransferMovementOut(offenderNo = "A1234BC", bookingId = 12345L, sequence = 3)
       }
     }
   }

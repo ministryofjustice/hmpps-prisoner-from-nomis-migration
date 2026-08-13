@@ -18,8 +18,7 @@ generic-service:
     API_BASE_URL_FINANCE: https://prisoner-finance-sync-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_SENTENCING: https://adjustments-api-dev.hmpps.service.justice.gov.uk
-    # Currently set to self until API ready
-    API_BASE_URL_STAFF: https://prisoner-nomis-migration-dev.hmpps.service.justice.gov.uk
+    API_BASE_URL_STAFF: https://prison-users-api-dev.prison.service.justice.gov.uk
     API_BASE_URL_VISITS: https://visit-scheduler-dev.prison.service.justice.gov.uk
     API_BASE_URL_VISIT_BALANCE: https://hmpps-visit-allocation-api-dev.prison.service.justice.gov.uk
     API_BASE_URL_ACTIVITIES: https://activities-api-dev.prison.service.justice.gov.uk
@@ -34,6 +33,7 @@ generic-service:
     API_BASE_URL_MOVEMENTS_COURT: https://court-appearance-scheduler-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_MOVEMENTS_TRANSFER: https://transfer-scheduler-api-dev.hmpps.service.justice.gov.uk
     API_BASE_URL_OFFICIALVISITS: https://official-visits-api-dev.hmpps.service.justice.gov.uk
+    API_BASE_URL_AGENCYREGISTERS: https://prison-register-dev.hmpps.service.justice.gov.uk
     FEATURE_EVENT_PROPERTY_PRISONER_PROPERTY-INSERTED: true
     FEATURE_EVENT_PROPERTY_PRISONER_PROPERTY-UPDATED: true
     FEATURE_EVENT_PROPERTY_PRISONER_PROPERTY-DELETED: true
@@ -41,10 +41,13 @@ generic-service:
     SPRINGDOC_SWAGGER-UI_ENABLED: true
     FEATURE_COURT-SCHEDULER_IGNORE-DELETED-SENTENCING-EVENTS: true
     FEATURE_COURT-SCHEDULER_IGNORE-INSERT-AND-UPDATE-SENTENCING-EVENTS: true
-    FEATURE_EVENT_EXTERNAL_MOVEMENT-CHANGED: false
-    FEATURE_EVENT_SCHEDULED_EXT_MOVE-INSERTED: false
-    FEATURE_EVENT_SCHEDULED_EXT_MOVE-UPDATED: false
-    FEATURE_EVENT_SCHEDULED_EXT_MOVE-DELETE: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_EXTERNAL_MOVEMENT-CHANGED: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_SCHEDULED_EXT_MOVE-INSERTED: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_SCHEDULED_EXT_MOVE-UPDATED: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_SCHEDULED_EXT_MOVE-DELETE: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_TRANSFER_WAITLIST-INSERTED: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_TRANSFER_WAITLIST-UPDATED: false
+    FEATURE_EVENT_TRANSFERMOVEMENTS_TRANSFER_WAITLIST-DELETED: false
 
   scheduledDowntime:
     enabled: true
@@ -147,6 +150,9 @@ generic-prometheus-alerts:
       - "syscon-devs-dev-migration_officialvisits_dlq"
       - "syscon-devs-dev-prisoner_from_nomis_officialvisits_queue"
       - "syscon-devs-dev-prisoner_from_nomis_officialvisits_dl_queue"
+    agencyregisters:
+      - "syscon-devs-dev-migration_agencyregisters_queue"
+      - "syscon-devs-dev-migration_agencyregisters_dlq"
     courtmovements:
       - "syscon-devs-dev-prisoner_from_nomis_courtmovements_queue"
       - "syscon-devs-dev-prisoner_from_nomis_courtmovements_dl_queue"

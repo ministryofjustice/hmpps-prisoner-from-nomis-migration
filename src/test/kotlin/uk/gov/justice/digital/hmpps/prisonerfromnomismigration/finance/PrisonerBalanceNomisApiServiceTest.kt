@@ -14,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RootOffenderIdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import java.math.BigDecimal
 
@@ -80,13 +81,20 @@ class PrisonerBalanceNomisApiServiceTest {
   }
 
   @Nested
-  @DisplayName("GET /finance/prisoners/ids/all-from-id")
-  inner class GetPrisonerBalanceIdentifiersFromId {
+  @DisplayName("GET /finance/prisoners/ids-in-range")
+  inner class GetPrisonerBalanceIdentifiersInRange {
     @Test
     internal fun `will pass oath2 token to service`() = runTest {
-      mockServer.stubGetPrisonerBalanceIdentifiersFromId(content = listOf(1234))
+      mockServer.stubGetPrisonerBalanceIdentifiersInRange(
+        fromRootOffenderId = 100,
+        toRootOffenderId = 200,
+      )
 
-      apiService.getPrisonerBalanceIdentifiersFromId(rootOffender = 0, prisonId = null, pageSize = 20)
+      apiService.getPrisonerBalanceIdentifiersInRange(
+        fromRootOffenderId = 100,
+        toRootOffenderId = 200,
+        prisonId = null,
+      )
 
       mockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -95,19 +103,93 @@ class PrisonerBalanceNomisApiServiceTest {
 
     @Test
     internal fun `will call the Nomis endpoint`() = runTest {
-      mockServer.stubGetPrisonerBalanceIdentifiersFromId(content = listOf(1234), rootOffenderId = 99)
+      mockServer.stubGetPrisonerBalanceIdentifiersInRange(
+        fromRootOffenderId = 100,
+        toRootOffenderId = 200,
+      )
 
-      apiService.getPrisonerBalanceIdentifiersFromId(rootOffender = 99, prisonId = null, pageSize = 30)
+      apiService.getPrisonerBalanceIdentifiersInRange(
+        fromRootOffenderId = 100,
+        toRootOffenderId = 200,
+        prisonId = null,
+      )
 
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/finance/prisoners/ids/all-from-id"))
-          .withQueryParam("rootOffenderId", equalTo("99"))
-          .withQueryParam("pageSize", equalTo("30")),
+        getRequestedFor(urlPathEqualTo("/finance/prisoners/ids-in-range"))
+          .withQueryParam("fromRootOffenderId", equalTo("100"))
+          .withQueryParam("toRootOffenderId", equalTo("200")),
+      )
+    }
+
+    @Test
+    fun `will return prisoner ids in range`() = runTest {
+      mockServer.stubGetPrisonerBalanceIdentifiersInRange(
+        fromRootOffenderId = 1,
+        toRootOffenderId = 4,
+      )
+
+      val prisonerIds = apiService.getPrisonerBalanceIdentifiersInRange(
+        fromRootOffenderId = 1,
+        toRootOffenderId = 4,
+        prisonId = null,
+      )
+
+      assertThat(prisonerIds).containsExactly(2, 3, 4)
+    }
+  }
+
+  @Nested
+  @DisplayName("GET /finance/prisoners/id-ranges")
+  inner class GetAllPrisonersIdRanges {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      mockServer.stubGetAllPrisonersIdRanges(pageSize = 10)
+
+      apiService.getAllPrisonersIdRanges(
+        pageSize = 10,
+        prisonId = null,
+      )
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will call the Nomis endpoint`() = runTest {
+      mockServer.stubGetAllPrisonersIdRanges(pageSize = 10)
+
+      apiService.getAllPrisonersIdRanges(
+        pageSize = 10,
+        prisonId = null,
+      )
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/finance/prisoners/id-ranges"))
+          .withQueryParam("pageSize", equalTo("10")),
+      )
+    }
+
+    @Test
+    fun `will return prisoner id ranges`() = runTest {
+      mockServer.stubGetAllPrisonersIdRanges(
+        pageSize = 10,
+      )
+
+      val prisonerIds = apiService.getAllPrisonersIdRanges(
+        pageSize = 10,
+        prisonId = null,
+      )
+
+      assertThat(prisonerIds).containsExactly(
+        RootOffenderIdRange(0, 10),
+        RootOffenderIdRange(10, 20),
       )
     }
   }
 
   @Nested
+  @DisplayName("GET /finance/prisoners/rootOffenderId/{rootOffenderId}/balance")
   inner class GetPrisonerBalance {
     @Test
     fun `will pass oath2 token to service`() = runTest {
