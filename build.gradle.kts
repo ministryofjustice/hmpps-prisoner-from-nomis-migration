@@ -67,6 +67,9 @@ dependencies {
 
 kotlin {
   jvmToolchain(25)
+  compilerOptions {
+    freeCompilerArgs.add("-Xcollection-literals")
+  }
 }
 
 @CacheableTask
