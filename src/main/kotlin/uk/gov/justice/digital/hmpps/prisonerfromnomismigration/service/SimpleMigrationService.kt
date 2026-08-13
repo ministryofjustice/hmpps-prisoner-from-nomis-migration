@@ -64,4 +64,7 @@ abstract class SimpleMigrationService<NOMIS_ID : Any>(
   final override fun parseContextMapping(json: String): MigrationMessage<*, Any> = jsonMapper.readValue(json)
 
   abstract override fun parseContextNomisId(json: String): MigrationMessage<*, NOMIS_ID>
+
+  // uses mapping service in super class - will prevent that call
+  final override suspend fun getMigrationCount(migrationId: String): Long = 0
 }
