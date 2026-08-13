@@ -6,12 +6,14 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.Telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CsraMappingDto
@@ -35,11 +37,20 @@ class CsraSyncService(
   }
 
   suspend fun create(event: AssessmentEvent) {
-    if (event.assessmentType == "CATEGORY") {
+    val telemetryName = "$TELEMETRY_PREFIX-created"
+    val (_, _, offenderIdDisplay, bookingId, assessmentSeq, assessmentType) = event
+    val telemetry = telemetryOf(
+      "bookingId" to bookingId.toString(),
+      "sequence" to assessmentSeq.toString(),
+      "offenderNo" to offenderIdDisplay,
+      "assessmentType" to assessmentType.toString(),
+    )
+    if (assessmentType == "CATEGORY") {
+      telemetryClient.trackEvent("$telemetryName-skipped-category", telemetry)
       return
     }
     if (event.originatesInDpsOrHasMissingAudit) {
-      telemetryClient.trackEvent("$TELEMETRY_PREFIX-created-skipped", event.toTelemetryProperties())
+      telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
       return
     }
     try {
@@ -51,21 +62,19 @@ class CsraSyncService(
             throw IllegalStateException("Csra ${event.bookingId} already exists in DPS")
             // probably redundant as this just depends on sending a UUID
           }
-          tryToCreateMapping(event, this.csraReviewId.toString())
+          telemetry["dpsCsraId"] = this.csraReviewId.toString()
+          tryToCreateMapping(event, this.csraReviewId.toString(), telemetry)
             .also { mappingCreateResult ->
-              telemetryClient.trackEvent(
-                "$TELEMETRY_PREFIX-created-success",
-                event.toTelemetryProperties(
-                  dpsCsraId = this.csraReviewId.toString(),
-                  mappingFailed = mappingCreateResult == MappingResponse.MAPPING_FAILED,
-                ),
-              )
+              if (mappingCreateResult == MappingResponse.MAPPING_FAILED) {
+                telemetry["mapping"] = "initial-failure"
+              }
+              telemetryClient.trackEvent("$telemetryName-success", telemetry)
             }
         }
     } catch (e: Exception) {
       telemetryClient.trackEvent(
-        "$TELEMETRY_PREFIX-created-failed",
-        event.toTelemetryProperties() + ("error" to (e.message ?: e.javaClass.name)),
+        "$telemetryName-failed",
+        telemetry + ("error" to (e.message ?: e.javaClass.name)),
       )
       throw e
     }
@@ -73,12 +82,17 @@ class CsraSyncService(
 
   suspend fun update(event: AssessmentEvent) {
     val telemetryName = "$TELEMETRY_PREFIX-updated"
-    val (_, _, offenderIdDisplay, bookingId, assessmentSeq) = event
+    val (_, _, offenderIdDisplay, bookingId, assessmentSeq, assessmentType) = event
     val telemetry = telemetryOf(
       "bookingId" to bookingId.toString(),
       "sequence" to assessmentSeq.toString(),
       "offenderNo" to offenderIdDisplay,
+      "assessmentType" to assessmentType.toString(),
     )
+    if (assessmentType == "CATEGORY") {
+      telemetryClient.trackEvent("$telemetryName-skipped-category", telemetry)
+      return
+    }
     if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
       return
@@ -100,7 +114,23 @@ class CsraSyncService(
   }
 
   suspend fun delete(event: AssessmentEvent) {
-    // TODO()
+    val telemetryName = "$TELEMETRY_PREFIX-deleted"
+    val (_, _, offenderIdDisplay, bookingId, assessmentSeq, assessmentType) = event
+    val telemetry = telemetryOf(
+      "bookingId" to bookingId.toString(),
+      "sequence" to assessmentSeq.toString(),
+      "offenderNo" to offenderIdDisplay,
+      "assessmentType" to assessmentType.toString(),
+    )
+    if (event.assessmentType == "CATEGORY") {
+      telemetryClient.trackEvent("$telemetryName-skipped-category", telemetry)
+      return
+    }
+    if (event.originatesInDpsOrHasMissingAudit) {
+      telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
+      return
+    }
+    TODO()
   }
 
   enum class MappingResponse {
@@ -108,7 +138,7 @@ class CsraSyncService(
     MAPPING_FAILED,
   }
 
-  private suspend fun tryToCreateMapping(event: AssessmentEvent, csraId: String): MappingResponse {
+  private suspend fun tryToCreateMapping(event: AssessmentEvent, csraId: String, telemetry: Telemetry): MappingResponse {
     val mapping = CsraMappingDto(
       dpsCsraId = csraId,
       nomisBookingId = event.bookingId,
@@ -124,11 +154,12 @@ class CsraSyncService(
         "Failed to create mapping for dpsCsra id $csraId, booking ${event.bookingId}, seq ${event.assessmentSeq}, assessment ${event.assessmentSeq}",
         e,
       )
+      telemetry["original-error"] = e.message ?: e.javaClass.name
       queueService.sendMessage(
         messageType = RETRY_SYNCHRONISATION_MAPPING.name,
         synchronisationType = SynchronisationType.CSRAS,
         message = mapping,
-        telemetryAttributes = event.toTelemetryProperties(csraId) + ("original-error" to (e.message ?: e.javaClass.name)),
+        telemetryAttributes = telemetry.valuesAsStrings(),
       )
       return MappingResponse.MAPPING_FAILED
     }
@@ -170,13 +201,14 @@ class CsraSyncService(
   }
 }
 
-private fun AssessmentEvent.toTelemetryProperties(
+private fun AssessmentEvent.toTelemetryProperties2(
   dpsCsraId: String? = null,
   mappingFailed: Boolean? = null,
 ) = mapOf(
   "bookingId" to this.bookingId.toString(),
   "sequence" to this.assessmentSeq.toString(),
   "offenderNo" to this.offenderIdDisplay,
+  "assessmentType" to this.assessmentType.toString(),
 ) + (dpsCsraId?.let { mapOf("dpsCsraId" to it) } ?: emptyMap()) + (
   if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap()
   )

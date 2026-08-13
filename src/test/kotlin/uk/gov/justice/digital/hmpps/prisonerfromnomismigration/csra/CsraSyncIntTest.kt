@@ -170,6 +170,25 @@ class CsraSyncIntTest(
       }
 
       @Nested
+      @DisplayName("Will ignore CATEGORY assessments")
+      inner class CategoryAssessment {
+        @BeforeEach
+        fun setUp() {
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(eventType = "ASSESSMENT-INSERTED", assessmentType = "CATEGORY"),
+          )
+          waitForCompletion("csras-synchronisation-created-skipped-category")
+        }
+
+        @Test
+        fun `will not POST anything`() {
+          csraApi.verify(0, postRequestedFor(anyUrl()))
+          csraMappingApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/mapping/csras")))
+        }
+      }
+
+      @Nested
       @DisplayName("Error scenarios")
       inner class Exceptions {
         @Test
@@ -178,12 +197,7 @@ class CsraSyncIntTest(
 
           awsSqsCsraEventClient.sendMessage(
             csraEventQueueUrl,
-            csraEvent(
-              eventType = "ASSESSMENT-INSERTED",
-              bookingId = BOOKING_ID,
-              assessmentSeq = SEQUENCE,
-              offenderNo = OFFENDER_ID_DISPLAY,
-            ),
+            csraEvent(eventType = "ASSESSMENT-INSERTED"),
           )
 
           await untilAsserted {
@@ -446,12 +460,30 @@ class CsraSyncIntTest(
           )
         }
       }
+
+      @Nested
+      @DisplayName("Will ignore CATEGORY assessments")
+      inner class CategoryAssessment {
+        @BeforeEach
+        fun setUp() {
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(eventType = "ASSESSMENT-UPDATED", assessmentType = "CATEGORY"),
+          )
+          waitForCompletion("csras-synchronisation-updated-skipped-category")
+        }
+
+        @Test
+        fun `will not POST anything`() {
+          csraApi.verify(0, postRequestedFor(anyUrl()))
+        }
+      }
     }
   }
 
-  private fun waitForCompletion() {
+  private fun waitForCompletion(namePattern: String = "csras-synchronisation-(cre|upd)ated-success") {
     await untilAsserted {
-      verify(telemetryClient).trackEvent(matches("csras-synchronisation-(cre|upd)ated-success"), anyMap(), isNull())
+      verify(telemetryClient).trackEvent(matches(namePattern), anyMap(), isNull())
     }
   }
 }
@@ -462,9 +494,10 @@ fun csraEvent(
   assessmentSeq: Int = SEQUENCE,
   offenderNo: String = OFFENDER_ID_DISPLAY,
   auditModuleName: String? = "OIDSTUFF",
+  assessmentType: String = "CSR",
 ) = """{
   "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z",
-  "Message": "{\"eventType\":\"$eventType\",\"assessmentType\":\"CSR\",\"eventDatetime\":\"2024-07-10T15:00:25.489964\",\"bookingId\": $bookingId,\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"$eventType\",\"assessmentSeq\": $assessmentSeq,\"auditModuleName\":\"$auditModuleName\" }",
+  "Message": "{\"eventType\":\"$eventType\",\"assessmentType\":\"$assessmentType\",\"eventDatetime\":\"2024-07-10T15:00:25.489964\",\"bookingId\": $bookingId,\"offenderIdDisplay\": \"$offenderNo\",\"nomisEventType\":\"$eventType\",\"assessmentSeq\": $assessmentSeq,\"auditModuleName\":\"$auditModuleName\" }",
   "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events",
   "MessageAttributes": {
     "eventType": {"Type": "String", "Value": "$eventType"},
