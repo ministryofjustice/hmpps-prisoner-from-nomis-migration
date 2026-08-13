@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-12.734.e4b5432"
+    "version" : "2026-08-12.737.cda675b"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -8431,6 +8431,55 @@
           },
           "404" : {
             "description" : "The mapping does not exist.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "transfer-movement-resource" ],
+        "summary" : "Deletes a mapping for a single transfer movement by NOMIS booking ID and movement sequence",
+        "description" : "Deletes a mapping for a single transfer movement by NOMIS booking ID and movement sequence. Requires ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "operationId" : "deleteTransferMovementMappingByNomisId",
+        "parameters" : [ {
+          "name" : "nomisBookingId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "nomisMovementSeq",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Transfer movement mapping deleted",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access forbidden for this endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
