@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version": "2026-08-13.1907.9753aeb"
+    "version" : "2026-08-13.1912.ccee1d5"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -18354,6 +18354,15 @@
             "type" : "integer",
             "format" : "int64"
           }
+        }, {
+          "name" : "active",
+          "in" : "query",
+          "description" : "When true only return active prisoners currently in prison else all prisoners are returned.",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
         } ],
         "responses" : {
           "200" : {
@@ -18407,6 +18416,15 @@
             "type" : "integer",
             "format" : "int32",
             "default" : 1000
+          }
+        }, {
+          "name" : "active",
+          "in" : "query",
+          "description" : "When true only return active prisoners currently in prison else all prisoners are returned.",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
           }
         } ],
         "responses" : {
@@ -33730,12 +33748,12 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "paged" : {
+            "type" : "boolean"
+          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "paged": {
-            "type": "boolean"
           },
           "unpaged" : {
             "type" : "boolean"
