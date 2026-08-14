@@ -1,11 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency
 
-import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.atMost
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -23,12 +22,18 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency.AgencyNomisApiMockServer.Companion.agencyAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency.AgencyNomisApiMockServer.Companion.agencyPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyIdsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import java.time.Duration
+import java.time.LocalDate
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class AgencyRegistersMigrationIntTest(
@@ -94,7 +99,76 @@ class AgencyRegistersMigrationIntTest(
         setupMigrationTest()
 
         nomisApiMock.stubGetAgencyIds()
-        nomisApiMock.stubGetAgency(agencyId = nomisAgencyId)
+        nomisApiMock.stubGetAgency(
+          agencyId = nomisAgencyId,
+          response = AgencyNomisApiMockServer.agencyResponse().copy(
+            agencyId = nomisAgencyId,
+            type = CodeDescription(code = "CRT", description = "Court"),
+            description = "Sheffield Crown Crt",
+            longDescription = "Sheffield Crown Court",
+            active = false,
+            deactivationDate = LocalDate.parse("2020-01-01"),
+            cjitCode = "C00SH00",
+            updateAllowed = false,
+            localAuthorities = listOf(
+              CodeDescription(code = "00CF", description = "Rotherham Borough Council"),
+            ),
+            courtType = CodeDescription(code = "CC", description = "Crown Court"),
+            disabilityAccessCode = "BA",
+            area = CodeDescription(code = "52", description = "South Yorkshire"),
+            subArea = CodeDescription(code = "ROTH", description = "Rotherham"),
+            region = CodeDescription(code = "52", description = "South Yorkshire"),
+            nomsRegion = CodeDescription(code = "YOHUM", description = "Yorkshire & Humberside"),
+            payrollRegion = CodeDescription(code = "YP", description = "Young People"),
+            contactName = "JANE SMITH",
+            emailAddresses = listOf(
+              AgencyNomisApiMockServer.agencyEmailAddress().copy(
+                emailAddress = "sheffield.crown.court@test.com",
+              ),
+            ),
+            phones = listOf(
+              agencyPhoneNumber().copy(
+                number = "0114 555 9898",
+                type = CodeDescription(code = "BUS", description = "Business"),
+              ),
+              agencyPhoneNumber().copy(
+                number = "0114 555 9999",
+                type = CodeDescription(code = "FAX", description = "Fax"),
+              ),
+            ),
+            addresses = listOf(
+              agencyAddress().copy(
+                type = CodeDescription(code = "BUS", description = "Business Address"),
+                flat = null,
+                premise = "Sheffield Combined Crt Centre",
+                street = "The Law Courts",
+                locality = "50 West Bar",
+                postcode = "S3 8PH",
+                city = CodeDescription(code = "SHEFF", description = "Sheffield"),
+                county = CodeDescription(code = "S.YORKSHIRE", description = "South Yorkshire"),
+                country = CodeDescription(code = "ENG", description = "England"),
+                phoneNumbers = emptyList(),
+              ),
+              agencyAddress().copy(
+                type = CodeDescription(code = "BUS", description = "Business Address"),
+                flat = "Top floor",
+                premise = null,
+                street = "The Law Courts",
+                locality = "50 West Bar",
+                postcode = "S3 8PH",
+                city = CodeDescription(code = "SHEFF", description = "Sheffield"),
+                county = CodeDescription(code = "S.YORKSHIRE", description = "South Yorkshire"),
+                country = CodeDescription(code = "ENG", description = "England"),
+                phoneNumbers = listOf(
+                  agencyPhoneNumber().copy(
+                    number = "0114 555 8888",
+                    type = CodeDescription(code = "BUS", description = "Business"),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        )
         dpsApiMock.stubMigrateAgency(agencyId = nomisAgencyId)
 
         migrationResult = performMigration()
@@ -117,29 +191,47 @@ class AgencyRegistersMigrationIntTest(
 
       @Test
       fun `will transform the agency data correctly`() {
-        dpsApiMock.verify(
-          postRequestedFor(urlPathEqualTo("/legacy/migrate/agency/id/$nomisAgencyId"))
-            .withRequestBody(matchingJsonPath("$.agencyType", equalTo("COURT")))
-            .withRequestBody(matchingJsonPath("$.name", equalTo("Sheffield Crown Court")))
-            .withRequestBody(matchingJsonPath("$.active", equalTo("true")))
-            .withRequestBody(matchingJsonPath("$.description", equalTo("Sheffield Crown Court")))
-            .withRequestBody(matchingJsonPath("$.cjitCode", equalTo("C00SH00")))
-            .withRequestBody(matchingJsonPath("$.areaCode", equalTo("52")))
-            .withRequestBody(matchingJsonPath("$.regionCode", equalTo("YOHUM")))
-            .withRequestBody(matchingJsonPath("$.courtTypeCode", equalTo("CC")))
-            .withRequestBody(matchingJsonPath("$.addresses[0].addressLine1", equalTo("Sheffield Combined Crt Centre")))
-            .withRequestBody(matchingJsonPath("$.addresses[0].addressLine2", equalTo("The Law Courts")))
-            .withRequestBody(matchingJsonPath("$.addresses[0].town", equalTo("Sheffield")))
-            .withRequestBody(matchingJsonPath("$.addresses[0].county", equalTo("South Yorkshire")))
-            .withRequestBody(matchingJsonPath("$.addresses[0].postcode", equalTo("S3 8PH")))
-            .withRequestBody(matchingJsonPath("$.addresses[0].country", equalTo("England")))
-            .withRequestBody(
-              matchingJsonPath(
-                "$.emailAddresses[0].address",
-                equalTo("sheffield.crown.court@test.com"),
-              ),
-            ),
-        )
+        val request: LegacyAgencyDto = AgencyRegistersDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/legacy/migrate/agency/id/$nomisAgencyId")))
+        with(request) {
+          assertThat(agencyType).isEqualTo(LegacyAgencyType.COURT)
+          assertThat(name).isEqualTo("Sheffield Crown Crt")
+          assertThat(description).isEqualTo("Sheffield Crown Court")
+          assertThat(active).isFalse
+          assertThat(inactiveDate).isEqualTo(LocalDate.parse("2020-01-01"))
+          assertThat(cjitCode).isEqualTo("C00SH00")
+          assertThat(localAuthorityCode).isEqualTo("00CF")
+          assertThat(courtTypeCode).isEqualTo("CC")
+          assertThat(accessibleAccess).isEqualTo(LegacyAgencyDto.AccessibleAccess.BY_ARRANGEMENT_ONLY)
+          assertThat(areaCode).isEqualTo("52")
+          assertThat(subareaCode).isEqualTo("ROTH")
+          assertThat(regionCode).isEqualTo("52")
+          assertThat(geographicalAreaCode).isEqualTo("YOHUM")
+          assertThat(payrollRegionCode).isEqualTo("YP")
+          assertThat(contact).isEqualTo("JANE SMITH")
+          assertThat(emailAddresses).hasSize(1)
+          assertThat(emailAddresses[0].address).isEqualTo("sheffield.crown.court@test.com")
+          assertThat(phoneNumbers).hasSize(3)
+          assertThat(phoneNumbers[0].number).isEqualTo("0114 555 9898")
+          assertThat(phoneNumbers[1].number).isEqualTo("0114 555 9999")
+          assertThat(phoneNumbers[2].number).isEqualTo("0114 555 8888")
+          assertThat(addresses).hasSize(2)
+          with(addresses[0]) {
+            assertThat(addressLine1).isEqualTo("Sheffield Combined Crt Centre, The Law Courts")
+            assertThat(addressLine2).isEqualTo("50 West Bar")
+            assertThat(town).isEqualTo("Sheffield")
+            assertThat(county).isEqualTo("South Yorkshire")
+            assertThat(postcode).isEqualTo("S3 8PH")
+            assertThat(country).isEqualTo("England")
+          }
+          with(addresses[1]) {
+            assertThat(addressLine1).isEqualTo("Top floor, The Law Courts")
+            assertThat(addressLine2).isEqualTo("50 West Bar")
+            assertThat(town).isEqualTo("Sheffield")
+            assertThat(county).isEqualTo("South Yorkshire")
+            assertThat(postcode).isEqualTo("S3 8PH")
+            assertThat(country).isEqualTo("England")
+          }
+        }
       }
 
       @Test
