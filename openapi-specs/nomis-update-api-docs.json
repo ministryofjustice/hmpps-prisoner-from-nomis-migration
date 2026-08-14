@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-12.4462.f33b31e"
+    "version" : "2026-08-13.4496.2f65c5e"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -2108,38 +2108,6 @@
         }
       }
     },
-    "/prisoner-balance/reconciliation/prison/{prisonId}" : {
-      "get" : {
-        "tags" : [ "Finance Update Resource" ],
-        "summary" : "Run the prisoner balance reconciliation for one prison",
-        "description" : "Retrieves the account balance differences for all prisoners who have balances for the given prison (not prisoners necessarily in that prison).\n      A null response returned if no differences found. \n      Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
-        "operationId" : "manualCheckSinglePrisonBalances",
-        "parameters" : [ {
-          "name" : "prisonId",
-          "in" : "path",
-          "description" : "Prison Id",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Prison Id",
-            "example" : "BXI"
-          },
-          "example" : "BXI"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Reconciliation differences returned",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ReconciliationResultMismatchPrisonerBalance"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/prisoner-balance/reconciliation/id/{rootOffenderId}" : {
       "get" : {
         "tags" : [ "Finance Update Resource" ],
@@ -3475,26 +3443,6 @@
           }
         },
         "required" : [ "differences", "dps", "nomis" ]
-      },
-      "ReconciliationResultMismatchPrisonerBalance" : {
-        "type" : "object",
-        "properties" : {
-          "mismatches" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/MismatchPrisonerBalance"
-            }
-          },
-          "itemsChecked" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "pagesChecked" : {
-            "type" : "integer",
-            "format" : "int32"
-          }
-        },
-        "required" : [ "itemsChecked", "mismatches", "pagesChecked" ]
       },
       "MismatchPersonContacts" : {
         "type" : "object",
