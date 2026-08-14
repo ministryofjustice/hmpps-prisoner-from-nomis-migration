@@ -123,6 +123,20 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubProcessPrisonMerge(
+    prisonNumber: String = "A1234BC",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      post("/syscon-sync/person/$prisonNumber/merge")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
   fun stubSyncCreateSexualOrientation(prisonNumber: String, status: Int = 201) {
     stubFor(
       post("/syscon-sync/sexual-orientation/$prisonNumber").willReturn(

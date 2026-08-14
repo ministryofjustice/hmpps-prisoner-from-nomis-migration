@@ -15,5 +15,7 @@ abstract class CorePersonIntegrationTestBase : SqsIntegrationTestBase() {
   internal val awsSqsCorePersonOffenderEventsClient by lazy { corePersonOffenderEventsQueue.sqsClient }
   internal val corePersonQueueOffenderEventsUrl by lazy { corePersonOffenderEventsQueue.queueUrl }
 
+  internal val corePersonCprApiMockServer = CorePersonCprApiExtension.cprCorePersonServer
+
   override fun getQueues(): List<HmppsQueue> = listOf(corePersonOffenderEventsQueue)
 }

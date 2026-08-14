@@ -1,13 +1,13 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.SysconSyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDisabilityStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonNationality
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
@@ -51,8 +51,11 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncUpdateOffenderBelief(prisonNumber: String, cprReligionId: String, religion: PrisonReligionUpdateRequest): ResponseEntity<Void> = api
-    .prepare(api.updatePrisonReligionRequestConfig(prisonNumber, cprReligionId, religion))
-    .retrieve()
-    .awaitBodilessEntity()
+  suspend fun syncUpdateOffenderBelief(prisonNumber: String, cprReligionId: String, religion: PrisonReligionUpdateRequest): Unit = api
+    .updatePrisonReligion(prisonNumber, cprReligionId, religion)
+    .awaitSingle()
+
+  suspend fun processPrisonMerge(prisonNumber: String, prisonMerge: PrisonMerge): Unit = api
+    .processPrisonMerge(prisonNumber, prisonMerge)
+    .awaitSingle()
 }

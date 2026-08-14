@@ -15,6 +15,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.cprCorePersonServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
@@ -131,6 +132,53 @@ class CorePersonCprApiServiceTest {
 
       assertThrows<WebClientResponseException.BadRequest> {
         apiService.syncUpdateOffenderBelief("A1234BC", "cprId", prisonReligionUpdateRequest())
+      }
+    }
+
+    @Nested
+    inner class ProcessPrisonMerge {
+      @Test
+      internal fun `will pass oath2 token to sync endpoint`() = runTest {
+        cprCorePersonServer.stubProcessPrisonMerge("A1234BC")
+
+        apiService.processPrisonMerge("A1234BC", PrisonMerge(fromPrisonNumber = "B2345CD"))
+
+        cprCorePersonServer.verify(
+          postRequestedFor(anyUrl())
+            .withHeader("Authorization", equalTo("Bearer ABCDE")),
+        )
+      }
+
+      @Test
+      internal fun `will post request data to the sync endpoint`() = runTest {
+        cprCorePersonServer.stubProcessPrisonMerge()
+
+        apiService.processPrisonMerge("A1234BC", PrisonMerge(fromPrisonNumber = "B2345CD"))
+
+        cprCorePersonServer.verify(
+          postRequestedFor(anyUrl())
+            .withRequestBodyJsonPath("fromPrisonNumber", equalTo("B2345CD")),
+        )
+      }
+
+      @Test
+      fun `will call the sync endpoint`() = runTest {
+        cprCorePersonServer.stubProcessPrisonMerge("A1234BC")
+
+        apiService.processPrisonMerge("A1234BC", PrisonMerge(fromPrisonNumber = "B2345CD"))
+
+        cprCorePersonServer.verify(
+          postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/merge")),
+        )
+      }
+
+      @Test
+      fun `should throw if bad request`() = runTest {
+        cprCorePersonServer.stubProcessPrisonMerge("A1234BC", status = BAD_REQUEST)
+
+        assertThrows<WebClientResponseException.BadRequest> {
+          apiService.processPrisonMerge("A1234BC", PrisonMerge(fromPrisonNumber = "B2345CD"))
+        }
       }
     }
   }

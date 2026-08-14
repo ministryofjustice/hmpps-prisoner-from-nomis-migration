@@ -2,6 +2,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MergeAdditionalInformationEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -9,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 @Service
 class CorePersonSynchronisationService(
   override val telemetryClient: TelemetryClient,
+  private val corePersonCprApiService: CorePersonCprApiService,
 ) : TelemetryEnabled {
   suspend fun synchronisePrisonerMerge(prisonerMergeEvent: PrisonerMergeDomainEvent) {
     val bookingId = prisonerMergeEvent.additionalInformation.bookingId
@@ -19,8 +22,11 @@ class CorePersonSynchronisationService(
       "bookingId" to bookingId,
       "removedOffenderNo" to removedOffenderNo,
     )
-    telemetryClient.trackEvent("coreperson-prisoner-merge-synchronisation-notimplemented", telemetry)
+    corePersonCprApiService.processPrisonMerge(offenderNo, prisonerMergeEvent.additionalInformation.toPrisonMerge())
+    telemetryClient.trackEvent("coreperson-prisoner-merge-synchronisation", telemetry)
   }
 }
+
+private fun MergeAdditionalInformationEvent.toPrisonMerge(): PrisonMerge = PrisonMerge(fromPrisonNumber = this.removedNomsNumber)
 
 class BookingException(message: String) : IllegalArgumentException(message)

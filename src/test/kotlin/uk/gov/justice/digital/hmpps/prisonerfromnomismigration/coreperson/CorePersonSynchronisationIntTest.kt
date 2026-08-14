@@ -1,5 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
+import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
@@ -24,6 +27,7 @@ class CorePersonSynchronisationIntTest : CorePersonIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
+        corePersonCprApiMockServer.stubProcessPrisonMerge(offenderNo)
         awsSqsCorePersonOffenderEventsClient.sendMessage(
           corePersonQueueOffenderEventsUrl,
           mergeDomainEvent(
@@ -38,13 +42,29 @@ class CorePersonSynchronisationIntTest : CorePersonIntegrationTestBase() {
       @Test
       fun `will track telemetry for the merge`() {
         verify(telemetryClient).trackEvent(
-          eq("coreperson-prisoner-merge-synchronisation-notimplemented"),
+          eq("coreperson-prisoner-merge-synchronisation"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
             assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
             assertThat(it["removedOffenderNo"]).isEqualTo(removedOffenderNo)
           },
           isNull(),
+        )
+      }
+
+      @Test
+      fun `will call core person for the merge`() {
+        corePersonCprApiMockServer.verify(
+          postRequestedFor(urlMatching("/syscon-sync/person/$offenderNo/merge"))
+            .withRequestBody(
+              equalToJson(
+                """
+                {
+                  "fromPrisonNumber": "$removedOffenderNo"
+                }
+                """.trimIndent(),
+              ),
+            ),
         )
       }
     }
