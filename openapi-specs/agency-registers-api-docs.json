@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-11.381.4537b58"
+    "version" : "2026-08-13.389.e8620f6"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -1920,6 +1920,11 @@
             "description" : "Prisoner Payroll Region code",
             "example" : "HS"
           },
+          "localAuthorityCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Local Authority code",
+            "example" : "00CG"
+          },
           "courtTypeCode" : {
             "type" : [ "string", "null" ],
             "description" : "Court Type code",
@@ -2146,6 +2151,14 @@
               "type" : "null"
             } ]
           },
+          "localAuthority" : {
+            "description" : "Local Authority",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
           "addresses" : {
             "type" : "array",
             "description" : "addresses",
@@ -2248,6 +2261,14 @@
               "type" : "null"
             } ]
           },
+          "localAuthority" : {
+            "description" : "Local Authority",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
           "addresses" : {
             "type" : "array",
             "description" : "addresses",
@@ -2324,6 +2345,14 @@
           },
           "geographicalArea" : {
             "description" : "Geographic Region",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "localAuthority" : {
+            "description" : "Local Authority",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/CodeDescription"
             }, {
@@ -2509,6 +2538,14 @@
               "type" : "null"
             } ]
           },
+          "localAuthority" : {
+            "description" : "Local Authority",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
           "addresses" : {
             "type" : "array",
             "description" : "addresses",
@@ -2603,6 +2640,14 @@
           },
           "payrollRegion" : {
             "description" : "Payroll Region",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "localAuthority" : {
+            "description" : "Local Authority",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/CodeDescription"
             }, {

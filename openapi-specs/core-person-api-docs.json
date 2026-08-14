@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-08-13.4605.a70b75c"
+    "version" : "2026-08-13.4624.ad0066a"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -315,6 +315,39 @@
                 }
               }
             }
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
+      }
+    },
+    "/syscon-sync/person/{prisonNumber}/merge" : {
+      "post" : {
+        "tags" : [ "Syscon Sync" ],
+        "description" : "Processes a prisoner merge record by Prison Number. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
+        "operationId" : "processPrisonMerge",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PrisonMerge"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
           }
         },
         "security" : [ {
@@ -1303,6 +1336,17 @@
           }
         },
         "required" : [ "prisonNumber", "religionMappings" ]
+      },
+      "PrisonMerge" : {
+        "type" : "object",
+        "properties" : {
+          "fromPrisonNumber" : {
+            "type" : "string",
+            "description" : "The prison number of the person being merged from",
+            "example" : "A1234BC"
+          }
+        },
+        "required" : [ "fromPrisonNumber" ]
       },
       "PrisonNationality" : {
         "type" : "object",
