@@ -17,29 +17,41 @@ fun AgencyResponse.toLegacyAgencyDto() = LegacyAgencyDto(
   active = active,
   addresses = addresses.map { it.toLegacyAgencyAddressDto() },
   emailAddresses = emailAddresses.map { it.toLegacyAgencyEmailDto() },
-  phoneNumbers = phones.map { it.toLegacyAgencyPhoneDto() },
+  phoneNumbers = phones.map { it.toLegacyAgencyPhoneDto() } + addresses.flatMap { it.phoneNumbers.map { phone -> phone.toLegacyAgencyPhoneDto() } },
   description = longDescription,
   inactiveDate = deactivationDate,
   cjitCode = cjitCode,
   areaCode = area?.code,
+  subareaCode = subArea?.code,
   regionCode = region?.code,
-  geographicalAreaCode = district?.code,
+  geographicalAreaCode = nomsRegion?.code,
   payrollRegionCode = payrollRegion?.code,
   courtTypeCode = courtType?.code,
-  // there is no reliable mapping from the NOMIS disabilityAccessCode free-format code to the DPS
-  // AccessibleAccess enum so it is not migrated
-  accessibleAccess = null,
+  accessibleAccess = when (disabilityAccessCode) {
+    "WHEEL" -> LegacyAgencyDto.AccessibleAccess.WHEELCHAIR_ACCESS
+    "Y", "Yes" -> LegacyAgencyDto.AccessibleAccess.ACCESSIBLE
+    "N", "No" -> LegacyAgencyDto.AccessibleAccess.NONE
+    "BA" -> LegacyAgencyDto.AccessibleAccess.BY_ARRANGEMENT_ONLY
+    else -> null
+  },
   contact = contactName,
+  // NOMIS never has more than one local authority for an agency, so we can just take the first one if it exists
+  localAuthorityCode = localAuthorities.firstOrNull()?.code,
 )
 
 fun AgencyAddress.toLegacyAgencyAddressDto() = LegacyAgencyAddressDto(
-  addressLine1 = flat?.let { "$it, $premise" } ?: premise,
-  addressLine2 = street ?: locality,
+  addressLine1 = addressLine1(flat, premise, street),
+  addressLine2 = locality,
   town = city?.description,
   county = county?.description,
   postcode = postcode,
   country = country?.description,
 )
+
+fun addressLine1(flat: String?, premise: String?, street: String?): String {
+  val parts = listOfNotNull(flat, premise, street)
+  return parts.joinToString(", ")
+}
 
 fun AgencyEmailAddress.toLegacyAgencyEmailDto() = LegacyAgencyEmailDto(
   address = emailAddress,
