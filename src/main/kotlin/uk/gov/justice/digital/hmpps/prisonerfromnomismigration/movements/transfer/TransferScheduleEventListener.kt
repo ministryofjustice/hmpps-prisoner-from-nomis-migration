@@ -18,6 +18,7 @@ class TransferScheduleEventListener(
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
   private val transferScheduleService: TransferScheduleSyncScheduleService,
+  private val transferMovementService: TransferScheduleSyncMovementService,
 ) {
 
   private companion object {
@@ -39,7 +40,7 @@ class TransferScheduleEventListener(
               "SCHEDULED_EXT_MOVE-UPDATED" -> transferScheduleService.scheduledMovementUpdated(sqsMessage.Message.fromJson())
               "SCHEDULED_EXT_MOVE-DELETED" -> transferScheduleService.transferScheduleDeleted(sqsMessage.Message.fromJson())
               "TRANSFER_WAITLIST-INSERTED", "TRANSFER_WAITLIST-UPDATED", "TRANSFER_WAITLIST-DELETED" -> transferScheduleService.transferWaitlistChanged(sqsMessage.Message.fromJson())
-              "EXTERNAL_MOVEMENT-CHANGED" -> {}
+              "EXTERNAL_MOVEMENT-CHANGED" -> transferMovementService.transferMovementChanged(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {

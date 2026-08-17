@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.OK
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleNomisApiMockServer.Companion.yesterday
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TransferMovementOut
@@ -61,7 +60,15 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
     offenderNo: String = "A1234BC",
     bookingId: Long = 12345L,
     sequence: Int = 3,
-    response: TransferMovementOut = transferMovementOutResponse().copy(bookingId = bookingId, sequence = sequence),
+    eventId: Long? = 123L,
+    escort: String? = "PECS",
+    response: TransferMovementOut = transferMovementOutResponse().copy(
+      bookingId = bookingId,
+      sequence = sequence,
+      eventId = eventId,
+      transferScheduleOutId = eventId,
+      escort = escort,
+    ),
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/movements/$offenderNo/transfer/movement/out/$bookingId/$sequence")).willReturn(
@@ -164,6 +171,7 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
       transferScheduleOutId = 123L,
       escort = "PECS",
       commentText = "some transfer movement comment",
+      userActiveCaseloadId = "MDI",
     )
   }
 }
