@@ -183,6 +183,27 @@ class TransferScheduleMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubDeleteTransferMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1) {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/transfer-scheduler/movement/nomis-id/$bookingId/$movementSeq")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(204),
+      ),
+    )
+  }
+
+  fun stubDeleteTransferMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/transfer-scheduler/movement/nomis-id/$bookingId/$movementSeq")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)

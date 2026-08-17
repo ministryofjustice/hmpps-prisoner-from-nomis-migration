@@ -42,8 +42,9 @@ class TransferScheduleSyncMovementService(
 
   suspend fun transferMovementChanged(event: ExternalMovementEvent) = when {
     event.movementType != TRN -> {}
+    // TODO SDIT-4157 Handle edit external movements updates (with a repair)
     event.recordInserted -> transferMovementInserted(event)
-    event.recordDeleted -> {} // TODO SDIT-4126
+    event.recordDeleted -> transferMovementDeleted(event)
     else -> transferMovementUpdated(event)
   }
 
@@ -93,6 +94,22 @@ class TransferScheduleSyncMovementService(
         }
       }
       ?: throw IllegalStateException("No mapping found when handling an update event for movement $bookingId/$movementSeq - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
+  }
+
+  suspend fun transferMovementDeleted(event: ExternalMovementEvent) {
+    val (bookingId, prisonerNumber, movementSeq) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber!!,
+      "bookingId" to bookingId,
+      "movementSeq" to movementSeq,
+    )
+    mappingApiService.getTransferMovementMappingOrNull(bookingId, movementSeq)?.also {
+      telemetry["dpsTransferMovementId"] = it.dpsTransferMovementId
+      track("${TELEMETRY_PREFIX}-deleted", telemetry) {
+        dpsApiService.deleteTransferMovement(it.dpsTransferMovementId)
+        mappingApiService.deleteTransferMovementMapping(bookingId, movementSeq)
+      }
+    } ?: run { telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-ignored", telemetry) }
   }
 
   private suspend fun syncTransferMovement(
