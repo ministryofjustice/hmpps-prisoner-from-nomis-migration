@@ -163,7 +163,7 @@ class TransferScheduleSyncMovementIntTest(
       fun `should NOT check schedule mapping`() {
         mappingApi.verify(
           count = 0,
-          getRequestedFor(urlPathEqualTo("/mapping/transfer/schedule/nomis-id/123")),
+          getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")),
         )
       }
 
