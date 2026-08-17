@@ -4,14 +4,23 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchParent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.TRN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransfersRetryMappingMessageTypes.RETRY_MAPPING_TRANSFER_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferMovementMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TransferMovementOut
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncUser
@@ -25,6 +34,7 @@ class TransferScheduleSyncMovementService(
   private val mappingApiService: TransferScheduleMappingApiService,
   private val nomisApiService: TransferScheduleNomisApiService,
   private val dpsApiService: TransferScheduleDpsApiService,
+  private val queueService: SynchronisationQueueService,
 ) : TelemetryEnabled {
   companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -44,16 +54,24 @@ class TransferScheduleSyncMovementService(
       "movementSeq" to movementSeq,
     )
 
+    if (event.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
+      telemetryClient.trackEvent("${TELEMETRY_PREFIX}-inserted-ignored", telemetry)
+      return
+    }
+
     mappingApiService.getTransferMovementMappingOrNull(bookingId, movementSeq)
       ?: run {
         track("${TELEMETRY_PREFIX}-inserted", telemetry) {
           val nomis = nomisApiService.getTransferMovementOut(prisonerNumber, bookingId, movementSeq)
             .also { telemetry["nomisEventId"] = "${it.transferScheduleOutId}" }
-          val scheduleMapping = nomis.transferScheduleOutId?.let { mappingApiService.getTransferScheduleMappingOrNull(it) }
-            ?.also { telemetry["dpsTransferScheduleId"] = it.dpsTransferScheduleId }
-          val dps = dpsApiService.syncTransferMovement(prisonerNumber, nomis.toDpsRequest(dpsTransferScheduleId = scheduleMapping?.dpsTransferScheduleId))
+          val dpsScheduleTransferId = nomis.transferScheduleOutId?.let {
+            tryFetchParent { mappingApiService.getTransferScheduleMappingOrNull(it) }
+              .also { telemetry["dpsTransferScheduleId"] = it.dpsTransferScheduleId }
+          }?.dpsTransferScheduleId
+          val dps = dpsApiService.syncTransferMovement(prisonerNumber, nomis.toDpsRequest(dpsTransferScheduleId = dpsScheduleTransferId))
             .also { telemetry["dpsTransferMovementId"] = it.dpsId }
-          mappingApiService.createTransferMovementMapping(
+
+          tryToCreateTransferMovementMapping(
             TransferMovementMappingDto(
               prisonerNumber,
               bookingId,
@@ -61,9 +79,57 @@ class TransferScheduleSyncMovementService(
               dps.dpsId,
               NOMIS_CREATED,
             ),
+            telemetry,
           )
         }
       }
+  }
+
+  private suspend fun tryToCreateTransferMovementMapping(
+    mapping: TransferMovementMappingDto,
+    telemetry: MutableMap<String, Any>,
+  ) {
+    try {
+      mappingApiService.createTransferMovementMapping(mapping).takeIf { it.isError }?.also {
+        with(it.errorResponse!!.moreInfo) {
+          telemetryClient.trackEvent(
+            "${TELEMETRY_PREFIX}-inserted-duplicate",
+            mapOf(
+              "existingOffenderNo" to existing!!.prisonerNumber,
+              "existingBookingId" to existing.nomisBookingId,
+              "existingMovementSeq" to existing.nomisMovementSeq,
+              "existingDpsTransferMovementId" to existing.dpsTransferMovementId,
+              "duplicateOffenderNo" to duplicate.prisonerNumber,
+              "duplicateBookingId" to duplicate.nomisBookingId,
+              "duplicateMovementSeq" to duplicate.nomisMovementSeq,
+              "duplicateDpsTransferMovementId" to duplicate.dpsTransferMovementId,
+            ),
+          )
+        }
+      }
+    } catch (e: Exception) {
+      log.error(
+        "Failed to create mapping for transfer movement NOMIS id ${mapping.nomisBookingId}/${mapping.nomisMovementSeq}",
+        e,
+      )
+      queueService.sendMessage(
+        messageType = RETRY_MAPPING_TRANSFER_MOVEMENT.name,
+        synchronisationType = SynchronisationType.TRANSFER_SCHEDULER,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+
+  suspend fun retryCreateMovementMapping(retryMessage: InternalMessage<TransferMovementMappingDto>) {
+    mappingApiService.createTransferMovementMapping(
+      retryMessage.body,
+    ).also {
+      telemetryClient.trackEvent(
+        "${TELEMETRY_PREFIX}-mapping-retry-created",
+        retryMessage.telemetryAttributes,
+      )
+    }
   }
 }
 

@@ -125,6 +125,8 @@ class TransferScheduleMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubCreateTransferMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/transfer-scheduler/movement")
+
   fun stubDeleteTransferScheduleMapping(nomisEventId: Long = 1L) {
     mappingApi.stubFor(
       delete(urlPathMatching("/mapping/transfer-scheduler/schedule/nomis-id/$nomisEventId")).willReturn(

@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransfersRetryMappingMessageTypes.RETRY_MAPPING_TRANSFER_MOVEMENT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransfersRetryMappingMessageTypes.RETRY_MAPPING_TRANSFER_SCHEDULE
 import java.util.concurrent.CompletableFuture
 
@@ -54,6 +55,7 @@ class TransferScheduleEventListener(
 
   private suspend fun retryMapping(type: String, message: String) = when (TransfersRetryMappingMessageTypes.valueOf(type)) {
     RETRY_MAPPING_TRANSFER_SCHEDULE -> transferScheduleService.retryCreateScheduleMapping(message.fromJson())
+    RETRY_MAPPING_TRANSFER_MOVEMENT -> transferMovementService.retryCreateMovementMapping(message.fromJson())
   }
 
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
@@ -61,6 +63,7 @@ class TransferScheduleEventListener(
 
 enum class TransfersRetryMappingMessageTypes {
   RETRY_MAPPING_TRANSFER_SCHEDULE,
+  RETRY_MAPPING_TRANSFER_MOVEMENT,
 }
 
 data class TransferWaitlistEvent(
