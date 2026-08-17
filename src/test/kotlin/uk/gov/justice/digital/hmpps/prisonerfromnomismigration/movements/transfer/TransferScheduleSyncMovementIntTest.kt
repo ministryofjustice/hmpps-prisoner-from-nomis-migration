@@ -15,11 +15,16 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension.Companion.dpsTransferSchedulerServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferMovementMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferMovementMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ReferenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
@@ -195,6 +200,297 @@ class TransferScheduleSyncMovementIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["movementSeq"]).isEqualTo("3")
             assertThat(it["nomisEventId"]).isEqualTo("null")
+            assertThat(it["dpsTransferMovementId"]).isEqualTo("$dpsTransferMovementId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        sendMessage(transferMovementEvent(inserted = true, auditModuleName = "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT create DPS transfer movement`() {
+        dpsApi.verify(
+          0,
+          putRequestedFor(urlPathEqualTo("/sync/transfer-movements/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should NOT create mapping`() {
+        mappingApi.verify(
+          count = 0,
+          postRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/movement")),
+        )
+      }
+
+      @Test
+      fun `should publish ignore telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-movement-inserted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferMovementMapping()
+
+        sendMessage(transferMovementEvent(inserted = true, auditModuleName = "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT create DPS transfer movement`() {
+        dpsApi.verify(
+          0,
+          putRequestedFor(urlPathEqualTo("/sync/transfer-movements/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should NOT create mapping`() {
+        mappingApi.verify(
+          count = 0,
+          postRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/movement")),
+        )
+      }
+
+      @Test
+      fun `should publish ignore telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-movement-inserted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenParentScheduleNotFound {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferMovementMapping(NOT_FOUND)
+        nomisApi.stubGetTransferMovementOut()
+        mappingApi.stubGetTransferScheduleMapping(123, status = NOT_FOUND)
+
+        sendMessage(transferMovementEvent(inserted = true))
+          .also { waitForAnyProcessingToComplete("transfer-scheduler-sync-movement-inserted-awaiting-parent", times = 2) }
+      }
+
+      @Test
+      fun `should check schedule mapping`() {
+        mappingApi.verify(
+          count = 2,
+          getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/123")),
+        )
+      }
+
+      @Test
+      fun `should NOT create DPS transfer movement`() {
+        dpsApi.verify(
+          0,
+          putRequestedFor(urlPathEqualTo("/sync/transfer-movements/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should NOT create mapping`() {
+        mappingApi.verify(
+          count = 0,
+          postRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/movement")),
+        )
+      }
+
+      @Test
+      fun `should publish failure telemetry`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("transfer-scheduler-sync-movement-inserted-awaiting-parent"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["error"]).isEqualTo("Expected parent entity not found, retrying")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferMovementMapping(NOT_FOUND)
+        nomisApi.stubGetTransferMovementOut(escort = null)
+        mappingApi.stubGetTransferScheduleMapping(123, dpsTransferScheduleId)
+        dpsApi.stubSyncTransferMovement("A1234BC", response = ReferenceId(dpsTransferMovementId))
+        mappingApi.stubCreateTransferMovementMappingConflict(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              existing = TransferMovementMappingDto(
+                prisonerNumber = "A1234BC",
+                nomisBookingId = 12345,
+                nomisMovementSeq = 3,
+                dpsTransferMovementId = dpsTransferMovementId,
+                mappingType = NOMIS_CREATED,
+              ),
+              duplicate = TransferMovementMappingDto(
+                prisonerNumber = "A1234BC",
+                nomisBookingId = 12345,
+                nomisMovementSeq = 999,
+                dpsTransferMovementId = dpsTransferMovementId,
+                mappingType = NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+
+        sendMessage(transferMovementEvent(inserted = true))
+          .also { waitForAnyProcessingToComplete("transfer-scheduler-sync-movement-inserted-duplicate") }
+      }
+
+      @Test
+      fun `should create DPS transfer movement`() {
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/transfer-movements/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should try to create mapping`() {
+        mappingApi.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/movement")),
+        )
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-movement-inserted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should publish duplicate telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-movement-inserted-duplicate"),
+          check {
+            assertThat(it["existingOffenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["existingBookingId"]).isEqualTo("12345")
+            assertThat(it["existingMovementSeq"]).isEqualTo("3")
+            assertThat(it["existingDpsTransferMovementId"]).isEqualTo("$dpsTransferMovementId")
+            assertThat(it["duplicateOffenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["duplicateBookingId"]).isEqualTo("12345")
+            assertThat(it["duplicateMovementSeq"]).isEqualTo("999")
+            assertThat(it["duplicateDpsTransferMovementId"]).isEqualTo("$dpsTransferMovementId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenMappingCreateFailsOnce {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferMovementMapping(NOT_FOUND)
+        nomisApi.stubGetTransferMovementOut(escort = null)
+        mappingApi.stubGetTransferScheduleMapping(123, dpsTransferScheduleId)
+        dpsApi.stubSyncTransferMovement("A1234BC", response = ReferenceId(dpsTransferMovementId))
+        mappingApi.stubCreateTransferMovementMappingFailureFollowedBySuccess()
+
+        sendMessage(transferMovementEvent(inserted = true))
+          .also { waitForAnyProcessingToComplete("transfer-scheduler-sync-movement-mapping-retry-created") }
+      }
+
+      @Test
+      fun `should create DPS transfer movement`() {
+        dpsApi.verify(
+          putRequestedFor(urlPathEqualTo("/sync/transfer-movements/A1234BC")),
+        )
+      }
+
+      @Test
+      fun `should create mapping on 2nd call`() {
+        mappingApi.verify(
+          count = 2,
+          postRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/movement"))
+            .withRequestBodyJsonPath("prisonerNumber", "A1234BC")
+            .withRequestBodyJsonPath("nomisBookingId", "12345")
+            .withRequestBodyJsonPath("nomisMovementSeq", "3")
+            .withRequestBodyJsonPath("dpsTransferMovementId", "$dpsTransferMovementId")
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-movement-inserted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["nomisEventId"]).isEqualTo("123")
+            assertThat(it["dpsTransferMovementId"]).isEqualTo("$dpsTransferMovementId")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should publish mapping created telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-movement-mapping-retry-created"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
             assertThat(it["dpsTransferMovementId"]).isEqualTo("$dpsTransferMovementId")
           },
           isNull(),
