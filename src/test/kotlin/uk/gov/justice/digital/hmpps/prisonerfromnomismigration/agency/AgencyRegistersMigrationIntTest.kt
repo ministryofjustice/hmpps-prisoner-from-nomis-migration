@@ -132,6 +132,10 @@ class AgencyRegistersMigrationIntTest(
                 type = CodeDescription(code = "BUS", description = "Business"),
               ),
               agencyPhoneNumber().copy(
+                number = "0114 555 9898",
+                type = CodeDescription(code = "BUS", description = "Business"),
+              ),
+              agencyPhoneNumber().copy(
                 number = "0114 555 9999",
                 type = CodeDescription(code = "FAX", description = "Fax"),
               ),
@@ -211,9 +215,7 @@ class AgencyRegistersMigrationIntTest(
           assertThat(emailAddresses).hasSize(1)
           assertThat(emailAddresses[0].address).isEqualTo("sheffield.crown.court@test.com")
           assertThat(phoneNumbers).hasSize(3)
-          assertThat(phoneNumbers[0].number).isEqualTo("0114 555 9898")
-          assertThat(phoneNumbers[1].number).isEqualTo("0114 555 9999")
-          assertThat(phoneNumbers[2].number).isEqualTo("0114 555 8888")
+          assertThat(phoneNumbers.map { it.number }).containsExactlyInAnyOrder("0114 555 9898", "0114 555 9999", "0114 555 8888")
           assertThat(addresses).hasSize(2)
           with(addresses[0]) {
             assertThat(addressLine1).isEqualTo("Sheffield Combined Crt Centre, The Law Courts")
