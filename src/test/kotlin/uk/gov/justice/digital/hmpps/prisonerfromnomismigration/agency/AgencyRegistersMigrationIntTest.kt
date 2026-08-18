@@ -246,6 +246,15 @@ class AgencyRegistersMigrationIntTest(
       }
 
       @Test
+      fun `will track telemetry for each entity`() {
+        verify(telemetryClient).trackEvent(
+          eq("agency-migration-entity-migrated"),
+          any(),
+          isNull(),
+        )
+      }
+
+      @Test
       fun `will mark migration as complete`() {
         webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
