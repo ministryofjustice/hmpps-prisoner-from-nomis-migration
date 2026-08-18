@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import java.util.Locale
 
 fun AgencyResponse.toLegacyAgencyDto() = LegacyAgencyDto(
   agencyType = type.toLegacyAgencyType(),
@@ -45,7 +46,7 @@ fun AgencyAddress.toLegacyAgencyAddressDto() = LegacyAgencyAddressDto(
   addressLine2 = locality,
   town = city?.description,
   county = county?.description,
-  postcode = postcode,
+  postcode = postcode.postcode(),
   country = country?.description,
 )
 
@@ -53,6 +54,14 @@ fun addressLine1(flat: String?, premise: String?, street: String?): String {
   val parts = listOfNotNull(flat, premise, street)
   return parts.joinToString(", ")
 }
+
+private fun String?.postcode() = this
+  ?.trim()
+  ?.replace("\\s+".toRegex(), "")
+  ?.uppercase(Locale.UK)
+  ?.let { postcode ->
+    if (postcode.length > 3) "${postcode.dropLast(3)} ${postcode.takeLast(3)}" else postcode
+  }
 
 fun AgencyEmailAddress.toLegacyAgencyEmailDto() = LegacyAgencyEmailDto(
   address = emailAddress,
