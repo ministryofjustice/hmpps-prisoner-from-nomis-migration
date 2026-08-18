@@ -15,4 +15,6 @@ class AgencyRegistersDpsApiService(
   private val api = LegacySyncResourceApi(webClient)
 
   suspend fun migrateAgency(agencyId: String, request: LegacyAgencyDto): LegacyAgencyResponse = api.migrateAgency(agencyId, request).awaitSingle()
+
+  suspend fun syncAgency(agencyId: String, request: LegacyAgencyDto): LegacyAgencyResponse = api.createOrUpdateAgency(agencyId, request).awaitSingle()
 }
