@@ -200,10 +200,10 @@ class TransferScheduleDpsApiServiceTest {
     @Test
     fun `should throw if error`() = runTest {
       val dpsId = UUID.randomUUID()
-      dpsTransferSchedulerServer.stubDeleteTransferScheduleError(dpsId)
+      dpsTransferSchedulerServer.stubDeleteTransferMovementError(dpsId)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.deleteTransferSchedule(dpsId)
+        apiService.deleteTransferMovement(dpsId)
       }
     }
   }
