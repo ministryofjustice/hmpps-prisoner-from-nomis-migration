@@ -212,4 +212,30 @@ class TransferScheduleDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
+
+  fun stubDeleteTransferMovement(dpsId: UUID) {
+    dpsTransferSchedulerServer.stubFor(
+      delete("/sync/transfer-movements/$dpsId")
+        .willReturn(
+          aResponse()
+            .withStatus(204),
+        ),
+    )
+  }
+
+  fun stubDeleteTransferMovementError(
+    dpsId: UUID,
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsTransferSchedulerServer.stubFor(
+      delete("/sync/transfer-movements/$dpsId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
 }

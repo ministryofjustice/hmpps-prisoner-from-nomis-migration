@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.not
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
@@ -263,6 +264,40 @@ class TransferScheduleMappingApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getTransferMovementMappingOrNull(nomisBookingId = 12345L, nomisMovementSeq = 3)
+      }
+    }
+  }
+
+  @Nested
+  inner class DeleteTransferMovementMappings {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubDeleteTransferMovementMapping()
+
+      apiService.deleteTransferMovementMapping(12345L, 1)
+
+      mappingApi.verify(
+        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should pass ids to URL`() = runTest {
+      mappingApi.stubDeleteTransferMovementMapping(12345, 1)
+
+      apiService.deleteTransferMovementMapping(12345L, 1)
+
+      mappingApi.verify(
+        deleteRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/movement/nomis-id/12345/1")),
+      )
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubDeleteTransferMovementMapping(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.deleteTransferMovementMapping(12345L, 1)
       }
     }
   }

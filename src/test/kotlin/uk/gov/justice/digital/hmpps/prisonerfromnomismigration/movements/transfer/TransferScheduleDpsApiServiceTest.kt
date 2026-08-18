@@ -168,4 +168,43 @@ class TransferScheduleDpsApiServiceTest {
       }
     }
   }
+
+  @Nested
+  inner class DeleteTransferMovement {
+
+    @Test
+    internal fun `should pass oath2 token`() = runTest {
+      val dpsId = UUID.randomUUID()
+      dpsTransferSchedulerServer.stubDeleteTransferMovement(dpsId)
+
+      apiService.deleteTransferMovement(dpsId)
+
+      dpsTransferSchedulerServer.verify(
+        deleteRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should call the endpoint`() = runTest {
+      val dpsId = UUID.randomUUID()
+      dpsTransferSchedulerServer.stubDeleteTransferMovement(dpsId)
+
+      apiService.deleteTransferMovement(dpsId)
+
+      dpsTransferSchedulerServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/sync/transfer-movements/$dpsId")),
+      )
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      val dpsId = UUID.randomUUID()
+      dpsTransferSchedulerServer.stubDeleteTransferMovementError(dpsId)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.deleteTransferMovement(dpsId)
+      }
+    }
+  }
 }

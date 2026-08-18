@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer
 
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -18,6 +19,7 @@ import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension.Companion.dpsTransferSchedulerServer
@@ -688,6 +690,152 @@ class TransferScheduleSyncMovementIntTest(
             assertThat(it["movementSeq"]).isEqualTo("3")
             assertThat(it["nomisEventId"]).isEqualTo("123")
             assertThat(it["error"]).isEqualTo("Expected parent entity not found, retrying")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("EXTERNAL_MOVEMENT-CHANGED (deleted)")
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class TransferMovementDeleted {
+    private val dpsTransferMovementId = UUID.randomUUID()
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferMovementMapping(12345L, 3, dpsTransferMovementId)
+        dpsApi.stubDeleteTransferMovement(dpsTransferMovementId)
+        mappingApi.stubDeleteTransferMovementMapping(12345, 3)
+
+        sendMessage(transferMovementEvent(deleted = true))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should get mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/movement/nomis-id/12345/3")))
+      }
+
+      @Test
+      fun `should delete DPS transfer movement`() {
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/transfer-movements/$dpsTransferMovementId")))
+      }
+
+      @Test
+      fun `should delete mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/movement/nomis-id/12345/3")))
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-movement-deleted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["dpsTransferMovementId"]).isEqualTo("$dpsTransferMovementId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferMovementMapping(status = NOT_FOUND)
+
+        sendMessage(transferMovementEvent(deleted = true))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should try to get mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/movement/nomis-id/12345/3")))
+      }
+
+      @Test
+      fun `should NOT delete DPS transfer movement`() {
+        dpsApi.verify(
+          0,
+          deleteRequestedFor(com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching("/sync/transfer-movements/.*")),
+        )
+      }
+
+      @Test
+      fun `should NOT delete mapping`() {
+        mappingApi.verify(
+          0,
+          deleteRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/movement/nomis-id/12345/3")),
+        )
+      }
+
+      @Test
+      fun `should publish ignored telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-sync-movement-deleted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDpsDeleteFails {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferMovementMapping(12345L, 3, dpsTransferMovementId)
+        dpsApi.stubDeleteTransferMovementError(dpsTransferMovementId, status = BAD_REQUEST.value())
+
+        sendMessage(transferMovementEvent(deleted = true))
+          .also { waitForAnyProcessingToComplete("transfer-scheduler-sync-movement-deleted-error", times = 2) }
+      }
+
+      @Test
+      fun `should try to delete DPS transfer movement`() {
+        dpsApi.verify(
+          2,
+          deleteRequestedFor(urlPathEqualTo("/sync/transfer-movements/$dpsTransferMovementId")),
+        )
+      }
+
+      @Test
+      fun `should NOT delete mapping`() {
+        mappingApi.verify(
+          count = 0,
+          deleteRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/movement/nomis-id/12345/3")),
+        )
+      }
+
+      @Test
+      fun `should publish error telemetry`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("transfer-scheduler-sync-movement-deleted-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["dpsTransferMovementId"]).isEqualTo("$dpsTransferMovementId")
+            assertThat(it["error"]).isEqualTo("400 Bad Request from DELETE http://localhost:8108/sync/transfer-movements/$dpsTransferMovementId")
           },
           isNull(),
         )

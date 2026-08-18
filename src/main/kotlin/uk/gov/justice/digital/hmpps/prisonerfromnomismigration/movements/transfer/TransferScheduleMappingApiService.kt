@@ -35,4 +35,7 @@ class TransferScheduleMappingApiService(@Qualifier("transferScheduleMappingApiWe
   suspend fun getTransferMovementMappingOrNull(nomisBookingId: Long, nomisMovementSeq: Int): TransferMovementMappingDto? = movementApi.prepare(movementApi.getTransferMovementMappingByNomisIdRequestConfig(nomisBookingId, nomisMovementSeq))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun deleteTransferMovementMapping(nomisBookingId: Long, nomisMovementSeq: Int): Unit = movementApi.deleteTransferMovementMappingByNomisId(nomisBookingId, nomisMovementSeq)
+    .awaitSingle()
 }

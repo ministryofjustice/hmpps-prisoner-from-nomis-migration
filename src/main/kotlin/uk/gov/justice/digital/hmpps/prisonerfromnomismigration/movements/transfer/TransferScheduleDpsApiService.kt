@@ -25,4 +25,6 @@ class TransferScheduleDpsApiService(@Qualifier("transferScheduleDpsApiWebClient"
   suspend fun syncTransferMovement(personIdentifier: String, request: SyncMovementRequest): ReferenceId = syncApi.prepare(syncApi.syncMovementRequestConfig(personIdentifier, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun deleteTransferMovement(dpsId: UUID) = syncApi.deleteMovement(dpsId).awaitSingle()
 }
