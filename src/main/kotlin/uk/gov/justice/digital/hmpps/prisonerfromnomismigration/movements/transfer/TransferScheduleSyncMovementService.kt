@@ -43,7 +43,8 @@ class TransferScheduleSyncMovementService(
   suspend fun transferMovementChanged(event: ExternalMovementEvent) = when {
     event.movementType != TRN -> {}
     event.recordInserted -> transferMovementInserted(event)
-    else -> {}
+    event.recordDeleted -> {} // TODO SDIT-4126
+    else -> transferMovementUpdated(event)
   }
 
   suspend fun transferMovementInserted(event: ExternalMovementEvent) {
@@ -60,29 +61,66 @@ class TransferScheduleSyncMovementService(
     }
 
     mappingApiService.getTransferMovementMappingOrNull(bookingId, movementSeq)
+      ?.also {
+        telemetry["dpsTransferMovementId"] = it.dpsTransferMovementId
+        telemetryClient.trackEvent("${TELEMETRY_PREFIX}-inserted-ignored", telemetry)
+      }
       ?: run {
         track("${TELEMETRY_PREFIX}-inserted", telemetry) {
-          val nomis = nomisApiService.getTransferMovementOut(prisonerNumber, bookingId, movementSeq)
-            .also { telemetry["nomisEventId"] = "${it.transferScheduleOutId}" }
-          val dpsScheduleTransferId = nomis.transferScheduleOutId?.let {
-            tryFetchParent { mappingApiService.getTransferScheduleMappingOrNull(it) }
-              .also { telemetry["dpsTransferScheduleId"] = it.dpsTransferScheduleId }
-          }?.dpsTransferScheduleId
-          val dps = dpsApiService.syncTransferMovement(prisonerNumber, nomis.toDpsRequest(dpsTransferScheduleId = dpsScheduleTransferId))
-            .also { telemetry["dpsTransferMovementId"] = it.dpsId }
-
-          tryToCreateTransferMovementMapping(
-            TransferMovementMappingDto(
-              prisonerNumber,
-              bookingId,
-              movementSeq,
-              dps.dpsId,
-              NOMIS_CREATED,
-            ),
-            telemetry,
-          )
+          syncTransferMovement(prisonerNumber, bookingId, movementSeq, telemetry)
+            .also { tryToCreateTransferMovementMapping(it, telemetry) }
         }
       }
+  }
+
+  suspend fun transferMovementUpdated(event: ExternalMovementEvent) {
+    val (bookingId, prisonerNumber, movementSeq) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber!!,
+      "bookingId" to bookingId,
+      "movementSeq" to movementSeq,
+    )
+
+    if (event.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
+      telemetryClient.trackEvent("${TELEMETRY_PREFIX}-updated-ignored", telemetry)
+      return
+    }
+
+    mappingApiService.getTransferMovementMappingOrNull(bookingId, movementSeq)
+      ?. run {
+        track("${TELEMETRY_PREFIX}-updated", telemetry) {
+          syncTransferMovement(prisonerNumber, bookingId, movementSeq, telemetry, dpsId = dpsTransferMovementId)
+        }
+      }
+      ?: throw IllegalStateException("No mapping found when handling an update event for movement $bookingId/$movementSeq - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
+  }
+
+  private suspend fun syncTransferMovement(
+    prisonerNumber: String,
+    bookingId: Long,
+    movementSeq: Int,
+    telemetry: MutableMap<String, Any>,
+    dpsId: UUID? = null,
+  ): TransferMovementMappingDto {
+    val nomis = nomisApiService.getTransferMovementOut(prisonerNumber, bookingId, movementSeq)
+      .also { telemetry["nomisEventId"] = "${it.transferScheduleOutId}" }
+    val dpsScheduleTransferId = nomis.transferScheduleOutId?.let {
+      tryFetchParent { mappingApiService.getTransferScheduleMappingOrNull(it) }
+        .also { telemetry["dpsTransferScheduleId"] = it.dpsTransferScheduleId }
+    }?.dpsTransferScheduleId
+    val dps = dpsApiService.syncTransferMovement(
+      prisonerNumber,
+      nomis.toDpsRequest(dpsId = dpsId, dpsTransferScheduleId = dpsScheduleTransferId),
+    )
+      .also { telemetry["dpsTransferMovementId"] = it.dpsId }
+
+    return TransferMovementMappingDto(
+      prisonerNumber,
+      bookingId,
+      movementSeq,
+      dps.dpsId,
+      NOMIS_CREATED,
+    )
   }
 
   private suspend fun tryToCreateTransferMovementMapping(
