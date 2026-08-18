@@ -106,6 +106,9 @@ hmpps.sqs:
     eventofficialvisits:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventagencyregisters:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     migrationofficialvisits:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

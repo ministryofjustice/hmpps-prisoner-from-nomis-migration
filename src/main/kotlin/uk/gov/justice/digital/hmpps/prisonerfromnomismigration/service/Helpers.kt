@@ -33,6 +33,7 @@ const val STAFF_QUEUE_ID = "migrationstaff"
 const val VISITS_QUEUE_ID = "migrationvisits"
 const val VISIT_SLOTS_QUEUE_ID = "migrationvisitslots"
 
+const val AGENCY_REGISTERS_SYNC_QUEUE_ID = "eventagencyregisters"
 const val ALERTS_SYNC_QUEUE_ID = "eventalerts"
 const val CASENOTES_SYNC_QUEUE_ID = "eventcasenotes"
 const val CORE_PERSON_SYNC_QUEUE_ID = "eventcoreperson"

@@ -121,4 +121,15 @@ class AgencyRegistersDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       ),
     )
   }
+
+  fun stubSyncAgency(agencyId: String, response: LegacyAgencyResponse = legacyAgencyResponse()) {
+    stubFor(
+      post("/legacy/sync/agency/id/$agencyId").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(jsonMapper.writeValueAsString(response))
+          .withStatus(200),
+      ),
+    )
+  }
 }
