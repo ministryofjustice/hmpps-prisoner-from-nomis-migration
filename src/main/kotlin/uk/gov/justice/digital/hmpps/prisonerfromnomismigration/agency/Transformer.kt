@@ -60,7 +60,7 @@ private fun String?.postcode() = this
   ?.replace("\\s+".toRegex(), "")
   ?.uppercase(Locale.UK)
   ?.let { postcode ->
-    if (postcode.length > 3) "${postcode.dropLast(3)} ${postcode.takeLast(3)}" else postcode
+    if (postcode.length in 4..<8) "${postcode.dropLast(3)} ${postcode.takeLast(3)}" else postcode
   }
 
 fun AgencyEmailAddress.toLegacyAgencyEmailDto() = LegacyAgencyEmailDto(
@@ -90,5 +90,6 @@ fun CodeDescription.toLegacyAgencyType(): LegacyAgencyType = when (code) {
   "SCH" -> LegacyAgencyType.CHILDREN_SECURE_HOME
   "STC" -> LegacyAgencyType.SECURE_TRAINING_CENTRE
   "YOT" -> LegacyAgencyType.YOT
+  "FNP" -> LegacyAgencyType.FOREIGN_NATIONAL_PRISON
   else -> throw IllegalArgumentException("Unknown NOMIS agency type code: $code")
 }

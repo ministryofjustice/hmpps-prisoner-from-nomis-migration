@@ -33,6 +33,15 @@ class TransformerTest {
     assertThat(transformed.postcode).isEqualTo("SA61 2AZ")
   }
 
+  @Test
+  internal fun `will not add space if too big`() {
+    val address = agencyAddress(postcode = "POSTCODE")
+
+    val transformed = address.toLegacyAgencyAddressDto()
+
+    assertThat(transformed.postcode).isEqualTo("POSTCODE")
+  }
+
   private fun agencyAddress(postcode: String?) = AgencyAddress(
     id = 1,
     phoneNumbers = emptyList(),
