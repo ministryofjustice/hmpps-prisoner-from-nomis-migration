@@ -7,6 +7,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
@@ -38,6 +39,14 @@ class AgencyRegistersMigrationService(
     val agencyId = context.body.agencyId
     val agency = agencyNomisApiService.getAgency(agencyId)
     agencyRegistersDpsApiService.migrateAgency(agencyId, agency.toLegacyAgencyDto())
+    telemetryClient.trackEvent(
+      "agency-migration-entity-migrated",
+      mapOf(
+        "agencyId" to agency.agencyId,
+        "type" to agency.type.code,
+        "migrationId" to context.migrationId,
+      ),
+    )
   }
 
   override suspend fun getIds(): List<AgencyId> {
