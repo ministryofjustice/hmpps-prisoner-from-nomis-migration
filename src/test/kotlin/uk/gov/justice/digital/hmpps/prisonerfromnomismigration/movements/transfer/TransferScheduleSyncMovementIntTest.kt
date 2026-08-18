@@ -770,7 +770,7 @@ class TransferScheduleSyncMovementIntTest(
       fun `should NOT delete DPS transfer movement`() {
         dpsApi.verify(
           0,
-          deleteRequestedFor(urlPathEqualTo("/sync/transfer-movements/A1234BC")),
+          deleteRequestedFor(com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching("/sync/transfer-movements/.*")),
         )
       }
 
