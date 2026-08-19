@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-13.4496.2f65c5e"
+    "version" : "2026-08-18.4550.68465af"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -1705,6 +1705,52 @@
         "responses" : {
           "200" : {
             "description" : "OK",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/core-person/prisoner/{prisonNumberTo}/merge" : {
+      "post" : {
+        "tags" : [ "Core Person Update Resource" ],
+        "summary" : "Temporary endpoint to merge a prisoner",
+        "description" : "After a prisoner merge in core person record, obtain the definitive prisoner details and write back to nomis.\n      Requires PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "updateOffenderByPrisonNumberAfterMerge",
+        "parameters" : [ {
+          "name" : "prisonNumberTo",
+          "in" : "path",
+          "description" : "Prison number aka noms id / offender id display",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison number aka noms id / offender id display",
+            "example" : "A1234BC"
+          },
+          "example" : "A1234BC"
+        } ],
+        "responses" : {
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires PRISONER_TO_NOMIS__UPDATE__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "204" : {
+            "description" : "No Content",
             "content" : { }
           }
         }
