@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.not
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -24,7 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
-import java.util.UUID
+import java.util.*
 
 @ExtendWith(MappingApiExtension::class)
 @SpringAPIServiceTest
@@ -298,6 +299,64 @@ class TransferScheduleMappingApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.deleteTransferMovementMapping(12345L, 1)
+      }
+    }
+  }
+
+  @Nested
+  inner class CreateMigrationMappings {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubCreateTransferSchedulerPrisonerMappings()
+
+      apiService.createMappings(
+        transferSchedulerPrisonerMappings(),
+      )
+
+      mappingApi.verify(
+        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubCreateTransferSchedulerPrisonerMappings(INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.createMappings(transferSchedulerPrisonerMappings())
+      }
+    }
+  }
+
+  @Nested
+  inner class GetPrisonerMappingIds {
+    @Test
+    internal fun `should pass oath2 token to service`() = runTest {
+      mappingApi.stubGetTransferSchedulerPrisonerMappingIds()
+
+      apiService.getMappings("A1234BC")
+
+      mappingApi.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should return mappings`() = runTest {
+      mappingApi.stubGetTransferSchedulerPrisonerMappingIds()
+
+      with(apiService.getMappings("A1234BC")) {
+        assertThat(schedules[0].nomisEventId).isEqualTo(1)
+        assertThat(movements[0].nomisMovementSeq).isEqualTo(3)
+      }
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubGetTransferSchedulerPrisonerMappingIds(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getMappings("A1234BC")
       }
     }
   }

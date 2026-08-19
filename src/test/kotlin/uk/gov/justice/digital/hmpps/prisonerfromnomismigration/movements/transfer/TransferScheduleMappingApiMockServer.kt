@@ -1,18 +1,27 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer
 
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BookingTransferMovementMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BookingTransferScheduleMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferMovementMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferMovementMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferScheduleMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferScheduleMappingIdsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerBookingMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingIdsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
@@ -204,6 +213,63 @@ class TransferScheduleMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubCreateTransferSchedulerPrisonerMappings() {
+    mappingApi.stubFor(
+      put("/mapping/transfer-scheduler/migrate")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(200),
+        ),
+    )
+  }
+
+  fun stubCreateTransferSchedulerPrisonerMappings(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      put("/mapping/transfer-scheduler/migrate").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubCreateTransferSchedulePrisonerMappingsFailureFollowedBySuccess() {
+    mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/transfer-scheduler/migrate", WireMock::put)
+  }
+
+  fun stubGetTransferSchedulerPrisonerMappingIds(
+    prisonerNumber: String = "A1234BC",
+    bookingId: Long = 12345,
+    nomisEventId: Long = 1,
+    dpsTransferScheduleId: UUID? = UUID.randomUUID(),
+    nomisMovementSeq: Int = 3,
+    dpsMovementId: UUID = UUID.randomUUID(),
+    nomisUnscheduledMovementSeq: Int = 1,
+    dpsUnscheduledMovementId: UUID = UUID.randomUUID(),
+    idMappings: TransferSchedulerPrisonerMappingIdsDto = transferSchedulerPrisonerIdMappings(bookingId, nomisEventId, dpsTransferScheduleId, nomisMovementSeq, dpsMovementId, nomisUnscheduledMovementSeq, dpsUnscheduledMovementId),
+  ) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/transfer-scheduler/$prisonerNumber/ids")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(jsonMapper.writeValueAsString(idMappings)),
+      ),
+    )
+  }
+
+  fun stubGetTransferSchedulerPrisonerMappingIds(prisonerNumber: String = "A1234BC", status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/transfer-scheduler/$prisonerNumber/ids")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
@@ -232,4 +298,51 @@ fun transferMovementMapping(
   nomisMovementSeq = nomisMovementSeq,
   dpsTransferMovementId = dpsTransferMovementId,
   mappingType = TransferMovementMappingDto.MappingType.NOMIS_CREATED,
+)
+
+fun transferSchedulerPrisonerMappings(prisonerNumber: String = "A1234BC") = TransferSchedulerPrisonerMappingsDto(
+  offenderNo = prisonerNumber,
+  migrationId = "2020-01-01T11:10:00",
+  bookings = listOf(
+    TransferSchedulerBookingMappingsDto(
+      bookingId = 12345,
+      schedules = listOf(
+        BookingTransferScheduleMappingsDto(
+          nomisEventId = 1,
+          dpsTransferScheduleId = UUID.randomUUID(),
+          movement = BookingTransferMovementMappingsDto(
+            nomisMovementSeq = 3,
+            dpsTransferMovementId = UUID.randomUUID(),
+          ),
+        ),
+      ),
+      unscheduledMovements = listOf(
+        BookingTransferMovementMappingsDto(
+          nomisMovementSeq = 1,
+          dpsTransferMovementId = UUID.randomUUID(),
+        ),
+      ),
+    ),
+  ),
+)
+
+fun transferSchedulerPrisonerIdMappings(
+  bookingId: Long = 12345,
+  nomisEventId: Long = 1,
+  dpsTransferScheduleId: UUID? = UUID.randomUUID(),
+  nomisMovementSeq: Int = 3,
+  dpsMovementId: UUID = UUID.randomUUID(),
+  nomisUnscheduledMovementSeq: Int = 1,
+  dpsUnscheduledMovementId: UUID = UUID.randomUUID(),
+) = TransferSchedulerPrisonerMappingIdsDto(
+  prisonerNumber = "A1234BC",
+  schedules = listOfNotNull(
+    dpsTransferScheduleId?.let {
+      TransferScheduleMappingIdsDto(nomisEventId, dpsTransferScheduleId)
+    },
+  ),
+  movements = listOf(
+    TransferMovementMappingIdsDto(bookingId, nomisMovementSeq, dpsMovementId),
+    TransferMovementMappingIdsDto(bookingId, nomisUnscheduledMovementSeq, dpsUnscheduledMovementId),
+  ),
 )
