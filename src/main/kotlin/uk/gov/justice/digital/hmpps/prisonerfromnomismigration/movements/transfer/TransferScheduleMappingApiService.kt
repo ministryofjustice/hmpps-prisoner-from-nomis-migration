@@ -8,14 +8,20 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitSuccessOrDuplicate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TransferMovementResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TransferScheduleResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TransferSchedulerMigrationResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TransferSchedulerPrisonerResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferScheduleMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingIdsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingsDto
 
 @Service
 class TransferScheduleMappingApiService(@Qualifier("transferScheduleMappingApiWebClient") webClient: WebClient) {
 
   private val scheduleApi = TransferScheduleResourceApi(webClient)
   private val movementApi = TransferMovementResourceApi(webClient)
+  private val migrationApi = TransferSchedulerMigrationResourceApi(webClient)
+  private val prisonerApi = TransferSchedulerPrisonerResourceApi(webClient)
 
   suspend fun createTransferScheduleMapping(mapping: TransferScheduleMappingDto) = scheduleApi.prepare(scheduleApi.createTransferScheduleMappingRequestConfig(mapping))
     .retrieve()
@@ -38,4 +44,9 @@ class TransferScheduleMappingApiService(@Qualifier("transferScheduleMappingApiWe
 
   suspend fun deleteTransferMovementMapping(nomisBookingId: Long, nomisMovementSeq: Int): Unit = movementApi.deleteTransferMovementMappingByNomisId(nomisBookingId, nomisMovementSeq)
     .awaitSingle()
+
+  suspend fun createMappings(request: TransferSchedulerPrisonerMappingsDto): Unit = migrationApi.createPrisonerTransferSchedulerMappings(request)
+    .awaitSingle()
+
+  suspend fun getMappings(offenderNo: String): TransferSchedulerPrisonerMappingIdsDto = prisonerApi.getAllTransferSchedulerPrisonerMappingIds(offenderNo).awaitSingle()
 }
