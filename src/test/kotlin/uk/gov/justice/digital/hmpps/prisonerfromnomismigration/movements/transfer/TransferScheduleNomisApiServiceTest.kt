@@ -169,4 +169,58 @@ class TransferScheduleNomisApiServiceTest {
       }
     }
   }
+
+  @Nested
+  inner class GetOffenderTransferMovementsTest {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetOffenderTransferMovements(offenderNo = "A1234BC")
+
+      apiService.getOffenderTransferMovementsOrNull(offenderNo = "A1234BC")
+
+      transferScheduleNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass offender number to service`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetOffenderTransferMovements(offenderNo = "A1234BC")
+
+      apiService.getOffenderTransferMovementsOrNull(offenderNo = "A1234BC")
+
+      transferScheduleNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/movements/A1234BC/transfer")),
+      )
+    }
+
+    @Test
+    fun `will return offender transfer movements`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetOffenderTransferMovements(offenderNo = "A1234BC")
+
+      val result = apiService.getOffenderTransferMovementsOrNull(offenderNo = "A1234BC")!!
+
+      assertThat(result.bookings).hasSize(1)
+      assertThat(result.bookings[0].bookingId).isEqualTo(12345)
+      assertThat(result.bookings[0].transferSchedules).hasSize(1)
+      assertThat(result.bookings[0].transferSchedules[0].movement?.sequence).isEqualTo(3)
+      assertThat(result.bookings[0].unscheduledTransferMovements[0].sequence).isEqualTo(1)
+    }
+
+    @Test
+    fun `will return null when offender does not exist`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetOffenderTransferMovements(status = NOT_FOUND)
+
+      assertThat(apiService.getOffenderTransferMovementsOrNull(offenderNo = "A1234BC")).isNull()
+    }
+
+    @Test
+    fun `will throw error when API returns an error`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetOffenderTransferMovements(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getOffenderTransferMovementsOrNull(offenderNo = "A1234BC")
+      }
+    }
+  }
 }

@@ -17,12 +17,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ReferenceId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ResyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncSchedule
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncTransfer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncTransferRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncUser
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.TransferMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.TransferMovementMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDateTime
@@ -118,6 +121,32 @@ class TransferScheduleDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
 
     fun referenceId(id: UUID = UUID.randomUUID()) = ReferenceId(id)
+
+    fun resyncResponse(
+      dpsTransferId: UUID = UUID.randomUUID(),
+      dpsScheduledMovementId: UUID = UUID.randomUUID(),
+      dpsUnscheduledMovementId: UUID = UUID.randomUUID(),
+    ) = ResyncResponse(
+      transfers = listOf(
+        TransferMapping(
+          dpsId = dpsTransferId,
+          eventId = 1L,
+          movement =
+          TransferMovementMapping(
+            dpsId = dpsScheduledMovementId,
+            offenderBookId = 12345L,
+            movementSeq = 3,
+          ),
+        ),
+      ),
+      unscheduledMovements = listOf(
+        TransferMovementMapping(
+          dpsId = dpsUnscheduledMovementId,
+          offenderBookId = 12345L,
+          movementSeq = 1,
+        ),
+      ),
+    )
 
     fun stubHealthPing(status: Int) {
       dpsTransferSchedulerServer.stubFor(
@@ -230,6 +259,34 @@ class TransferScheduleDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     dpsTransferSchedulerServer.stubFor(
       delete("/sync/transfer-movements/$dpsId")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubResyncPrisonerTransfers(personIdentifier: String = "A1234BC", response: ResyncResponse = resyncResponse()) {
+    dpsTransferSchedulerServer.stubFor(
+      put("/resync/transfers/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubResyncPrisonerTransfers(
+    personIdentifier: String = "A1234BC",
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsTransferSchedulerServer.stubFor(
+      put("/resync/transfers/$personIdentifier")
         .willReturn(
           aResponse()
             .withStatus(status)

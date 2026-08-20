@@ -5,8 +5,11 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.api.SyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ReferenceId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ResyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ResyncTransfersRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncTransferRequest
 import java.util.UUID
@@ -27,4 +30,8 @@ class TransferScheduleDpsApiService(@Qualifier("transferScheduleDpsApiWebClient"
     .awaitBodyOrLogAndRethrowBadRequest()
 
   suspend fun deleteTransferMovement(dpsId: UUID) = syncApi.deleteMovement(dpsId).awaitSingle()
+
+  suspend fun resyncPrisoner(personIdentifier: String, request: ResyncTransfersRequest) = syncApi.prepare(syncApi.resyncRequestConfig(personIdentifier, request))
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound<ResyncResponse>()
 }
