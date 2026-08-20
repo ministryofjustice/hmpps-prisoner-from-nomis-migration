@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
@@ -31,6 +31,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.beliefs
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory.ReligionCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.ReligionsMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
@@ -52,7 +53,7 @@ import java.util.UUID
 import kotlin.collections.forEach
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class ReligionsMigrationIntTest(
+class CorePersonMigrationIntTest(
   @Autowired private val corePersonNomisApiMock: CorePersonNomisApiMockServer,
   @Autowired private val mappingApiMock: ReligionsMappingApiMockServer,
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
@@ -76,13 +77,13 @@ class ReligionsMigrationIntTest(
   fun tearDownTelemetryClient() = reset(telemetryClient)
 
   @Nested
-  @DisplayName("POST /migrate/core-person/religion")
+  @DisplayName("POST /migrate/core-person")
   inner class StartMigration {
     @Nested
     inner class Security {
       @Test
       fun `access forbidden when no role`() {
-        webTestClient.post().uri("/migrate/core-person/religion")
+        webTestClient.post().uri("/migrate/core-person")
           .headers(setAuthorisation(roles = listOf()))
           .contentType(MediaType.APPLICATION_JSON)
           .exchange()
@@ -91,7 +92,7 @@ class ReligionsMigrationIntTest(
 
       @Test
       fun `access forbidden with wrong role`() {
-        webTestClient.post().uri("/migrate/core-person/religion")
+        webTestClient.post().uri("/migrate/core-person")
           .headers(setAuthorisation(roles = listOf("BANANAS")))
           .contentType(MediaType.APPLICATION_JSON)
           .exchange()
@@ -100,7 +101,7 @@ class ReligionsMigrationIntTest(
 
       @Test
       fun `access unauthorised with no auth token`() {
-        webTestClient.post().uri("/migrate/core-person/religion")
+        webTestClient.post().uri("/migrate/core-person")
           .contentType(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus().isUnauthorized
@@ -232,7 +233,7 @@ class ReligionsMigrationIntTest(
       @Test
       fun `will track telemetry for each prisoner migrated`() {
         verify(telemetryClient).trackEvent(
-          eq("coreperson-religion-migration-entity-migrated"),
+          eq("coreperson-migration-entity-migrated"),
           check {
             assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
             assertThat(it["cprId"]).isEqualTo(nomisPrisonNumber)
@@ -310,7 +311,7 @@ class ReligionsMigrationIntTest(
       @Test
       fun `will track telemetry for each prisoner migrated`() {
         verify(telemetryClient).trackEvent(
-          eq("coreperson-religion-migration-entity-migrated"),
+          eq("coreperson-migration-entity-migrated"),
           check {
             assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
             assertThat(it["cprId"]).isEqualTo(nomisPrisonNumber)
@@ -371,7 +372,7 @@ class ReligionsMigrationIntTest(
         mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 81)
         // wait until all records have individually migrated since status check might finish just before some entities are still in flight due to the "big" numbers
         migrationResult = performMigration {
-          verify(telemetryClient, times(80)).trackEvent(eq("coreperson-religion-migration-entity-migrated"), any(), isNull())
+          verify(telemetryClient, times(80)).trackEvent(eq("coreperson-migration-entity-migrated"), any(), isNull())
         }
       }
 
@@ -459,7 +460,7 @@ class ReligionsMigrationIntTest(
       fun `will eventually track telemetry for each slot migrated`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("coreperson-religion-migration-entity-migrated"),
+            eq("coreperson-migration-entity-migrated"),
             check {
               assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
               assertThat(it["cprId"]).isEqualTo(nomisPrisonNumber)
@@ -557,7 +558,7 @@ class ReligionsMigrationIntTest(
       @Test
       fun `will never track telemetry for each slot migrated`() {
         verify(telemetryClient, times(0)).trackEvent(
-          eq("coreperson-religion-migration-entity-migrated"),
+          eq("coreperson-migration-entity-migrated"),
           any(),
           isNull(),
         )
@@ -580,12 +581,12 @@ class ReligionsMigrationIntTest(
   private fun performMigration(
     waitUntilVerify: () -> Unit = {
       verify(telemetryClient).trackEvent(
-        eq("coreperson-religion-migration-completed"),
+        eq("coreperson-migration-completed"),
         any(),
         isNull(),
       )
     },
-  ): MigrationResult = webTestClient.post().uri("/migrate/core-person/religion")
+  ): MigrationResult = webTestClient.post().uri("/migrate/core-person")
     .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .exchange()

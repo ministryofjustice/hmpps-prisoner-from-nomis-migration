@@ -40,7 +40,7 @@ class GeneralMappingService(
     MigrationType.AGENCY_REGISTERS -> 0
     MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
-    MigrationType.CORE_PERSON_RELIGION -> religionsMappingService.getMigrationCount(migrationId)
+    MigrationType.CORE_PERSON -> religionsMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SCHEDULER -> courtSchedulerMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
     MigrationType.CSRA -> csraMappingApiService.getMigrationCount(migrationId)
