@@ -238,6 +238,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTOFFICIALVISITS_QUEUE_NAME: "sqs_name"
     prison-events-officialvisits-dl-queue:
       HMPPS_SQS_QUEUES_EVENTOFFICIALVISITS_DLQ_NAME: "sqs_name"
+    prison-events-agencyregisters-queue:
+      HMPPS_SQS_QUEUES_EVENTAGENCYREGISTERS_QUEUE_NAME: "sqs_name"
+    prison-events-agencyregisters-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTAGENCYREGISTERS_DLQ_NAME: "sqs_name"
     rds-database:
       SPRING_FLYWAY_USER: "database_username"
       SPRING_FLYWAY_PASSWORD: "database_password"
