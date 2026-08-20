@@ -155,6 +155,8 @@ generic-prometheus-alerts:
     agencyregisters:
       - "syscon-devs-dev-migration_agencyregisters_queue"
       - "syscon-devs-dev-migration_agencyregisters_dlq"
+      - "syscon-devs-dev-prisoner_from_nomis_agencyregisters_queue"
+      - "syscon-devs-dev-prisoner_from_nomis_agencyregisters_dl_queue"
     courtmovements:
       - "syscon-devs-dev-prisoner_from_nomis_courtmovements_queue"
       - "syscon-devs-dev-prisoner_from_nomis_courtmovements_dl_queue"
