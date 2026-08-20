@@ -28,4 +28,8 @@ class TransferScheduleNomisApiService(@Qualifier("nomisApiWebClient") private va
   suspend fun getOffenderTransferMovementsOrNull(offenderNo: String): OffenderTransferMovementsResponse? = offenderApi.prepare(offenderApi.getOffenderTransferMovementsRequestConfig(offenderNo))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getOffenderTransferMovementsOrNull(rootOffenderId: Long): OffenderTransferMovementsResponse? = offenderApi.prepare(offenderApi.getOffenderTransferMovementsByRootOffenderIdRequestConfig(rootOffenderId))
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
 }

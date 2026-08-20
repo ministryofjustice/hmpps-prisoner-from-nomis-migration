@@ -122,6 +122,34 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetOffenderTransferMovementsByRootOffender(
+    rootOffenderId: Long = 777L,
+    response: OffenderTransferMovementsResponse = offenderTransferMovementsResponse(),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/movements/root-offender-id/$rootOffenderId/transfer")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(OK.value())
+          .withBody(jsonMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetOffenderTransferMovementsByRootOffender(
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathMatching("/movements/root-offender-id/.*/transfer")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 
@@ -217,6 +245,8 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
       ),
       unscheduledMovements: List<TransferMovementOut> = listOf(transferMovementOutResponse().copy(eventId = null, sequence = 1)),
     ): OffenderTransferMovementsResponse = OffenderTransferMovementsResponse(
+      offenderNo = "A1234BC",
+      rootOffenderId = 777L,
       bookings = listOf(
         BookingTransferMovements(
           bookingId = bookingId,

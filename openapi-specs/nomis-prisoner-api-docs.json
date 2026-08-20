@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-20.1945.ceb1fd1"
+    "version" : "2026-08-20.1955.1030124"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -19825,7 +19825,7 @@
     "/movements/{offenderNo}/transfer" : {
       "get" : {
         "tags" : [ "offender-transfer-movements-resource" ],
-        "summary" : "Get tansfer schedules and movements for an offender",
+        "summary" : "Get transfer schedules and movements for an offender",
         "description" : "Get transfer schedules and movements for an offender. This is used to migrate transfer movements to DPS and for reconciliation. Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
         "operationId" : "getOffenderTransferMovements",
         "parameters" : [ {
@@ -21042,6 +21042,69 @@
           },
           "404" : {
             "description" : "Offender or court movement in not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/movements/root-offender-id/{rootOffenderId}/transfer" : {
+      "get" : {
+        "tags" : [ "offender-transfer-movements-resource" ],
+        "summary" : "Get transfer schedules and movements for an offender by their root offender id",
+        "description" : "Get transfer schedules and movements for an offender. This is used to migrate transfer movements to DPS and for reconciliation. Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "getOffenderTransferMovementsByRootOffenderId",
+        "parameters" : [ {
+          "name" : "rootOffenderId",
+          "in" : "path",
+          "description" : "Root offender ID",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Root offender ID",
+            "example" : 12345
+          },
+          "example" : 12345
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Offender transfer movements returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/OffenderTransferMovementsResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Offender not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -23631,6 +23694,71 @@
                   "type" : "array",
                   "items" : {
                     "$ref" : "#/components/schemas/OffenderBelief"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Offender does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/core-person/{prisonNumber}/aliases-identifiers" : {
+      "get" : {
+        "tags" : [ "core-person-resource" ],
+        "summary" : "Get the aliases and identifiers for an offender by prison number",
+        "description" : "Retrieves the aliases and offenders for an offender. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "getOffenderAliasesAndIdentifiers",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "Prison number aka noms id / offender id display",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison number aka noms id / offender id display",
+            "example" : "A1234BC"
+          },
+          "example" : "A1234BC"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Identifier returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CoreOffender"
                   }
                 }
               }
@@ -38090,6 +38218,15 @@
         "type" : "object",
         "description" : "Offender transfer movements by booking, including schedules",
         "properties" : {
+          "offenderNo" : {
+            "type" : "string",
+            "description" : "The prisoner number"
+          },
+          "rootOffenderId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The root offender ID"
+          },
           "bookings" : {
             "type" : "array",
             "description" : "List of bookings with their transfer movements",
@@ -38098,7 +38235,7 @@
             }
           }
         },
-        "required" : [ "bookings" ]
+        "required" : [ "bookings", "offenderNo", "rootOffenderId" ]
       },
       "TransferMovementOut" : {
         "type" : "object",
