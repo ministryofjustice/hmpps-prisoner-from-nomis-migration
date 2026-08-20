@@ -18,12 +18,15 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import java.util.*
 
@@ -309,8 +312,9 @@ class TransferScheduleMappingApiServiceTest {
     internal fun `should pass oath2 token to service`() = runTest {
       mappingApi.stubCreateTransferSchedulerPrisonerMappings()
 
-      apiService.createMappings(
+      apiService.createMapping(
         transferSchedulerPrisonerMappings(),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<TransferSchedulerPrisonerMappingsDto>>() {},
       )
 
       mappingApi.verify(
@@ -323,7 +327,10 @@ class TransferScheduleMappingApiServiceTest {
       mappingApi.stubCreateTransferSchedulerPrisonerMappings(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.createMappings(transferSchedulerPrisonerMappings())
+        apiService.createMapping(
+          transferSchedulerPrisonerMappings(),
+          object : ParameterizedTypeReference<DuplicateErrorResponse<TransferSchedulerPrisonerMappingsDto>>() {},
+        )
       }
     }
   }

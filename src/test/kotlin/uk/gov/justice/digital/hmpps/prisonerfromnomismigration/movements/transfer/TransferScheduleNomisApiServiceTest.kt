@@ -223,4 +223,58 @@ class TransferScheduleNomisApiServiceTest {
       }
     }
   }
+
+  @Nested
+  inner class GetOffenderTransferMovementsByRootOffenderTest {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetOffenderTransferMovementsByRootOffender(rootOffenderId = 777)
+
+      apiService.getOffenderTransferMovementsOrNull(rootOffenderId = 777)
+
+      transferScheduleNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass offender number to service`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetOffenderTransferMovementsByRootOffender(rootOffenderId = 777)
+
+      apiService.getOffenderTransferMovementsOrNull(rootOffenderId = 777)
+
+      transferScheduleNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/movements/root-offender-id/777/transfer")),
+      )
+    }
+
+    @Test
+    fun `will return offender transfer movements`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetOffenderTransferMovementsByRootOffender(rootOffenderId = 777)
+
+      val result = apiService.getOffenderTransferMovementsOrNull(rootOffenderId = 777)!!
+
+      assertThat(result.bookings).hasSize(1)
+      assertThat(result.bookings[0].bookingId).isEqualTo(12345)
+      assertThat(result.bookings[0].transferSchedules).hasSize(1)
+      assertThat(result.bookings[0].transferSchedules[0].movement?.sequence).isEqualTo(3)
+      assertThat(result.bookings[0].unscheduledTransferMovements[0].sequence).isEqualTo(1)
+    }
+
+    @Test
+    fun `will return null when offender does not exist`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetOffenderTransferMovementsByRootOffender(status = NOT_FOUND)
+
+      assertThat(apiService.getOffenderTransferMovementsOrNull(rootOffenderId = 777)).isNull()
+    }
+
+    @Test
+    fun `will throw error when API returns an error`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetOffenderTransferMovementsByRootOffender(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getOffenderTransferMovementsOrNull(rootOffenderId = 777)
+      }
+    }
+  }
 }
