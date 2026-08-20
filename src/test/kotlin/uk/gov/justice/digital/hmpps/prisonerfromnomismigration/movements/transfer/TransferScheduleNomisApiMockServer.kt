@@ -10,7 +10,10 @@ import org.springframework.http.HttpStatus.OK
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTransferMovements
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTransferSchedule
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransferMovementsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TransferMovementOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TransferScheduleOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TransferScheduleWaitlist
@@ -83,6 +86,34 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetTransferMovementOut(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
       get(urlPathMatching("/movements/.*/transfer/movement/out/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubGetOffenderTransferMovements(
+    offenderNo: String = "A1234BC",
+    response: OffenderTransferMovementsResponse = offenderTransferMovementsResponse(),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/movements/$offenderNo/transfer")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(OK.value())
+          .withBody(jsonMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetOffenderTransferMovements(
+    status: HttpStatus,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathMatching("/movements/.*/transfer")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -172,6 +203,29 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
       escort = "PECS",
       commentText = "some transfer movement comment",
       userActiveCaseloadId = "MDI",
+    )
+
+    fun offenderTransferMovementsResponse(
+      bookingId: Long = 12345L,
+      activeBooking: Boolean = true,
+      latestBooking: Boolean = true,
+      schedules: List<BookingTransferSchedule> = listOf(
+        BookingTransferSchedule(
+          schedule = transferScheduleOutResponse(waitlist = transferScheduleWaitlistResponse(status = "APPROVED")),
+          movement = transferMovementOutResponse(),
+        ),
+      ),
+      unscheduledMovements: List<TransferMovementOut> = listOf(transferMovementOutResponse().copy(eventId = null, sequence = 1)),
+    ): OffenderTransferMovementsResponse = OffenderTransferMovementsResponse(
+      bookings = listOf(
+        BookingTransferMovements(
+          bookingId = bookingId,
+          activeBooking = activeBooking,
+          latestBooking = latestBooking,
+          transferSchedules = schedules,
+          unscheduledTransferMovements = unscheduledMovements,
+        ),
+      ),
     )
   }
 }

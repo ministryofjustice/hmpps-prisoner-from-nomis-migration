@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiMockServer.Companion.syncTransferMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiMockServer.Companion.syncTransferRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ReferenceId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ResyncTransfersRequest
 import java.util.*
 
 @ExtendWith(TransferScheduleDpsApiExtension::class)
@@ -205,6 +206,50 @@ class TransferScheduleDpsApiServiceTest {
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.deleteTransferMovement(dpsId)
       }
+    }
+  }
+
+  @Nested
+  inner class Resync {
+    val request = ResyncTransfersRequest(listOf(), listOf())
+
+    @Test
+    internal fun `should pass oath2 token`() = runTest {
+      dpsTransferSchedulerServer.stubResyncPrisonerTransfers()
+
+      apiService.resyncPrisoner("A1234BC", request)
+
+      dpsTransferSchedulerServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should call the resync endpoint`() = runTest {
+      dpsTransferSchedulerServer.stubResyncPrisonerTransfers()
+
+      apiService.resyncPrisoner("A1234BC", request)
+
+      dpsTransferSchedulerServer.verify(
+        putRequestedFor(urlPathEqualTo("/resync/transfers/A1234BC")),
+      )
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      dpsTransferSchedulerServer.stubResyncPrisonerTransfers(status = 500)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.resyncPrisoner("A1234BC", request)
+      }
+    }
+
+    @Test
+    fun `should return null if not found`() = runTest {
+      dpsTransferSchedulerServer.stubResyncPrisonerTransfers(status = 404)
+
+      assertThat(apiService.resyncPrisoner("A1234BC", request)).isNull()
     }
   }
 }
