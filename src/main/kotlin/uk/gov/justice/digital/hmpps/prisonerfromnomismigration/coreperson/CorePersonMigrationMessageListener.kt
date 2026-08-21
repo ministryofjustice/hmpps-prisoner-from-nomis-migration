@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import io.awspring.cloud.sqs.annotation.SqsListener
 import org.springframework.stereotype.Service
@@ -9,9 +9,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CORE_PERS
 import java.util.concurrent.CompletableFuture
 
 @Service
-class ReligionsMigrationMessageListener(
+class CorePersonMigrationMessageListener(
   jsonMapper: JsonMapper,
-  migrationService: ReligionsMigrationService,
+  migrationService: CorePersonMigrationService,
 ) : MigrationMessageListener(
   jsonMapper,
   migrationService,

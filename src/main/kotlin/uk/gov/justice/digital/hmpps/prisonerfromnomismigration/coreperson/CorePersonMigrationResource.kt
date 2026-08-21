@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -15,14 +15,14 @@ import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 
 @RestController
-@RequestMapping("/migrate/core-person/religion", produces = [MediaType.APPLICATION_JSON_VALUE])
-@Tag(name = "Core Person Religions Migration Resource")
+@RequestMapping("/migrate/core-person", produces = [MediaType.APPLICATION_JSON_VALUE])
+@Tag(name = "Core Person Migration Resource")
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
-class ReligionsMigrationResource(private val migrationService: ReligionsMigrationService) {
+class CorePersonMigrationResource(private val migrationService: CorePersonMigrationService) {
   @PostMapping
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
-    summary = "Starts a religion migration. This migration has no filter",
+    summary = "Starts a core person migration. This migration has no filter",
     description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     responses = [
       ApiResponse(
@@ -46,5 +46,5 @@ class ReligionsMigrationResource(private val migrationService: ReligionsMigratio
       ),
     ],
   )
-  suspend fun startReligionsMigration() = migrationService.startMigration("")
+  suspend fun startMigration() = migrationService.startMigration("")
 }

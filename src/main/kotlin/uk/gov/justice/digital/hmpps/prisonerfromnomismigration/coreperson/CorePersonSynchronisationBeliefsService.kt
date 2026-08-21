@@ -194,7 +194,7 @@ class CorePersonSynchronisationBeliefsService(
       log.error("Failed to create mapping for core person ${mapping.nomisPrisonNumber} religion id ${mapping.nomisId},${mapping.cprId}", e)
       queueService.sendMessage(
         messageType = RETRY_SYNCHRONISATION_CORE_PERSON_RELIGION_MAPPING.name,
-        synchronisationType = SynchronisationType.CORE_PERSON_RELIGION,
+        synchronisationType = SynchronisationType.CORE_PERSON,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
       )

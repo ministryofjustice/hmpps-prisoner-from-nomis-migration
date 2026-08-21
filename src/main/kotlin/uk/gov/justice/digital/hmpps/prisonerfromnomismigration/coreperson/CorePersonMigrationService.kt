@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
@@ -7,10 +7,8 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonNomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.toMigrateReligionsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.ReligionsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -22,11 +20,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.CORE_PERSON_RELIGION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.CORE_PERSON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
 @Service
-class ReligionsMigrationService(
+class CorePersonMigrationService(
   private val religionsMappingService: ReligionsMappingService,
   private val corePersonNomisApiService: CorePersonNomisApiService,
   private val cprApiService: CorePersonCprApiService,
@@ -39,7 +37,7 @@ class ReligionsMigrationService(
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
 ) : ByIdRangeMigrationService<Any, PrisonNumberAndRootOffenderId, ReligionsMigrationMappingDto>(
   mappingService = religionsMappingService,
-  migrationType = CORE_PERSON_RELIGION,
+  migrationType = CORE_PERSON,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckRetrySeconds,
@@ -124,7 +122,7 @@ class ReligionsMigrationService(
       if (it.isError) {
         val duplicateErrorDetails = it.errorResponse!!.moreInfo
         telemetryClient.trackEvent(
-          "${CORE_PERSON_RELIGION.telemetryName}-migration-duplicate",
+          "${CORE_PERSON.telemetryName}-migration-duplicate",
           mapOf(
             "duplicateCprId" to duplicateErrorDetails.duplicate.cprId,
             "duplicateNomisPrisonNumber" to duplicateErrorDetails.duplicate.nomisPrisonNumber,
@@ -135,7 +133,7 @@ class ReligionsMigrationService(
         )
       } else {
         telemetryClient.trackEvent(
-          "${CORE_PERSON_RELIGION.telemetryName}-migration-entity-migrated",
+          "${CORE_PERSON.telemetryName}-migration-entity-migrated",
           mapOf(
             "nomisPrisonNumber" to mapping.nomisPrisonNumber,
             "cprId" to mapping.cprId,
