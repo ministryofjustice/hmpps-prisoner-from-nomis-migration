@@ -1012,13 +1012,7 @@ class OfficialVisitsMigrationIntTest(
 
   private fun performMigration(
     body: OfficialVisitsMigrationFilter = OfficialVisitsMigrationFilter(),
-    waitUntilVerify: () -> Unit = {
-      verify(telemetryClient).trackEvent(
-        eq("officialvisits-migration-completed"),
-        any(),
-        isNull(),
-      )
-    },
+    waitUntilVerify: () -> Unit = { },
   ): MigrationResult = webTestClient.post().uri("/migrate/official-visits")
     .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
@@ -1031,5 +1025,6 @@ class OfficialVisitsMigrationIntTest(
 
   private fun waitUntilCompleted(waitUntilVerify: () -> Unit) = await atMost Duration.ofSeconds(60) untilAsserted {
     waitUntilVerify()
+    verify(telemetryClient).trackEvent(eq("officialvisits-migration-completed"), any(), isNull())
   }
 }
