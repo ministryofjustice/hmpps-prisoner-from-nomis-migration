@@ -790,6 +790,119 @@ class CourtSentencingRepairResourceIntTest(
   }
 
   @Nested
+  @DisplayName("POST /prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair")
+  inner class RepairAppearanceCreate {
+    val offenderNo = "A1234KT"
+    val bookingId = NOMIS_BOOKING_ID
+    val caseId = NOMIS_COURT_CASE_ID
+    val dpsCaseId = DPS_CASE_ID
+    val eventId = NOMIS_COURT_APPEARANCE_ID
+    val dpsAppearanceId = DPS_APPEARANCE_ID
+
+    @Nested
+    inner class Security {
+
+      @Test
+      internal fun `must have valid token`() {
+        webTestClient.post().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+          eventId,
+        )
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      internal fun `must have correct role`() {
+        webTestClient.post().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+          eventId,
+        )
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isForbidden
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+
+      @BeforeEach
+      internal fun setup() {
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(status = NOT_FOUND)
+
+        courtSentencingNomisApiMockServer.stubGetCourtAppearance(
+          courtAppearanceId = eventId,
+          courtCaseId = caseId,
+          offenderNo = offenderNo,
+        )
+
+        courtSentencingMappingApiMockServer.stubGetByNomisId(
+          nomisCourtCaseId = NOMIS_COURT_CASE_ID,
+          dpsCourtCaseId = DPS_CASE_ID,
+        )
+
+        dpsCourtSentencingServer.stubPostCourtAppearanceForCreate(
+          courtAppearanceId = UUID.fromString(
+            dpsAppearanceId,
+          ),
+          courtCaseId = dpsCaseId,
+        )
+        courtSentencingMappingApiMockServer.stubPostCourtAppearanceMapping()
+
+        webTestClient.post().uri(
+          "/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/appearances/{eventId}/repair",
+          offenderNo,
+          bookingId,
+          caseId,
+          eventId,
+        )
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+      }
+
+      @Test
+      fun `will create appearance in DPS`() {
+        dpsCourtSentencingServer.verify(postRequestedFor(urlPathEqualTo("/legacy/court-appearance")))
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-sentencing-appearance-created-repaired"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            assertThat(it["nomisCaseId"]).isEqualTo(caseId.toString())
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("court-appearance-synchronisation-created-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+            assertThat(it["nomisCourtCaseId"]).isEqualTo(caseId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
   @DisplayName("DELETE /prisoners/{offenderNo}/court-sentencing/court-cases/{caseId}/court-appearances/prune-dps")
   inner class PruneDPSCourtAppearances {
     val offenderNo = "A1234KT"
