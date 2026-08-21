@@ -23,9 +23,6 @@ class PropertyMappingService(
     .getPropertyContainerMappingByNomisId(nomisId)
     .awaitSingleOrNullForNotFound()
 
-  suspend fun deleteMapping(nomisId: Long) = api
-    .deletePropertyContainerMappingByNomisId(nomisId).awaitSingle()
-
   suspend fun getLatestMigratedPropertyContainerMapping() = api
     .getLatestMigratedPropertyContainerMapping().awaitSingle()
 
