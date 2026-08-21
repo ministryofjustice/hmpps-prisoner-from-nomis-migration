@@ -26,6 +26,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiS
 @Service
 class CorePersonMigrationService(
   private val religionsMappingService: ReligionsMappingService,
+  private val corePersonMappingService: CorePersonMappingService,
   private val corePersonNomisApiService: CorePersonNomisApiService,
   private val cprApiService: CorePersonCprApiService,
   private val nomisApiService: NomisApiService,
