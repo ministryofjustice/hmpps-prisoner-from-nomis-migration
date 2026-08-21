@@ -2,25 +2,27 @@ server:
   shutdown: immediate
 
 api.base.url:
-  nomis: http://localhost:8082
+  nomis: http://localhost:8081
   hmpps-auth: http://localhost:8090/auth
   mapping: http://localhost:8083
-  visits: http://localhost:8083
+  visits: http://localhost:8082
   sentencing: http://localhost:8085
   activities: http://localhost:8086
-  core.person: http://localhost:8098
   staff: http://localhost:8089
-  locations: http://localhost:8091
-  casenotes: http://localhost:8096
-  court.sentencing: http://localhost:8090
+  # do not use port 8091 - clashes on some Macs
   alerts: http://localhost:8092
+  locations: http://localhost:8093
+  court.sentencing: http://localhost:8094
+  casenotes: http://localhost:8096
   personal.relationships: http://localhost:8097
-  organisations: http://localhost:8097
+  core.person: http://localhost:8099
+  organisations: http://localhost:8100
   visit.balance: http://localhost:8101
   finance: http://localhost:8102
-  ext.movements: http://localhost:8103
+  movements-taps: http://localhost:8103
   officialvisits: http://localhost:8104
   csra: http://localhost:8105
+  movements-court: http://localhost:8106
   property: http://localhost:8107
   movements-transfer: http://localhost:8108
   agencyregisters: http://localhost:8109
