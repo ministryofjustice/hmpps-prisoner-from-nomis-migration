@@ -234,18 +234,19 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
 
     fun offenderTransferMovementsResponse(
+      offenderNo: String = "A1234BC",
       bookingId: Long = 12345L,
       activeBooking: Boolean = true,
       latestBooking: Boolean = true,
       schedules: List<BookingTransferSchedule> = listOf(
         BookingTransferSchedule(
-          schedule = transferScheduleOutResponse(waitlist = transferScheduleWaitlistResponse(status = "APPROVED")),
-          movement = transferMovementOutResponse(),
+          schedule = transferScheduleOutResponse(eventId = 1L, waitlist = transferScheduleWaitlistResponse(status = "APPROVED")),
+          movement = transferMovementOutResponse().copy(eventId = 1L, sequence = 3),
         ),
       ),
-      unscheduledMovements: List<TransferMovementOut> = listOf(transferMovementOutResponse().copy(eventId = null, sequence = 1)),
+      unscheduledMovements: List<TransferMovementOut> = listOf(transferMovementOutResponse().copy(transferScheduleOutId = null, sequence = 4)),
     ): OffenderTransferMovementsResponse = OffenderTransferMovementsResponse(
-      offenderNo = "A1234BC",
+      offenderNo = offenderNo,
       rootOffenderId = 777L,
       bookings = listOf(
         BookingTransferMovements(

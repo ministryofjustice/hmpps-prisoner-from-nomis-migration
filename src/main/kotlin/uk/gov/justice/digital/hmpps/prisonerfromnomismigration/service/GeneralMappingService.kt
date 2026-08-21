@@ -50,6 +50,7 @@ class GeneralMappingService(
     MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.PROPERTY -> propertyMappingService.getMigrationCount(migrationId)
     MigrationType.STAFF -> staffMappingApiService.getPagedModelMigrationCount(migrationId)
+    MigrationType.TRANSFER_MOVEMENTS -> 0 // TODO SDIT-4104 - implement
     MigrationType.VISIT_SLOTS -> visitSlotsMappingService.getMigrationCount(migrationId)
     MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
   }
