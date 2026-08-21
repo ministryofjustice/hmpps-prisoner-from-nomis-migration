@@ -30,6 +30,7 @@ const val PRISON_BALANCE_QUEUE_ID = "migrationprisonbalance"
 const val PRISONER_BALANCE_QUEUE_ID = "migrationprisonerbalance"
 const val PROPERTY_QUEUE_ID = "migrationproperty"
 const val STAFF_QUEUE_ID = "migrationstaff"
+const val TRANSFER_MOVEMENTS_QUEUE_ID = "migrationtransfermovements"
 const val VISITS_QUEUE_ID = "migrationvisits"
 const val VISIT_SLOTS_QUEUE_ID = "migrationvisitslots"
 
@@ -71,6 +72,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   PRISONER_BALANCE(PRISONER_BALANCE_QUEUE_ID, "prisonerbalance"),
   PROPERTY(PROPERTY_QUEUE_ID, "property"),
   STAFF(STAFF_QUEUE_ID, "staff"),
+  TRANSFER_MOVEMENTS(TRANSFER_MOVEMENTS_QUEUE_ID, "transfer-scheduler"),
   VISITS(VISITS_QUEUE_ID, "visits"),
   VISIT_SLOTS(VISIT_SLOTS_QUEUE_ID, "visitslots"),
 }
