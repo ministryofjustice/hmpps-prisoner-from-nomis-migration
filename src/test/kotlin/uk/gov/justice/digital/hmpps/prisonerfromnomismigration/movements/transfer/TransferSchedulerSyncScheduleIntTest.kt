@@ -9,6 +9,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -623,8 +625,12 @@ class TransferSchedulerSyncScheduleIntTest(
 
       @Test
       fun `should send event to DLQ`() {
-        assertThat(awsSqsTransferMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(transferMovementsQueueOffenderEventsDlqUrl).get())
-          .isEqualTo(1)
+        await untilAsserted {
+          assertThat(
+            awsSqsTransferMovementsOffenderEventsDlqClient.countAllMessagesOnQueue(transferMovementsQueueOffenderEventsDlqUrl).get(),
+          )
+            .isEqualTo(1)
+        }
       }
     }
   }
