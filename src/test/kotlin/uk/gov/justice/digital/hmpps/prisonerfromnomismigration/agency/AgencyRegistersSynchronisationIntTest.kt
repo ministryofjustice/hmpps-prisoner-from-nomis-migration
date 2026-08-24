@@ -27,7 +27,7 @@ class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase
   private val dpsApiMock = agencyRegistersApi
 
   @Nested
-  @DisplayName("AGENCY_REGISTERS_UPDATED")
+  @DisplayName("ADDRESSES_AGENCY-UPDATED")
   inner class AgencyUpdated {
     @Nested
     inner class WhenUpdatedInDps {
@@ -35,7 +35,7 @@ class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase
       fun setUp() {
         agencyRegistersOffenderEventsQueue.sendMessage(
           agencyRegisterEvent(
-            eventType = "AGENCY_REGISTERS_UPDATED",
+            eventType = "ADDRESSES_AGENCY-UPDATED",
             agencyLocationId = agencyId,
             auditModuleName = "DPS_SYNCHRONISATION",
           ),
@@ -72,7 +72,7 @@ class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase
 
         agencyRegistersOffenderEventsQueue.sendMessage(
           agencyRegisterEvent(
-            eventType = "AGENCY_REGISTERS_UPDATED",
+            eventType = "ADDRESSES_AGENCY-UPDATED",
             agencyLocationId = agencyId,
           ),
         ).also { waitForAnyProcessingToComplete() }

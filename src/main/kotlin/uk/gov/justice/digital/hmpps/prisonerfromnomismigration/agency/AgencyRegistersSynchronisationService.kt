@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency
 
 import com.microsoft.applicationinsights.TelemetryClient
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
@@ -16,6 +18,10 @@ class AgencyRegistersSynchronisationService(
   private val agencyRegistersDpsApiService: AgencyRegistersDpsApiService,
 ) : TelemetryEnabled {
 
+  private companion object {
+    val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
+
   suspend fun agencyUpdated(event: AgencyEvent) {
     val telemetry = telemetryOf(
       "agencyId" to event.agencyLocationId,
@@ -25,7 +31,9 @@ class AgencyRegistersSynchronisationService(
     } else {
       track("$TELEMETRY_PREFIX-updated", telemetry) {
         val agency = agencyNomisApiService.getAgency(event.agencyLocationId)
-        agencyRegistersDpsApiService.syncAgency(event.agencyLocationId, agency.toLegacyAgencyDto())
+        val legacyAgencyDto = agency.toLegacyAgencyDto()
+        log.debug("updating agency for ${event.agencyLocationId} with details $legacyAgencyDto")
+        agencyRegistersDpsApiService.syncAgency(event.agencyLocationId, legacyAgencyDto)
       }
     }
   }
