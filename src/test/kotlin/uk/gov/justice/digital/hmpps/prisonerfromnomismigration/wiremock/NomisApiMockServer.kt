@@ -567,7 +567,7 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubGetAllPrisonersIdRanges(pageSize: Long = 10, totalElements: Long = 20) {
-    val content: List<RootOffenderIdRange> = (0..(totalElements / pageSize))
+    val content: List<RootOffenderIdRange> = (0..(totalElements / pageSize + if (totalElements % pageSize > 0) 1 else 0))
       .zipWithNext()
       .map { RootOffenderIdRange(it.first * pageSize, it.second * pageSize) }
     nomisApi.stubFor(
