@@ -25,8 +25,6 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMigrationFilter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension.Companion.dpsTransferSchedulerServer
@@ -35,9 +33,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransferMovementsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ResyncTransfersRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
@@ -458,72 +454,240 @@ class TransferSchedulerMigrationIntTest(
   @Nested
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class Resync {
-    @BeforeAll
-    fun setUp() = runTest {
-      setupMigrationTest()
 
-      stubMigrationDependencies(entities = 1, resync = true)
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPath {
+      @BeforeAll
+      fun setUp() = runTest {
+        setupMigrationTest()
 
-      // TODO expand this to call the resync endpoint
-      migrationService.migrateNomisEntity(
-        MigrationContext(
-          MigrationType.TRANSFER_MOVEMENTS,
-          generateBatchId(),
-          1,
-          PrisonNumberAndRootOffenderId(1, prisonerNumber),
-          mutableMapOf(),
-        ),
-      )
-    }
+        stubMigrationDependencies(entities = 1, resync = true)
 
-    @Test
-    fun `should populate NOMIS but not DPS IDs`() {
-      TransferScheduleDpsApiMockServer.getRequestBody<ResyncTransfersRequest>(
-        putRequestedFor(urlPathEqualTo("/resync/transfers/$prisonerNumber")),
-      ).apply {
-        with(transfers[0].transfer) {
-          assertThat(eventId).isEqualTo(1)
-          assertThat(dpsId).isEqualTo(dpsTransferId)
+        repairPrisonerOk("A0000KT")
+      }
+
+      @Test
+      fun `should populate NOMIS but not DPS IDs`() {
+        TransferScheduleDpsApiMockServer.getRequestBody<ResyncTransfersRequest>(
+          putRequestedFor(urlPathEqualTo("/resync/transfers/$prisonerNumber")),
+        ).apply {
+          with(transfers[0].transfer) {
+            assertThat(eventId).isEqualTo(1)
+            assertThat(dpsId).isEqualTo(dpsTransferId)
+          }
+          with(transfers[0].movement!!.movement) {
+            assertThat(dpsId).isEqualTo(dpsScheduledMovementId)
+            assertThat(dpsTransferId).isEqualTo(dpsTransferId)
+            assertThat(offenderBookId).isEqualTo(12345L)
+            assertThat(movementSeq).isEqualTo(3)
+          }
+          with(unscheduledMovements[0].movement) {
+            assertThat(dpsId).isEqualTo(dpsUnscheduledMovementId)
+            assertThat(dpsTransferId).isNull()
+            assertThat(offenderBookId).isEqualTo(12345L)
+            assertThat(movementSeq).isEqualTo(4)
+          }
         }
-        with(transfers[0].movement!!.movement) {
-          assertThat(dpsId).isEqualTo(dpsScheduledMovementId)
-          assertThat(dpsTransferId).isEqualTo(dpsTransferId)
-          assertThat(offenderBookId).isEqualTo(12345L)
-          assertThat(movementSeq).isEqualTo(3)
+      }
+
+      @Test
+      fun `should create mappings`() {
+        TransferScheduleMappingApiMockServer.getRequestBody<TransferSchedulerPrisonerMappingsDto>(
+          putRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/migrate")),
+        ).apply {
+          assertThat(offenderNo).isEqualTo(prisonerNumber)
+          assertThat(migrationId).isNotEmpty
+          with(bookings[0]) {
+            assertThat(bookingId).isEqualTo(12345L)
+          }
+          with(bookings[0].schedules[0]) {
+            assertThat(nomisEventId).isEqualTo(1)
+            assertThat(dpsTransferId).isEqualTo(dpsTransferId)
+          }
+          with(bookings[0].schedules[0].movement!!) {
+            assertThat(nomisMovementSeq).isEqualTo(3)
+            assertThat(dpsTransferMovementId).isEqualTo(dpsScheduledMovementId)
+          }
+          with(bookings[0].unscheduledMovements[0]) {
+            assertThat(nomisMovementSeq).isEqualTo(4)
+            assertThat(dpsTransferMovementId).isEqualTo(dpsUnscheduledMovementId)
+          }
         }
-        with(unscheduledMovements[0].movement) {
-          assertThat(dpsId).isEqualTo(dpsUnscheduledMovementId)
-          assertThat(dpsTransferId).isNull()
-          assertThat(offenderBookId).isEqualTo(12345L)
-          assertThat(movementSeq).isEqualTo(4)
-        }
+      }
+
+      @Test
+      fun `should publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-migration-entity-repair-requested"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0000KT")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0000KT")
+          },
+          isNull(),
+        )
       }
     }
 
-    @Test
-    fun `should create mappings`() {
-      TransferScheduleMappingApiMockServer.getRequestBody<TransferSchedulerPrisonerMappingsDto>(
-        putRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/migrate")),
-      ).apply {
-        assertThat(offenderNo).isEqualTo(prisonerNumber)
-        assertThat(migrationId).isNotEmpty
-        with(bookings[0]) {
-          assertThat(bookingId).isEqualTo(12345L)
-        }
-        with(bookings[0].schedules[0]) {
-          assertThat(nomisEventId).isEqualTo(1)
-          assertThat(dpsTransferId).isEqualTo(dpsTransferId)
-        }
-        with(bookings[0].schedules[0].movement!!) {
-          assertThat(nomisMovementSeq).isEqualTo(3)
-          assertThat(dpsTransferMovementId).isEqualTo(dpsScheduledMovementId)
-        }
-        with(bookings[0].unscheduledMovements[0]) {
-          assertThat(nomisMovementSeq).isEqualTo(4)
-          assertThat(dpsTransferMovementId).isEqualTo(dpsUnscheduledMovementId)
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class PrisonerWithNoMovements {
+      @BeforeAll
+      fun setUp() = runTest {
+        setupMigrationTest()
+
+        stubMigrationDependencies(entities = 1, resync = true)
+        // Stub zero movements or mappings
+        transfersNomisApi.stubGetOffenderTransferMovements(prisonerNumber, OffenderTransferMovementsResponse(prisonerNumber, 0, bookings = listOf()))
+        mappingApi.stubGetTransferSchedulerPrisonerMappingIds(prisonerNumber, idMappings = TransferSchedulerPrisonerMappingIdsDto(prisonerNumber, listOf(), listOf()))
+
+        repairPrisonerOk("A0000KT")
+      }
+
+      @Test
+      fun `should populate NOMIS but not DPS IDs`() {
+        TransferScheduleDpsApiMockServer.getRequestBody<ResyncTransfersRequest>(
+          putRequestedFor(urlPathEqualTo("/resync/transfers/$prisonerNumber")),
+        ).apply {
+          assertThat(transfers.size).isEqualTo(0)
+          assertThat(unscheduledMovements.size).isEqualTo(0)
         }
       }
+
+      @Test
+      fun `should update mappings`() {
+        TransferScheduleMappingApiMockServer.getRequestBody<TransferSchedulerPrisonerMappingsDto>(
+          putRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/migrate")),
+        ).apply {
+          assertThat(offenderNo).isEqualTo(prisonerNumber)
+          assertThat(migrationId).isNotEmpty
+          assertThat(bookings.size).isEqualTo(0)
+        }
+      }
+
+      @Test
+      fun `should publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-migration-entity-repair-requested"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0000KT")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0000KT")
+          },
+          isNull(),
+        )
+      }
     }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class PrisonerNotFound {
+      @BeforeAll
+      fun setUp() = runTest {
+        setupMigrationTest()
+
+        stubMigrationDependencies(entities = 1, resync = true)
+        // Stub zero movements or mappings
+        transfersNomisApi.stubGetOffenderTransferMovements(prisonerNumber, OffenderTransferMovementsResponse(prisonerNumber, 0, bookings = listOf()))
+        mappingApi.stubGetTransferSchedulerPrisonerMappingIds(prisonerNumber, idMappings = TransferSchedulerPrisonerMappingIdsDto(prisonerNumber, listOf(), listOf()))
+
+        repairPrisonerOk("A0000KT")
+      }
+
+      @Test
+      fun `should populate NOMIS but not DPS IDs`() {
+        TransferScheduleDpsApiMockServer.getRequestBody<ResyncTransfersRequest>(
+          putRequestedFor(urlPathEqualTo("/resync/transfers/$prisonerNumber")),
+        ).apply {
+          assertThat(transfers.size).isEqualTo(0)
+          assertThat(unscheduledMovements.size).isEqualTo(0)
+        }
+      }
+
+      @Test
+      fun `should update mappings`() {
+        TransferScheduleMappingApiMockServer.getRequestBody<TransferSchedulerPrisonerMappingsDto>(
+          putRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/migrate")),
+        ).apply {
+          assertThat(offenderNo).isEqualTo(prisonerNumber)
+          assertThat(migrationId).isNotEmpty
+          assertThat(bookings.size).isEqualTo(0)
+        }
+      }
+
+      @Test
+      fun `should publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-migration-entity-repair-requested"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0000KT")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0000KT")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class Security {
+
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.put().uri("/migrate/court-scheduler/repair/$prisonerNumber")
+          .headers(setAuthorisation(roles = listOf()))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(CourtSchedulerMigrationFilter())
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.put().uri("/migrate/transfer-scheduler/repair/$prisonerNumber")
+          .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(TransferSchedulerMigrationFilter())
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.put().uri("/migrate/transfer-scheduler/repair/$prisonerNumber")
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(TransferSchedulerMigrationFilter())
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+    }
+
+    private fun repairPrisoner(prisonerNumber: String) = webTestClient.put()
+      .uri {
+        it.path("/migrate/transfer-scheduler/repair/$prisonerNumber")
+          .build(prisonerNumber)
+      }
+      .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+      .contentType(MediaType.APPLICATION_JSON)
+      .exchange()
+
+    private fun repairPrisonerOk(prisonerNumber: String) = repairPrisoner(prisonerNumber).expectStatus().isOk
   }
 
   private fun performMigration(prisonerNumber: String? = null): String = webTestClient.post()
