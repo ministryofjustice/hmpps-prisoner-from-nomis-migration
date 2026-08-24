@@ -1,8 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer
 
-import com.microsoft.applicationinsights.TelemetryClient
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
+import tools.jackson.databind.json.JsonMapper
+import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -13,9 +15,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransferMovementsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TransferMovementOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TransferScheduleOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TransferScheduleWaitlist
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRangeMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.TRANSFER_MOVEMENTS
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.AtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ResyncMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ResyncResponse
@@ -28,26 +37,62 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.
 
 @Service
 class TransferScheduleMigrationService(
-  private val nomisApi: TransferScheduleNomisApiService,
+  private val transfersNomisApi: TransferScheduleNomisApiService,
   private val mappingApi: TransferScheduleMappingApiService,
   private val dpsApi: TransferScheduleDpsApiService,
-  private val telemetryClient: TelemetryClient,
+  private val nomisApi: NomisApiService,
+  jsonMapper: JsonMapper,
+  @Value($$"${transfermovements.page.size:1000}") pageSize: Long,
+  @Value($$"${transfermovements.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
+  @Value($$"${transfermovements.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
+  @Value($$"${transfermovements.complete-check.count}") completeCheckCount: Int,
+  @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
+) : ByIdRangeMigrationService<TransferSchedulerMigrationFilter, PrisonNumberAndRootOffenderId, TransferSchedulerPrisonerMappingsDto>(
+  mappingService = mappingApi,
+  migrationType = TRANSFER_MOVEMENTS,
+  pageSize = pageSize,
+  completeCheckDelaySeconds = completeCheckDelaySeconds,
+  completeCheckCount = completeCheckRetrySeconds,
+  completeCheckRetrySeconds = completeCheckCount,
+  completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
+  jsonMapper = jsonMapper,
 ) {
 
-  suspend fun migrateNomisEntity(context: MigrationContext<Long>) {
-    val rootOffenderId = context.body
+  override suspend fun getTotalNumberOfIds(migrationFilter: TransferSchedulerMigrationFilter): Long = nomisApi.getPrisonerIds(0, 1).totalElements
+
+  override suspend fun getRangeOfIds(
+    body: TransferSchedulerMigrationFilter,
+    pageSize: Long,
+  ): List<Pair<PrisonNumberAndRootOffenderId, PrisonNumberAndRootOffenderId>> = nomisApi.getAllPrisonersIdRanges(pageSize)
+    .map { Pair(PrisonNumberAndRootOffenderId(it.fromRootOffenderId, ""), PrisonNumberAndRootOffenderId(it.toRootOffenderId, "")) }
+
+  override suspend fun getPageOfIdsFromIdRange(
+    firstId: PrisonNumberAndRootOffenderId?,
+    lastId: PrisonNumberAndRootOffenderId?,
+    migrationFilter: TransferSchedulerMigrationFilter,
+  ): List<PrisonNumberAndRootOffenderId> = if (migrationFilter.prisonerNumber == null) {
+    nomisApi.getAllPrisonersInRange(firstId!!.rootOffenderId, lastId!!.rootOffenderId)
+  } else {
+    // If a single prisoner migration is requested, then we'll trust the input as we're probably testing. Pretend that we called nomis-prisoner-api which found a single prisoner.
+    listOf(PrisonNumberAndRootOffenderId(0, migrationFilter.prisonerNumber))
+  }
+
+  override suspend fun migrateNomisEntity(context: MigrationContext<PrisonNumberAndRootOffenderId>) {
+    val rootOffenderId = context.body.rootOffenderId
+    val offenderNo = context.body.prisonNumber
     val migrationId = context.migrationId
     val telemetry = mutableMapOf(
       "rootOffenderId" to rootOffenderId,
+      "offenderNo" to offenderNo,
       "migrationId" to migrationId,
     )
 
-    val offenderTransferMovements = nomisApi.getOffenderTransferMovementsOrNull(rootOffenderId)
-      ?: throw TransferSchedulerMigrationException("Offender transfer movements not found for offender ID: $rootOffenderId")
-    val oldMappingIds = mappingApi.getMappings(offenderTransferMovements.offenderNo)
-    val dpsResponse = dpsApi.resyncPrisoner(offenderTransferMovements.offenderNo, offenderTransferMovements.toDpsRequest(oldMappingIds))
+    val offenderTransferMovements = transfersNomisApi.getOffenderTransferMovementsOrNull(offenderNo)
+      ?: OffenderTransferMovementsResponse(offenderNo, rootOffenderId, listOf())
+    val oldMappingIds = mappingApi.getMappings(offenderNo)
+    val dpsResponse = dpsApi.resyncPrisoner(offenderNo, offenderTransferMovements.toDpsRequest(oldMappingIds))
       ?: ResyncResponse(listOf(), listOf())
-    val mappings = offenderTransferMovements.buildMappings(offenderTransferMovements.offenderNo, migrationId, dpsResponse)
+    val mappings = offenderTransferMovements.buildMappings(offenderNo, migrationId, dpsResponse)
 
     createMappingOrOnFailureDo(mappings) {}
   }
@@ -82,6 +127,11 @@ class TransferScheduleMigrationService(
       telemetry,
     )
   }
+
+  override fun parseContextFilter(json: String): MigrationMessage<*, TransferSchedulerMigrationFilter> = jsonMapper.readValue(json)
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<TransferSchedulerMigrationFilter, ByLastId<PrisonNumberAndRootOffenderId>>> = jsonMapper.readValue(json)
+  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonNumberAndRootOffenderId> = jsonMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, TransferSchedulerPrisonerMappingsDto> = jsonMapper.readValue(json)
 }
 
 fun OffenderTransferMovementsResponse.toDpsRequest(oldMappingIds: TransferSchedulerPrisonerMappingIdsDto) = ResyncTransfersRequest(
@@ -181,5 +231,3 @@ private fun ResyncResponse.findScheduledDpsId(eventId: Long) = transfers.first {
 private fun ResyncResponse.findScheduledDpsId(bookingId: Long, sequence: Int) = transfers.mapNotNull { it.movement }.first { mapping -> mapping.offenderBookId == bookingId && mapping.movementSeq == sequence }.dpsId
 
 private fun ResyncResponse.findUnscheduledDpsId(bookingId: Long, sequence: Int) = unscheduledMovements.first { mapping -> mapping.offenderBookId == bookingId && mapping.movementSeq == sequence }.dpsId
-
-class TransferSchedulerMigrationException(message: String) : RuntimeException(message)
