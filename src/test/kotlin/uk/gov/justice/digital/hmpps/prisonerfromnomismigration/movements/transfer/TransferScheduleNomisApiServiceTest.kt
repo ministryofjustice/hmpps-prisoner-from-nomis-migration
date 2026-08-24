@@ -204,7 +204,7 @@ class TransferScheduleNomisApiServiceTest {
       assertThat(result.bookings[0].bookingId).isEqualTo(12345)
       assertThat(result.bookings[0].transferSchedules).hasSize(1)
       assertThat(result.bookings[0].transferSchedules[0].movement?.sequence).isEqualTo(3)
-      assertThat(result.bookings[0].unscheduledTransferMovements[0].sequence).isEqualTo(1)
+      assertThat(result.bookings[0].unscheduledTransferMovements[0].sequence).isEqualTo(4)
     }
 
     @Test
@@ -258,7 +258,7 @@ class TransferScheduleNomisApiServiceTest {
       assertThat(result.bookings[0].bookingId).isEqualTo(12345)
       assertThat(result.bookings[0].transferSchedules).hasSize(1)
       assertThat(result.bookings[0].transferSchedules[0].movement?.sequence).isEqualTo(3)
-      assertThat(result.bookings[0].unscheduledTransferMovements[0].sequence).isEqualTo(1)
+      assertThat(result.bookings[0].unscheduledTransferMovements[0].sequence).isEqualTo(4)
     }
 
     @Test

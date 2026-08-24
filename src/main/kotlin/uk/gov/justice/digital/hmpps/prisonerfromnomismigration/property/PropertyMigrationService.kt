@@ -114,7 +114,7 @@ class PropertyMigrationService(
         mapOf(
           "nomisId" to nomisId,
           "migrationId" to context.migrationId,
-          "error" to (e.message ?: "unknown error"),
+          "error" to (e.message ?: e.javaClass.name),
         ),
       )
       throw e
@@ -186,6 +186,8 @@ class PropertyMigrationService(
 
   override fun parseContextMapping(json: String): MigrationMessage<*, PropertyContainerMappingDto> = jsonMapper
     .readValue(json)
+
+  override suspend fun getContextProperties(migrationFilter: PropertyMigrationFilter): MutableMap<String, Any> = mutableMapOf("migration-UUID" to UUID.randomUUID())
 }
 
 data class PropertyContainerIdResponse(

@@ -140,6 +140,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
             "migrationId" to context.migrationId,
             "estimatedCount" to context.estimatedCount.toString(),
             "durationMinutes" to context.durationMinutes().toString(),
+            "properties" to context.properties.toString(),
           ),
         )
       } else {

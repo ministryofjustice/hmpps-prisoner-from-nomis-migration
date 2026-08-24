@@ -1,33 +1,39 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements
 
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferSchedulerMigrationFilter
 
 @RestController
-@RequestMapping("/migrate/core-person/religion", produces = [MediaType.APPLICATION_JSON_VALUE])
-@Tag(name = "Core Person Religions Migration Resource")
+@RequestMapping("/migrate/transfer-scheduler", produces = [MediaType.APPLICATION_JSON_VALUE])
+@Tag(name = "Transfer Movements Migration Resource")
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
-class ReligionsMigrationResource(private val migrationService: ReligionsMigrationService) {
+class TransferScheduleMigrationResource(
+  private val migrationService: TransferScheduleMigrationService,
+) {
   @PostMapping
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
-    summary = "Starts a religion migration. This migration has no filter",
-    description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
+    summary = "Starts a transfer movement migration (or repair)",
+    description = "Starts an asynchronous migration process to migrate (or repair) transfer movements for all prisoners. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b> ot <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
     responses = [
       ApiResponse(
         responseCode = "202",
-        description = "Migration process started",
+        description = "Transfer movement migration process started",
       ),
       ApiResponse(
         responseCode = "401",
@@ -39,12 +45,9 @@ class ReligionsMigrationResource(private val migrationService: ReligionsMigratio
         description = "Incorrect permissions to start migration",
         content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
       ),
-      ApiResponse(
-        responseCode = "409",
-        description = "Migration already in progress",
-        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
-      ),
     ],
   )
-  suspend fun startReligionsMigration() = migrationService.startMigration("")
+  suspend fun migrateTransferMovements(
+    @RequestBody @Valid migrationFilter: TransferSchedulerMigrationFilter,
+  ) = migrationService.startMigration(migrationFilter)
 }

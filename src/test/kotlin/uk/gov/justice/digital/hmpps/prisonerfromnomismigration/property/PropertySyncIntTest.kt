@@ -60,7 +60,7 @@ class PropertySyncIntTest(
           bookingId = BOOKING_ID,
           propertyResponse = propertyContainerGetResponse(NOMIS_ID, BOOKING_ID, OFFENDER_ID_DISPLAY),
         )
-        awsSqsPropertyEventDlqClient.sendMessage(
+        awsSqsPropertyEventClient.sendMessage(
           propertyEventQueueUrl,
           propertyEvent(eventType = "PRISONER_PROPERTY-INSERTED", auditModuleName = "DPS_SYNCHRONISATION"),
         )
@@ -119,7 +119,7 @@ class PropertySyncIntTest(
           )
           propertyMappingApiMockServer.stubPostMapping()
 
-          awsSqsPropertyEventDlqClient.sendMessage(
+          awsSqsPropertyEventClient.sendMessage(
             propertyEventQueueUrl,
             propertyEvent(
               eventType = "PRISONER_PROPERTY-INSERTED",
@@ -207,7 +207,7 @@ class PropertySyncIntTest(
           fun setUp() {
             propertyMappingApiMockServer.stubPostMappingFailureFollowedBySuccess()
 
-            awsSqsPropertyEventDlqClient.sendMessage(
+            awsSqsPropertyEventClient.sendMessage(
               propertyEventQueueUrl,
               propertyEvent(
                 eventType = "PRISONER_PROPERTY-INSERTED",
@@ -334,7 +334,7 @@ class PropertySyncIntTest(
         fun setUp() {
           propertyDpsApi.stubUpsertFailure()
 
-          awsSqsPropertyEventDlqClient.sendMessage(
+          awsSqsPropertyEventClient.sendMessage(
             propertyEventQueueUrl,
             propertyEvent(
               eventType = "PRISONER_PROPERTY-INSERTED",
@@ -381,7 +381,7 @@ class PropertySyncIntTest(
           bookingId = BOOKING_ID,
           propertyResponse = propertyContainerGetResponse(NOMIS_ID, BOOKING_ID, OFFENDER_ID_DISPLAY),
         )
-        awsSqsPropertyEventDlqClient.sendMessage(
+        awsSqsPropertyEventClient.sendMessage(
           propertyEventQueueUrl,
           propertyEvent(eventType = "PRISONER_PROPERTY-UPDATED", auditModuleName = "DPS_SYNCHRONISATION"),
         )
@@ -443,7 +443,7 @@ class PropertySyncIntTest(
             ),
           )
 
-          awsSqsPropertyEventDlqClient.sendMessage(
+          awsSqsPropertyEventClient.sendMessage(
             propertyEventQueueUrl,
             propertyEvent(
               eventType = "PRISONER_PROPERTY-UPDATED",

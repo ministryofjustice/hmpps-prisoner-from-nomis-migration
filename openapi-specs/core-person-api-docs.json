@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-08-13.4624.ad0066a"
+    "version" : "2026-08-20.4726.bf0902b"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -1476,7 +1476,7 @@
           "noFixedAbode" : {
             "type" : [ "boolean", "null" ],
             "description" : "Person no fixed abode",
-            "examples" : [ "false", "true", "null" ]
+            "examples" : [ false, true, null ]
           },
           "startDate" : {
             "type" : [ "string", "null" ],
@@ -1568,7 +1568,7 @@
           "typeVerified" : {
             "type" : [ "boolean", "null" ],
             "description" : "Person address comment",
-            "examples" : [ "false", "true", "null" ]
+            "examples" : [ false, true, null ]
           },
           "usages" : {
             "type" : "array",
@@ -1935,7 +1935,7 @@
           "typeVerified" : {
             "type" : "boolean",
             "description" : "Is the address type verified",
-            "examples" : [ "false", "true" ]
+            "examples" : [ false, true ]
           },
           "usages" : {
             "type" : "array",

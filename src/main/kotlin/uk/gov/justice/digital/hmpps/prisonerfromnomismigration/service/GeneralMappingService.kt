@@ -40,7 +40,7 @@ class GeneralMappingService(
     MigrationType.AGENCY_REGISTERS -> 0
     MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
-    MigrationType.CORE_PERSON_RELIGION -> religionsMappingService.getMigrationCount(migrationId)
+    MigrationType.CORE_PERSON -> religionsMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SCHEDULER -> courtSchedulerMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
     MigrationType.CSRA -> csraMappingApiService.getMigrationCount(migrationId)
@@ -50,6 +50,7 @@ class GeneralMappingService(
     MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.PROPERTY -> propertyMappingService.getMigrationCount(migrationId)
     MigrationType.STAFF -> staffMappingApiService.getPagedModelMigrationCount(migrationId)
+    MigrationType.TRANSFER_MOVEMENTS -> 0 // TODO SDIT-4104 - implement
     MigrationType.VISIT_SLOTS -> visitSlotsMappingService.getMigrationCount(migrationId)
     MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
   }

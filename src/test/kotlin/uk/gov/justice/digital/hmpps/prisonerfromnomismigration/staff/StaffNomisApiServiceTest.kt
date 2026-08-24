@@ -305,7 +305,7 @@ class StaffNomisApiServiceTest {
       )
 
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/staff/ids"))
+        getRequestedFor(urlPathEqualTo("/staff/pagedIds"))
           .withQueryParam("page", equalTo("10"))
           .withQueryParam("size", equalTo("30")),
       )

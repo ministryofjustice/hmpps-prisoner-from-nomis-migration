@@ -40,6 +40,9 @@ hmpps.sqs:
     migrationexternalmovements:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    migrationtransfermovements:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     audit:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

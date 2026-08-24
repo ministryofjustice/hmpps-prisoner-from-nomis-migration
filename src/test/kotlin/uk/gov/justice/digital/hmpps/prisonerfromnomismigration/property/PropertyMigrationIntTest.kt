@@ -26,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.PropertyApiExtension.Companion.propertyDpsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
@@ -61,14 +62,18 @@ class PropertyMigrationIntTest(
       .body(BodyInserters.fromValue(body))
       .exchange()
       .expectStatus().isAccepted
+      .expectBody(MigrationContext::class.java)
+      .returnResult()
       .also {
-        waitUntilCompleted()
+        waitUntilCompleted(it.responseBody?.properties.toString())
       }
 
-    private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
+    private fun waitUntilCompleted(uuid: String) = await atMost Duration.ofSeconds(60) untilAsserted {
       verify(telemetryClient).trackEvent(
         eq("property-migration-completed"),
-        any(),
+        check {
+          assertThat(it["properties"]).contains(uuid)
+        },
         isNull(),
       )
     }
@@ -155,12 +160,12 @@ class PropertyMigrationIntTest(
           .jsonPath("$.size()").isEqualTo(1)
           .jsonPath("$[0].migrationId").isNotEmpty
           .jsonPath("$[0].whenStarted").isNotEmpty
+          .jsonPath("$[0].status").isEqualTo("COMPLETED")
           .jsonPath("$[0].estimatedRecordCount").isEqualTo(3)
           .jsonPath("$[0].migrationType").isEqualTo("PROPERTY")
           .jsonPath("$[0].recordsMigrated").isEqualTo(2)
           .jsonPath("$[0].recordsFailed").isEqualTo(1)
           .jsonPath("$[0].whenEnded").isNotEmpty
-          .jsonPath("$[0].status").isEqualTo("COMPLETED")
       }
     }
 
