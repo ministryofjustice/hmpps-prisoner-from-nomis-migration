@@ -34,7 +34,11 @@ class AgencyRegistersEventListener(
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "agencyregisters")) {
             when (eventType) {
-              "AGENCY_REGISTERS_UPDATED" -> agencyRegistersSynchronisationService.agencyUpdated(sqsMessage.Message.fromJson())
+              "ADDRESSES_AGENCY-INSERTED",
+              "ADDRESSES_AGENCY-UPDATED",
+              "ADDRESSES_AGENCY-DELETED",
+              -> agencyRegistersSynchronisationService.agencyUpdated(sqsMessage.Message.fromJson())
+
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
