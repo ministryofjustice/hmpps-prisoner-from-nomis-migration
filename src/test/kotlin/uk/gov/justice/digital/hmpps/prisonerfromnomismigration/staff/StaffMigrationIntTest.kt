@@ -133,7 +133,7 @@ class StaffMigrationIntTest(
 
       @Test
       fun `will get the staff to migrate`() {
-        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/ids")))
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/pagedIds")))
       }
 
       @Test
@@ -212,7 +212,7 @@ class StaffMigrationIntTest(
       @Test
       fun `will pass filter to get all ids endpoint for initial count and first page`() {
         nomisApiMock.verify(
-          getRequestedFor(urlPathEqualTo("/staff/ids"))
+          getRequestedFor(urlPathEqualTo("/staff/pagedIds"))
             .withQueryParam("page", equalTo("0"))
             .withQueryParam("size", equalTo("1")),
 

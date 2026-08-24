@@ -84,7 +84,7 @@ class StaffNomisApiMockServer(private val jsonMapper: JsonMapper) {
     content: List<StaffIdResponse>,
   ) {
     nomisApi.stubFor(
-      get(urlPathEqualTo("/staff/ids"))
+      get(urlPathEqualTo("/staff/pagedIds"))
         .withQueryParam("page", equalTo(pageNumber.toString()))
         .withQueryParam("size", equalTo(pageSize.toString()))
         .willReturn(
