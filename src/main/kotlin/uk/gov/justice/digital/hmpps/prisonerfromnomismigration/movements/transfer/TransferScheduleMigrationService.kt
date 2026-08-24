@@ -8,6 +8,7 @@ import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BookingTransferMovementMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BookingTransferScheduleMappingsDto
@@ -82,19 +83,31 @@ class TransferScheduleMigrationService(
     val offenderNo = context.body.prisonNumber
     val migrationId = context.migrationId
     val telemetry = mutableMapOf(
-      "rootOffenderId" to rootOffenderId,
+      "rootOffenderId" to "$rootOffenderId",
       "offenderNo" to offenderNo,
       "migrationId" to migrationId,
     )
+    val ignoreMissingTransferMovements = context.properties["ignoreMissingTransferMovements"] as Boolean? ?: true
 
-    val offenderTransferMovements = transfersNomisApi.getOffenderTransferMovementsOrNull(offenderNo)
-      ?: OffenderTransferMovementsResponse(offenderNo, rootOffenderId, listOf())
-    val oldMappingIds = mappingApi.getMappings(offenderNo)
-    val dpsResponse = dpsApi.resyncPrisoner(offenderNo, offenderTransferMovements.toDpsRequest(oldMappingIds))
-      ?: ResyncResponse(listOf(), listOf())
-    val mappings = offenderTransferMovements.buildMappings(offenderNo, migrationId, dpsResponse)
+    runCatching {
+      val offenderTransferMovements = transfersNomisApi.getOffenderTransferMovementsOrNull(offenderNo)
+        ?: OffenderTransferMovementsResponse(offenderNo, rootOffenderId, listOf())
+      if (ignoreMissingTransferMovements && offenderTransferMovements.bookings.isEmpty()) {
+        publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no transfer movements" })
+        return
+      }
 
-    createMappingOrOnFailureDo(mappings) {}
+      val oldMappingIds = mappingApi.getMappings(offenderNo)
+      val dpsResponse = dpsApi.resyncPrisoner(offenderNo, offenderTransferMovements.toDpsRequest(oldMappingIds))
+        ?: ResyncResponse(listOf(), listOf())
+      val mappings = offenderTransferMovements.buildMappings(offenderNo, migrationId, dpsResponse)
+
+      createMappingOrOnFailureDo(mappings) { requeueCreateMapping(mappings, context) }
+    }
+      .onFailure {
+        publishTelemetry("failed", telemetry.apply { this["reason"] = it.message ?: "Unknown error" })
+        throw it
+      }
   }
 
   private suspend fun createMappingOrOnFailureDo(
@@ -116,10 +129,29 @@ class TransferScheduleMigrationService(
     }
   }
 
+  override suspend fun retryCreateMapping(context: MigrationContext<TransferSchedulerPrisonerMappingsDto>) {
+    createMappingOrOnFailureDo(context.body) {
+      throw it
+    }
+  }
+
   private suspend fun createMappings(mappings: TransferSchedulerPrisonerMappingsDto) = mappingApi.createMapping(
     mappings,
     object : ParameterizedTypeReference<DuplicateErrorResponse<TransferSchedulerPrisonerMappingsDto>>() {},
   )
+
+  private suspend fun requeueCreateMapping(
+    mapping: TransferSchedulerPrisonerMappingsDto,
+    context: MigrationContext<*>,
+  ) {
+    queueService.sendMessage(
+      MigrationMessageType.RETRY_MIGRATION_MAPPING,
+      MigrationContext(
+        context = context,
+        body = mapping,
+      ),
+    )
+  }
 
   private fun publishTelemetry(type: String, telemetry: Map<String, String>) {
     telemetryClient.trackEvent(
