@@ -32,7 +32,17 @@ class AgencyRegistersSynchronisationService(
       track("$TELEMETRY_PREFIX-updated", telemetry) {
         val agency = agencyNomisApiService.getAgency(event.agencyLocationId)
         val legacyAgencyDto = agency.toLegacyAgencyDto()
-        log.debug("updating agency for ${event.agencyLocationId} with details $legacyAgencyDto")
+        log.debug(
+          "updating agency for ${event.agencyLocationId} with details ${
+            legacyAgencyDto.copy(
+              emailAddresses = legacyAgencyDto.emailAddresses.map {
+                it.copy(
+                  address = "REDACTED",
+                )
+              },
+            )
+          }",
+        )
         agencyRegistersDpsApiService.syncAgency(event.agencyLocationId, legacyAgencyDto)
       }
     }
