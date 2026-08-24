@@ -96,7 +96,7 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubGetOffenderTransferMovements(
     offenderNo: String = "A1234BC",
-    response: OffenderTransferMovementsResponse = offenderTransferMovementsResponse(),
+    response: OffenderTransferMovementsResponse = offenderTransferMovementsResponse(offenderNo = offenderNo),
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/movements/$offenderNo/transfer")).willReturn(

@@ -229,6 +229,11 @@ externalmovements:
     delay-seconds: 180
     count: 9
 
+transfermovements:
+  complete-check:
+    delay-seconds: 180
+    count: 9
+
 visitslots:
   complete-check:
     delay-seconds: 10

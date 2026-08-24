@@ -248,7 +248,7 @@ class TransferScheduleMappingApiMockServer(private val jsonMapper: JsonMapper) {
     dpsMovementId: UUID = UUID.randomUUID(),
     nomisUnscheduledMovementSeq: Int = 1,
     dpsUnscheduledMovementId: UUID = UUID.randomUUID(),
-    idMappings: TransferSchedulerPrisonerMappingIdsDto = transferSchedulerPrisonerIdMappings(bookingId, nomisEventId, dpsTransferScheduleId, nomisMovementSeq, dpsMovementId, nomisUnscheduledMovementSeq, dpsUnscheduledMovementId),
+    idMappings: TransferSchedulerPrisonerMappingIdsDto = transferSchedulerPrisonerIdMappings(prisonerNumber, bookingId, nomisEventId, dpsTransferScheduleId, nomisMovementSeq, dpsMovementId, nomisUnscheduledMovementSeq, dpsUnscheduledMovementId),
   ) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/transfer-scheduler/$prisonerNumber/ids")).willReturn(
@@ -327,6 +327,7 @@ fun transferSchedulerPrisonerMappings(prisonerNumber: String = "A1234BC") = Tran
 )
 
 fun transferSchedulerPrisonerIdMappings(
+  prisonerNumber: String = "A1234BC",
   bookingId: Long = 12345,
   nomisEventId: Long = 1,
   dpsTransferScheduleId: UUID? = UUID.randomUUID(),
@@ -335,7 +336,7 @@ fun transferSchedulerPrisonerIdMappings(
   nomisUnscheduledMovementSeq: Int = 1,
   dpsUnscheduledMovementId: UUID = UUID.randomUUID(),
 ) = TransferSchedulerPrisonerMappingIdsDto(
-  prisonerNumber = "A1234BC",
+  prisonerNumber = prisonerNumber,
   schedules = listOfNotNull(
     dpsTransferScheduleId?.let {
       TransferScheduleMappingIdsDto(nomisEventId, dpsTransferScheduleId)
