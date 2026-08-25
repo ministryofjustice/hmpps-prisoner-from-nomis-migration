@@ -7,6 +7,7 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
@@ -109,6 +110,16 @@ class TransferScheduleMigrationService(
         throw it
       }
   }
+
+  suspend fun resyncPrisonerTransferMovements(prisonerNumber: String) = migrateNomisEntity(
+    MigrationContext(
+      TRANSFER_MOVEMENTS,
+      generateBatchId(),
+      1,
+      PrisonNumberAndRootOffenderId(rootOffenderId = 0, prisonNumber = prisonerNumber),
+      mutableMapOf("ignoreMissingTransferMovements" to false),
+    ),
+  )
 
   private suspend fun createMappingOrOnFailureDo(
     mappings: TransferSchedulerPrisonerMappingsDto,
