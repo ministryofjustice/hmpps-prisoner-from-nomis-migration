@@ -50,9 +50,9 @@ fun AgencyAddress.toLegacyAgencyAddressDto() = LegacyAgencyAddressDto(
   country = country?.description,
 )
 
-fun addressLine1(flat: String?, premise: String?, street: String?): String {
+fun addressLine1(flat: String?, premise: String?, street: String?): String? {
   val parts = listOfNotNull(flat, premise, street)
-  return parts.joinToString(", ")
+  return parts.joinToString(", ").takeUnless { it.isBlank() }
 }
 
 private fun String?.postcode() = this

@@ -42,6 +42,15 @@ class TransformerTest {
     assertThat(transformed.postcode).isEqualTo("POSTCODE")
   }
 
+  @Test
+  internal fun `will have null address line 1 when all parts are null`() {
+    val address = agencyAddress(postcode = "POSTCODE").copy(flat = null, premise = null, street = null)
+
+    val transformed = address.toLegacyAgencyAddressDto()
+
+    assertThat(transformed.addressLine1).isNull()
+  }
+
   private fun agencyAddress(postcode: String?) = AgencyAddress(
     id = 1,
     phoneNumbers = emptyList(),
