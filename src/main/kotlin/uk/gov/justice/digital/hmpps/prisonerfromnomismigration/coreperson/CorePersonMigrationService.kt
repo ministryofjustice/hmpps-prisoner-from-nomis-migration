@@ -181,7 +181,7 @@ class CorePersonMigrationService(
     },
     identifiers = identifiers.map {
       PrisonIdentifier(
-        nomisIdentifierId = NomisIdentifierId(0, it.sequence.toInt()),
+        nomisIdentifierId = NomisIdentifierId(it.offenderId, it.sequence.toInt()),
         type = Type.valueOf(it.type.code),
         value = it.identifier,
         verified = it.verified,
