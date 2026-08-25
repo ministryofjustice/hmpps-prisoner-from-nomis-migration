@@ -7,14 +7,26 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.ReligionsMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.NomisIdentifierId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias.BirthCountry
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias.Ethnicity
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias.SexCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias.TitleCode
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAliasesAndIdentifiersRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonIdentifier
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonIdentifier.Type
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasesAndIdentifiersResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionMigrationMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionsMigrationMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderAliasMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderIdentifierMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRangeMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
@@ -22,10 +34,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.CORE_PERSON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import java.time.LocalDateTime
 
 @Service
 class CorePersonMigrationService(
-  private val religionsMappingService: ReligionsMappingService,
+  private val corePersonMappingService: CorePersonMappingService,
   private val corePersonNomisApiService: CorePersonNomisApiService,
   private val cprApiService: CorePersonCprApiService,
   private val nomisApiService: NomisApiService,
@@ -35,8 +48,8 @@ class CorePersonMigrationService(
   @Value($$"${coreperson.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${coreperson.complete-check.count}") completeCheckCount: Int,
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
-) : ByIdRangeMigrationService<Any, PrisonNumberAndRootOffenderId, ReligionsMigrationMappingDto>(
-  mappingService = religionsMappingService,
+) : ByIdRangeMigrationService<Any, PrisonNumberAndRootOffenderId, CorePersonMappingsDto>(
+  mappingService = corePersonMappingService,
   migrationType = CORE_PERSON,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
@@ -56,7 +69,12 @@ class CorePersonMigrationService(
     body: Any,
     pageSize: Long,
   ): List<Pair<PrisonNumberAndRootOffenderId, PrisonNumberAndRootOffenderId>> = nomisApiService.getAllPrisonersIdRanges(pageSize)
-    .map { Pair(PrisonNumberAndRootOffenderId(it.fromRootOffenderId, ""), PrisonNumberAndRootOffenderId(it.toRootOffenderId, "")) }
+    .map {
+      Pair(
+        PrisonNumberAndRootOffenderId(it.fromRootOffenderId, ""),
+        PrisonNumberAndRootOffenderId(it.toRootOffenderId, ""),
+      )
+    }
 
   override suspend fun getPageOfIdsFromIdRange(
     firstId: PrisonNumberAndRootOffenderId?,
@@ -66,37 +84,20 @@ class CorePersonMigrationService(
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonNumberAndRootOffenderId>) {
     val prisonNumber = context.body.prisonNumber
-    val alreadyMigratedMapping = religionsMappingService.getReligionsByPrisonNumberOrNull(
+    val alreadyMigratedMapping = corePersonMappingService.getCorePersonByPrisonNumberOrNull(
       prisonNumber = prisonNumber,
     )
 
     alreadyMigratedMapping?.run {
       log.info("Will not migrate the prisoner=$nomisPrisonNumber since it was already mapped to CPR $cprId during migration $label")
     } ?: run {
-      val religions = corePersonNomisApiService.getOffenderReligions(nomisPrisonNumber = prisonNumber)
-      val cprReligions =
-        if (religions.isNotEmpty()) {
-          cprApiService.migrateCorePersonReligion(
-            prisonNumber,
-            religions.toMigrateReligionsRequest(),
-          )
-        } else {
-          SysconReligionResponseBody(prisonNumber = prisonNumber, emptyList())
-        }
-
-      val mapping = ReligionsMigrationMappingDto(
-        cprId = cprReligions.prisonNumber,
-        nomisPrisonNumber = prisonNumber,
-        religions = cprReligions.religionMappings.map {
-          ReligionMigrationMappingDto(
-            cprId = it.cprReligionId,
-            nomisId = it.nomisReligionId.toLong(),
-            nomisPrisonNumber = prisonNumber,
-          )
-        },
-        mappingType = ReligionsMigrationMappingDto.MappingType.MIGRATED,
-        label = context.migrationId,
+      val aliases = corePersonNomisApiService.getCorePerson(nomisPrisonNumber = prisonNumber).offenders ?: emptyList()
+      val identifiers = aliases.flatMap { it.identifiers }
+      val response = cprApiService.migrateCorePersonAliasesAndIdentifiers(
+        prisonNumber,
+        toMigrateAliasesAndIdentifiersRequest(aliases, identifiers),
       )
+      val mapping = response.toCorePersonMappingsDto(migrationId = context.migrationId)
       createMappingOrOnFailureDo(context, mapping) {
         queueService.sendMessage(
           MigrationMessageType.RETRY_MIGRATION_MAPPING,
@@ -111,11 +112,14 @@ class CorePersonMigrationService(
 
   suspend fun createMappingOrOnFailureDo(
     context: MigrationContext<*>,
-    mapping: ReligionsMigrationMappingDto,
+    mapping: CorePersonMappingsDto,
     failureHandler: suspend (error: Throwable) -> Unit,
   ) {
     runCatching {
-      mappingService.createMapping(mapping, object : ParameterizedTypeReference<DuplicateErrorResponse<ReligionsMigrationMappingDto>>() {})
+      mappingService.createMapping(
+        mapping,
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CorePersonMappingsDto>>() {},
+      )
     }.onFailure {
       failureHandler(it)
     }.onSuccess {
@@ -124,10 +128,10 @@ class CorePersonMigrationService(
         telemetryClient.trackEvent(
           "${CORE_PERSON.telemetryName}-migration-duplicate",
           mapOf(
-            "duplicateCprId" to duplicateErrorDetails.duplicate.cprId,
-            "duplicateNomisPrisonNumber" to duplicateErrorDetails.duplicate.nomisPrisonNumber,
-            "existingCprId" to duplicateErrorDetails.existing.cprId,
-            "existingNomisPrisonNumber" to duplicateErrorDetails.existing.nomisPrisonNumber,
+            "duplicateCprId" to duplicateErrorDetails.duplicate.personMapping.cprId,
+            "duplicateNomisPrisonNumber" to duplicateErrorDetails.duplicate.personMapping.nomisPrisonNumber,
+            "existingCprId" to duplicateErrorDetails.existing.personMapping.cprId,
+            "existingNomisPrisonNumber" to duplicateErrorDetails.existing.personMapping.nomisPrisonNumber,
             "migrationId" to context.migrationId,
           ),
         )
@@ -135,20 +139,88 @@ class CorePersonMigrationService(
         telemetryClient.trackEvent(
           "${CORE_PERSON.telemetryName}-migration-entity-migrated",
           mapOf(
-            "nomisPrisonNumber" to mapping.nomisPrisonNumber,
-            "cprId" to mapping.cprId,
+            "nomisPrisonNumber" to mapping.personMapping.nomisPrisonNumber,
+            "cprId" to mapping.personMapping.cprId,
             "migrationId" to context.migrationId,
           ),
         )
       }
     }
   }
-  override suspend fun retryCreateMapping(context: MigrationContext<ReligionsMigrationMappingDto>) = createMappingOrOnFailureDo(context, context.body) {
+
+  override suspend fun retryCreateMapping(context: MigrationContext<CorePersonMappingsDto>) = createMappingOrOnFailureDo(context, context.body) {
     throw it
   }
 
   override fun parseContextFilter(json: String): MigrationMessage<*, Any> = jsonMapper.readValue(json)
   override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<Any, ByLastId<PrisonNumberAndRootOffenderId>>> = jsonMapper.readValue(json)
+
   override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonNumberAndRootOffenderId> = jsonMapper.readValue(json)
-  override fun parseContextMapping(json: String): MigrationMessage<*, ReligionsMigrationMappingDto> = jsonMapper.readValue(json)
+
+  override fun parseContextMapping(json: String): MigrationMessage<*, CorePersonMappingsDto> = jsonMapper.readValue(json)
+
+  private fun toMigrateAliasesAndIdentifiersRequest(
+    aliases: List<CoreOffender>,
+    identifiers: List<Identifier>,
+  ): PrisonAliasesAndIdentifiersRequest = PrisonAliasesAndIdentifiersRequest(
+    aliases = aliases.map {
+      PrisonAlias(
+        firstName = it.firstName,
+        middleNames = it.middleName1, // TODO work out the mappings
+        lastName = it.lastName,
+        dateOfBirth = it.dateOfBirth,
+        nomisOffenderId = it.offenderId,
+        titleCode = it.title?.code?.let { code -> TitleCode.valueOf(code) },
+        sexCode = it.sex?.code?.let { code -> SexCode.valueOf(code) },
+        isPrimary = it.workingName,
+        birthPlace = it.birthPlace,
+        birthCountry = it.birthCountry?.code?.let { code -> BirthCountry.valueOf(code) },
+        ethnicity = it.ethnicity?.code?.let { code -> Ethnicity.valueOf(code) },
+        createDate = it.createDate,
+      )
+    },
+    identifiers = identifiers.map {
+      PrisonIdentifier(
+        nomisIdentifierId = NomisIdentifierId(0, it.sequence.toInt()),
+        type = Type.valueOf(it.type.code),
+        value = it.identifier,
+        verified = it.verified,
+        comment = null, // TODO work out the mappings
+        issuedAuthority = it.issuedAuthority,
+        issuedDate = it.issuedDate,
+      )
+    },
+  )
+
+  fun SysconAliasesAndIdentifiersResponseBody.toCorePersonMappingsDto(
+    whenCreated: String = LocalDateTime.now().toString(),
+    migrationId: String,
+  ) = CorePersonMappingsDto(
+    mappingType = CorePersonMappingsDto.MappingType.MIGRATED,
+    personMapping = CorePersonMappingIdDto(
+      cprId = "TODO", // TODO return the cprId of the offender from cpr.
+      nomisPrisonNumber = prisonNumber,
+    ),
+    aliases = aliasesMappings.map {
+      OffenderAliasMappingDto(
+        cprId = it.cprAliasId,
+        nomisOffenderId = it.nomisOffenderId,
+        nomisPrisonNumber = prisonNumber,
+        mappingType = OffenderAliasMappingDto.MappingType.MIGRATED,
+        label = migrationId,
+        whenCreated = whenCreated,
+      )
+    },
+    identifiers = identifiersMappings.map {
+      OffenderIdentifierMappingDto(
+        cprId = it.cprIdentifierId,
+        nomisOffenderId = it.nomisIdentifierId.nomisOffenderId,
+        nomisIdentifierSequence = it.nomisIdentifierId.nomisSequence,
+        nomisPrisonNumber = prisonNumber,
+        mappingType = OffenderIdentifierMappingDto.MappingType.MIGRATED,
+        label = migrationId,
+        whenCreated = whenCreated,
+      )
+    },
+  )
 }
