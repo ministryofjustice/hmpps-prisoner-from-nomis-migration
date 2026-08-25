@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-18.414.8dc0227"
+    "version" : "2026-08-25.426.37f44db"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -2249,6 +2249,11 @@
             "description" : "Description",
             "example" : "Sheffield City Centre Probation Office"
           },
+          "contact" : {
+            "type" : [ "string", "null" ],
+            "description" : "Contact",
+            "example" : "John Smith"
+          },
           "active" : {
             "type" : "boolean",
             "description" : "Whether still active"
@@ -2413,6 +2418,14 @@
           },
           "localAuthority" : {
             "description" : "Local Authority",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "payrollRegion" : {
+            "description" : "Prisoner Payroll Region",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/CodeDescription"
             }, {
@@ -2603,6 +2616,22 @@
           },
           "region" : {
             "description" : "Region",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "geographicalArea" : {
+            "description" : "Geographical Area",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "localAuthority" : {
+            "description" : "Local Authority",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/CodeDescription"
             }, {
