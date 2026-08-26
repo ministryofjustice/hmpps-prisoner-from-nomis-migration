@@ -55,6 +55,6 @@ class AgencyRegistersEventListener(
 }
 
 data class AgencyEvent(
-  val agencyLocationId: String,
+  val agencyCode: String,
   override val auditModuleName: String,
 ) : EventAudited

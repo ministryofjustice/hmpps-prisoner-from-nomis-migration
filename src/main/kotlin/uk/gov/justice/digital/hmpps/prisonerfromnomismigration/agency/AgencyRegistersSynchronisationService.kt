@@ -24,26 +24,33 @@ class AgencyRegistersSynchronisationService(
 
   suspend fun agencyUpdated(event: AgencyEvent) {
     val telemetry = telemetryOf(
-      "agencyId" to event.agencyLocationId,
+      "agencyId" to event.agencyCode,
     )
     if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-updated-skipped", telemetry)
     } else {
-      track("$TELEMETRY_PREFIX-updated", telemetry) {
-        val agency = agencyNomisApiService.getAgency(event.agencyLocationId)
-        val legacyAgencyDto = agency.toLegacyAgencyDto()
-        log.debug(
-          "updating agency for ${event.agencyLocationId} with details ${
-            legacyAgencyDto.copy(
-              emailAddresses = legacyAgencyDto.emailAddresses.map {
-                it.copy(
-                  address = "REDACTED",
-                )
-              },
-            )
-          }",
+      val agency = agencyNomisApiService.getAgency(event.agencyCode)
+      if (agency.type.code != "INST") {
+        track("$TELEMETRY_PREFIX-updated", telemetry) {
+          val legacyAgencyDto = agency.toLegacyAgencyDto()
+          log.debug(
+            "updating agency for ${event.agencyCode} with details ${
+              legacyAgencyDto.copy(
+                emailAddresses = legacyAgencyDto.emailAddresses.map {
+                  it.copy(
+                    address = "REDACTED",
+                  )
+                },
+              )
+            }",
+          )
+          agencyRegistersDpsApiService.syncAgency(event.agencyCode, legacyAgencyDto)
+        }
+      } else {
+        telemetryClient.trackEvent(
+          "$TELEMETRY_PREFIX-updated-ignored",
+          telemetry + ("reason" to "agency is of type INST"),
         )
-        agencyRegistersDpsApiService.syncAgency(event.agencyLocationId, legacyAgencyDto)
       }
     }
   }
