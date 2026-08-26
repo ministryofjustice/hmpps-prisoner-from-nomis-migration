@@ -49,6 +49,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getReque
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.replacePrisonNumber
 import java.time.Duration
 import java.time.LocalDate
+import java.util.UUID
 import kotlin.collections.forEach
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -164,6 +165,7 @@ class CorePersonMigrationIntTest(
     inner class HappyPath {
       private lateinit var migrationResult: MigrationResult
       private val nomisPrisonNumber = "A0000BC"
+      private val testData = testData()
 
       @BeforeAll
       fun setUp() {
@@ -174,43 +176,12 @@ class CorePersonMigrationIntTest(
         nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
         corePersonNomisApiMock.stubGetAliasesAndIdentifiers(
           prisonNumber = nomisPrisonNumber,
-          aliasesAndIdentifiers = listOf(
-            CoreOffender(
-              offenderId = 10000L,
-              firstName = "first",
-              lastName = "last",
-              workingName = true,
-              identifiers = listOf(
-                Identifier(
-                  offenderId = 10000L,
-                  sequence = 1,
-                  type = CodeDescription("PNC", "PNC Number"),
-                  identifier = "20/0071818T",
-                  verified = true,
-                  issuedAuthority = "DVLA",
-                  issuedDate = LocalDate.of(2001, 1, 1),
-                ),
-              ),
-            ),
-          ),
+          aliasesAndIdentifiers = testData.aliasesAndIdentifiers,
         )
         cprApiMock.stubMigrateAliasesAndIdentifiers(
           nomisPrisonNumber = nomisPrisonNumber,
-          aliasMappings = listOf(
-            SysconAliasMapping(
-              nomisOffenderId = 10000L,
-              cprAliasId = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
-            ),
-          ),
-          identifierMappings = listOf(
-            SysconIdentifierMapping(
-              nomisIdentifierId = NomisIdentifierId(
-                nomisOffenderId = 10000L,
-                nomisSequence = 1,
-              ),
-              cprIdentifierId = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
-            ),
-          ),
+          aliasMappings = testData.aliasesMapping,
+          identifierMappings = testData.identifiersMapping,
         )
         mappingApiMock.stubCreateMappingsForMigration()
         mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
@@ -296,12 +267,12 @@ class CorePersonMigrationIntTest(
       }
     }
 
-    // TODO we need a test for no aliases
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathNoIdentifiers {
       private lateinit var migrationResult: MigrationResult
       private val nomisPrisonNumber = "A0000BC"
+      private val testData = testData()
 
       @BeforeAll
       fun setUp() {
@@ -312,24 +283,11 @@ class CorePersonMigrationIntTest(
         nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
         corePersonNomisApiMock.stubGetAliasesAndIdentifiers(
           prisonNumber = nomisPrisonNumber,
-          aliasesAndIdentifiers = listOf(
-            CoreOffender(
-              offenderId = 10000L,
-              firstName = "first",
-              lastName = "last",
-              workingName = true,
-              identifiers = emptyList(), // No identifiers for these tests
-            ),
-          ),
+          aliasesAndIdentifiers = testData.aliasesAndIdentifiers,
         )
         cprApiMock.stubMigrateAliasesAndIdentifiers(
           nomisPrisonNumber = nomisPrisonNumber,
-          aliasMappings = listOf(
-            SysconAliasMapping(
-              nomisOffenderId = 10000L,
-              cprAliasId = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
-            ),
-          ),
+          aliasMappings = testData.aliasesMapping,
         )
         mappingApiMock.stubCreateMappingsForMigration()
         mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
@@ -422,46 +380,20 @@ class CorePersonMigrationIntTest(
 
         (0L..<81L)
           .map { nomisPrisonNumber.replacePrisonNumber(it) }
-          .forEach {
+          .forEachIndexed { i, prisonNumber ->
+            val testData = testData(
+              offenderId = 10000L + i,
+              cprAliasId = UUID.randomUUID().toString(),
+              cprIdentifierId = UUID.randomUUID().toString(),
+            )
             corePersonNomisApiMock.stubGetAliasesAndIdentifiers(
-              prisonNumber = it,
-              aliasesAndIdentifiers = listOf(
-                CoreOffender(
-                  offenderId = 10000L,
-                  firstName = "first",
-                  lastName = "last",
-                  workingName = true,
-                  identifiers = listOf(
-                    Identifier(
-                      offenderId = 10000L,
-                      sequence = 1,
-                      type = CodeDescription("PNC", "PNC Number"),
-                      identifier = "20/0071818T",
-                      verified = true,
-                      issuedAuthority = "DVLA",
-                      issuedDate = LocalDate.of(2001, 1, 1),
-                    ),
-                  ),
-                ),
-              ),
+              prisonNumber = prisonNumber,
+              aliasesAndIdentifiers = testData.aliasesAndIdentifiers,
             )
             cprApiMock.stubMigrateAliasesAndIdentifiers(
-              nomisPrisonNumber = it,
-              aliasMappings = listOf(
-                SysconAliasMapping(
-                  nomisOffenderId = 10000L,
-                  cprAliasId = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
-                ),
-              ),
-              identifierMappings = listOf(
-                SysconIdentifierMapping(
-                  nomisIdentifierId = NomisIdentifierId(
-                    nomisOffenderId = 10000L,
-                    nomisSequence = 1,
-                  ),
-                  cprIdentifierId = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
-                ),
-              ),
+              nomisPrisonNumber = prisonNumber,
+              aliasMappings = testData.aliasesMapping,
+              identifierMappings = testData.identifiersMapping,
             )
           }
 
@@ -489,8 +421,8 @@ class CorePersonMigrationIntTest(
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class FailureWithRecoverPath {
       private lateinit var migrationResult: MigrationResult
-      val nomisId = 2L
-      val nomisPrisonNumber = "D0000BC"
+      private val nomisPrisonNumber = "D0000BC"
+      private val consistentTestData = testData()
 
       @BeforeAll
       fun setUp() {
@@ -501,43 +433,12 @@ class CorePersonMigrationIntTest(
         nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
         corePersonNomisApiMock.stubGetAliasesAndIdentifiers(
           prisonNumber = nomisPrisonNumber,
-          aliasesAndIdentifiers = listOf(
-            CoreOffender(
-              offenderId = 10000L,
-              firstName = "first",
-              lastName = "last",
-              workingName = true,
-              identifiers = listOf(
-                Identifier(
-                  offenderId = 10000L,
-                  sequence = 1,
-                  type = CodeDescription("PNC", "PNC Number"),
-                  identifier = "20/0071818T",
-                  verified = true,
-                  issuedAuthority = "DVLA",
-                  issuedDate = LocalDate.of(2001, 1, 1),
-                ),
-              ),
-            ),
-          ),
+          aliasesAndIdentifiers = consistentTestData.aliasesAndIdentifiers,
         )
         cprApiMock.stubMigrateAliasesAndIdentifiers(
           nomisPrisonNumber = nomisPrisonNumber,
-          aliasMappings = listOf(
-            SysconAliasMapping(
-              nomisOffenderId = 10000L,
-              cprAliasId = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
-            ),
-          ),
-          identifierMappings = listOf(
-            SysconIdentifierMapping(
-              nomisIdentifierId = NomisIdentifierId(
-                nomisOffenderId = 10000L,
-                nomisSequence = 1,
-              ),
-              cprIdentifierId = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
-            ),
-          ),
+          aliasMappings = consistentTestData.aliasesMapping,
+          identifierMappings = consistentTestData.identifiersMapping,
         )
         mappingApiMock.stubCreateMappingsForMigrationFailureFollowedBySuccess()
         mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
@@ -600,7 +501,8 @@ class CorePersonMigrationIntTest(
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class FailureWithDuplicate {
       private lateinit var migrationResult: MigrationResult
-      val nomisPrisonNumber = "D0000BC"
+      private val nomisPrisonNumber = "D0000BC"
+      private val testData = testData()
 
       @BeforeAll
       fun setUp() {
@@ -611,43 +513,12 @@ class CorePersonMigrationIntTest(
         nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
         corePersonNomisApiMock.stubGetAliasesAndIdentifiers(
           prisonNumber = nomisPrisonNumber,
-          aliasesAndIdentifiers = listOf(
-            CoreOffender(
-              offenderId = 10000L,
-              firstName = "first",
-              lastName = "last",
-              workingName = true,
-              identifiers = listOf(
-                Identifier(
-                  offenderId = 10000L,
-                  sequence = 1,
-                  type = CodeDescription("PNC", "PNC Number"),
-                  identifier = "20/0071818T",
-                  verified = true,
-                  issuedAuthority = "DVLA",
-                  issuedDate = LocalDate.of(2001, 1, 1),
-                ),
-              ),
-            ),
-          ),
+          aliasesAndIdentifiers = testData.aliasesAndIdentifiers,
         )
         cprApiMock.stubMigrateAliasesAndIdentifiers(
           nomisPrisonNumber = nomisPrisonNumber,
-          aliasMappings = listOf(
-            SysconAliasMapping(
-              nomisOffenderId = 10000L,
-              cprAliasId = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
-            ),
-          ),
-          identifierMappings = listOf(
-            SysconIdentifierMapping(
-              nomisIdentifierId = NomisIdentifierId(
-                nomisOffenderId = 10000L,
-                nomisSequence = 1,
-              ),
-              cprIdentifierId = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
-            ),
-          ),
+          aliasMappings = testData.aliasesMapping,
+          identifierMappings = testData.identifiersMapping,
         )
         mappingApiMock.stubCreateMappingsForMigration(
           DuplicateMappingErrorResponse(
@@ -737,4 +608,51 @@ class CorePersonMigrationIntTest(
     waitUntilVerify()
     verify(telemetryClient).trackEvent(eq("coreperson-migration-completed"), any(), isNull())
   }
+
+  private data class TestData(
+    val aliasesAndIdentifiers: List<CoreOffender>,
+    val aliasesMapping: List<SysconAliasMapping>,
+    val identifiersMapping: List<SysconIdentifierMapping>,
+  )
+
+  private fun testData(
+    offenderId: Long = 10000L,
+    cprAliasId: String = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
+    cprIdentifierId: String = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
+  ) = TestData(
+    aliasesAndIdentifiers = listOf(
+      CoreOffender(
+        offenderId = offenderId,
+        firstName = "first",
+        lastName = "last",
+        workingName = true,
+        identifiers = listOf(
+          Identifier(
+            offenderId = offenderId,
+            sequence = 1,
+            type = CodeDescription("PNC", "PNC Number"),
+            identifier = "20/0071818T",
+            verified = true,
+            issuedAuthority = "DVLA",
+            issuedDate = LocalDate.of(2001, 1, 1),
+          ),
+        ),
+      ),
+    ),
+    aliasesMapping = listOf(
+      SysconAliasMapping(
+        nomisOffenderId = 10000L,
+        cprAliasId = cprAliasId,
+      ),
+    ),
+    identifiersMapping = listOf(
+      SysconIdentifierMapping(
+        nomisIdentifierId = NomisIdentifierId(
+          nomisOffenderId = 10000L,
+          nomisSequence = 1,
+        ),
+        cprIdentifierId = cprIdentifierId,
+      ),
+    ),
+  )
 }

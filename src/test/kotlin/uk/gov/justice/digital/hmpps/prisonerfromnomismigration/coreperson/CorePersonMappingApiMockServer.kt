@@ -1,18 +1,15 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
-import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
-import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
@@ -29,9 +26,6 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
   }
-
-  fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person")
-
   fun stubCreateMappingsForMigration(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
       post("/mapping/core-person").willReturn(
@@ -42,6 +36,9 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
   }
+
+  fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person")
+
   fun stubGetMigrationCount(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/core-person/migration-id/.*")).willReturn(
@@ -71,13 +68,9 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubGetCorePersonByNomisPrisonNumberOrNull(
     nomisPrisonNumber: String = "A1234BC",
-    mapping: CorePersonMappingDto? = CorePersonMappingDto( // TODO do we need a default.
-      cprId = nomisPrisonNumber,
-      mappingType = CorePersonMappingDto.MappingType.MIGRATED,
-      nomisPrisonNumber = nomisPrisonNumber,
-    ),
+    mapping: CorePersonMappingDto,
   ) {
-    mapping?.apply {
+    mapping.apply {
       mappingApi.stubFor(
         get(urlEqualTo("/mapping/core-person/person/nomis-prison-number/$nomisPrisonNumber")).willReturn(
           aResponse()
@@ -86,20 +79,6 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
             .withBody(jsonMapper.writeValueAsString(mapping)),
         ),
       )
-    } ?: run {
-      mappingApi.stubFor(
-        get(urlEqualTo("/mapping/core-person/person/nomis-prison-number/$nomisPrisonNumber")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
-        ),
-      )
     }
   }
-
-  fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
-  fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
-  fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
-  fun resetAll() = mappingApi.resetAll()
 }
