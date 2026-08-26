@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-07.197.0f34aef"
+    "version" : "2026-08-25.241.7f27526"
   },
   "servers" : [ {
     "url" : "https://transfer-scheduler-api-dev.hmpps.service.justice.gov.uk",
@@ -694,6 +694,10 @@
           "properties" : {
             "request" : {
               "$ref" : "#/components/schemas/MovementRequest"
+            },
+            "legacyId" : {
+              "type" : "string",
+              "nullable" : true
             },
             "occurredAt" : {
               "type" : "string",
@@ -1836,7 +1840,7 @@
           "transfers" : {
             "type" : "array",
             "items" : {
-              "$ref" : "#/components/schemas/SyncTransfer"
+              "$ref" : "#/components/schemas/ReconciliationTransfer"
             }
           },
           "unscheduledMovements" : {
@@ -1844,6 +1848,21 @@
             "items" : {
               "$ref" : "#/components/schemas/SyncMovement"
             }
+          }
+        }
+      },
+      "ReconciliationTransfer" : {
+        "required" : [ "transfer" ],
+        "type" : "object",
+        "properties" : {
+          "transfer" : {
+            "$ref" : "#/components/schemas/SyncTransfer"
+          },
+          "movement" : {
+            "nullable" : true,
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/SyncMovement"
+            } ]
           }
         }
       },
