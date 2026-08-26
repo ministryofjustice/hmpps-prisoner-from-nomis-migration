@@ -197,6 +197,7 @@ class CorePersonMigrationService(
     migrationId: String,
   ) = CorePersonMappingsDto(
     mappingType = CorePersonMappingsDto.MappingType.MIGRATED,
+    label = migrationId,
     personMapping = CorePersonMappingIdDto(
       cprId = prisonNumber, // TODO rename this field so it makes more sense.
       nomisPrisonNumber = prisonNumber,

@@ -18,13 +18,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
-// TODO qqRP
+// TODO qqRP delete what we don't need
 @Component
 class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateMappingsForMigration() {
     mappingApi.stubFor(
-      post("/mapping/core-person-religion").willReturn(
+      post("/mapping/core-person").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(201),
@@ -32,11 +32,11 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person-religion")
+  fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person")
 
   fun stubCreateMappingsForMigration(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
-      post("/mapping/core-person-religion").willReturn(
+      post("/mapping/core-person").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
@@ -46,7 +46,7 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
   }
   fun stubGetMigrationCount(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/core-person-religion/migration-id/.*")).willReturn(
+      get(urlPathMatching("/mapping/core-person/migration-id/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(

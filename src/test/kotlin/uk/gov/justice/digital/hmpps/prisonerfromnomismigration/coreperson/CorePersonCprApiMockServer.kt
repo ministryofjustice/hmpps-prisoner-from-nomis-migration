@@ -16,6 +16,9 @@ import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionSaveResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasesAndIdentifiersResponseBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconIdentifierMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
@@ -71,6 +74,30 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun migrateCorePersonReligionResponse(prisonNumber: String, nomisId: Long, cprId: String) = SysconReligionResponseBody(
       prisonNumber = prisonNumber,
       religionMappings = listOf(SysconReligionMapping(nomisId.toString(), cprId)),
+    )
+  }
+
+  fun stubMigrateAliasesAndIdentifiers(
+    nomisPrisonNumber: String = "A1234BC",
+    aliasMappings: List<SysconAliasMapping> = emptyList(),
+    identifierMappings: List<SysconIdentifierMapping> = emptyList(),
+  ) {
+    stubFor(
+      post("/syscon-sync/aliases-identifiers/$nomisPrisonNumber")
+        .willReturn(
+          aResponse()
+            .withStatus(201)
+            .withHeader("Content-Type", "application/json")
+            .withBody(
+              jsonMapper.writeValueAsString(
+                SysconAliasesAndIdentifiersResponseBody(
+                  prisonNumber = nomisPrisonNumber,
+                  aliasesMappings = aliasMappings,
+                  identifiersMappings = identifierMappings,
+                ),
+              ),
+            ),
+        ),
     )
   }
 
