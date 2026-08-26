@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency.AgencyNomi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency.AgencyRegistersDpsApiExtension.Companion.agencyRegistersApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 
 class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase() {
   private val agencyId = "SHEFCC"
@@ -36,7 +37,7 @@ class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase
         agencyRegistersOffenderEventsQueue.sendMessage(
           agencyRegisterEvent(
             eventType = "ADDRESSES_AGENCY-UPDATED",
-            agencyLocationId = agencyId,
+            agencyCode = agencyId,
             auditModuleName = "DPS_SYNCHRONISATION",
           ),
         ).also { waitForAnyProcessingToComplete() }
@@ -73,7 +74,7 @@ class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase
         agencyRegistersOffenderEventsQueue.sendMessage(
           agencyRegisterEvent(
             eventType = "ADDRESSES_AGENCY-UPDATED",
-            agencyLocationId = agencyId,
+            agencyCode = agencyId,
           ),
         ).also { waitForAnyProcessingToComplete() }
       }
@@ -106,17 +107,61 @@ class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase
         assertThat(request.name).isEqualTo("Sheffield Crown Court")
       }
     }
+
+    @Nested
+    inner class WhenAgencyIsAnInstitution {
+      @BeforeEach
+      fun setUp() {
+        nomisApiMock.stubGetAgency(
+          agencyId = agencyId,
+          response = agencyResponse().copy(
+            agencyId = agencyId,
+            type = CodeDescription(code = "INST", description = "Institution"),
+          ),
+        )
+        dpsApiMock.stubSyncAgency(agencyId = agencyId)
+
+        agencyRegistersOffenderEventsQueue.sendMessage(
+          agencyRegisterEvent(
+            eventType = "ADDRESSES_AGENCY-UPDATED",
+            agencyCode = agencyId,
+          ),
+        ).also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("agency-synchronisation-updated-ignored"),
+          check {
+            assertThat(it["agencyId"]).isEqualTo(agencyId)
+            assertThat(it["reason"]).isEqualTo("agency is of type INST")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will retrieve agency details from nomis`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/agency/$agencyId")))
+      }
+
+      @Test
+      fun `will not sync the agency into DPS`() {
+        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/legacy/sync/agency/id/$agencyId")))
+      }
+    }
   }
 }
 
 fun agencyRegisterEvent(
   eventType: String,
-  agencyLocationId: String,
+  agencyCode: String,
   auditModuleName: String = "OCUAGY",
 ) = // language=JSON
   """{
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
-    "Message": "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"agencyLocationId\": \"$agencyLocationId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
+    "Message": "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"agencyCode\": \"$agencyCode\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
     "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}, 
