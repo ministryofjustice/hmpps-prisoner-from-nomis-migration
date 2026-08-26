@@ -166,7 +166,7 @@ class CorePersonMigrationService(
     aliases = aliases.map {
       PrisonAlias(
         firstName = it.firstName,
-        middleNames = it.middleName1, // TODO work out the mappings
+        middleNames = it.middleName1,
         lastName = it.lastName,
         dateOfBirth = it.dateOfBirth,
         nomisOffenderId = it.offenderId,
@@ -185,7 +185,7 @@ class CorePersonMigrationService(
         type = Type.valueOf(it.type.code),
         value = it.identifier,
         verified = it.verified,
-        comment = null, // TODO work out the mappings
+        comment = null,
         issuedAuthority = it.issuedAuthority,
         issuedDate = it.issuedDate,
       )
@@ -199,7 +199,7 @@ class CorePersonMigrationService(
     mappingType = CorePersonMappingsDto.MappingType.MIGRATED,
     label = migrationId,
     personMapping = CorePersonMappingIdDto(
-      cprId = prisonNumber, // TODO rename this field so it makes more sense.
+      cprId = prisonNumber,
       nomisPrisonNumber = prisonNumber,
     ),
     aliases = aliasesMappings.map {

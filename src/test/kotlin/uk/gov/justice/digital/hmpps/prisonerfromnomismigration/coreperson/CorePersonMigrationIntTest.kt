@@ -26,6 +26,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.NomisIdentifierId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias.BirthCountry.UKR
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias.Ethnicity.A1
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias.SexCode.M
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias.TitleCode.MR
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAliasesAndIdentifiersRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasMapping
@@ -49,6 +53,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getReque
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.replacePrisonNumber
 import java.time.Duration
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.collections.forEach
 
@@ -118,7 +123,7 @@ class CorePersonMigrationIntTest(
 
         nomisApiMock.stubGetPrisonerIds(1, 1, "A0000BC")
         nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(0, 1)
+        nomisApiMock.stubGetAllPrisonersInRange(0, 1, "A0000BC")
         mappingApiMock.stubGetCorePersonByNomisPrisonNumberOrNull(
           nomisPrisonNumber = "A0000BC",
           mapping = CorePersonMappingDto(
@@ -128,23 +133,13 @@ class CorePersonMigrationIntTest(
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetCorePersonByNomisPrisonNumberOrNull(
-          nomisPrisonNumber = "A0001BC",
-          mapping = CorePersonMappingDto(
-            cprId = "10000",
-            nomisPrisonNumber = "A0001BC",
-            mappingType = CorePersonMappingDto.MappingType.MIGRATED,
-            label = "2020-01-01T00:00:00",
-          ),
-        )
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetMigrationCount(count = 0)
         migrationResult = performMigration()
       }
 
       @Test
       fun `will not bother retrieving any core person records`() {
         corePersonNomisApiMock.verify(0, getRequestedFor(urlPathEqualTo("/core-person/A0000BC")))
-        corePersonNomisApiMock.verify(0, getRequestedFor(urlPathEqualTo("/core-person/A0001BC")))
       }
 
       @Test
@@ -184,7 +179,7 @@ class CorePersonMigrationIntTest(
           identifierMappings = testData.identifiersMapping,
         )
         mappingApiMock.stubCreateMappingsForMigration()
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
+        mappingApiMock.stubGetMigrationCount(count = 1, testData.corePersonMapping)
         migrationResult = performMigration()
       }
 
@@ -199,16 +194,22 @@ class CorePersonMigrationIntTest(
           CorePersonCprApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/syscon-sync/aliases-identifiers/$nomisPrisonNumber")))
 
         assertThat(migrationRequest.aliases).hasSize(1)
-        // TODO all fields
         assertThat(migrationRequest.aliases[0].nomisOffenderId).isEqualTo(10000L)
+        assertThat(migrationRequest.aliases[0].titleCode).isEqualTo(MR)
         assertThat(migrationRequest.aliases[0].firstName).isEqualTo("first")
+        assertThat(migrationRequest.aliases[0].middleNames).isEqualTo("middle1")
         assertThat(migrationRequest.aliases[0].lastName).isEqualTo("last")
+        assertThat(migrationRequest.aliases[0].birthCountry).isEqualTo(UKR)
+        assertThat(migrationRequest.aliases[0].sexCode).isEqualTo(M)
         assertThat(migrationRequest.aliases[0].isPrimary).isEqualTo(true)
+        assertThat(migrationRequest.aliases[0].birthPlace).isEqualTo("London")
+        assertThat(migrationRequest.aliases[0].ethnicity).isEqualTo(A1)
+        assertThat(migrationRequest.aliases[0].createDate).isEqualTo(LocalDate.of(2000, 2, 2))
         assertThat(migrationRequest.identifiers[0].nomisIdentifierId.nomisOffenderId).isEqualTo(10000L)
         assertThat(migrationRequest.identifiers[0].nomisIdentifierId.nomisSequence).isEqualTo(1)
-        assertThat(migrationRequest.identifiers[0].verified).isEqualTo(true)
         assertThat(migrationRequest.identifiers[0].type).isEqualTo(PrisonIdentifier.Type.PNC)
         assertThat(migrationRequest.identifiers[0].value).isEqualTo("20/0071818T")
+        assertThat(migrationRequest.identifiers[0].verified).isEqualTo(true)
         assertThat(migrationRequest.identifiers[0].issuedAuthority).isEqualTo("DVLA")
         assertThat(migrationRequest.identifiers[0].issuedDate).isEqualTo(LocalDate.of(2001, 1, 1))
       }
@@ -290,7 +291,7 @@ class CorePersonMigrationIntTest(
           aliasMappings = testData.aliasesMapping,
         )
         mappingApiMock.stubCreateMappingsForMigration()
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
+        mappingApiMock.stubGetMigrationCount(count = 1, testData.corePersonMapping)
         migrationResult = performMigration()
       }
 
@@ -398,7 +399,7 @@ class CorePersonMigrationIntTest(
           }
 
         mappingApiMock.stubCreateMappingsForMigration()
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 81)
+        mappingApiMock.stubGetMigrationCount(count = 81, testData().corePersonMapping)
         // wait until all records have individually migrated since status check might finish just before some entities are still in flight due to the "big" numbers
         migrationResult = performMigration {
           verify(telemetryClient, times(80)).trackEvent(eq("coreperson-migration-entity-migrated"), any(), isNull())
@@ -422,7 +423,7 @@ class CorePersonMigrationIntTest(
     inner class FailureWithRecoverPath {
       private lateinit var migrationResult: MigrationResult
       private val nomisPrisonNumber = "D0000BC"
-      private val consistentTestData = testData()
+      private val testData = testData()
 
       @BeforeAll
       fun setUp() {
@@ -433,15 +434,15 @@ class CorePersonMigrationIntTest(
         nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
         corePersonNomisApiMock.stubGetAliasesAndIdentifiers(
           prisonNumber = nomisPrisonNumber,
-          aliasesAndIdentifiers = consistentTestData.aliasesAndIdentifiers,
+          aliasesAndIdentifiers = testData.aliasesAndIdentifiers,
         )
         cprApiMock.stubMigrateAliasesAndIdentifiers(
           nomisPrisonNumber = nomisPrisonNumber,
-          aliasMappings = consistentTestData.aliasesMapping,
-          identifierMappings = consistentTestData.identifiersMapping,
+          aliasMappings = testData.aliasesMapping,
+          identifierMappings = testData.identifiersMapping,
         )
         mappingApiMock.stubCreateMappingsForMigrationFailureFollowedBySuccess()
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
+        mappingApiMock.stubGetMigrationCount(count = 1, corePersonMappingDto = testData.corePersonMapping)
         migrationResult = performMigration()
       }
 
@@ -547,7 +548,7 @@ class CorePersonMigrationIntTest(
             userMessage = "Duplicate",
           ),
         )
-        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
+        mappingApiMock.stubGetMigrationCount(count = 0, testData.corePersonMapping)
         migrationResult = performMigration()
       }
 
@@ -613,9 +614,11 @@ class CorePersonMigrationIntTest(
     val aliasesAndIdentifiers: List<CoreOffender>,
     val aliasesMapping: List<SysconAliasMapping>,
     val identifiersMapping: List<SysconIdentifierMapping>,
+    val corePersonMapping: List<CorePersonMappingDto>,
   )
 
   private fun testData(
+    prisonerNumber: String = "A1234BC",
     offenderId: Long = 10000L,
     cprAliasId: String = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
     cprIdentifierId: String = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
@@ -626,6 +629,13 @@ class CorePersonMigrationIntTest(
         firstName = "first",
         lastName = "last",
         workingName = true,
+        title = CodeDescription("MR", "Mr"),
+        birthPlace = "London",
+        birthCountry = CodeDescription("UKR", "United Kingdom"),
+        sex = CodeDescription("M", "Male"),
+        ethnicity = CodeDescription("A1", "A1"),
+        createDate = LocalDate.of(2000, 2, 2),
+        middleName1 = "middle1",
         identifiers = listOf(
           Identifier(
             offenderId = offenderId,
@@ -652,6 +662,15 @@ class CorePersonMigrationIntTest(
           nomisSequence = 1,
         ),
         cprIdentifierId = cprIdentifierId,
+      ),
+    ),
+    corePersonMapping = listOf(
+      CorePersonMappingDto(
+        cprId = prisonerNumber,
+        label = LocalDateTime.now().toString(),
+        whenCreated = LocalDateTime.now().toString(),
+        nomisPrisonNumber = prisonerNumber,
+        mappingType = CorePersonMappingDto.MappingType.MIGRATED,
       ),
     ),
   )

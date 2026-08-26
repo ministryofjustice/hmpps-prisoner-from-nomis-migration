@@ -12,7 +12,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
-import java.time.LocalDateTime
 
 @Component
 class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
@@ -39,7 +38,7 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person")
 
-  fun stubGetMigrationCount(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
+  fun stubGetMigrationCount(count: Int = 1, corePersonMappingDto: List<CorePersonMappingDto>? = null) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/core-person/migration-id/.*")).willReturn(
         aResponse()
@@ -47,15 +46,7 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
           .withBody(
             pageContent(
               jsonMapper = jsonMapper,
-              content = listOf(
-                CorePersonMappingDto(
-                  cprId = "A1234BC",
-                  label = migrationId,
-                  whenCreated = LocalDateTime.now().toString(),
-                  nomisPrisonNumber = "A1234BC",
-                  mappingType = CorePersonMappingDto.MappingType.MIGRATED,
-                ),
-              ),
+              content = corePersonMappingDto ?: emptyList(),
               pageSize = 1L,
               pageNumber = 0L,
               totalElements = count.toLong(),
