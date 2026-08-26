@@ -37,8 +37,7 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
   }
-
-  // TODO qqRP can this go?
+  
   fun stubGetOffenderReligions(
     prisonNumber: String = "A1234BC",
     religions: List<OffenderBelief> = beliefs(),
