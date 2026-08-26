@@ -31,6 +31,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconIdentifierMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -38,7 +39,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse.Status
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderAliasMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderIdentifierMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Identifier
@@ -68,7 +68,6 @@ class CorePersonMigrationIntTest(
     NomisApiExtension.resetAndDisableResetBeforeEach()
     MappingApiExtension.resetAndDisableResetBeforeEach()
     CorePersonCprApiExtension.resetAndDisableResetBeforeEach()
-
     tearDownTelemetryClient()
   }
 
@@ -119,21 +118,21 @@ class CorePersonMigrationIntTest(
         nomisApiMock.stubGetPrisonerIds(1, 1, "A0000BC")
         nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
         nomisApiMock.stubGetAllPrisonersInRange(0, 1)
-        mappingApiMock.stubGetReligionsByNomisPrisonNumberOrNull(
+        mappingApiMock.stubGetCorePersonByNomisPrisonNumberOrNull(
           nomisPrisonNumber = "A0000BC",
-          mapping = ReligionsMappingDto(
-            cprId = "10000",
+          mapping = CorePersonMappingDto(
+            cprId = "A0000BC",
             nomisPrisonNumber = "A0000BC",
-            mappingType = ReligionsMappingDto.MappingType.MIGRATED,
+            mappingType = CorePersonMappingDto.MappingType.MIGRATED,
             label = "2020-01-01T00:00:00",
           ),
         )
-        mappingApiMock.stubGetReligionsByNomisPrisonNumberOrNull(
+        mappingApiMock.stubGetCorePersonByNomisPrisonNumberOrNull(
           nomisPrisonNumber = "A0001BC",
-          mapping = ReligionsMappingDto(
+          mapping = CorePersonMappingDto(
             cprId = "10000",
             nomisPrisonNumber = "A0001BC",
-            mappingType = ReligionsMappingDto.MappingType.MIGRATED,
+            mappingType = CorePersonMappingDto.MappingType.MIGRATED,
             label = "2020-01-01T00:00:00",
           ),
         )
@@ -142,9 +141,9 @@ class CorePersonMigrationIntTest(
       }
 
       @Test
-      fun `will not bother retrieving any religion details`() {
-        corePersonNomisApiMock.verify(0, getRequestedFor(urlPathEqualTo("/core-person/A0000BC/religions")))
-        corePersonNomisApiMock.verify(0, getRequestedFor(urlPathEqualTo("/core-person/A0001BC/religions")))
+      fun `will not bother retrieving any core person records`() {
+        corePersonNomisApiMock.verify(0, getRequestedFor(urlPathEqualTo("/core-person/A0000BC")))
+        corePersonNomisApiMock.verify(0, getRequestedFor(urlPathEqualTo("/core-person/A0001BC")))
       }
 
       @Test
@@ -402,8 +401,6 @@ class CorePersonMigrationIntTest(
     inner class HappyPathLargeNumberOfPrisoners {
       private lateinit var migrationResult: MigrationResult
       private val nomisPrisonNumber = "A0001KT"
-      private val cprReligionId: String = "abc-123456"
-      private val nomisId = 1L
 
       @BeforeAll
       fun setUp() {
@@ -548,7 +545,7 @@ class CorePersonMigrationIntTest(
       }
 
       @Test
-      fun `will transform and migrate religions into CPR`() {
+      fun `will transform and migrate aliases and identifiers into CPR`() {
         val migrationRequest: PrisonAliasesAndIdentifiersRequest =
           CorePersonCprApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/syscon-sync/aliases-identifiers/$nomisPrisonNumber")))
 
@@ -557,7 +554,7 @@ class CorePersonMigrationIntTest(
       }
 
       @Test
-      fun `will eventually create mappings for religions`() {
+      fun `will eventually create mappings for aliases and identifiers`() {
         val mappingRequests: List<CorePersonMappingsDto> =
           MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person")))
 

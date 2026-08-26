@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
@@ -11,14 +10,13 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 import java.time.LocalDateTime
-// TODO qqRP delete what we don't need
+
 @Component
 class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
@@ -53,12 +51,12 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
             pageContent(
               jsonMapper = jsonMapper,
               content = listOf(
-                ReligionsMappingDto(
-                  cprId = "654321",
+                CorePersonMappingDto(
+                  cprId = "A1234BC",
                   label = migrationId,
                   whenCreated = LocalDateTime.now().toString(),
                   nomisPrisonNumber = "A1234BC",
-                  mappingType = ReligionsMappingDto.MappingType.MIGRATED,
+                  mappingType = CorePersonMappingDto.MappingType.MIGRATED,
                 ),
               ),
               pageSize = 1L,
@@ -71,17 +69,17 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetReligionsByNomisPrisonNumberOrNull(
+  fun stubGetCorePersonByNomisPrisonNumberOrNull(
     nomisPrisonNumber: String = "A1234BC",
-    mapping: ReligionsMappingDto? = ReligionsMappingDto(
-      cprId = "123456",
-      mappingType = ReligionsMappingDto.MappingType.MIGRATED,
+    mapping: CorePersonMappingDto? = CorePersonMappingDto( // TODO do we need a default.
+      cprId = nomisPrisonNumber,
+      mappingType = CorePersonMappingDto.MappingType.MIGRATED,
       nomisPrisonNumber = nomisPrisonNumber,
     ),
   ) {
     mapping?.apply {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/core-person-religion/religions/nomis-prison-number/$nomisPrisonNumber")).willReturn(
+        get(urlEqualTo("/mapping/core-person/person/nomis-prison-number/$nomisPrisonNumber")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
@@ -90,7 +88,7 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
       )
     } ?: run {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/core-person-religion/religions/nomis-prison-number/$nomisPrisonNumber")).willReturn(
+        get(urlEqualTo("/mapping/core-person/person/nomis-prison-number/$nomisPrisonNumber")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.NOT_FOUND.value())
@@ -98,113 +96,6 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
         ),
       )
     }
-  }
-
-  fun stubGetReligionsByNomisPrisonNumber(
-    nomisPrisonNumber: String = "A1234BC",
-    mapping: ReligionsMappingDto = ReligionsMappingDto(
-      cprId = "123456",
-      mappingType = ReligionsMappingDto.MappingType.MIGRATED,
-      nomisPrisonNumber = nomisPrisonNumber,
-    ),
-  ) = stubGetReligionsByNomisPrisonNumberOrNull(nomisPrisonNumber, mapping)
-
-  fun stubCreateReligionMapping() {
-    mappingApi.stubFor(
-      post("/mapping/core-person-religion/religion").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(201),
-      ),
-    )
-  }
-
-  fun stubCreateReligionMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person-religion/religion")
-
-  fun stubCreateReligionMapping(error: DuplicateMappingErrorResponse) {
-    mappingApi.stubFor(
-      post("/mapping/core-person-religion/religion").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(409)
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubGetReligionByNomisIdOrNull(
-    nomisId: Long = 123456,
-    nomisPrisonNumber: String = "A1234BC",
-    mapping: ReligionMappingDto? = ReligionMappingDto(
-      cprId = "123456",
-      mappingType = ReligionMappingDto.MappingType.MIGRATED,
-      nomisId = nomisId,
-      nomisPrisonNumber = nomisPrisonNumber,
-    ),
-  ) {
-    mapping?.apply {
-      mappingApi.stubFor(
-        get(urlEqualTo("/mapping/core-person-religion/religion/nomis-id/$nomisId")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.OK.value())
-            .withBody(jsonMapper.writeValueAsString(mapping)),
-        ),
-      )
-    } ?: run {
-      mappingApi.stubFor(
-        get(urlEqualTo("/mapping/core-person-religion/religion/nomis-id/$nomisId")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
-        ),
-      )
-    }
-  }
-
-  fun stubExistsReligionMappingByNomisPrisonNumber(nomisPrisonNumber: String = "A1234BC", exists: Boolean = true) {
-    mappingApi.stubFor(
-      get(urlEqualTo("/mapping/core-person-religion/religion/nomis-prison-number/$nomisPrisonNumber/exists")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(jsonMapper.writeValueAsString(mapOf("exists" to exists))),
-      ),
-    )
-  }
-
-  fun stubGetReligionByNomisId(
-    nomisId: Long = 123456,
-    nomisPrisonNumber: String = "A1234BC",
-    mapping: ReligionMappingDto = ReligionMappingDto(
-      cprId = "123456",
-      mappingType = ReligionMappingDto.MappingType.MIGRATED,
-      nomisId = nomisId,
-      nomisPrisonNumber = nomisPrisonNumber,
-    ),
-  ) = stubGetReligionByNomisIdOrNull(nomisId, nomisPrisonNumber, mapping)
-
-  fun stubDeleteReligionByNomisId(
-    nomisId: Long = 123456,
-  ) {
-    mappingApi.stubFor(
-      delete(urlEqualTo("/mapping/core-person-religion/religion/nomis-id/$nomisId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.NO_CONTENT.value()),
-      ),
-    )
-  }
-
-  fun stubReplaceMappings() {
-    mappingApi.stubFor(
-      post("/mapping/core-person-religion/replace").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(200),
-      ),
-    )
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
