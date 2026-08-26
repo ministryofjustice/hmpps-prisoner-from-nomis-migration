@@ -15,9 +15,10 @@
 !**/AtAndBy.kt
 !**/MoveTransfersRequest.kt
 !**/ReconciliationResponse.kt
+!**/ReconciliationTransfer.kt
 !**/ReferenceId.kt
-!**/ResyncMovement.kt
 !**/ResyncResponse.kt
+!**/ResyncMovement.kt
 !**/ResyncTransfer.kt
 !**/ResyncTransfersRequest.kt
 !**/SyncApi.kt
