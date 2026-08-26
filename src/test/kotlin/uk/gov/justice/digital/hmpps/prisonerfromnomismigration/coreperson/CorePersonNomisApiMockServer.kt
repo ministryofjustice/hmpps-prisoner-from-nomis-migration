@@ -95,8 +95,8 @@ fun corePerson(prisonNumber: String = "A1234BC", aliasesAndIdentifiers: List<Cor
         middleName2 = "JAMES",
         dateOfBirth = LocalDate.parse("1980-01-01"),
         birthPlace = "LONDON",
-        birthCountry = CodeDescription(code = "ENG", description = "England"),
-        ethnicity = CodeDescription(code = "BLACK", description = "Black"),
+        birthCountry = CodeDescription(code = "UKR", description = "United Kingdom"),
+        ethnicity = CodeDescription(code = "A1", description = "A1"),
         sex = CodeDescription(code = "M", description = "Male"),
         nameType = CodeDescription(code = "MAID", description = "Maiden"),
         identifiers = listOf(
