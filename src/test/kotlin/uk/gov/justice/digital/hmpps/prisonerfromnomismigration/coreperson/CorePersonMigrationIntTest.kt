@@ -55,7 +55,7 @@ import kotlin.collections.forEach
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CorePersonMigrationIntTest(
   @Autowired private val corePersonNomisApiMock: CorePersonNomisApiMockServer,
-  @Autowired private val mappingApiMock: ReligionsMappingApiMockServer,
+  @Autowired private val mappingApiMock: CorePersonMappingApiMockServer,
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
 ) : CorePersonIntegrationTestBase() {
   private val nomisApiMock = NomisApiExtension.nomisApi
@@ -270,10 +270,9 @@ class CorePersonMigrationIntTest(
         nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
         nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
         mappingApiMock.stubGetReligionsByNomisPrisonNumberOrNull(nomisPrisonNumber = nomisPrisonNumber, mapping = null)
-        corePersonNomisApiMock.stubGetOffenderReligions(
+        corePersonNomisApiMock.stubGetCorePerson(
           prisonNumber = nomisPrisonNumber,
           // no religions found in nomis
-          religions = emptyList(),
         )
         mappingApiMock.stubCreateMappingsForMigration()
         mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)

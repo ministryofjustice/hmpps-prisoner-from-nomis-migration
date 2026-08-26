@@ -198,7 +198,7 @@ class CorePersonMigrationService(
   ) = CorePersonMappingsDto(
     mappingType = CorePersonMappingsDto.MappingType.MIGRATED,
     personMapping = CorePersonMappingIdDto(
-      cprId = "TODO", // TODO return the cprId of the offender from cpr.
+      cprId = prisonNumber, // TODO rename this field so it makes more sense.
       nomisPrisonNumber = prisonNumber,
     ),
     aliases = aliasesMappings.map {
