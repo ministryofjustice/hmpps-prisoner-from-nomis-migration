@@ -251,7 +251,6 @@ class CorePersonMigrationIntTest(
         assertThat(mappingRequests).hasSize(1)
 
         with(mappingRequests.first()) {
-
           assertThat(mappingType).isEqualTo(CorePersonMappingsDto.MappingType.MIGRATED)
           assertThat(label).isEqualTo(migrationResult.migrationId)
           assertThat(nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
@@ -428,7 +427,7 @@ class CorePersonMigrationIntTest(
           .map { nomisPrisonNumber.replacePrisonNumber(it) }
           .forEach {
             corePersonNomisApiMock.stubGetAliasesAndIdentifiers(
-              prisonNumber = nomisPrisonNumber,
+              prisonNumber = it,
               aliasesAndIdentifiers = listOf(
                 CoreOffender(
                   offenderId = 10000L,
@@ -450,7 +449,7 @@ class CorePersonMigrationIntTest(
               ),
             )
             cprApiMock.stubMigrateAliasesAndIdentifiers(
-              nomisPrisonNumber = nomisPrisonNumber,
+              nomisPrisonNumber = it,
               aliasMappings = listOf(
                 SysconAliasMapping(
                   nomisOffenderId = 10000L,
@@ -480,11 +479,11 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will migrate 80 records exactly once`() {
         val migrationRequests =
-          cprApiMock.getRequestsAsString(postRequestedFor(urlPathMatching("/syscon-sync/religion/.*")))
+          cprApiMock.getRequestsAsString(postRequestedFor(urlPathMatching("/syscon-sync/aliases-identifiers/.*")))
 
         assertThat(migrationRequests).hasSize(80)
         assertThat(migrationRequests).containsExactlyInAnyOrderElementsOf(
-          (0L..<80L).map { "/syscon-sync/religion/${nomisPrisonNumber.replacePrisonNumber(it)}" },
+          (0L..<80L).map { "/syscon-sync/aliases-identifiers/${nomisPrisonNumber.replacePrisonNumber(it)}" },
         )
       }
     }
@@ -660,7 +659,7 @@ class CorePersonMigrationIntTest(
                 mappingType = CorePersonMappingsDto.MappingType.MIGRATED,
                 personMapping = CorePersonMappingIdDto(
                   cprId = nomisPrisonNumber,
-                  nomisPrisonNumber = nomisPrisonNumber
+                  nomisPrisonNumber = nomisPrisonNumber,
                 ),
                 aliases = emptyList(),
                 identifiers = emptyList(),
@@ -669,11 +668,11 @@ class CorePersonMigrationIntTest(
                 mappingType = CorePersonMappingsDto.MappingType.MIGRATED,
                 personMapping = CorePersonMappingIdDto(
                   cprId = nomisPrisonNumber,
-                  nomisPrisonNumber = nomisPrisonNumber
+                  nomisPrisonNumber = nomisPrisonNumber,
                 ),
                 aliases = emptyList(),
                 identifiers = emptyList(),
-              )
+              ),
             ),
             status = Status._409_CONFLICT,
             errorCode = 1409,
