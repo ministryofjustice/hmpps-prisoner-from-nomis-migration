@@ -651,14 +651,14 @@ class CorePersonMigrationIntTest(
     ),
     aliasesMapping = listOf(
       SysconAliasMapping(
-        nomisOffenderId = 10000L,
+        nomisOffenderId = offenderId,
         cprAliasId = cprAliasId,
       ),
     ),
     identifiersMapping = listOf(
       SysconIdentifierMapping(
         nomisIdentifierId = NomisIdentifierId(
-          nomisOffenderId = 10000L,
+          nomisOffenderId = offenderId,
           nomisSequence = 1,
         ),
         cprIdentifierId = cprIdentifierId,
