@@ -273,12 +273,11 @@ class CorePersonMigrationIntTest(
     inner class HappyPathNoIdentifiers {
       private lateinit var migrationResult: MigrationResult
       private val nomisPrisonNumber = "A0000BC"
-      private val testData = testData()
+      private val testData = testDataNoIdentifier()
 
       @BeforeAll
       fun setUp() {
         setupMigrationTest()
-
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
         nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
         nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
@@ -615,6 +614,38 @@ class CorePersonMigrationIntTest(
     val aliasesMapping: List<SysconAliasMapping>,
     val identifiersMapping: List<SysconIdentifierMapping>,
     val corePersonMapping: List<CorePersonMappingDto>,
+  )
+
+  private fun testDataNoIdentifier(
+    prisonerNumber: String = "A1234BC",
+    offenderId: Long = 10000L,
+    cprAliasId: String = "dfc4ce90-aaeb-427b-9607-5fbd49ae4c40",
+  ) = TestData(
+    aliasesAndIdentifiers = listOf(
+      CoreOffender(
+        offenderId = offenderId,
+        firstName = "first",
+        lastName = "last",
+        workingName = true,
+        identifiers = emptyList(),
+      ),
+    ),
+    aliasesMapping = listOf(
+      SysconAliasMapping(
+        nomisOffenderId = offenderId,
+        cprAliasId = cprAliasId,
+      ),
+    ),
+    identifiersMapping = emptyList(),
+    corePersonMapping = listOf(
+      CorePersonMappingDto(
+        cprId = prisonerNumber,
+        label = LocalDateTime.now().toString(),
+        whenCreated = LocalDateTime.now().toString(),
+        nomisPrisonNumber = prisonerNumber,
+        mappingType = CorePersonMappingDto.MappingType.MIGRATED,
+      ),
+    ),
   )
 
   private fun testData(
