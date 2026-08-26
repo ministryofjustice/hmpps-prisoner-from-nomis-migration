@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-25.426.37f44db"
+    "version" : "2026-08-25.429.b676ba4"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -2314,6 +2314,14 @@
               "type" : "null"
             } ]
           },
+          "payrollRegion" : {
+            "description" : "Prisoner Payroll Region",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
           "addresses" : {
             "type" : "array",
             "description" : "addresses",
@@ -2606,6 +2614,11 @@
             "description" : "CJIT Code",
             "example" : "123456789"
           },
+          "accessibleAccess" : {
+            "type" : [ "string", "null" ],
+            "description" : "Accessible access",
+            "example" : "ACCESSIBLE"
+          },
           "area" : {
             "description" : "Area",
             "oneOf" : [ {
@@ -2632,6 +2645,14 @@
           },
           "localAuthority" : {
             "description" : "Local Authority",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "payrollRegion" : {
+            "description" : "Prisoner Payroll Region",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/CodeDescription"
             }, {
@@ -2740,6 +2761,14 @@
           },
           "localAuthority" : {
             "description" : "Local Authority",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "payrollRegion" : {
+            "description" : "Prisoner Payroll Region",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/CodeDescription"
             }, {
