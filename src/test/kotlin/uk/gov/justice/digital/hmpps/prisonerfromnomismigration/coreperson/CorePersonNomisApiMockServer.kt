@@ -81,6 +81,7 @@ fun corePerson(prisonNumber: String = "A1234BC"): CorePerson = CorePerson(
       nameType = CodeDescription(code = "MAID", description = "Maiden"),
       identifiers = listOf(
         Identifier(
+          offenderId = 1,
           sequence = 1,
           type = CodeDescription("PNC", "PNC Number"),
           identifier = "20/0071818T",
