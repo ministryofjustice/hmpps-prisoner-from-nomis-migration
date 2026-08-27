@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-25.4659.d33095c"
+    "version" : "2026-08-27.4686.ecad86b"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -3167,82 +3167,14 @@
           "dpsStaffId" : {
             "type" : "string"
           },
-          "reason" : {
-            "type" : "string"
-          },
-          "nomisStaff" : {
-            "$ref" : "#/components/schemas/StaffSummary"
-          },
-          "dpsStaff" : {
-            "$ref" : "#/components/schemas/StaffSummary"
-          }
-        },
-        "required" : [ "nomisStaffId", "reason" ]
-      },
-      "StaffAccountSummary" : {
-        "type" : "object",
-        "properties" : {
-          "username" : {
-            "type" : "string"
-          },
-          "typeCode" : {
-            "type" : "string"
-          },
-          "status" : {
-            "type" : "string"
-          },
-          "caseloads" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          },
-          "dpsRoles" : {
-            "type" : "array",
-            "items" : {
-              "type" : "string"
-            }
-          },
-          "lastLoggedIn" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "activeCaseloadId" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "caseloads", "dpsRoles", "status", "typeCode", "username" ]
-      },
-      "StaffSummary" : {
-        "type" : "object",
-        "properties" : {
-          "staffId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "firstName" : {
-            "type" : "string"
-          },
-          "lastName" : {
-            "type" : "string"
-          },
-          "status" : {
-            "type" : "string"
-          },
-          "accounts" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/StaffAccountSummary"
-            }
-          },
-          "emails" : {
-            "type" : "array",
-            "items" : {
+          "differences" : {
+            "type" : "object",
+            "additionalProperties" : {
               "type" : "string"
             }
           }
         },
-        "required" : [ "accounts", "emails", "firstName", "lastName", "staffId", "status" ]
+        "required" : [ "differences", "nomisStaffId" ]
       },
       "DlqMessage" : {
         "type" : "object",
