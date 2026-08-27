@@ -56,42 +56,61 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetAliasesAndIdentifiers(
+    prisonNumber: String = "A1234BC",
+    aliasesAndIdentifiers: List<CoreOffender>,
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$prisonNumber")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(
+            jsonMapper.writeValueAsString(if (status == HttpStatus.OK) corePerson(prisonNumber, aliasesAndIdentifiers) else error),
+          ),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
 
-fun corePerson(prisonNumber: String = "A1234BC"): CorePerson = CorePerson(
+fun corePerson(prisonNumber: String = "A1234BC", aliasesAndIdentifiers: List<CoreOffender>? = null): CorePerson = CorePerson(
   prisonNumber = prisonNumber,
   activeFlag = true,
   inOutStatus = "OUT",
-  offenders = listOf(
-    CoreOffender(
-      offenderId = 1,
-      title = CodeDescription(code = "MR", description = "Mr"),
-      firstName = "JOHN",
-      lastName = "SMITH",
-      workingName = true,
-      middleName1 = "FRED",
-      middleName2 = "JAMES",
-      dateOfBirth = LocalDate.parse("1980-01-01"),
-      birthPlace = "LONDON",
-      birthCountry = CodeDescription(code = "ENG", description = "England"),
-      ethnicity = CodeDescription(code = "BLACK", description = "Black"),
-      sex = CodeDescription(code = "M", description = "Male"),
-      nameType = CodeDescription(code = "MAID", description = "Maiden"),
-      identifiers = listOf(
-        Identifier(
-          offenderId = 1,
-          sequence = 1,
-          type = CodeDescription("PNC", "PNC Number"),
-          identifier = "20/0071818T",
-          issuedAuthority = "Met Police",
-          issuedDate = LocalDate.parse("2020-01-01"),
-          verified = true,
+  offenders = aliasesAndIdentifiers
+    ?: listOf(
+      CoreOffender(
+        offenderId = 1,
+        title = CodeDescription(code = "MR", description = "Mr"),
+        firstName = "JOHN",
+        lastName = "SMITH",
+        workingName = true,
+        middleName1 = "FRED",
+        middleName2 = "JAMES",
+        dateOfBirth = LocalDate.parse("1980-01-01"),
+        birthPlace = "LONDON",
+        birthCountry = CodeDescription(code = "UKR", description = "United Kingdom"),
+        ethnicity = CodeDescription(code = "A1", description = "A1"),
+        sex = CodeDescription(code = "M", description = "Male"),
+        nameType = CodeDescription(code = "MAID", description = "Maiden"),
+        identifiers = listOf(
+          Identifier(
+            offenderId = 1,
+            sequence = 1,
+            type = CodeDescription("PNC", "PNC Number"),
+            identifier = "20/0071818T",
+            issuedAuthority = "Met Police",
+            issuedDate = LocalDate.parse("2020-01-01"),
+            verified = true,
+          ),
         ),
       ),
     ),
-  ),
   beliefs = beliefs(),
 )
 

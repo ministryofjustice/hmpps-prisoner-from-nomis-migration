@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.ActivitiesMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.AllocationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.ReligionsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraMappingApiService
@@ -24,6 +25,7 @@ class GeneralMappingService(
   private val activityMappingService: ActivitiesMappingService,
   private val allocationsMappingService: AllocationsMappingService,
   private val religionsMappingService: ReligionsMappingService,
+  private val corePersonMappingService: CorePersonMappingService,
   private val csraMappingApiService: CsraMappingApiService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
   private val prisonBalanceMappingApiService: PrisonBalanceMappingApiService,
@@ -40,7 +42,7 @@ class GeneralMappingService(
     MigrationType.AGENCY_REGISTERS -> 0
     MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
-    MigrationType.CORE_PERSON -> religionsMappingService.getMigrationCount(migrationId)
+    MigrationType.CORE_PERSON -> corePersonMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SCHEDULER -> courtSchedulerMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
     MigrationType.CSRA -> csraMappingApiService.getMigrationCount(migrationId)
