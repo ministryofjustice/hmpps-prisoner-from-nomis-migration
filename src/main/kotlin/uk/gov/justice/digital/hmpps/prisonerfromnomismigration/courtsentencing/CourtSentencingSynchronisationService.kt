@@ -38,6 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseAllMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchUpdateMappingResponseDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.NomisSentenceId
@@ -1570,6 +1571,7 @@ class CourtSentencingSynchronisationService(
           courtCases = dpsCases,
         ),
       )
+        .also { it.logAndNotifyCaseIdChanges(event.updatedMappings) }
         .also { dpsCourtCaseCreateResponse ->
           createCaseBookingCloneMapping(
             offenderNo = event.offenderNo,
@@ -1581,6 +1583,80 @@ class CourtSentencingSynchronisationService(
       "court-case-booking-resynchronisation-success",
       telemetry,
     )
+  }
+
+  private fun BookingCreateCourtCasesResponse.logAndNotifyCaseIdChanges(updatedMappings: CourtCaseBatchUpdateMappingResponseDto) {
+    this.courtCases.forEach { case ->
+      updatedMappings.courtCases.firstOrNull { it.fromNomisId == case.caseId }?.run {
+        telemetryClient.trackEvent(
+          "court-case-clone-case-ids",
+          mapOf(
+            "previousBookingNomisId" to fromNomisId.toString(),
+            "currentBookingNomisId" to toNomisId.toString(),
+            "previousBookingDpsId" to case.caseId,
+            "currentBookingDpsId" to dpsId,
+          ),
+        )
+      }
+    }
+    this.appearances.forEach { appearance ->
+      updatedMappings.courtAppearances.firstOrNull { it.fromNomisId == appearance.eventId }?.run {
+        telemetryClient.trackEvent(
+          "court-case-clone-appearance-ids",
+          mapOf(
+            "previousBookingNomisId" to fromNomisId.toString(),
+            "currentBookingNomisId" to toNomisId.toString(),
+            "previousBookingDpsId" to appearance.eventId,
+            "currentBookingDpsId" to dpsId,
+          ),
+        )
+      }
+    }
+    this.charges.forEach { charge ->
+      updatedMappings.courtCharges.firstOrNull { it.fromNomisId == charge.chargeNOMISId }?.run {
+        telemetryClient.trackEvent(
+          "court-case-clone-charge-ids",
+          mapOf(
+            "previousBookingNomisId" to fromNomisId.toString(),
+            "currentBookingNomisId" to toNomisId.toString(),
+            "previousBookingDpsId" to charge.chargeNOMISId,
+            "currentBookingDpsId" to dpsId,
+          ),
+        )
+      }
+    }
+    this.sentences.forEach { sentence ->
+      updatedMappings.sentences.firstOrNull { it.fromNomisId.nomisBookingId == sentence.sentenceNOMISId.offenderBookingId && it.fromNomisId.nomisSequence == sentence.sentenceNOMISId.sequence }?.run {
+        telemetryClient.trackEvent(
+          "court-case-clone-sentence-ids",
+          mapOf(
+            "previousBookingNomisBookingId" to fromNomisId.nomisBookingId,
+            "currentBookingNomisBookingId" to toNomisId.nomisBookingId,
+            "previousBookingNomisSequence" to fromNomisId.nomisSequence,
+            "currentBookingNomisSequence" to toNomisId.nomisSequence,
+            "previousBookingDpsId" to sentence.sentenceNOMISId,
+            "currentBookingDpsId" to dpsId,
+          ),
+        )
+      }
+    }
+    this.sentenceTerms.forEach { sentenceTerm ->
+      updatedMappings.sentenceTerms.firstOrNull { it.fromNomisId.nomisSentenceId.nomisBookingId == sentenceTerm.sentenceTermNOMISId.offenderBookingId && it.fromNomisId.nomisSentenceId.nomisSequence == sentenceTerm.sentenceTermNOMISId.sentenceSequence && it.fromNomisId.nomisSequence == sentenceTerm.sentenceTermNOMISId.termSequence }?.run {
+        telemetryClient.trackEvent(
+          "court-case-clone-sentence-term-ids",
+          mapOf(
+            "previousBookingNomisBookingId" to fromNomisId.nomisSentenceId.nomisBookingId,
+            "currentBookingNomisBookingId" to toNomisId.nomisSentenceId.nomisBookingId,
+            "previousBookingNomisSequence" to fromNomisId.nomisSentenceId.nomisSequence,
+            "currentBookingNomisSequence" to toNomisId.nomisSentenceId.nomisSequence,
+            "previousBookingNomisTermSequence" to fromNomisId.nomisSequence,
+            "currentBookingNomisTermSequence" to toNomisId.nomisSequence,
+            "previousBookingDpsId" to sentenceTerm.periodLengthUuid,
+            "currentBookingDpsId" to dpsId,
+          ),
+        )
+      }
+    }
   }
 
   suspend fun nomisSentenceResynchronisation(event: OffenderSentenceResynchronisationEvent) {
