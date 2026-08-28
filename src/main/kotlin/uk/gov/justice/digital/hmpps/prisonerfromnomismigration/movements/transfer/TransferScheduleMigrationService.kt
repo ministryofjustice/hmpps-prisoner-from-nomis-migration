@@ -69,8 +69,13 @@ class TransferScheduleMigrationService(
   override suspend fun getRangeOfIds(
     body: TransferSchedulerMigrationFilter,
     pageSize: Long,
-  ): List<Pair<PrisonNumberAndRootOffenderId, PrisonNumberAndRootOffenderId>> = nomisApi.getAllPrisonersIdRanges(pageSize)
-    .map { Pair(PrisonNumberAndRootOffenderId(it.fromRootOffenderId, ""), PrisonNumberAndRootOffenderId(it.toRootOffenderId, "")) }
+  ): List<Pair<PrisonNumberAndRootOffenderId, PrisonNumberAndRootOffenderId>> = if (body.prisonerNumber.isNullOrBlank()) {
+    nomisApi.getAllPrisonersIdRanges(pageSize)
+      .map { Pair(PrisonNumberAndRootOffenderId(it.fromRootOffenderId, ""), PrisonNumberAndRootOffenderId(it.toRootOffenderId, "")) }
+  } else {
+    // The prisoner number is supplied to us, so pretend there's a single range to get
+    listOf(PrisonNumberAndRootOffenderId(0, "") to PrisonNumberAndRootOffenderId(1, ""))
+  }
 
   override suspend fun getPageOfIdsFromIdRange(
     firstId: PrisonNumberAndRootOffenderId?,
