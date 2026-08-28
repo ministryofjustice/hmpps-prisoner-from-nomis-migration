@@ -201,17 +201,5 @@ class CsraSyncService(
   }
 }
 
-private fun AssessmentEvent.toTelemetryProperties2(
-  dpsCsraId: String? = null,
-  mappingFailed: Boolean? = null,
-) = mapOf(
-  "bookingId" to this.bookingId.toString(),
-  "sequence" to this.assessmentSeq.toString(),
-  "offenderNo" to this.offenderIdDisplay,
-  "assessmentType" to this.assessmentType.toString(),
-) + (dpsCsraId?.let { mapOf("dpsCsraId" to it) } ?: emptyMap()) + (
-  if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap()
-  )
-
 private fun AssessmentEvent.auditMissing() = auditModuleName == null
 private fun AssessmentEvent.isSourcedFromDPS() = auditModuleName.originatesInDps()
