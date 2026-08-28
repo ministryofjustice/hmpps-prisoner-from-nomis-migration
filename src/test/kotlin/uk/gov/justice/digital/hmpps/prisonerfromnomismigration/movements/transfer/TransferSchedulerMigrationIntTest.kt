@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transf
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -47,7 +48,6 @@ import java.util.*
 class TransferSchedulerMigrationIntTest(
   @Autowired private val transfersNomisApi: TransferScheduleNomisApiMockServer,
   @Autowired private val mappingApi: TransferScheduleMappingApiMockServer,
-  @Autowired private val migrationService: TransferScheduleMigrationService,
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
 ) : TransferSchedulerIntegrationTestBase() {
 
@@ -291,6 +291,39 @@ class TransferSchedulerMigrationIntTest(
     @Test
     fun `will publish telemetry for each prisoner`() {
       verify(telemetryClient, times(3)).trackEvent(
+        eq("transfer-scheduler-migration-entity-migrated"),
+        any(),
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class MigrateSinglePrisoner {
+    @BeforeAll
+    fun setUp() = runTest {
+      setupMigrationTest()
+
+      stubMigrationDependencies(entities = 100, pageSize = 10, resync = false)
+      migrationId = performMigration("A0000KT")
+    }
+
+    @Test
+    fun `should call DPS resync`() {
+      dpsApi.verify(putRequestedFor(urlPathMatching("/resync/transfers/.*")))
+    }
+
+    @Test
+    fun `should create mappings`() {
+      mappingApi.verify(
+        putRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/migrate")),
+      )
+    }
+
+    @Test
+    fun `will publish telemetry`() {
+      verify(telemetryClient).trackEvent(
         eq("transfer-scheduler-migration-entity-migrated"),
         any(),
         isNull(),
