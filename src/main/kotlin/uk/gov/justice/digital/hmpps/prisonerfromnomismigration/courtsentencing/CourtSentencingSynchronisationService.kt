@@ -1593,7 +1593,7 @@ class CourtSentencingSynchronisationService(
           mapOf(
             "previousBookingNomisId" to fromNomisId.toString(),
             "currentBookingNomisId" to toNomisId.toString(),
-            "previousBookingDpsId" to case.caseId,
+            "previousBookingDpsId" to case.courtCaseUuid,
             "currentBookingDpsId" to dpsId,
           ),
         )
@@ -1606,7 +1606,7 @@ class CourtSentencingSynchronisationService(
           mapOf(
             "previousBookingNomisId" to fromNomisId.toString(),
             "currentBookingNomisId" to toNomisId.toString(),
-            "previousBookingDpsId" to appearance.eventId,
+            "previousBookingDpsId" to appearance.appearanceUuid,
             "currentBookingDpsId" to dpsId,
           ),
         )
@@ -1619,7 +1619,7 @@ class CourtSentencingSynchronisationService(
           mapOf(
             "previousBookingNomisId" to fromNomisId.toString(),
             "currentBookingNomisId" to toNomisId.toString(),
-            "previousBookingDpsId" to charge.chargeNOMISId,
+            "previousBookingDpsId" to charge.chargeUuid,
             "currentBookingDpsId" to dpsId,
           ),
         )
@@ -1634,7 +1634,7 @@ class CourtSentencingSynchronisationService(
             "currentBookingNomisBookingId" to toNomisId.nomisBookingId,
             "previousBookingNomisSequence" to fromNomisId.nomisSequence,
             "currentBookingNomisSequence" to toNomisId.nomisSequence,
-            "previousBookingDpsId" to sentence.sentenceNOMISId,
+            "previousBookingDpsId" to sentence.sentenceUuid,
             "currentBookingDpsId" to dpsId,
           ),
         )
