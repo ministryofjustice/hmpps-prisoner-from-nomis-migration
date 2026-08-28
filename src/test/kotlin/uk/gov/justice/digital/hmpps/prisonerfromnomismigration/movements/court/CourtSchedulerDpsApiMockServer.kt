@@ -5,7 +5,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.put
-import com.github.tomakehurst.wiremock.client.WireMock.stubFor
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import org.junit.jupiter.api.extension.AfterAllCallback
@@ -116,17 +115,6 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
 
     fun referenceId(id: UUID = UUID.randomUUID()) = ReferenceId(id)
-
-    fun stubHealthPing(status: Int) {
-      stubFor(
-        get("/health/ping").willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withBody(if (status == 200) "pong" else "some error")
-            .withStatus(status),
-        ),
-      )
-    }
 
     fun resyncResponse(
       dpsCourtAppearanceId: UUID = UUID.randomUUID(),
@@ -369,6 +357,17 @@ class CourtSchedulerDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withHeader("Content-Type", "application/json")
             .withBody(jsonMapper.writeValueAsString(error)),
         ),
+    )
+  }
+
+  fun stubHealthPing(status: Int) {
+    stubFor(
+      get("/health/ping").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(if (status == 200) "pong" else "some error")
+          .withStatus(status),
+      ),
     )
   }
 }
