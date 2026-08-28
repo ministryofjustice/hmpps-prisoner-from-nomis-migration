@@ -17,8 +17,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.reconciliationCourtCase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreatePeriodLengthResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingCreateSentenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.BookingSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.CreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyChargeCreatedResponse
@@ -30,6 +35,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateCourtCasesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.ReconciliationCourtAppearance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.ReconciliationCourtCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.dpsCourtSchedulerServer
@@ -76,6 +82,85 @@ class CourtSentencingDpsApiExtension :
       nomisAppearanceTypeCode = "1001",
       charges = emptyList(),
     )
+
+    const val NOMIS_CASE_ID = 1L
+    const val NOMIS_BOOKING_ID = 2L
+    const val NOMIS_APPEARANCE_1_ID = 11L
+    const val NOMIS_APPEARANCE_2_ID = 22L
+    const val DPS_APPEARANCE_1_ID = "a04f7a8d-61aa-111a-9395-f4dc62f36ab0"
+    const val DPS_APPEARANCE_2_ID = "a04f7a8d-61aa-222a-9395-f4dc62f36ab0"
+    const val NOMIS_CHARGE_1_ID = 111L
+    const val NOMIS_CHARGE_2_ID = 222L
+    const val DPS_CHARGE_1_ID = "a04f7a8d-61aa-111c-9395-f4dc62f36ab0"
+    const val DPS_CHARGE_2_ID = "a04f7a8d-61aa-222c-9395-f4dc62f36ab0"
+    const val DPS_COURT_CASE_ID = "99C"
+    const val DPS_SENTENCE_ID = "a14f7a8d-61aa-111c-9395-f4dc62f36ab0"
+    const val DPS_TERM_ID = "b14f7a8d-61aa-111c-9395-f4dc62f36ab0"
+    const val DPS_TERM_2_ID = "b14f7a8d-61aa-111c-9395-f4dc62f36ab0"
+    const val NOMIS_SENTENCE_SEQUENCE_ID = 112L
+    const val NOMIS_TERM_SEQUENCE_ID = 111L
+    const val NOMIS_TERM_SEQUENCE_2_ID = 222L
+
+    fun dpsBookingCloneCreateResponseWithTwoAppearancesAndTwoCharges(): BookingCreateCourtCasesResponse {
+      val courtCaseIds: List<BookingCreateCourtCaseResponse> = listOf(
+        BookingCreateCourtCaseResponse(courtCaseUuid = DPS_COURT_CASE_ID, caseId = NOMIS_CASE_ID),
+      )
+      val courtChargesIds: List<BookingCreateChargeResponse> =
+        listOf(
+          BookingCreateChargeResponse(
+            chargeUuid = UUID.fromString(DPS_CHARGE_2_ID),
+            chargeNOMISId = NOMIS_CHARGE_2_ID,
+          ),
+          BookingCreateChargeResponse(
+            chargeUuid = UUID.fromString(DPS_CHARGE_1_ID),
+            chargeNOMISId = NOMIS_CHARGE_1_ID,
+          ),
+        )
+      val courtAppearancesIds: List<BookingCreateCourtAppearanceResponse> = listOf(
+        BookingCreateCourtAppearanceResponse(
+          appearanceUuid = UUID.fromString(DPS_APPEARANCE_2_ID),
+          eventId = NOMIS_APPEARANCE_2_ID,
+        ),
+        BookingCreateCourtAppearanceResponse(
+          appearanceUuid = UUID.fromString(DPS_APPEARANCE_1_ID),
+          eventId = NOMIS_APPEARANCE_1_ID,
+        ),
+      )
+      val sentenceIds: List<BookingCreateSentenceResponse> = listOf(
+        BookingCreateSentenceResponse(
+          sentenceUuid = UUID.fromString(DPS_SENTENCE_ID),
+          sentenceNOMISId = BookingSentenceId(
+            offenderBookingId = NOMIS_BOOKING_ID,
+            sequence = NOMIS_SENTENCE_SEQUENCE_ID.toInt(),
+          ),
+        ),
+      )
+      val sentenceTermIds: List<BookingCreatePeriodLengthResponse> = listOf(
+        BookingCreatePeriodLengthResponse(
+          periodLengthUuid = UUID.fromString(DPS_TERM_ID),
+          sentenceTermNOMISId = NomisPeriodLengthId(
+            offenderBookingId = NOMIS_BOOKING_ID,
+            sentenceSequence = NOMIS_SENTENCE_SEQUENCE_ID.toInt(),
+            termSequence = NOMIS_TERM_SEQUENCE_ID.toInt(),
+          ),
+        ),
+        BookingCreatePeriodLengthResponse(
+          periodLengthUuid = UUID.fromString(DPS_TERM_2_ID),
+          sentenceTermNOMISId = NomisPeriodLengthId(
+            offenderBookingId = NOMIS_BOOKING_ID,
+            sentenceSequence = NOMIS_SENTENCE_SEQUENCE_ID.toInt(),
+            termSequence = NOMIS_TERM_SEQUENCE_2_ID.toInt(),
+          ),
+        ),
+      )
+      return BookingCreateCourtCasesResponse(
+        courtCases = courtCaseIds,
+        appearances = courtAppearancesIds,
+        charges = courtChargesIds,
+        sentences = sentenceIds,
+        sentenceTerms = sentenceTermIds,
+      )
+    }
   }
 
   override fun beforeAll(context: ExtensionContext) {

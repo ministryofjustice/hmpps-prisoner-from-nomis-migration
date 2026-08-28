@@ -31,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.NOT_FOUND
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsBookingCloneCreateResponseWithTwoAppearancesAndTwoCharges
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyCreateCourtAppearance
@@ -50,9 +51,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchUpdateMappingResponseDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSentenceIdTuple
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtSentenceTermIdTuple
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceTermId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SimpleCourtSentencingIdTuple
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResponse
@@ -772,14 +779,38 @@ class CourtSentencingSynchronisationIntTest(
           courtSentencingMappingApiMockServer.stubReplaceOrCreateMappings()
 
           // update to DPS due to booking id change on case changing
-          courtSentencingMappingApiMockServer.stubGetByNomisId(nomisCourtCaseId = nomisCourtCaseUpdatedId, dpsCourtCaseId = dpsCourtCaseUpdatedId)
-          courtSentencingNomisApiMockServer.stubGetCourtCase(courtCaseId = nomisCourtCaseUpdatedId, offenderNo = OFFENDER_ID_DISPLAY, bookingId = NOMIS_BOOKING_ID)
+          courtSentencingMappingApiMockServer.stubGetByNomisId(
+            nomisCourtCaseId = nomisCourtCaseUpdatedId,
+            dpsCourtCaseId = dpsCourtCaseUpdatedId,
+          )
+          courtSentencingNomisApiMockServer.stubGetCourtCase(
+            courtCaseId = nomisCourtCaseUpdatedId,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            bookingId = NOMIS_BOOKING_ID,
+          )
           dpsCourtSentencingServer.stubPutCourtCaseForUpdate(courtCaseId = dpsCourtCaseUpdatedId)
 
           // update to DPS due to booking id change on sentence changing
-          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(nomisSentenceSequence = nomisSentenceSequence, nomisBookingId = NOMIS_BOOKING_ID, dpsSentenceId = dpsSentenceUpdateId)
-          courtSentencingNomisApiMockServer.stubGetSentence(offenderNo = OFFENDER_ID_DISPLAY, caseId = nomisCourtCaseUpdatedId, bookingId = NOMIS_BOOKING_ID, sentenceSequence = nomisSentenceSequence, response = sentenceResponse(bookingId = NOMIS_BOOKING_ID, sentenceSequence = nomisSentenceSequence, eventId = NOMIS_COURT_APPEARANCE_ID))
-          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID, dpsCourtAppearanceId = dpsCourtAppearanceId)
+          courtSentencingMappingApiMockServer.stubGetSentenceByNomisId(
+            nomisSentenceSequence = nomisSentenceSequence,
+            nomisBookingId = NOMIS_BOOKING_ID,
+            dpsSentenceId = dpsSentenceUpdateId,
+          )
+          courtSentencingNomisApiMockServer.stubGetSentence(
+            offenderNo = OFFENDER_ID_DISPLAY,
+            caseId = nomisCourtCaseUpdatedId,
+            bookingId = NOMIS_BOOKING_ID,
+            sentenceSequence = nomisSentenceSequence,
+            response = sentenceResponse(
+              bookingId = NOMIS_BOOKING_ID,
+              sentenceSequence = nomisSentenceSequence,
+              eventId = NOMIS_COURT_APPEARANCE_ID,
+            ),
+          )
+          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+            dpsCourtAppearanceId = dpsCourtAppearanceId,
+          )
           dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = dpsSentenceUpdateId)
 
           courtSentencingOffenderEventsQueue.sendMessage(
@@ -799,6 +830,86 @@ class CourtSentencingSynchronisationIntTest(
                       ),
                     ),
                   ),
+                ),
+                updatedMappings = CourtCaseBatchUpdateMappingResponseDto(
+                  courtCases = [
+                    SimpleCourtSentencingIdTuple(
+                      fromNomisId = CourtSentencingDpsApiExtension.NOMIS_CASE_ID,
+                      toNomisId = 101,
+                      dpsId = "1b0a031e-dc57-4273-bb9f-c45ea3f68585",
+                    ),
+                  ],
+                  courtAppearances = [
+                    SimpleCourtSentencingIdTuple(
+                      fromNomisId = CourtSentencingDpsApiExtension.NOMIS_APPEARANCE_1_ID,
+                      toNomisId = 201,
+                      dpsId = "f06f9e3c-e589-42a2-924b-399cda685e7c",
+                    ), SimpleCourtSentencingIdTuple(
+                      fromNomisId = CourtSentencingDpsApiExtension.NOMIS_APPEARANCE_2_ID,
+                      toNomisId = 202,
+                      dpsId = "dbe388e7-155d-463b-818f-d65a4a9ebb66",
+                    ),
+                  ],
+                  courtCharges = [
+                    SimpleCourtSentencingIdTuple(
+                      fromNomisId = CourtSentencingDpsApiExtension.NOMIS_CHARGE_1_ID,
+                      toNomisId = 301,
+                      dpsId = "c2d4af3e-b62d-4abf-bbfe-95e6a88d982b",
+                    ), SimpleCourtSentencingIdTuple(
+                      fromNomisId = CourtSentencingDpsApiExtension.NOMIS_CHARGE_2_ID,
+                      toNomisId = 302,
+                      dpsId = "be53210a-cf78-49d2-ae0a-f9ece0b9e9e8",
+                    ),
+                  ],
+                  sentences = [
+                    CourtSentenceIdTuple(
+                      fromNomisId = SentenceId(
+                        nomisBookingId = CourtSentencingDpsApiExtension.NOMIS_BOOKING_ID,
+                        nomisSequence = CourtSentencingDpsApiExtension.NOMIS_SENTENCE_SEQUENCE_ID.toInt(),
+                      ),
+                      toNomisId = SentenceId(
+                        nomisBookingId = 1001,
+                        nomisSequence = 1,
+                      ),
+                      dpsId = "63f84c2e-a777-4f0b-9e79-9e37b8ed3817",
+                    ),
+                  ],
+                  sentenceTerms = [
+                    CourtSentenceTermIdTuple(
+                      fromNomisId = SentenceTermId(
+                        nomisSentenceId = SentenceId(
+                          nomisBookingId = CourtSentencingDpsApiExtension.NOMIS_BOOKING_ID,
+                          nomisSequence = CourtSentencingDpsApiExtension.NOMIS_SENTENCE_SEQUENCE_ID.toInt(),
+                        ),
+                        nomisSequence = CourtSentencingDpsApiExtension.NOMIS_TERM_SEQUENCE_ID.toInt(),
+                      ),
+                      toNomisId = SentenceTermId(
+                        nomisSentenceId = SentenceId(
+                          nomisBookingId = 1001,
+                          nomisSequence = 1,
+                        ),
+                        nomisSequence = 10,
+                      ),
+                      dpsId = "f3c5e8d0-2b6a-4f7e-9c3b-8e5f6d7a9b2c",
+                    ),
+                    CourtSentenceTermIdTuple(
+                      fromNomisId = SentenceTermId(
+                        nomisSentenceId = SentenceId(
+                          nomisBookingId = CourtSentencingDpsApiExtension.NOMIS_BOOKING_ID,
+                          nomisSequence = CourtSentencingDpsApiExtension.NOMIS_SENTENCE_SEQUENCE_ID.toInt(),
+                        ),
+                        nomisSequence = CourtSentencingDpsApiExtension.NOMIS_TERM_SEQUENCE_2_ID.toInt(),
+                      ),
+                      toNomisId = SentenceTermId(
+                        nomisSentenceId = SentenceId(
+                          nomisBookingId = 1001,
+                          nomisSequence = 1,
+                        ),
+                        nomisSequence = 11,
+                      ),
+                      dpsId = "f3c5e8d0-2b6a-4f7e-9c3b-8e5f6d7a9b2c",
+                    ),
+                  ],
                 ),
               ).toJson(),
             ).toJson(),
@@ -839,6 +950,102 @@ class CourtSentencingSynchronisationIntTest(
               assertThat(it["nomisCaseIds"]).isEqualTo("$NOMIS_COURT_CASE_ID")
               assertThat(it["toBookingId"]).isEqualTo("$NOMIS_BOOKING_ID")
               assertThat(it["fromBookingId"]).isEqualTo("54321")
+            },
+            isNull(),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for each id change`() {
+          verify(telemetryClient).trackEvent(
+            eq("court-case-clone-case-ids"),
+            check {
+              assertThat(it["previousBookingNomisId"]).isEqualTo(CourtSentencingDpsApiExtension.NOMIS_CASE_ID.toString())
+              assertThat(it["currentBookingNomisId"]).isEqualTo("101")
+              assertThat(it["previousBookingDpsId"]).isEqualTo(CourtSentencingDpsApiExtension.DPS_COURT_CASE_ID)
+              assertThat(it["currentBookingDpsId"]).isEqualTo("1b0a031e-dc57-4273-bb9f-c45ea3f68585")
+            },
+            isNull(),
+          )
+          verify(telemetryClient).trackEvent(
+            eq("court-case-clone-appearance-ids"),
+            check {
+              assertThat(it["previousBookingNomisId"]).isEqualTo(CourtSentencingDpsApiExtension.NOMIS_APPEARANCE_1_ID.toString())
+              assertThat(it["currentBookingNomisId"]).isEqualTo("201")
+              assertThat(it["previousBookingDpsId"]).isEqualTo(CourtSentencingDpsApiExtension.DPS_APPEARANCE_1_ID)
+              assertThat(it["currentBookingDpsId"]).isEqualTo("f06f9e3c-e589-42a2-924b-399cda685e7c")
+            },
+            isNull(),
+          )
+          verify(telemetryClient).trackEvent(
+            eq("court-case-clone-appearance-ids"),
+            check {
+              assertThat(it["previousBookingNomisId"]).isEqualTo(CourtSentencingDpsApiExtension.NOMIS_APPEARANCE_2_ID.toString())
+              assertThat(it["currentBookingNomisId"]).isEqualTo("202")
+              assertThat(it["previousBookingDpsId"]).isEqualTo(CourtSentencingDpsApiExtension.DPS_APPEARANCE_2_ID)
+              assertThat(it["currentBookingDpsId"]).isEqualTo("dbe388e7-155d-463b-818f-d65a4a9ebb66")
+            },
+            isNull(),
+          )
+          verify(telemetryClient).trackEvent(
+            eq("court-case-clone-charge-ids"),
+            check {
+              assertThat(it["previousBookingNomisId"]).isEqualTo(CourtSentencingDpsApiExtension.NOMIS_CHARGE_1_ID.toString())
+              assertThat(it["currentBookingNomisId"]).isEqualTo("301")
+              assertThat(it["previousBookingDpsId"]).isEqualTo(CourtSentencingDpsApiExtension.DPS_CHARGE_1_ID)
+              assertThat(it["currentBookingDpsId"]).isEqualTo("c2d4af3e-b62d-4abf-bbfe-95e6a88d982b")
+            },
+            isNull(),
+          )
+          verify(telemetryClient).trackEvent(
+            eq("court-case-clone-charge-ids"),
+            check {
+              assertThat(it["previousBookingNomisId"]).isEqualTo(CourtSentencingDpsApiExtension.NOMIS_CHARGE_2_ID.toString())
+              assertThat(it["currentBookingNomisId"]).isEqualTo("302")
+              assertThat(it["previousBookingDpsId"]).isEqualTo(CourtSentencingDpsApiExtension.DPS_CHARGE_2_ID)
+              assertThat(it["currentBookingDpsId"]).isEqualTo("be53210a-cf78-49d2-ae0a-f9ece0b9e9e8")
+            },
+            isNull(),
+          )
+
+          verify(telemetryClient).trackEvent(
+            eq("court-case-clone-sentence-ids"),
+            check {
+              assertThat(it["previousBookingNomisBookingId"]).isEqualTo(CourtSentencingDpsApiExtension.NOMIS_BOOKING_ID.toString())
+              assertThat(it["previousBookingNomisSequence"]).isEqualTo(CourtSentencingDpsApiExtension.NOMIS_SENTENCE_SEQUENCE_ID.toString())
+              assertThat(it["currentBookingNomisBookingId"]).isEqualTo("1001")
+              assertThat(it["currentBookingNomisSequence"]).isEqualTo("1")
+              assertThat(it["previousBookingDpsId"]).isEqualTo(CourtSentencingDpsApiExtension.DPS_SENTENCE_ID)
+              assertThat(it["currentBookingDpsId"]).isEqualTo("63f84c2e-a777-4f0b-9e79-9e37b8ed3817")
+            },
+            isNull(),
+          )
+
+          verify(telemetryClient).trackEvent(
+            eq("court-case-clone-sentence-term-ids"),
+            check {
+              assertThat(it["previousBookingNomisBookingId"]).isEqualTo(CourtSentencingDpsApiExtension.NOMIS_BOOKING_ID.toString())
+              assertThat(it["previousBookingNomisSequence"]).isEqualTo(CourtSentencingDpsApiExtension.NOMIS_SENTENCE_SEQUENCE_ID.toString())
+              assertThat(it["previousBookingNomisTermSequence"]).isEqualTo(CourtSentencingDpsApiExtension.NOMIS_TERM_SEQUENCE_ID.toString())
+              assertThat(it["currentBookingNomisBookingId"]).isEqualTo("1001")
+              assertThat(it["currentBookingNomisSequence"]).isEqualTo("1")
+              assertThat(it["currentBookingNomisTermSequence"]).isEqualTo("10")
+              assertThat(it["previousBookingDpsId"]).isEqualTo(CourtSentencingDpsApiExtension.DPS_TERM_ID)
+              assertThat(it["currentBookingDpsId"]).isEqualTo("f3c5e8d0-2b6a-4f7e-9c3b-8e5f6d7a9b2c")
+            },
+            isNull(),
+          )
+          verify(telemetryClient).trackEvent(
+            eq("court-case-clone-sentence-term-ids"),
+            check {
+              assertThat(it["previousBookingNomisBookingId"]).isEqualTo(CourtSentencingDpsApiExtension.NOMIS_BOOKING_ID.toString())
+              assertThat(it["previousBookingNomisSequence"]).isEqualTo(CourtSentencingDpsApiExtension.NOMIS_SENTENCE_SEQUENCE_ID.toString())
+              assertThat(it["previousBookingNomisTermSequence"]).isEqualTo(CourtSentencingDpsApiExtension.NOMIS_TERM_SEQUENCE_2_ID.toString())
+              assertThat(it["currentBookingNomisBookingId"]).isEqualTo("1001")
+              assertThat(it["currentBookingNomisSequence"]).isEqualTo("1")
+              assertThat(it["currentBookingNomisTermSequence"]).isEqualTo("11")
+              assertThat(it["previousBookingDpsId"]).isEqualTo(CourtSentencingDpsApiExtension.DPS_TERM_2_ID)
+              assertThat(it["currentBookingDpsId"]).isEqualTo("f3c5e8d0-2b6a-4f7e-9c3b-8e5f6d7a9b2c")
             },
             isNull(),
           )
