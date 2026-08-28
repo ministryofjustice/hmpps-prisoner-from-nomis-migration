@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-25.429.b676ba4"
+    "version" : "2026-08-27.439.b52d1f4"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -1365,6 +1365,29 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/HospitalDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courts" : {
+      "get" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Get all courts",
+        "description" : "Information on all courts",
+        "operationId" : "getCourts",
+        "responses" : {
+          "200" : {
+            "description" : "Successful Operation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CourtDto"
+                  }
                 }
               }
             }
