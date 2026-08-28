@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchUpdateMappingResponseDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.sentencing.SentencingAdjustmentsSynchronisationService
 import java.time.LocalDateTime
@@ -276,6 +277,13 @@ data class OffenderCaseBookingResynchronisationEvent(
   val toBookingId: Long = 0,
   val caseIds: List<Long>,
   val casesMoved: List<CaseBookingChanged> = emptyList(),
+  val updatedMappings: CourtCaseBatchUpdateMappingResponseDto = CourtCaseBatchUpdateMappingResponseDto(
+    courtCases = emptyList(),
+    courtAppearances = emptyList(),
+    courtCharges = emptyList(),
+    sentences = emptyList(),
+    sentenceTerms = emptyList(),
+  ),
 )
 
 data class CaseBookingChanged(
