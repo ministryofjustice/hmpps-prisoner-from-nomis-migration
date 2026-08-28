@@ -60,7 +60,11 @@ class TransferScheduleMigrationService(
   jsonMapper = jsonMapper,
 ) {
 
-  override suspend fun getTotalNumberOfIds(migrationFilter: TransferSchedulerMigrationFilter): Long = nomisApi.getPrisonerIds(0, 1).totalElements
+  override suspend fun getTotalNumberOfIds(migrationFilter: TransferSchedulerMigrationFilter): Long = if (migrationFilter.prisonerNumber.isNullOrBlank()) {
+    nomisApi.getPrisonerIds(0, 1).totalElements
+  } else {
+    1L
+  }
 
   override suspend fun getRangeOfIds(
     body: TransferSchedulerMigrationFilter,
@@ -72,7 +76,7 @@ class TransferScheduleMigrationService(
     firstId: PrisonNumberAndRootOffenderId?,
     lastId: PrisonNumberAndRootOffenderId?,
     migrationFilter: TransferSchedulerMigrationFilter,
-  ): List<PrisonNumberAndRootOffenderId> = if (migrationFilter.prisonerNumber == null) {
+  ): List<PrisonNumberAndRootOffenderId> = if (migrationFilter.prisonerNumber.isNullOrBlank()) {
     nomisApi.getAllPrisonersInRange(firstId!!.rootOffenderId, lastId!!.rootOffenderId)
   } else {
     // If a single prisoner migration is requested, then we'll trust the input as we're probably testing. Pretend that we called nomis-prisoner-api which found a single prisoner.
