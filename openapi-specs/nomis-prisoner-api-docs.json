@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-28.1988.9f06031"
+    "version" : "2026-08-28.1992.b5a61c4"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -23122,6 +23122,117 @@
         }
       }
     },
+    "/finance/prisoners/holds/{prisonNumber}" : {
+      "get" : {
+        "tags" : [ "prisoner-holds-resource" ],
+        "summary" : "Gets all holds for a prisoner",
+        "description" : "Gets all outstanding holds (HOA and WHF) for a prisoner by prisonNumber. Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW.",
+        "operationId" : "getPrisonerHolds",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "Prison number aka nomisId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prison number aka nomisId",
+            "example" : "A1234BC"
+          },
+          "example" : "A1234BC"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "paged list of prisoner ids",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PrisonerHoldProjection"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint when role NOMIS_PRISONER_API__SYNCHRONISATION__RW not present",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/prisoners/holds/rootOffenderId/{rootOffenderId}" : {
+      "get" : {
+        "tags" : [ "prisoner-holds-resource" ],
+        "summary" : "Gets all holds for a prisoner using their root offenderId",
+        "description" : "Gets all outstanding holds (HOA and WHF) for a prisoner by rootOffenderId. Requires role NOMIS_PRISONER_API__SYNCHRONISATION__RW.",
+        "operationId" : "getPrisonerHoldsByOffenderId",
+        "parameters" : [ {
+          "name" : "rootOffenderId",
+          "in" : "path",
+          "description" : "rootOffenderId",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "rootOffenderId",
+            "example" : 123456
+          },
+          "example" : 123456
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "paged list of prisoner ids",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PrisonerHoldProjection"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint when role NOMIS_PRISONER_API__SYNCHRONISATION__RW not present",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/finance/prison/{prisonId}/balance" : {
       "get" : {
         "tags" : [ "prison-balance-resource" ],
@@ -34726,12 +34837,12 @@
             "type" : "integer",
             "format" : "int32"
           },
+          "paged" : {
+            "type" : "boolean"
+          },
           "pageNumber" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "paged" : {
-            "type" : "boolean"
           },
           "unpaged" : {
             "type" : "boolean"
@@ -41380,6 +41491,40 @@
           }
         },
         "required" : [ "lastOffenderId", "rootOffenderIds" ]
+      },
+      "PrisonerHoldProjection" : {
+        "type" : "object",
+        "properties" : {
+          "clientUniqueRef" : {
+            "type" : "string"
+          },
+          "holdNumber" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "txnEntrySeq" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "txnId" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "txnEntryDate" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "txnEntryDesc" : {
+            "type" : "string"
+          },
+          "txnReferenceNumber" : {
+            "type" : "string"
+          },
+          "txnEntryAmount" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "txnEntryAmount", "txnEntryDate", "txnEntrySeq", "txnId" ]
       },
       "PrisonAccountBalanceDto" : {
         "type" : "object",
