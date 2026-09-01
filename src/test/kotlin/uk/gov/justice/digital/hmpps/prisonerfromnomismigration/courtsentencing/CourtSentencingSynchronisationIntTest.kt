@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
 import org.mockito.Mockito.eq
+import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.check
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
@@ -30,6 +31,7 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.NOT_FOUND
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsBookingCloneCreateResponseWithTwoAppearancesAndTwoCharges
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
@@ -64,6 +66,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RecallCustodyDate
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.HmppsDomainEventEmitter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.math.BigDecimal
@@ -90,6 +93,9 @@ class CourtSentencingSynchronisationIntTest(
   @Autowired private val courtSentencingNomisApiMockServer: CourtSentencingNomisApiMockServer,
   @Autowired private val courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer,
 ) : CourtSentencingIntegrationTestBase() {
+
+  @MockitoBean
+  private lateinit var domainEventEmitter: HmppsDomainEventEmitter
 
   @Autowired
   private lateinit var jsonMapper: JsonMapper
@@ -771,6 +777,10 @@ class CourtSentencingSynchronisationIntTest(
         val dpsSentenceUpdateId = "fe31eba3-3bc2-4092-badd-4eddc0faa1eb"
         val dpsCourtAppearanceId = "9164b690-a3c3-486a-b413-07084d869cbf"
 
+        private val offenderNoCaptor = argumentCaptor<String>()
+        private val previousBookingAppearanceIdCaptor = argumentCaptor<String>()
+        private val currentBookingAppearanceIdCaptor = argumentCaptor<String>()
+
         @BeforeEach
         fun setUp() {
           // create in DPS of court case from previous booking
@@ -952,6 +962,25 @@ class CourtSentencingSynchronisationIntTest(
               assertThat(it["fromBookingId"]).isEqualTo("54321")
             },
             isNull(),
+          )
+        }
+
+        @Test
+        fun `will publish clone domain event`() {
+          verify(domainEventEmitter, times(2)).emitCourtAppearanceClone(
+            offenderNo = offenderNoCaptor.capture(),
+            previousBookingAppearanceId = previousBookingAppearanceIdCaptor.capture(),
+            currentBookingAppearanceId = currentBookingAppearanceIdCaptor.capture(),
+          )
+
+          assertThat(offenderNoCaptor.allValues).containsExactly(OFFENDER_ID_DISPLAY, OFFENDER_ID_DISPLAY)
+          assertThat(previousBookingAppearanceIdCaptor.allValues).containsExactlyInAnyOrder(
+            CourtSentencingDpsApiExtension.DPS_APPEARANCE_1_ID,
+            CourtSentencingDpsApiExtension.DPS_APPEARANCE_2_ID,
+          )
+          assertThat(currentBookingAppearanceIdCaptor.allValues).containsExactlyInAnyOrder(
+            "f06f9e3c-e589-42a2-924b-399cda685e7c",
+            "dbe388e7-155d-463b-818f-d65a4a9ebb66",
           )
         }
 
