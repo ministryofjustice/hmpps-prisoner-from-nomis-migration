@@ -44,6 +44,11 @@ dependencies {
   implementation("io.opentelemetry:opentelemetry-extension-kotlin:1.62.0")
 
   runtimeOnly("org.postgresql:r2dbc-postgresql:1.1.2.RELEASE")
+  // Pin scram for CVE-2026-53712 whilst waiting for postgresql 1.1.3
+  constraints {
+    implementation("com.ongres.scram:scram-client:3.3")
+    implementation("com.ongres.scram:scram-common:3.3")
+  }
   runtimeOnly("org.springframework.boot:spring-boot-starter-jdbc")
   runtimeOnly("org.postgresql:postgresql:42.7.13")
   runtimeOnly("org.flywaydb:flyway-database-postgresql")
