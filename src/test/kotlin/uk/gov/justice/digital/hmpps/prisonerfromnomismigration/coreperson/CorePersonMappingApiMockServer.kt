@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
@@ -57,6 +58,16 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubReplaceMappings() {
+    mappingApi.stubFor(
+      post("/mapping/core-person/replace").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(200),
+      ),
+    )
+  }
+
   fun stubGetCorePersonByNomisPrisonNumberOrNull(
     nomisPrisonNumber: String = "A1234BC",
     mapping: CorePersonMappingDto,
@@ -72,4 +83,6 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
       )
     }
   }
+
+  fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
 }
