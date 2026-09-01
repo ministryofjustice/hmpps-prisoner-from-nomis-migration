@@ -29,7 +29,7 @@ class HmppsDomainEventEmitter(
     const val COURT_APPEARANCE_CLONE_EVENT_TYPE = "nomis-sync.court-appearance.cloned"
   }
 
-  private val publishQueue by lazy { hmppsQueueService.findByTopicId("hmppseventtopic") as HmppsTopic }
+  private val domainEventsTopic by lazy { hmppsQueueService.findByTopicId("hmppseventtopic") as HmppsTopic }
 
   private fun <T : PrisonerAdditionalInformation> PrisonerDomainEvent<T>.publish() {
     val event = PrisonerDomainEvent(
@@ -40,12 +40,10 @@ class HmppsDomainEventEmitter(
       description = this.description,
     )
 
-    val domainEvent = DomainEvent(eventType = event.eventType, body = jsonMapper.writeValueAsString(event))
-
     runCatching {
-      publishQueue.publish(
+      domainEventsTopic.publish(
         event.eventType,
-        jsonMapper.writeValueAsString(domainEvent),
+        jsonMapper.writeValueAsString(event),
       )
       telemetryClient.trackEvent(event.eventType, event.asMap(), null)
     }.onFailure {
