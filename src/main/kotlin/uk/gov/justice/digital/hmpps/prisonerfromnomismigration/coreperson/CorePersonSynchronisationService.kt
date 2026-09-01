@@ -12,6 +12,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 class CorePersonSynchronisationService(
   override val telemetryClient: TelemetryClient,
   private val corePersonCprApiService: CorePersonCprApiService,
+  private val corePersonNomisApiService: CorePersonNomisApiService,
+  private val corePersonMappingService: CorePersonMappingService,
 ) : TelemetryEnabled {
   suspend fun synchronisePrisonerMerge(prisonerMergeEvent: PrisonerMergeDomainEvent) {
     val bookingId = prisonerMergeEvent.additionalInformation.bookingId
@@ -24,6 +26,15 @@ class CorePersonSynchronisationService(
     )
     corePersonCprApiService.processPrisonMerge(offenderNo, prisonerMergeEvent.additionalInformation.toPrisonMerge())
     telemetryClient.trackEvent("coreperson-prisoner-merge-synchronisation", telemetry)
+  }
+
+  suspend fun resynchroniseAliasesAndIdentifiers(prisonNumber: String) {
+    val aliasesAndIdentifiers = corePersonNomisApiService.getCorePerson(nomisPrisonNumber = prisonNumber).offenders
+    val mapping = corePersonCprApiService.migrateCorePersonAliasesAndIdentifiers(
+      prisonNumber,
+      aliasesAndIdentifiers.toMigrateAliasesAndIdentifiersRequest(),
+    ).toCorePersonMappingsDto()
+    corePersonMappingService.replaceMappings(mapping)
   }
 }
 

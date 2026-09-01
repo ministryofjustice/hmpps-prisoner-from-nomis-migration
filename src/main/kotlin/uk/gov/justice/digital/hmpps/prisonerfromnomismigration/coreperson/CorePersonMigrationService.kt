@@ -26,7 +26,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderAliasMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRangeMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
@@ -91,11 +90,10 @@ class CorePersonMigrationService(
     alreadyMigratedMapping?.run {
       log.info("Will not migrate the prisoner=$nomisPrisonNumber since it was already mapped to CPR $cprId during migration $label")
     } ?: run {
-      val aliases = corePersonNomisApiService.getCorePerson(nomisPrisonNumber = prisonNumber).offenders ?: emptyList()
-      val identifiers = aliases.flatMap { it.identifiers }
+      val aliasesAndIdentifiers = corePersonNomisApiService.getCorePerson(nomisPrisonNumber = prisonNumber).offenders
       val response = cprApiService.migrateCorePersonAliasesAndIdentifiers(
         prisonNumber,
-        toMigrateAliasesAndIdentifiersRequest(aliases, identifiers),
+        aliasesAndIdentifiers.toMigrateAliasesAndIdentifiersRequest(),
       )
       val mapping = response.toCorePersonMappingsDto(migrationId = context.migrationId)
       createMappingOrOnFailureDo(context, mapping) {
@@ -154,15 +152,14 @@ class CorePersonMigrationService(
 
   override fun parseContextFilter(json: String): MigrationMessage<*, Any> = jsonMapper.readValue(json)
   override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<Any, ByLastId<PrisonNumberAndRootOffenderId>>> = jsonMapper.readValue(json)
-
   override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonNumberAndRootOffenderId> = jsonMapper.readValue(json)
-
   override fun parseContextMapping(json: String): MigrationMessage<*, CorePersonMappingsDto> = jsonMapper.readValue(json)
+}
 
-  private fun toMigrateAliasesAndIdentifiersRequest(
-    aliases: List<CoreOffender>,
-    identifiers: List<Identifier>,
-  ): PrisonAliasesAndIdentifiersRequest = PrisonAliasesAndIdentifiersRequest(
+fun List<CoreOffender>?.toMigrateAliasesAndIdentifiersRequest(): PrisonAliasesAndIdentifiersRequest {
+  val aliases = this ?: emptyList()
+  val identifiers = aliases.flatMap { it.identifiers }
+  return PrisonAliasesAndIdentifiersRequest(
     aliases = aliases.map {
       PrisonAlias(
         firstName = it.firstName,
@@ -191,37 +188,36 @@ class CorePersonMigrationService(
       )
     },
   )
-
-  fun SysconAliasesAndIdentifiersResponseBody.toCorePersonMappingsDto(
-    whenCreated: String = LocalDateTime.now().toString(),
-    migrationId: String,
-  ) = CorePersonMappingsDto(
-    mappingType = CorePersonMappingsDto.MappingType.MIGRATED,
-    label = migrationId,
-    personMapping = CorePersonMappingIdDto(
-      cprId = prisonNumber,
-      nomisPrisonNumber = prisonNumber,
-    ),
-    aliases = aliasesMappings.map {
-      OffenderAliasMappingDto(
-        cprId = it.cprAliasId,
-        nomisOffenderId = it.nomisOffenderId,
-        nomisPrisonNumber = prisonNumber,
-        mappingType = OffenderAliasMappingDto.MappingType.MIGRATED,
-        label = migrationId,
-        whenCreated = whenCreated,
-      )
-    },
-    identifiers = identifiersMappings.map {
-      OffenderIdentifierMappingDto(
-        cprId = it.cprIdentifierId,
-        nomisOffenderId = it.nomisIdentifierId.nomisOffenderId,
-        nomisIdentifierSequence = it.nomisIdentifierId.nomisSequence,
-        nomisPrisonNumber = prisonNumber,
-        mappingType = OffenderIdentifierMappingDto.MappingType.MIGRATED,
-        label = migrationId,
-        whenCreated = whenCreated,
-      )
-    },
-  )
 }
+
+fun SysconAliasesAndIdentifiersResponseBody.toCorePersonMappingsDto(
+  migrationId: String? = null,
+) = CorePersonMappingsDto(
+  mappingType = CorePersonMappingsDto.MappingType.MIGRATED,
+  label = migrationId,
+  personMapping = CorePersonMappingIdDto(
+    cprId = prisonNumber,
+    nomisPrisonNumber = prisonNumber,
+  ),
+  aliases = aliasesMappings.map {
+    OffenderAliasMappingDto(
+      cprId = it.cprAliasId,
+      nomisOffenderId = it.nomisOffenderId,
+      nomisPrisonNumber = prisonNumber,
+      mappingType = OffenderAliasMappingDto.MappingType.MIGRATED,
+      label = migrationId,
+      whenCreated = LocalDateTime.now().toString(),
+    )
+  },
+  identifiers = identifiersMappings.map {
+    OffenderIdentifierMappingDto(
+      cprId = it.cprIdentifierId,
+      nomisOffenderId = it.nomisIdentifierId.nomisOffenderId,
+      nomisIdentifierSequence = it.nomisIdentifierId.nomisSequence,
+      nomisPrisonNumber = prisonNumber,
+      mappingType = OffenderIdentifierMappingDto.MappingType.MIGRATED,
+      label = migrationId,
+      whenCreated = LocalDateTime.now().toString(),
+    )
+  },
+)
