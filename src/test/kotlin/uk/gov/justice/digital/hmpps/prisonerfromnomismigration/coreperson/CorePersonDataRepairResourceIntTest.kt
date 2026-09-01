@@ -13,6 +13,12 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.NomisIdentifierId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconIdentifierMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderAliasMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Identifier
@@ -87,10 +93,30 @@ class CorePersonDataRepairResourceIntTest(
         ),
       )
 
+      private val aliasesMapping = listOf(
+        SysconAliasMapping(
+          nomisOffenderId = 10000L,
+          cprAliasId = "7981274e-bcb6-4879-9712-4164743f2ee4",
+        ),
+      )
+      private val identifiersMapping = listOf(
+        SysconIdentifierMapping(
+          nomisIdentifierId = NomisIdentifierId(
+            nomisOffenderId = 10000L,
+            nomisSequence = 1,
+          ),
+          cprIdentifierId = "84cdb577-63da-44e6-9293-150dc7d5cd14",
+        ),
+      )
+
       @BeforeEach
       fun setUp() {
         nomisApiMockServer.stubGetAliasesAndIdentifiers(prisonNumber, aliasesAndIdentifiers = aliasesAndIdentifiers)
-        cprApiMock.stubMigrateAliasesAndIdentifiers(prisonNumber)
+        cprApiMock.stubMigrateAliasesAndIdentifiers(
+          nomisPrisonNumber = prisonNumber,
+          aliasMappings = aliasesMapping,
+          identifierMappings = identifiersMapping,
+        )
         mappingApiMockServer.stubReplaceMappings()
 
         webTestClient.post().uri("/prisoners/$prisonNumber/core-person/aliases-identifiers/repair")
@@ -119,7 +145,10 @@ class CorePersonDataRepairResourceIntTest(
             .withRequestBodyJsonPath("aliases[0].isPrimary", true)
             .withRequestBodyJsonPath("aliases[0].ethnicity", "A1")
             .withRequestBodyJsonPath("aliases[0].createDate", LocalDate.of(2001, 3, 3))
-            .withRequestBodyJsonPath("identifiers[0].nomisIdentifierId.nomisOffenderId", aliasesAndIdentifiers[0].offenderId)
+            .withRequestBodyJsonPath(
+              "identifiers[0].nomisIdentifierId.nomisOffenderId",
+              aliasesAndIdentifiers[0].offenderId,
+            )
             .withRequestBodyJsonPath("identifiers[0].nomisIdentifierId.nomisSequence", 1)
             .withRequestBodyJsonPath("identifiers[0].type", "PNC")
             .withRequestBodyJsonPath("identifiers[0].value", "20/0071818T")
@@ -130,11 +159,19 @@ class CorePersonDataRepairResourceIntTest(
       }
 
       @Test
-      fun `will replace mappings`() {
+      fun `will replace mappings with the correct mapping type`() {
         mappingApiMockServer.verify(
           WireMock.postRequestedFor(
             WireMock.urlPathEqualTo("/mapping/core-person/replace"),
-          ),
+          ).withRequestBodyJsonPath("mappingType", CorePersonMappingsDto.MappingType.NOMIS_CREATED.toString())
+            .withRequestBodyJsonPath(
+              "aliases[0].mappingType",
+              OffenderAliasMappingDto.MappingType.NOMIS_CREATED.toString(),
+            )
+            .withRequestBodyJsonPath(
+              "identifiers[0].mappingType",
+              OffenderIdentifierMappingDto.MappingType.NOMIS_CREATED.toString(),
+            ),
         )
       }
 

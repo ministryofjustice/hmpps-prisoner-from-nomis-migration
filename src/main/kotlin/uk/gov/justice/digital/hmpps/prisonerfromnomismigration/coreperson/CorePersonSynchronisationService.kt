@@ -7,6 +7,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MergeAdditio
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
 
 @Service
 class CorePersonSynchronisationService(
@@ -33,7 +34,7 @@ class CorePersonSynchronisationService(
     val mapping = corePersonCprApiService.migrateCorePersonAliasesAndIdentifiers(
       prisonNumber,
       aliasesAndIdentifiers.toMigrateAliasesAndIdentifiersRequest(),
-    ).toCorePersonMappingsDto()
+    ).toCorePersonMappingsDto(migrationType = CorePersonMappingsDto.MappingType.NOMIS_CREATED)
     corePersonMappingService.replaceMappings(mapping)
   }
 }
