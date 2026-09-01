@@ -30,7 +30,7 @@ object LocalStackContainer {
     return LocalStackContainer(
       DockerImageName.parse("localstack/localstack").withTag("4"),
     ).apply {
-      withServices(LocalStackContainer.Service.SQS)
+      withServices(LocalStackContainer.Service.SQS, LocalStackContainer.Service.SNS)
       withEnv("HOSTNAME_EXTERNAL", "localhost")
       withEnv("DEFAULT_REGION", "eu-west-2")
       waitingFor(

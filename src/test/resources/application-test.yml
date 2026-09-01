@@ -259,6 +259,10 @@ hmpps.sqs:
     migrationtransfermovements:
       errorVisibilityTimeout: 0
       dlqMaxReceiveCount: 1
+  topics:
+    hmppseventtopic:
+      arn: arn:aws:sns:eu-west-2:000000000000:${random.uuid}
+      propagateTracing: false
 
 springdoc:
   api-docs:

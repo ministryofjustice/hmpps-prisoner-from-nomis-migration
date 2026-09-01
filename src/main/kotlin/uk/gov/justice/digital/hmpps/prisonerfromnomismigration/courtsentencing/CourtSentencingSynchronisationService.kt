@@ -48,6 +48,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.HmppsDomainEventEmitter
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -61,6 +62,7 @@ class CourtSentencingSynchronisationService(
   private val queueService: SynchronisationQueueService,
   override val telemetryClient: TelemetryClient,
   private val courtSentencingMappingApiService: CourtSentencingMappingApiService,
+  private val domainEventEmitter: HmppsDomainEventEmitter,
 ) : TelemetryEnabled {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -1571,7 +1573,7 @@ class CourtSentencingSynchronisationService(
           courtCases = dpsCases,
         ),
       )
-        .also { it.logAndNotifyCaseIdChanges(event.updatedMappings) }
+        .also { it.logAndNotifyCaseIdChanges(event.offenderNo, event.updatedMappings) }
         .also { dpsCourtCaseCreateResponse ->
           createCaseBookingCloneMapping(
             offenderNo = event.offenderNo,
@@ -1585,12 +1587,13 @@ class CourtSentencingSynchronisationService(
     )
   }
 
-  private fun BookingCreateCourtCasesResponse.logAndNotifyCaseIdChanges(updatedMappings: CourtCaseBatchUpdateMappingResponseDto) {
+  private fun BookingCreateCourtCasesResponse.logAndNotifyCaseIdChanges(offenderNo: String, updatedMappings: CourtCaseBatchUpdateMappingResponseDto) {
     this.courtCases.forEach { case ->
       updatedMappings.courtCases.firstOrNull { it.fromNomisId == case.caseId }?.run {
         telemetryClient.trackEvent(
           "court-case-clone-case-ids",
           mapOf(
+            "offenderNo" to offenderNo,
             "previousBookingNomisId" to fromNomisId.toString(),
             "currentBookingNomisId" to toNomisId.toString(),
             "previousBookingDpsId" to case.courtCaseUuid,
@@ -1604,11 +1607,18 @@ class CourtSentencingSynchronisationService(
         telemetryClient.trackEvent(
           "court-case-clone-appearance-ids",
           mapOf(
+            "offenderNo" to offenderNo,
             "previousBookingNomisId" to fromNomisId.toString(),
             "currentBookingNomisId" to toNomisId.toString(),
             "previousBookingDpsId" to appearance.appearanceUuid,
             "currentBookingDpsId" to dpsId,
           ),
+        )
+
+        domainEventEmitter.emitCourtAppearanceClone(
+          offenderNo = offenderNo,
+          previousBookingAppearanceId = appearance.appearanceUuid.toString(),
+          currentBookingAppearanceId = dpsId,
         )
       }
     }
@@ -1617,6 +1627,7 @@ class CourtSentencingSynchronisationService(
         telemetryClient.trackEvent(
           "court-case-clone-charge-ids",
           mapOf(
+            "offenderNo" to offenderNo,
             "previousBookingNomisId" to fromNomisId.toString(),
             "currentBookingNomisId" to toNomisId.toString(),
             "previousBookingDpsId" to charge.chargeUuid,
@@ -1630,6 +1641,7 @@ class CourtSentencingSynchronisationService(
         telemetryClient.trackEvent(
           "court-case-clone-sentence-ids",
           mapOf(
+            "offenderNo" to offenderNo,
             "previousBookingNomisBookingId" to fromNomisId.nomisBookingId,
             "currentBookingNomisBookingId" to toNomisId.nomisBookingId,
             "previousBookingNomisSequence" to fromNomisId.nomisSequence,
@@ -1645,6 +1657,7 @@ class CourtSentencingSynchronisationService(
         telemetryClient.trackEvent(
           "court-case-clone-sentence-term-ids",
           mapOf(
+            "offenderNo" to offenderNo,
             "previousBookingNomisBookingId" to fromNomisId.nomisSentenceId.nomisBookingId,
             "currentBookingNomisBookingId" to toNomisId.nomisSentenceId.nomisBookingId,
             "previousBookingNomisSequence" to fromNomisId.nomisSentenceId.nomisSequence,
