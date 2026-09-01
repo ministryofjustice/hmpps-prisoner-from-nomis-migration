@@ -26,7 +26,7 @@ class CorePersonDataRepairResourceIntTest(
 
   private val cprApiMock = CorePersonCprApiExtension.cprCorePersonServer
 
-  @DisplayName("POST /prisoners/{prisonNumber}/core-person/aliases-idenifiers/repair")
+  @DisplayName("POST /prisoners/{prisonNumber}/core-person/aliases-identifiers/repair")
   @Nested
   inner class RepairCorePersonAliasesAndIdentifiers {
     val prisonNumber = "A1234KT"
@@ -35,7 +35,7 @@ class CorePersonDataRepairResourceIntTest(
     inner class Security {
       @Test
       fun `access forbidden when no role`() {
-        webTestClient.post().uri("/prisoners/$prisonNumber/core-person/aliases-idenifiers/repair")
+        webTestClient.post().uri("/prisoners/$prisonNumber/core-person/aliases-identifiers/repair")
           .headers(setAuthorisation(roles = listOf()))
           .exchange()
           .expectStatus().isForbidden
@@ -43,7 +43,7 @@ class CorePersonDataRepairResourceIntTest(
 
       @Test
       fun `access forbidden with wrong role`() {
-        webTestClient.post().uri("/prisoners/$prisonNumber/core-person/aliases-idenifiers/repair")
+        webTestClient.post().uri("/prisoners/$prisonNumber/core-person/aliases-identifiers/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
           .exchange()
           .expectStatus().isForbidden
@@ -51,7 +51,7 @@ class CorePersonDataRepairResourceIntTest(
 
       @Test
       fun `access unauthorised with no auth token`() {
-        webTestClient.post().uri("/prisoners/$prisonNumber/core-person/aliases-idenifiers/repair")
+        webTestClient.post().uri("/prisoners/$prisonNumber/core-person/aliases-identifiers/repair")
           .exchange()
           .expectStatus().isUnauthorized
       }
@@ -93,7 +93,7 @@ class CorePersonDataRepairResourceIntTest(
         cprApiMock.stubMigrateAliasesAndIdentifiers(prisonNumber)
         mappingApiMockServer.stubReplaceMappings()
 
-        webTestClient.post().uri("/prisoners/$prisonNumber/core-person/aliases-idenifiers/repair")
+        webTestClient.post().uri("/prisoners/$prisonNumber/core-person/aliases-identifiers/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isNoContent
@@ -158,7 +158,7 @@ class CorePersonDataRepairResourceIntTest(
       fun setUp() {
         nomisApiMockServer.stubGetCorePerson(prisonNumber, status = HttpStatus.NOT_FOUND)
 
-        webTestClient.post().uri("/prisoners/$prisonNumber/core-person/aliases-idenifiers/repair")
+        webTestClient.post().uri("/prisoners/$prisonNumber/core-person/aliases-identifiers/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isNotFound

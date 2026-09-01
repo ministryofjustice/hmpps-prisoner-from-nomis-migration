@@ -19,7 +19,7 @@ class CorePersonDataRepairResource(
   private val synchronisationService: CorePersonSynchronisationService,
   private val telemetryClient: TelemetryClient,
 ) {
-  @PostMapping("/prisoners/{prisonNumber}/core-person/aliases-idenifiers/repair")
+  @PostMapping("/prisoners/{prisonNumber}/core-person/aliases-identifiers/repair")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @Operation(
     summary = "Resynchronises an offender's aliases and identifiers for the given prisoner from NOMIS to DPS",
