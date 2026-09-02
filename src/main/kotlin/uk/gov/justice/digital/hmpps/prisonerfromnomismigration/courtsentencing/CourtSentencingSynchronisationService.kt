@@ -53,6 +53,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.util.UUID
+import kotlin.collections.plus
 
 @Service
 class CourtSentencingSynchronisationService(
@@ -1342,7 +1343,7 @@ class CourtSentencingSynchronisationService(
         track(
           "sentence-synchronisation-updated",
           telemetry = (
-            telemetry + ("dpsSentenceId" to mapping.dpsSentenceId) + ("nomisSentenceCalc" to nomisSentence.calculationType.code) +
+            telemetry + ("dpsSentenceId" to mapping.dpsSentenceId) + ("status" to nomisSentence.status) + ("nomisSentenceCalc" to nomisSentence.calculationType.code) +
               ("nomisCourtAppearanceId" to eventId) + ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId) + ("nomisOrderId" to nomisSentence.courtOrder.id) +
               ("dpsChargeIds" to getDpsChargeMappings(nomisSentence).joinToString()) + ("nomisChargeIds" to nomisSentence.offenderCharges.joinToString { it.id.toString() })
             ).toMutableMap(),
@@ -1700,7 +1701,7 @@ class CourtSentencingSynchronisationService(
     )
     telemetryClient.trackEvent(
       "sentence-resynchronisation-success",
-      telemetry,
+      telemetry + ("status" to nomisSentence.status),
     )
   }
 
