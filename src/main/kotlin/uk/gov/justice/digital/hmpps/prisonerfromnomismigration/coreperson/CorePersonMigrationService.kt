@@ -184,8 +184,7 @@ fun List<CoreOffender>?.toMigrateAliasesAndIdentifiersRequest(): PrisonAliasesAn
         type = Type.valueOf(it.type.code),
         value = it.identifier,
         verified = it.verified,
-        comment = null,
-        issuedAuthority = it.issuedAuthority,
+        comment = it.issuedAuthority,
         issuedDate = it.issuedDate,
       )
     },

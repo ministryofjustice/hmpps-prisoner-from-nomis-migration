@@ -210,7 +210,7 @@ class CorePersonMigrationIntTest(
         assertThat(migrationRequest.identifiers[0].type).isEqualTo(PrisonIdentifier.Type.PNC)
         assertThat(migrationRequest.identifiers[0].value).isEqualTo("20/0071818T")
         assertThat(migrationRequest.identifiers[0].verified).isEqualTo(true)
-        assertThat(migrationRequest.identifiers[0].issuedAuthority).isEqualTo("DVLA")
+        assertThat(migrationRequest.identifiers[0].comment).isEqualTo("DVLA")
         assertThat(migrationRequest.identifiers[0].issuedDate).isEqualTo(LocalDate.of(2001, 1, 1))
       }
 
