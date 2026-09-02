@@ -153,7 +153,7 @@ class CorePersonDataRepairResourceIntTest(
             .withRequestBodyJsonPath("identifiers[0].type", "PNC")
             .withRequestBodyJsonPath("identifiers[0].value", "20/0071818T")
             .withRequestBodyJsonPath("identifiers[0].verified", true)
-            .withRequestBodyJsonPath("identifiers[0].issuedAuthority", "DVLA")
+            .withRequestBodyJsonPath("identifiers[0].comment", "DVLA")
             .withRequestBodyJsonPath("identifiers[0].issuedDate", LocalDate.of(2002, 2, 2)),
         )
       }
