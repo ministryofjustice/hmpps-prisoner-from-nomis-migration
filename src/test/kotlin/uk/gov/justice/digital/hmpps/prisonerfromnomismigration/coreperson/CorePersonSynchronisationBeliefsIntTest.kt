@@ -221,7 +221,7 @@ class CorePersonSynchronisationBeliefsIntTest(
 
           @BeforeEach
           fun setUp() {
-            mappingApiMock.stubExistsReligionMappingByNomisPrisonNumber(nomisPrisonNumber = "A1234AA", exists = true) // qqRP TODO
+            mappingApiMock.stubExistsReligionMappingByNomisPrisonNumber(nomisPrisonNumber = "A1234AA", exists = true)
             sendBeliefsEvent(prisonerNumber = "A1234AA", beliefId = 1, eventType = "INSERTED")
               .also { waitForAnyProcessingToComplete() }
           }
