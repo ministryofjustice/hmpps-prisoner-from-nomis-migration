@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-28.4740.106593f"
+    "version" : "2026-09-01.4765.a4b83db"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -2496,6 +2496,38 @@
         }
       }
     },
+    "/csra/reconciliation/{offenderNo}" : {
+      "get" : {
+        "tags" : [ "CSRA Update Resource" ],
+        "summary" : "Run the CSRA reconciliation for this prisoner",
+        "description" : "Retrieves the CSRA differences for a prisoner. Returns an empty response body when no differences are found. \n      Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "manualCheckCsra",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "description" : "Prisoner's offenderNo",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Prisoner's offenderNo",
+            "example" : "A3456NZ"
+          },
+          "example" : "A3456NZ"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Reconciliation differences returned",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchCsra"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/csip/reconciliation/{prisonNumber}" : {
       "get" : {
         "tags" : [ "CSIP Update Resource" ],
@@ -3757,6 +3789,44 @@
           }
         },
         "required" : [ "offenderNo", "type" ]
+      },
+      "CsraDetailFields" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string"
+          },
+          "sequence" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "assessmentDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "level" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id" ]
+      },
+      "MismatchCsra" : {
+        "type" : "object",
+        "properties" : {
+          "nomis" : {
+            "$ref" : "#/components/schemas/CsraDetailFields"
+          },
+          "dps" : {
+            "$ref" : "#/components/schemas/CsraDetailFields"
+          },
+          "differences" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Difference"
+            }
+          }
+        },
+        "required" : [ "differences" ]
       },
       "CSIPReportSummary" : {
         "type" : "object",
