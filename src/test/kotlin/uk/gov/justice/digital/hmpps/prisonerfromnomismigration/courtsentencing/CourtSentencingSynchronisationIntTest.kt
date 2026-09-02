@@ -817,11 +817,7 @@ class CourtSentencingSynchronisationIntTest(
               eventId = NOMIS_COURT_APPEARANCE_ID,
             ),
           )
-          courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
-            nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
-            dpsCourtAppearanceId = dpsCourtAppearanceId,
-          )
-          dpsCourtSentencingServer.stubPutSentenceForUpdate(sentenceId = dpsSentenceUpdateId)
+          dpsCourtSentencingServer.stubUpdateSentenceBookingId(sentenceId = dpsSentenceUpdateId)
 
           courtSentencingOffenderEventsQueue.sendMessage(
             SQSMessage(
@@ -931,6 +927,14 @@ class CourtSentencingSynchronisationIntTest(
           dpsCourtSentencingServer.verify(
             1,
             putRequestedFor(urlPathEqualTo("/legacy/court-case/$dpsCourtCaseUpdatedId"))
+              .withRequestBody(matchingJsonPath("bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
+          )
+        }
+
+        @Test
+        fun `will update sentence on latest booking in DPS`() {
+          dpsCourtSentencingServer.verify(
+            putRequestedFor(urlPathEqualTo("/legacy/sentence/$dpsSentenceUpdateId/booking-id"))
               .withRequestBody(matchingJsonPath("bookingId", equalTo(NOMIS_BOOKING_ID.toString()))),
           )
         }
