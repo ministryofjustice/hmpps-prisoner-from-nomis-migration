@@ -651,6 +651,19 @@ class CourtSentencingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubUpdateSentenceBookingId(
+    sentenceId: String = UUID.randomUUID().toString(),
+  ) {
+    stubFor(
+      put("/legacy/sentence/$sentenceId/booking-id")
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
   fun stubPostPeriodLengthForCreate(
     periodLengthId: String = UUID.randomUUID().toString(),
     prisonerId: String,

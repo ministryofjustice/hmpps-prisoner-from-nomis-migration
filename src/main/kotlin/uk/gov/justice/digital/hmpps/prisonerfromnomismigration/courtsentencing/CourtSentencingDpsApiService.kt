@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyPeriodLengthCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateCharge
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateSentenceBookingId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateWholeCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergeCreateCourtCasesResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergePerson
@@ -164,6 +165,13 @@ class CourtSentencingDpsApiService(
   suspend fun updateSentence(sentenceId: String, sentence: LegacyCreateSentence): ResponseEntity<Void> = webClient
     .put()
     .uri("/legacy/sentence/{sentenceId}", sentenceId)
+    .bodyValue(sentence)
+    .retrieve()
+    .awaitBodilessEntity()
+
+  suspend fun updateSentenceBookingId(sentenceId: String, sentence: LegacyUpdateSentenceBookingId): ResponseEntity<Void> = webClient
+    .put()
+    .uri("/legacy/sentence/{sentenceId}/booking-id", sentenceId)
     .bodyValue(sentence)
     .retrieve()
     .awaitBodilessEntity()

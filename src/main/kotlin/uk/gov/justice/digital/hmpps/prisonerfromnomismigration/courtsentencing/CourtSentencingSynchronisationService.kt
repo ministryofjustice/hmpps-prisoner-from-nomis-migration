@@ -22,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyLinkChargeToCase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyPeriodLengthCreatedResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacySentenceCreatedResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateSentenceBookingId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateWholeCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MergePerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.RefreshCaseReferences
@@ -1372,6 +1373,37 @@ class CourtSentencingSynchronisationService(
       }
     }
   }
+  suspend fun nomisSentenceBookingIdSynchronisation(
+    nomisCaseId: Long,
+    nomisBookingId: Long,
+    nomisSentenceSequence: Int,
+    offenderNo: String,
+    telemetry: MutableMap<String, Any>,
+  ) {
+    track("sentence-resynchronisation-updated", telemetry = telemetry) {
+      val mapping = mappingApiService.getSentenceByNomisId(
+        bookingId = nomisBookingId,
+        sentenceSequence = nomisSentenceSequence.toLong(),
+      ).also {
+        telemetry["dpsSentenceId"] = it.dpsSentenceId
+      }
+
+      val nomisSentence =
+        nomisApiService.getOffenderSentence(
+          offenderNo = offenderNo,
+          caseId = nomisCaseId,
+          sentenceSequence = nomisSentenceSequence,
+        )
+
+      dpsApiService.updateSentenceBookingId(
+        sentenceId = mapping.dpsSentenceId,
+        LegacyUpdateSentenceBookingId(
+          bookingId = nomisSentence.bookingId,
+          performedByUser = nomisSentence.modifiedByUsername ?: nomisSentence.createdByUsername,
+        ),
+      )
+    }
+  }
 
   // there is an edge case where a sentence charge is created after the sentence is created - without causing a sentence update event,
   // this handles that scenario by updating the sentence in DPS to ensure all charges are included
@@ -1553,12 +1585,12 @@ class CourtSentencingSynchronisationService(
     event.casesMoved.forEach { case ->
       nomisCaseResynchronisation(nomisCaseId = case.caseId, offenderNo = event.offenderNo)
       case.sentences.forEach { sentence ->
-        nomisSentenceUpdated(
+        nomisSentenceBookingIdSynchronisation(
           nomisCaseId = case.caseId,
           nomisBookingId = event.toBookingId,
           nomisSentenceSequence = sentence.sentenceSequence,
           offenderNo = event.offenderNo,
-          telemetry = telemetry,
+          telemetry = telemetry.toMutableMap(),
         )
       }
     }
