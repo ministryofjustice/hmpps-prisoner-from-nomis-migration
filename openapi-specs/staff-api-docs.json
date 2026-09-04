@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-07-27.162.1b7c636"
+    "version" : "2026-09-04.213.09e51ce"
   },
   "servers" : [ {
     "url" : "https://prison-users-api-dev.prison.service.justice.gov.uk",
@@ -77,7 +77,17 @@
             }
           },
           "404" : {
-            "description" : "User not found",
+            "description" : "Caseload not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Sync lock could not be acquired within max wait time",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -175,7 +185,7 @@
       "post" : {
         "tags" : [ "migration-resource" ],
         "summary" : "Migrate a single user from NOMIS into Prison Users API, including associated accounts, role and caseload link data",
-        "description" : "Creates a user. Requires role ROLE_PRISON_USERS_API__MIGRATION__RW",
+        "description" : "Creates or updates a user. Requires role ROLE_PRISON_USERS_API__MIGRATION__RW",
         "operationId" : "migrateUser",
         "requestBody" : {
           "content" : {
@@ -189,7 +199,7 @@
         },
         "responses" : {
           "200" : {
-            "description" : "User created with associated accounts, role and caseload links from NOMIS",
+            "description" : "User created or updated with associated accounts, role and caseload links from NOMIS",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -209,7 +219,7 @@
             }
           },
           "409" : {
-            "description" : "Conflict (eg. duplicate user or username)",
+            "description" : "Conflict (eg. data integrity violation)",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -241,6 +251,87 @@
         },
         "security" : [ {
           "PRISON_USERS_API__MIGRATION__RW" : [ ]
+        } ]
+      }
+    },
+    "/users/{username}" : {
+      "get" : {
+        "tags" : [ "user-resource" ],
+        "summary" : "Get specified user details",
+        "description" : "Information on a specific user. Requires role ROLE_MAINTAIN_ACCESS_ROLES_ADMIN or ROLE_MAINTAIN_ACCESS_ROLES or ROLE_MANAGE_NOMIS_USER_ACCOUNT or ROLE_VIEW_NOMIS_STAFF_DETAILS",
+        "operationId" : "getUserDetails",
+        "parameters" : [ {
+          "name" : "username",
+          "in" : "path",
+          "description" : "Username",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Username",
+            "example" : "testuser1"
+          },
+          "example" : "testuser1"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "User Information Returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserDetail"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Incorrect request to get user information",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to get a user",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "user not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "MAINTAIN_ACCESS_ROLES_ADMIN" : [ ]
+        }, {
+          "MAINTAIN_ACCESS_ROLES" : [ ]
+        }, {
+          "MANAGE_NOMIS_USER_ACCOUNT" : [ ]
+        }, {
+          "VIEW_NOMIS_STAFF_DETAILS" : [ ]
         } ]
       }
     },
@@ -394,6 +485,26 @@
         } ]
       }
     },
+    "/reference-data/caseloads" : {
+      "get" : {
+        "tags" : [ "reference-data-resource" ],
+        "summary" : "Retrieves all caseloads",
+        "description" : "Retrieves all the current active general caseloads, these are effectively prisons that staff can be associated with",
+        "operationId" : "getCaseload",
+        "responses" : {
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/reconciliation/user/{legacyStaffId}" : {
       "get" : {
         "tags" : [ "reconciliation-resource" ],
@@ -513,13 +624,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           },
@@ -574,13 +685,13 @@
             }
           },
           "lastLoggedIn" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "format" : "date-time",
             "description" : "The timestamp of the last login for the account",
             "example" : "2022-01-01T12:00:00"
           },
           "activeCaseloadId" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Identifier for the active caseload for the account",
             "example" : "MRI"
           },
@@ -596,13 +707,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           }
@@ -653,13 +764,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           }
@@ -697,14 +808,14 @@
             "format" : "int32"
           },
           "errorCode" : {
-            "type" : [ "integer", "null" ],
+            "type" : "integer",
             "format" : "int32"
           },
           "userMessage" : {
-            "type" : [ "string", "null" ]
+            "type" : "string"
           },
           "developerMessage" : {
-            "type" : [ "string", "null" ]
+            "type" : "string"
           }
         },
         "required" : [ "status" ]
@@ -735,7 +846,7 @@
             "example" : "Smith"
           },
           "activeCaseloadId" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Active Caseload of the user",
             "example" : "BXI"
           },
@@ -744,7 +855,7 @@
             "description" : "User is enabled flag"
           },
           "accountStatus" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Status of the user",
             "example" : "OPEN"
           }
@@ -762,7 +873,7 @@
             "example" : 123456
           },
           "emails" : {
-            "type" : [ "array", "null" ],
+            "type" : "array",
             "description" : "The email addresses for the user",
             "items" : {
               "$ref" : "#/components/schemas/MigratedUserEmail"
@@ -795,13 +906,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           }
@@ -867,24 +978,24 @@
             "example" : "TEST_USER"
           },
           "lastLoggedIn" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "format" : "date-time",
             "description" : "The timestamp of the last login for the account",
             "example" : "2022-01-01T12:00:00"
           },
           "activeCaseloadId" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Identifier for the active caseload for the account",
             "example" : "MRI"
           },
           "modifiedTimestamp" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           }
@@ -918,13 +1029,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           }
@@ -968,21 +1079,21 @@
             "description" : "The NOMIS user to migrate"
           },
           "accounts" : {
-            "type" : [ "array", "null" ],
+            "type" : "array",
             "description" : "The NOMIS user accounts to migrate",
             "items" : {
               "$ref" : "#/components/schemas/MigratedUserAccount"
             }
           },
           "roles" : {
-            "type" : [ "array", "null" ],
+            "type" : "array",
             "description" : "Links between the user (via user account) and roles",
             "items" : {
               "$ref" : "#/components/schemas/MigratedUserRole"
             }
           },
           "accessibleCaseloads" : {
-            "type" : [ "array", "null" ],
+            "type" : "array",
             "description" : "Links between the user (via user account) and caseloads",
             "items" : {
               "$ref" : "#/components/schemas/MigratedUserAccessibleCaseload"
@@ -1009,6 +1120,118 @@
           }
         },
         "required" : [ "staffId", "userId" ]
+      },
+      "UserDetail" : {
+        "type" : "object",
+        "description" : "User Information",
+        "properties" : {
+          "username" : {
+            "type" : "string",
+            "description" : "Username",
+            "example" : "testuser1"
+          },
+          "staffId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Staff ID",
+            "example" : 324323
+          },
+          "firstName" : {
+            "type" : "string",
+            "description" : "First name of the user",
+            "example" : "John"
+          },
+          "lastName" : {
+            "type" : "string",
+            "description" : "Last name of the user",
+            "example" : "Smith"
+          },
+          "activeCaseloadId" : {
+            "type" : "string",
+            "description" : "Active Caseload of the user",
+            "example" : "BXI"
+          },
+          "accountStatus" : {
+            "type" : "string",
+            "description" : "Status of the user",
+            "enum" : [ "OPEN", "EXPIRED", "EXPIRED_GRACE", "LOCKED_TIMED", "LOCKED", "EXPIRED_LOCKED_TIMED", "EXPIRED_GRACE_LOCKED_TIMED", "EXPIRED_LOCKED", "EXPIRED_GRACE_LOCKED" ],
+            "example" : "OPEN"
+          },
+          "accountType" : {
+            "type" : "string",
+            "description" : "Type of user account",
+            "enum" : [ "GENERAL", "ADMIN" ],
+            "example" : "GENERAL"
+          },
+          "primaryEmail" : {
+            "type" : "string",
+            "description" : "Email addresses of user",
+            "example" : "test@test.com"
+          },
+          "dpsRoleCodes" : {
+            "type" : "array",
+            "description" : "List of associated DPS Role Codes",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "administratorOfUserGroups" : {
+            "type" : "array",
+            "description" : "List of user groups administered",
+            "items" : {
+              "$ref" : "#/components/schemas/UserGroupDetail"
+            }
+          },
+          "accountNonLocked" : {
+            "type" : "boolean",
+            "description" : "Account is not locked"
+          },
+          "credentialsNonExpired" : {
+            "type" : "boolean",
+            "description" : "Credentials are not expired flag"
+          },
+          "enabled" : {
+            "type" : "boolean",
+            "description" : "User is enabled flag"
+          },
+          "admin" : {
+            "type" : "boolean",
+            "description" : "User is admin flag"
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "User is active flag"
+          },
+          "staffStatus" : {
+            "type" : "string",
+            "description" : "Staff Status",
+            "example" : "ACTIVE"
+          },
+          "lastLogonDate" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Last logon date",
+            "example" : "2023-01-01T12:13:14.123"
+          }
+        },
+        "required" : [ "accountType", "active", "administratorOfUserGroups", "dpsRoleCodes", "enabled", "firstName", "lastName", "staffId", "username" ]
+      },
+      "UserGroupDetail" : {
+        "type" : "object",
+        "description" : "User Group Information",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "description" : "Group id",
+            "example" : "BXI"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "Group name",
+            "example" : "Brixton (HMP)"
+          }
+        },
+        "required" : [ "id", "name" ]
       },
       "PrisonCaseload" : {
         "type" : "object",
@@ -1052,11 +1275,9 @@
             "example" : "GENERAL"
           },
           "activeCaseload" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/PrisonCaseload"
-            }, {
-              "type" : "null"
-            } ]
+            "$ref" : "#/components/schemas/PrisonCaseload",
+            "description" : "Active Caseload of the user",
+            "example" : "BXI"
           },
           "caseloads" : {
             "type" : "array",
@@ -1102,13 +1323,13 @@
             }
           },
           "lastLoggedIn" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "format" : "date-time",
             "description" : "The timestamp of the last login for the account",
             "example" : "2022-01-01T12:00:00"
           },
           "activeCaseloadId" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Identifier for the active caseload for the account",
             "example" : "MRI"
           },
@@ -1124,13 +1345,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           }
@@ -1192,13 +1413,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           },
@@ -1252,13 +1473,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : [ "string", "null" ],
+            "type" : "string",
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           },
