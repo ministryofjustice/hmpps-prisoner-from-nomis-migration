@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-27.439.b52d1f4"
+    "version" : "2026-09-03.461.e4b08eb"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -607,6 +607,410 @@
         }, {
           "MAINTAIN_PRISON_DATA" : [ "write" ]
         } ]
+      }
+    },
+    "/courts/id/{courtId}" : {
+      "get" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Get specified court",
+        "description" : "Information on a specific court",
+        "operationId" : "getCourtFromId",
+        "parameters" : [ {
+          "name" : "courtId",
+          "in" : "path",
+          "description" : "Court ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Successful Operation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Update specified court details",
+        "description" : "Updates court information, excluding its addresses. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
+        "operationId" : "updateCourt",
+        "parameters" : [ {
+          "name" : "courtId",
+          "in" : "path",
+          "description" : "Court ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateCourtDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Court Information Updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to update court",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to make court update",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Court Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courts/id/{courtId}/phone-number/{phoneNumberId}" : {
+      "put" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Update specified court phone number",
+        "description" : "Updates a single phone number for a court. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
+        "operationId" : "updateCourtPhoneNumber",
+        "parameters" : [ {
+          "name" : "courtId",
+          "in" : "path",
+          "description" : "Court ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        }, {
+          "name" : "phoneNumberId",
+          "in" : "path",
+          "description" : "Phone Number Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Phone Number Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdatePhoneNumberDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Court Phone Number Updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyPhoneDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to update court phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to make court phone number update",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Court Id or Phone Number Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courts/id/{courtId}/email-address/{emailAddressId}" : {
+      "put" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Update specified court email address",
+        "description" : "Updates a single email address for a court. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
+        "operationId" : "updateCourtEmailAddress",
+        "parameters" : [ {
+          "name" : "courtId",
+          "in" : "path",
+          "description" : "Court ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        }, {
+          "name" : "emailAddressId",
+          "in" : "path",
+          "description" : "Email Address Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Email Address Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateEmailAddressDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Court Email Address Updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyEmailDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to update court email address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to make court email address update",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Court Id or Email Address Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courts/id/{courtId}/address/{addressId}" : {
+      "put" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Update specified court address",
+        "description" : "Updates a single address for a court. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
+        "operationId" : "updateCourtAddress",
+        "parameters" : [ {
+          "name" : "courtId",
+          "in" : "path",
+          "description" : "Court ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        }, {
+          "name" : "addressId",
+          "in" : "path",
+          "description" : "Address Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Address Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateAddressDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Court Address Updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyAddressDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to update court address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to make court address update",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Court Id or Address Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/prisons/prisonsByIds" : {
@@ -1395,40 +1799,6 @@
         }
       }
     },
-    "/courts/id/{courtId}" : {
-      "get" : {
-        "tags" : [ "court-resource" ],
-        "summary" : "Get specified court",
-        "description" : "Information on a specific court",
-        "operationId" : "getCourtFromId",
-        "parameters" : [ {
-          "name" : "courtId",
-          "in" : "path",
-          "description" : "Court ID",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Court ID",
-            "example" : "SHEFCC",
-            "maxLength" : 6,
-            "minLength" : 2
-          },
-          "example" : "SHEFCC"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Successful Operation",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CourtDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/approved-premises/id/{approvedPremiseId}" : {
       "get" : {
         "tags" : [ "approved-premise-resource" ],
@@ -1903,6 +2273,316 @@
         },
         "required" : [ "country", "postcode", "town" ]
       },
+      "UpdateCourtDto" : {
+        "type" : "object",
+        "description" : "Court Update Record",
+        "properties" : {
+          "courtName" : {
+            "type" : "string",
+            "description" : "Name",
+            "example" : "N Staffs Youth Court - Newcastle",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "description" : "Description",
+            "example" : "North Staffordshire Youth Court - Newcastle under Lyme",
+            "maxLength" : 3000,
+            "minLength" : 0
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether still active"
+          },
+          "inactiveDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date made inactive",
+            "example" : "2023-12-31"
+          },
+          "cjitCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "CJIT Code",
+            "example" : "123456789",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "accessibleAccess" : {
+            "type" : [ "string", "null" ],
+            "description" : "Accessible access",
+            "enum" : [ "NONE", "ACCESSIBLE", "BY_ARRANGEMENT_ONLY", "WHEELCHAIR_ACCESS" ],
+            "example" : "ACCESSIBLE"
+          },
+          "areaCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Area code",
+            "example" : "52",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "regionCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Region code",
+            "example" : "YOHUM",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "geographicalAreaCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Geographical Area code",
+            "example" : "WYORKS",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "localAuthorityCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Local Authority code",
+            "example" : "00CG"
+          },
+          "payrollRegionCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Prisoner Payroll Region code",
+            "example" : "NEY"
+          },
+          "courtTypeCode" : {
+            "type" : "string",
+            "description" : "Court Type code",
+            "example" : "CC",
+            "maxLength" : 12,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "active", "courtName", "courtTypeCode" ]
+      },
+      "AgencyAddressDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Unique ID of the address",
+            "example" : 10000
+          },
+          "addressLine1" : {
+            "type" : [ "string", "null" ],
+            "description" : "Address line 1",
+            "example" : "Bawtry Road"
+          },
+          "addressLine2" : {
+            "type" : [ "string", "null" ],
+            "description" : "Address line 2",
+            "example" : "Hatfield Woodhouse"
+          },
+          "town" : {
+            "type" : [ "string", "null" ],
+            "description" : "Village/Town/City",
+            "example" : "Doncaster"
+          },
+          "county" : {
+            "type" : [ "string", "null" ],
+            "description" : "County",
+            "example" : "South Yorkshire"
+          },
+          "postcode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Postcode",
+            "example" : "DN7 6BW"
+          },
+          "country" : {
+            "type" : [ "string", "null" ],
+            "description" : "Country",
+            "example" : "England"
+          }
+        },
+        "required" : [ "id" ]
+      },
+      "AgencyEmailDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Unique ID of the email address",
+            "example" : 10000
+          },
+          "address" : {
+            "type" : [ "string", "null" ],
+            "description" : "Email address",
+            "example" : "example@example.com"
+          }
+        },
+        "required" : [ "id" ]
+      },
+      "AgencyPhoneDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Unique ID of the phone number",
+            "example" : 10000
+          },
+          "number" : {
+            "type" : [ "string", "null" ],
+            "description" : "Phone number",
+            "example" : "0114 555 9898"
+          }
+        },
+        "required" : [ "id" ]
+      },
+      "CodeDescription" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "description" ]
+      },
+      "CourtDto" : {
+        "type" : "object",
+        "description" : "Court Information",
+        "properties" : {
+          "courtId" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "NWCLYC"
+          },
+          "courtName" : {
+            "type" : "string",
+            "description" : "Name",
+            "example" : "N Staffs Youth Court - Newcastle"
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "description" : "Description",
+            "example" : "North Staffordshire Youth Court - Newcastle under Lyme"
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether still active"
+          },
+          "inactiveDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date made inactive",
+            "example" : "2023-12-31"
+          },
+          "cjitCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "CJIT Code",
+            "example" : "123456789"
+          },
+          "accessibleAccess" : {
+            "type" : [ "string", "null" ],
+            "description" : "Accessible access",
+            "example" : "ACCESSIBLE"
+          },
+          "area" : {
+            "description" : "Area",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "region" : {
+            "description" : "Region",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "geographicalArea" : {
+            "description" : "Geographical Area",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "localAuthority" : {
+            "description" : "Local Authority",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "payrollRegion" : {
+            "description" : "Prisoner Payroll Region",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "courtType" : {
+            "description" : "courtType",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "addresses" : {
+            "type" : "array",
+            "description" : "addresses",
+            "items" : {
+              "$ref" : "#/components/schemas/AgencyAddressDto"
+            }
+          },
+          "emailAddresses" : {
+            "type" : "array",
+            "description" : "emailAddresses",
+            "items" : {
+              "$ref" : "#/components/schemas/AgencyEmailDto"
+            }
+          },
+          "phoneNumbers" : {
+            "type" : "array",
+            "description" : "phoneNumbers",
+            "items" : {
+              "$ref" : "#/components/schemas/AgencyPhoneDto"
+            }
+          }
+        },
+        "required" : [ "active", "addresses", "courtId", "courtName", "emailAddresses", "phoneNumbers" ]
+      },
+      "UpdatePhoneNumberDto" : {
+        "type" : "object",
+        "description" : "Phone Number Update Record",
+        "properties" : {
+          "number" : {
+            "type" : "string",
+            "description" : "Phone number",
+            "example" : "0114 555 9898",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "number" ]
+      },
+      "UpdateEmailAddressDto" : {
+        "type" : "object",
+        "description" : "Email Address Update Record",
+        "properties" : {
+          "address" : {
+            "type" : "string",
+            "format" : "email",
+            "description" : "Email address",
+            "example" : "example@example.com",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "address" ]
+      },
       "PrisonRequest" : {
         "type" : "object",
         "properties" : {
@@ -2164,94 +2844,6 @@
           }
         },
         "required" : [ "updated" ]
-      },
-      "AgencyAddressDto" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Unique ID of the address",
-            "example" : 10000
-          },
-          "addressLine1" : {
-            "type" : [ "string", "null" ],
-            "description" : "Address line 1",
-            "example" : "Bawtry Road"
-          },
-          "addressLine2" : {
-            "type" : [ "string", "null" ],
-            "description" : "Address line 2",
-            "example" : "Hatfield Woodhouse"
-          },
-          "town" : {
-            "type" : [ "string", "null" ],
-            "description" : "Village/Town/City",
-            "example" : "Doncaster"
-          },
-          "county" : {
-            "type" : [ "string", "null" ],
-            "description" : "County",
-            "example" : "South Yorkshire"
-          },
-          "postcode" : {
-            "type" : [ "string", "null" ],
-            "description" : "Postcode",
-            "example" : "DN7 6BW"
-          },
-          "country" : {
-            "type" : [ "string", "null" ],
-            "description" : "Country",
-            "example" : "England"
-          }
-        },
-        "required" : [ "id" ]
-      },
-      "AgencyEmailDto" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Unique ID of the email address",
-            "example" : 10000
-          },
-          "address" : {
-            "type" : [ "string", "null" ],
-            "description" : "Email address",
-            "example" : "example@example.com"
-          }
-        },
-        "required" : [ "id" ]
-      },
-      "AgencyPhoneDto" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Unique ID of the phone number",
-            "example" : 10000
-          },
-          "number" : {
-            "type" : [ "string", "null" ],
-            "description" : "Phone number",
-            "example" : "0114 555 9898"
-          }
-        },
-        "required" : [ "id" ]
-      },
-      "CodeDescription" : {
-        "type" : "object",
-        "properties" : {
-          "code" : {
-            "type" : "string"
-          },
-          "description" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "code", "description" ]
       },
       "ProbationOfficeDto" : {
         "type" : "object",
@@ -2602,117 +3194,6 @@
           }
         },
         "required" : [ "active", "addresses", "highSecurity", "hospitalId", "hospitalName", "phoneNumbers" ]
-      },
-      "CourtDto" : {
-        "type" : "object",
-        "description" : "Court Information",
-        "properties" : {
-          "courtId" : {
-            "type" : "string",
-            "description" : "Court ID",
-            "example" : "NWCLYC"
-          },
-          "courtName" : {
-            "type" : "string",
-            "description" : "Name",
-            "example" : "N Staffs Youth Court - Newcastle"
-          },
-          "description" : {
-            "type" : [ "string", "null" ],
-            "description" : "Description",
-            "example" : "North Staffordshire Youth Court - Newcastle under Lyme"
-          },
-          "active" : {
-            "type" : "boolean",
-            "description" : "Whether still active"
-          },
-          "inactiveDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date",
-            "description" : "Date made inactive",
-            "example" : "2023-12-31"
-          },
-          "cjitCode" : {
-            "type" : [ "string", "null" ],
-            "description" : "CJIT Code",
-            "example" : "123456789"
-          },
-          "accessibleAccess" : {
-            "type" : [ "string", "null" ],
-            "description" : "Accessible access",
-            "example" : "ACCESSIBLE"
-          },
-          "area" : {
-            "description" : "Area",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "region" : {
-            "description" : "Region",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "geographicalArea" : {
-            "description" : "Geographical Area",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "localAuthority" : {
-            "description" : "Local Authority",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "payrollRegion" : {
-            "description" : "Prisoner Payroll Region",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "courtType" : {
-            "description" : "courtType",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "addresses" : {
-            "type" : "array",
-            "description" : "addresses",
-            "items" : {
-              "$ref" : "#/components/schemas/AgencyAddressDto"
-            }
-          },
-          "emailAddresses" : {
-            "type" : "array",
-            "description" : "emailAddresses",
-            "items" : {
-              "$ref" : "#/components/schemas/AgencyEmailDto"
-            }
-          },
-          "phoneNumbers" : {
-            "type" : "array",
-            "description" : "phoneNumbers",
-            "items" : {
-              "$ref" : "#/components/schemas/AgencyPhoneDto"
-            }
-          }
-        },
-        "required" : [ "active", "addresses", "courtId", "courtName", "emailAddresses", "phoneNumbers" ]
       },
       "ApprovedPremiseDto" : {
         "type" : "object",
