@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-03.2007.6af7af1"
+    "version" : "2026-09-04.2015.dd6bcf7"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -20238,6 +20238,71 @@
             }
           }
         }
+      },
+      "delete" : {
+        "tags" : [ "transfer-schedule-resource" ],
+        "summary" : "Delete a transfer schedule out for an offender.",
+        "description" : "Deletes a transfer schedule out. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "deleteTransferScheduleOut",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "description" : "Offender no (aka prisoner number)",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Offender no (aka prisoner number)",
+            "example" : "A1234AK"
+          },
+          "example" : "A1234AK"
+        }, {
+          "name" : "eventId",
+          "in" : "path",
+          "description" : "Scheduled transfer movement event ID",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Scheduled transfer movement event ID",
+            "example" : 12345
+          },
+          "example" : 12345
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Transfer schedule out deleted"
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Unable to delete the schedule. See error message for details",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/movements/{offenderNo}/transfer" : {
@@ -26759,7 +26824,7 @@
           "bonusPay" : {
             "type" : "number",
             "description" : "Any bonus pay for the attendance",
-            "example" : "1.50"
+            "example" : 1.5
           }
         },
         "required" : [ "endTime", "eventStatusCode", "scheduleDate", "startTime" ]
@@ -28877,18 +28942,9 @@
             "type" : "string",
             "description" : "Waitlist status"
           },
-          "statusDate" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "The date the status was changed"
-          },
           "priority" : {
             "type" : "string",
             "description" : "The transfer priority"
-          },
-          "approved" : {
-            "type" : "boolean",
-            "description" : "Is the transfer approved?"
           },
           "approvedUserName" : {
             "type" : "string",
@@ -28899,7 +28955,7 @@
             "description" : "Comment"
           }
         },
-        "required" : [ "approved", "priority", "requestDate", "status", "statusDate" ]
+        "required" : [ "priority", "requestDate", "status" ]
       },
       "UpsertTransferScheduleOutResponse" : {
         "type" : "object",
@@ -30898,7 +30954,7 @@
           "compensationAmount" : {
             "type" : "number",
             "description" : "optional compensation amount",
-            "example" : "0.50"
+            "example" : 0.5
           },
           "sanctionDays" : {
             "type" : "integer",
@@ -30999,7 +31055,7 @@
           "rate" : {
             "type" : "number",
             "description" : "The half day rate",
-            "example" : "0.50"
+            "example" : 0.5
           },
           "startDate" : {
             "type" : "string",
@@ -33058,7 +33114,7 @@
           "cost" : {
             "type" : "number",
             "description" : "Optional cost of repairs",
-            "example" : "62.12"
+            "example" : 62.12
           }
         },
         "required" : [ "typeCode" ]
@@ -34965,13 +35021,13 @@
       "PageVisitIdResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -34987,21 +35043,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -35284,7 +35340,7 @@
           "amount" : {
             "type" : "number",
             "description" : "The transaction amount",
-            "example" : "2.14"
+            "example" : 2.14
           },
           "type" : {
             "type" : "string",
@@ -35382,7 +35438,7 @@
           "amount" : {
             "type" : "number",
             "description" : "The transaction amount",
-            "example" : "2.14"
+            "example" : 2.14
           },
           "type" : {
             "type" : "string",
@@ -36105,13 +36161,13 @@
       "PageQuestionnaireIdResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -36127,21 +36183,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -36256,13 +36312,13 @@
       "PageContainerIdResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -36278,21 +36334,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -37767,13 +37823,13 @@
       "PagePrisonerRestrictionIdResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -37789,21 +37845,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -37841,13 +37897,13 @@
       "PagePrisonerIds" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -37863,21 +37919,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -37905,13 +37961,13 @@
       "PagePrisonerId" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -37927,21 +37983,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -38570,13 +38626,13 @@
       "PagePersonIdResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -38592,21 +38648,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -38753,13 +38809,13 @@
       "PageNonAssociationIdResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -38775,21 +38831,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -40734,13 +40790,13 @@
       "PageLocationIdResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -40756,21 +40812,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -41276,13 +41332,13 @@
       "PageIncidentIdResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -41298,21 +41354,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -41386,13 +41442,13 @@
       "PageIncentiveIdResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -41408,21 +41464,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -41506,12 +41562,12 @@
           "balance" : {
             "type" : "number",
             "description" : "The account balance",
-            "example" : "12.50"
+            "example" : 12.5
           },
           "holdBalance" : {
             "type" : "number",
             "description" : "The account hold balance",
-            "example" : "2.50"
+            "example" : 2.5
           }
         },
         "required" : [ "accountCode", "balance", "prisonId" ]
@@ -41553,12 +41609,12 @@
           "balance" : {
             "type" : "number",
             "description" : "The account balance",
-            "example" : "12.50"
+            "example" : 12.5
           },
           "holdBalance" : {
             "type" : "number",
             "description" : "The hold balance",
-            "example" : "1.50"
+            "example" : 1.5
           }
         },
         "required" : [ "accountCode", "balance" ]
@@ -41615,12 +41671,12 @@
           "balance" : {
             "type" : "number",
             "description" : "The account balance",
-            "example" : "12.50"
+            "example" : 12.5
           },
           "holdBalance" : {
             "type" : "number",
             "description" : "The amount on hold",
-            "example" : "12.50"
+            "example" : 12.5
           }
         },
         "required" : [ "accountCode", "balance", "lastTransactionId", "prisonId", "transactionDate" ]
@@ -41685,10 +41741,6 @@
       "PrisonerHoldProjection" : {
         "type" : "object",
         "properties" : {
-          "txnEntrySeq" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "clientUniqueRef" : {
             "type" : "string"
           },
@@ -41700,6 +41752,13 @@
             "type" : "integer",
             "format" : "int64"
           },
+          "txnEntryAmount" : {
+            "type" : "number"
+          },
+          "txnEntrySeq" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "txnEntryDate" : {
             "type" : "string",
             "format" : "date-time"
@@ -41709,9 +41768,6 @@
           },
           "txnReferenceNumber" : {
             "type" : "string"
-          },
-          "txnEntryAmount" : {
-            "type" : "number"
           }
         },
         "required" : [ "txnEntryAmount", "txnEntryDate", "txnEntrySeq", "txnId" ]
@@ -41728,7 +41784,7 @@
           "balance" : {
             "type" : "number",
             "description" : "The balance for this prison and account code",
-            "example" : "33.12"
+            "example" : 33.12
           },
           "transactionDate" : {
             "type" : "string",
@@ -41783,13 +41839,13 @@
       "PageCourtCaseIdResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -41805,21 +41861,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -42089,13 +42145,13 @@
       "PageCorporateOrganisationIdResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -42111,21 +42167,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -42467,13 +42523,13 @@
       "PageAppointmentIdResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -42489,21 +42545,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -42764,13 +42820,13 @@
       "PageFindActiveAllocationIdsResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -42786,21 +42842,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -43118,13 +43174,13 @@
       "PageAdjudicationChargeIdResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -43140,21 +43196,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
@@ -43344,7 +43400,7 @@
           "rate" : {
             "type" : "number",
             "description" : "rate",
-            "example" : "3.2"
+            "example" : 3.2
           }
         },
         "required" : [ "incentiveLevelCode", "payBand", "rate" ]
@@ -43416,13 +43472,13 @@
       "PageFindActiveActivityIdsResponse" : {
         "type" : "object",
         "properties" : {
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "size" : {
             "type" : "integer",
@@ -43438,21 +43494,21 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "pageable" : {
+            "$ref" : "#/components/schemas/PageableObject"
           },
           "numberOfElements" : {
             "type" : "integer",
             "format" : "int32"
           },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
+          "first" : {
+            "type" : "boolean"
+          },
+          "last" : {
+            "type" : "boolean"
           },
           "empty" : {
             "type" : "boolean"
