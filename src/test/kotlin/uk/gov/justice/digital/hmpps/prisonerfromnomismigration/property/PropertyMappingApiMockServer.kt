@@ -34,7 +34,6 @@ class PropertyMappingApiMockServer(private val jsonMapper: JsonMapper) {
       bookingId = 123456,
       nomisPropertyContainerId = 1234567,
       dpsPropertyContainerId = UUID.randomUUID().toString(),
-      offenderNo = "A1234KT",
       mappingType = MIGRATED,
     ),
   ) {

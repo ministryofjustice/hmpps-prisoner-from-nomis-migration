@@ -161,7 +161,6 @@ class PropertySyncIntTest(
                 .withRequestBody(matchingJsonPath("dpsPropertyContainerId", equalTo(DPS_ID)))
                 .withRequestBody(matchingJsonPath("nomisPropertyContainerId", equalTo(NOMIS_ID.toString())))
                 .withRequestBody(matchingJsonPath("bookingId", equalTo(BOOKING_ID.toString())))
-                .withRequestBody(matchingJsonPath("offenderNo", equalTo(OFFENDER_ID_DISPLAY)))
                 .withRequestBody(matchingJsonPath("mappingType", equalTo("NOMIS_CREATED"))),
             )
           }
@@ -245,7 +244,6 @@ class PropertySyncIntTest(
                   assertThat(it["nomisPropertyContainerId"]).isEqualTo(NOMIS_ID.toString())
                   assertThat(it["dpsPropertyContainerId"]).isEqualTo(DPS_ID)
                   assertThat(it["mapping"]).isEqualTo("initial-failure")
-                  assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 },
                 isNull(),
               )
@@ -258,7 +256,6 @@ class PropertySyncIntTest(
                   assertThat(it["dpsPropertyContainerId"]).isEqualTo(DPS_ID)
                   assertThat(it["nomisPropertyContainerId"]).isEqualTo(NOMIS_ID.toString())
                   assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
-                  assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
                 },
                 isNull(),
               )
@@ -424,7 +421,6 @@ class PropertySyncIntTest(
             dpsPropertyContainerId = DPS_ID,
             nomisPropertyContainerId = NOMIS_ID,
             bookingId = BOOKING_ID,
-            offenderNo = OFFENDER_ID_DISPLAY,
             mappingType = PropertyContainerMappingDto.MappingType.MIGRATED,
           ),
         )

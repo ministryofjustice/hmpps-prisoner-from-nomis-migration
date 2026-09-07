@@ -135,7 +135,6 @@ class PropertyMigrationService(
         label = context.migrationId,
         mappingType = PropertyContainerMappingDto.MappingType.MIGRATED,
         bookingId = bookingId,
-        offenderNo = offenderNo,
       ),
       object : ParameterizedTypeReference<DuplicateErrorResponse<PropertyContainerMappingDto>>() {},
     ).also {
@@ -169,7 +168,6 @@ class PropertyMigrationService(
           dpsPropertyContainerId = dpsId.toString(),
           mappingType = PropertyContainerMappingDto.MappingType.MIGRATED,
           bookingId = bookingId,
-          offenderNo = offenderNo,
         ),
       ),
     )

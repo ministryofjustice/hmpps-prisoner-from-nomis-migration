@@ -22,7 +22,6 @@ class PropertyEventListener(
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
-
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }

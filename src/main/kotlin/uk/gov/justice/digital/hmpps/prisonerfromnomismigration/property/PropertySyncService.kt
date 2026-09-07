@@ -66,7 +66,6 @@ class PropertySyncService(
                 dpsPropertyContainerId = dpsResponse.dpsId.toString(),
                 nomisPropertyContainerId = dpsResponse.nomisPropertyContainerId,
                 bookingId = nomisPropertyContainer.bookingId,
-                offenderNo = nomisPropertyContainer.offenderNo,
                 mappingType = PropertyContainerMappingDto.MappingType.NOMIS_CREATED,
               ),
             )
@@ -93,7 +92,6 @@ class PropertySyncService(
           "bookingId" to mapping.bookingId.toString(),
           "dpsPropertyContainerId" to mapping.dpsPropertyContainerId,
           "nomisPropertyContainerId" to mapping.nomisPropertyContainerId.toString(),
-          "offenderNo" to mapping.offenderNo,
         ),
       )
       return MappingResponse.MAPPING_FAILED
