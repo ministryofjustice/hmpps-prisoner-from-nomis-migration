@@ -277,4 +277,56 @@ class TransferScheduleNomisApiServiceTest {
       }
     }
   }
+
+  @Nested
+  inner class GetBookingTransferMovementsTest {
+    @Test
+    internal fun `will pass oath2 token to service`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetBookingTransferMovements(bookingId = 12345L)
+
+      apiService.getBookingTransferMovementsOrNull(bookingId = 12345L)
+
+      transferScheduleNomisApiMockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will pass booking ID to service`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetBookingTransferMovements(bookingId = 12345L)
+
+      apiService.getBookingTransferMovementsOrNull(bookingId = 12345L)
+
+      transferScheduleNomisApiMockServer.verify(
+        getRequestedFor(urlPathEqualTo("/movements/booking/12345/transfer")),
+      )
+    }
+
+    @Test
+    fun `will return booking transfer movements`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetBookingTransferMovements(bookingId = 12345L)
+
+      val result = apiService.getBookingTransferMovementsOrNull(bookingId = 12345L)!!
+
+      assertThat(result.transferSchedules).hasSize(1)
+      assertThat(result.transferSchedules[0].movement?.sequence).isEqualTo(3)
+      assertThat(result.unscheduledTransferMovements[0].sequence).isEqualTo(4)
+    }
+
+    @Test
+    fun `will return null when booking does not exist`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetBookingTransferMovements(status = NOT_FOUND)
+
+      assertThat(apiService.getBookingTransferMovementsOrNull(bookingId = 12345L)).isNull()
+    }
+
+    @Test
+    fun `will throw error when API returns an error`() = runTest {
+      transferScheduleNomisApiMockServer.stubGetBookingTransferMovements(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getBookingTransferMovementsOrNull(bookingId = 12345L)
+      }
+    }
+  }
 }
