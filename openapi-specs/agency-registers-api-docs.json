@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-02.455.ca69b59"
+    "version" : "2026-09-04.465.f9e8eb2"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -645,7 +645,7 @@
       "put" : {
         "tags" : [ "court-resource" ],
         "summary" : "Update specified court details",
-        "description" : "Updates court information, excluding its addresses. Requires role ROLE_HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "description" : "Updates court information, excluding its addresses. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
         "operationId" : "updateCourt",
         "parameters" : [ {
           "name" : "courtId",
@@ -729,7 +729,7 @@
       "put" : {
         "tags" : [ "court-resource" ],
         "summary" : "Update specified court phone number",
-        "description" : "Updates a single phone number for a court. Requires role ROLE_HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "description" : "Updates a single phone number for a court. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
         "operationId" : "updateCourtPhoneNumber",
         "parameters" : [ {
           "name" : "courtId",
@@ -825,7 +825,7 @@
       "put" : {
         "tags" : [ "court-resource" ],
         "summary" : "Update specified court email address",
-        "description" : "Updates a single email address for a court. Requires role ROLE_HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "description" : "Updates a single email address for a court. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
         "operationId" : "updateCourtEmailAddress",
         "parameters" : [ {
           "name" : "courtId",
@@ -921,7 +921,7 @@
       "put" : {
         "tags" : [ "court-resource" ],
         "summary" : "Update specified court address",
-        "description" : "Updates a single address for a court. Requires role ROLE_HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "description" : "Updates a single address for a court. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
         "operationId" : "updateCourtAddress",
         "parameters" : [ {
           "name" : "courtId",
@@ -1337,6 +1337,87 @@
           },
           "403" : {
             "description" : "Incorrect permissions to add or update agency",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courts" : {
+      "get" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Get all courts",
+        "description" : "Information on all courts",
+        "operationId" : "getCourts",
+        "responses" : {
+          "200" : {
+            "description" : "Successful Operation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CourtDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Create a new court",
+        "description" : "Creates a court, along with any addresses, email addresses and phone numbers supplied. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
+        "operationId" : "createCourt",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateCourtDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Court Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourtDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to create a court",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -1769,29 +1850,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/HospitalDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/courts" : {
-      "get" : {
-        "tags" : [ "court-resource" ],
-        "summary" : "Get all courts",
-        "description" : "Information on all courts",
-        "operationId" : "getCourts",
-        "responses" : {
-          "200" : {
-            "description" : "Successful Operation",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/CourtDto"
-                  }
                 }
               }
             }
@@ -2844,6 +2902,116 @@
           }
         },
         "required" : [ "updated" ]
+      },
+      "CreateCourtDto" : {
+        "type" : "object",
+        "description" : "Court Create Record",
+        "properties" : {
+          "courtId" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "courtName" : {
+            "type" : "string",
+            "description" : "Name",
+            "example" : "N Staffs Youth Court - Newcastle",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "description" : "Description",
+            "example" : "North Staffordshire Youth Court - Newcastle under Lyme",
+            "maxLength" : 3000,
+            "minLength" : 0
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether still active"
+          },
+          "inactiveDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date made inactive",
+            "example" : "2023-12-31"
+          },
+          "cjitCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "CJIT Code",
+            "example" : "123456789",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "accessibleAccess" : {
+            "type" : [ "string", "null" ],
+            "description" : "Accessible access",
+            "enum" : [ "NONE", "ACCESSIBLE", "BY_ARRANGEMENT_ONLY", "WHEELCHAIR_ACCESS" ],
+            "example" : "ACCESSIBLE"
+          },
+          "areaCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Area code",
+            "example" : "52",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "regionCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Region code",
+            "example" : "YOHUM",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "geographicalAreaCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Geographical Area code",
+            "example" : "WYORKS",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "localAuthorityCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Local Authority code",
+            "example" : "00CG"
+          },
+          "payrollRegionCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Prisoner Payroll Region code",
+            "example" : "NEY"
+          },
+          "courtTypeCode" : {
+            "type" : "string",
+            "description" : "Court Type code",
+            "example" : "CC",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "addresses" : {
+            "type" : "array",
+            "description" : "Addresses",
+            "items" : {
+              "$ref" : "#/components/schemas/UpdateAddressDto"
+            }
+          },
+          "emailAddresses" : {
+            "type" : "array",
+            "description" : "Email addresses",
+            "items" : {
+              "$ref" : "#/components/schemas/UpdateEmailAddressDto"
+            }
+          },
+          "phoneNumbers" : {
+            "type" : "array",
+            "description" : "Phone numbers",
+            "items" : {
+              "$ref" : "#/components/schemas/UpdatePhoneNumberDto"
+            }
+          }
+        },
+        "required" : [ "active", "addresses", "courtId", "courtName", "courtTypeCode", "emailAddresses", "phoneNumbers" ]
       },
       "ProbationOfficeDto" : {
         "type" : "object",
