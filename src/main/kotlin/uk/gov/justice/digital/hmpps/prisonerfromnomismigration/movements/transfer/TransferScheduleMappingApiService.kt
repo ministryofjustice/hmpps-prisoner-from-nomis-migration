@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TransferSchedulerPrisonerResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferScheduleMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingsDto
 
@@ -66,4 +67,9 @@ class TransferScheduleMappingApiService(@Qualifier("transferScheduleMappingApiWe
     .awaitSingle()
 
   suspend fun getMappings(offenderNo: String): TransferSchedulerPrisonerMappingIdsDto = prisonerApi.getAllTransferSchedulerPrisonerMappingIds(offenderNo).awaitSingle()
+
+  suspend fun getTransferScheduleMoveBookingMappings(bookingId: Long): TransferSchedulerMoveBookingMappingDto = prisonerApi.getTransferSchedulerBookingMappings(bookingId).awaitSingle()
+
+  suspend fun moveTransferScheduleBookingMappings(bookingId: Long, fromOffenderNo: String, toOffenderNo: String): Unit = prisonerApi.moveTransferSchedulerBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
+    .awaitSingle()
 }
