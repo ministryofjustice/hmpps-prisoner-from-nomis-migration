@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferScheduleMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerBookingMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.jsonMapper
@@ -262,6 +263,62 @@ class TransferScheduleMappingApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetTransferSchedulerPrisonerMappingIds(prisonerNumber: String = "A1234BC", status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/transfer-scheduler/$prisonerNumber/ids")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubGetMoveBookingMappings(
+    bookingId: Long = 12345,
+    mappings: TransferSchedulerMoveBookingMappingDto,
+  ) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/transfer-scheduler/move-booking/$bookingId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(jsonMapper.writeValueAsString(mappings)),
+      ),
+    )
+  }
+
+  fun stubGetMoveBookingMappingsError(
+    bookingId: Long = 12345,
+    status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/transfer-scheduler/move-booking/$bookingId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
+  fun stubMoveBookingMappings(bookingId: Long = 12345L, fromOffenderNo: String = "A1234AA", toOffenderNo: String = "B1234BB") {
+    mappingApi.stubFor(
+      put("/mapping/transfer-scheduler/move-booking/$bookingId/from/$fromOffenderNo/to/$toOffenderNo")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(200),
+        ),
+    )
+  }
+
+  fun stubMoveBookingMappingsError(
+    bookingId: Long = 12345L,
+    fromOffenderNo: String = "A1234AA",
+    toOffenderNo: String = "B1234BB",
+    status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(
+      put("/mapping/transfer-scheduler/move-booking/$bookingId/from/$fromOffenderNo/to/$toOffenderNo").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
