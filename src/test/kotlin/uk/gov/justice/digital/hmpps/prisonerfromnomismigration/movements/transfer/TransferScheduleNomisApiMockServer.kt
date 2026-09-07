@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transf
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -150,6 +151,38 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetBookingTransferMovements(
+    bookingId: Long = 12345L,
+    response: BookingTransferMovements = bookingTransferMovements(),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/movements/booking/$bookingId/transfer")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(OK.value())
+          .withBody(jsonMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun verifyGetBookingTransferMovements(bookingId: Long = 12345L, count: Int = 1) {
+    nomisApi.verify(
+      count,
+      getRequestedFor(urlPathEqualTo("/movements/booking/$bookingId/transfer")),
+    )
+  }
+
+  fun stubGetBookingTransferMovements(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    nomisApi.stubFor(
+      get(urlPathMatching("/movements/booking/.*/transfer")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 
@@ -257,6 +290,25 @@ class TransferScheduleNomisApiMockServer(private val jsonMapper: JsonMapper) {
           unscheduledTransferMovements = unscheduledMovements,
         ),
       ),
+    )
+
+    fun bookingTransferMovements(
+      bookingId: Long = 12345L,
+      activeBooking: Boolean = true,
+      latestBooking: Boolean = true,
+      transferSchedules: List<BookingTransferSchedule> = listOf(
+        BookingTransferSchedule(
+          schedule = transferScheduleOutResponse(eventId = 1L, waitlist = transferScheduleWaitlistResponse(status = "APPROVED")),
+          movement = transferMovementOutResponse().copy(eventId = 1L, sequence = 3),
+        ),
+      ),
+      unscheduledTransferMovements: List<TransferMovementOut> = listOf(transferMovementOutResponse().copy(transferScheduleOutId = null, sequence = 4)),
+    ) = BookingTransferMovements(
+      bookingId = bookingId,
+      activeBooking = activeBooking,
+      latestBooking = latestBooking,
+      transferSchedules = transferSchedules,
+      unscheduledTransferMovements = unscheduledTransferMovements,
     )
   }
 }
