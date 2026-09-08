@@ -102,3 +102,5 @@ fun bookingDeletedEvent(
     }
 }
   """.trimIndent()
+
+fun generateUUID(i: Int): String = "00001111-2222-3333-4444-000000${i.toString().padStart(6, '0')}"

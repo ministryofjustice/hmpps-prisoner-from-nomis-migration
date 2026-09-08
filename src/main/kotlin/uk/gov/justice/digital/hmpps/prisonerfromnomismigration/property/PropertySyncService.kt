@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -150,6 +151,30 @@ class PropertySyncService(
       ),
     )
     // TODO: not sure if this ever happens
+  }
+
+  suspend fun bookingMoved(prisonerMergeEvent: PrisonerBookingMovedDomainEvent) {
+    val (movedToNomsNumber, movedFromNomsNumber, bookingId) = prisonerMergeEvent.additionalInformation
+
+    val telemetryName = "property-booking-moved"
+    val telemetry = telemetryOf(
+      "bookingId" to bookingId,
+      "movedToNomsNumber" to movedToNomsNumber,
+      "movedFromNomsNumber" to movedFromNomsNumber,
+    )
+
+    track(telemetryName, telemetry) {
+      val idsToResynchronise = propertyMappingService.getMappingsByBookingId(bookingId)
+        .map { UUID.fromString(it.dpsPropertyContainerId) }
+
+      telemetry["count"] = idsToResynchronise.size
+
+      propertyDpsApiService.move(
+        movedFromNomsNumber,
+        movedToNomsNumber,
+        idsToResynchronise,
+      )
+    }
   }
 
   enum class MappingResponse {

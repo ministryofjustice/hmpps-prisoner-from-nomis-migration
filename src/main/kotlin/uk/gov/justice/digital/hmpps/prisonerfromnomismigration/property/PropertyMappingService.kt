@@ -24,9 +24,15 @@ class PropertyMappingService(
     .awaitSingleOrNullForNotFound()
 
   suspend fun getLatestMigratedPropertyContainerMapping() = api
-    .getLatestMigratedPropertyContainerMapping().awaitSingle()
+    .getLatestMigratedPropertyContainerMapping()
+    .awaitSingle()
+
+  suspend fun getMappingsByBookingId(bookingId: Long) = api
+    .getPropertyContainerMappingsByBookingId(bookingId)
+    .awaitSingle()
 
   override suspend fun getMigrationCount(migrationId: String) = api
-    .getPropertyContainerMappingsByMigrationIdCount(migrationId).awaitSingle()
+    .getPropertyContainerMappingsByMigrationIdCount(migrationId)
+    .awaitSingle()
   // ^ not using superclass for this as the endpoint is a pure count
 }

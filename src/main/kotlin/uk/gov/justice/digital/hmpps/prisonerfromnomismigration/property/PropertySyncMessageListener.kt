@@ -41,7 +41,9 @@ class PropertyEventListener(
               "PRISONER_PROPERTY-UPDATED" -> propertySyncService.updated(sqsMessage.Message.fromJson())
               "PRISONER_PROPERTY-DELETED" -> propertySyncService.deleted(sqsMessage.Message.fromJson())
 
-              else -> log.info("Received a message I wasn't expecting {}", eventType)
+              "prison-offender-events.prisoner.booking.moved" -> propertySyncService.bookingMoved(sqsMessage.Message.fromJson())
+
+              else -> log.info("Received a property message I wasn't expecting {}", eventType)
             }
           } else {
             log.info("Feature switch is disabled for event {}", eventType)

@@ -17,4 +17,8 @@ class PropertyDpsApiService(@Qualifier("propertyApiWebClient") private val webCl
 
   suspend fun upsert(request: SyncPropertyContainerRequest): SyncPropertyContainerResponse = api
     .upsert(request).awaitSingle()
+
+  suspend fun move(source: String, target: String, ids: List<java.util.UUID>) {
+    api.moveToPrisoner(source, target, ids).awaitSingle()
+  }
 }
