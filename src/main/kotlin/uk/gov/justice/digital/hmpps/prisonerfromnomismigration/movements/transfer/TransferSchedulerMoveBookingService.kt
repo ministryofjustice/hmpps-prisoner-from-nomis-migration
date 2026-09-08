@@ -42,7 +42,7 @@ class TransferSchedulerMoveBookingService(
 
     track("transfer-scheduler-move-booking", telemetry) {
       val booking = nomisApi.getBookingTransferMovementsOrNull(bookingId)
-      if (booking == null) {
+      if (booking == null || booking.isEmpty()) {
         telemetry["reason"] = "No transfers found for booking=$bookingId"
         telemetryClient.trackEvent("transfer-scheduler-move-booking-ignored", telemetry)
         return
@@ -107,5 +107,7 @@ class TransferSchedulerMoveBookingService(
     migrationService.resyncPrisonerTransferMovements(toOffenderNo)
   }
 }
+
+private fun BookingTransferMovements.isEmpty() = transferSchedules.isEmpty() && unscheduledTransferMovements.isEmpty()
 
 class TransferSchedulerMoveBookingException(message: String) : RuntimeException(message)

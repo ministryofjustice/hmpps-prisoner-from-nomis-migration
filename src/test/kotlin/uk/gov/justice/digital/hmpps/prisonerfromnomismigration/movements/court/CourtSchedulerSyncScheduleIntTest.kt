@@ -940,7 +940,7 @@ class CourtSchedulerSyncScheduleIntTest(
         dpsApi.stubSyncCourtEventError("A1234BC", status = 500)
 
         sendMessage(courtScheduleEvent("COURT_EVENTS-UPDATED"))
-          .also { waitForAnyProcessingToComplete("court-scheduler-sync-schedule-updated-error") }
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-schedule-updated-error", times = 2) }
       }
 
       @Test
@@ -954,7 +954,7 @@ class CourtSchedulerSyncScheduleIntTest(
 
       @Test
       fun `should create error telemetry`() {
-        verify(telemetryClient).trackEvent(
+        verify(telemetryClient, times(2)).trackEvent(
           eq("court-scheduler-sync-schedule-updated-error"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
@@ -1333,7 +1333,7 @@ class CourtSchedulerSyncScheduleIntTest(
         dpsApi.stubDeleteCourtEventError(dpsCourtAppearanceId, 500)
 
         sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED"))
-          .also { waitForAnyProcessingToComplete("court-scheduler-sync-schedule-deleted-error") }
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-schedule-deleted-error", times = 2) }
       }
 
       @Test
@@ -1356,7 +1356,7 @@ class CourtSchedulerSyncScheduleIntTest(
 
       @Test
       fun `should create success telemetry`() {
-        verify(telemetryClient).trackEvent(
+        verify(telemetryClient, times(2)).trackEvent(
           eq("court-scheduler-sync-schedule-deleted-error"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
@@ -1443,7 +1443,7 @@ class CourtSchedulerSyncScheduleIntTest(
         nomisSyncApi.stubRecreateCourtScheduleInNomis(status = HttpStatus.BAD_REQUEST)
 
         sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED"))
-          .also { waitForAnyProcessingToComplete("court-scheduler-sync-schedule-deleted-error") }
+          .also { waitForAnyProcessingToComplete("court-scheduler-sync-schedule-deleted-error", times = 2) }
       }
 
       @Test
@@ -1468,7 +1468,7 @@ class CourtSchedulerSyncScheduleIntTest(
 
       @Test
       fun `should create error telemetry`() {
-        verify(telemetryClient).trackEvent(
+        verify(telemetryClient, times(2)).trackEvent(
           eq("court-scheduler-sync-schedule-deleted-error"),
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
