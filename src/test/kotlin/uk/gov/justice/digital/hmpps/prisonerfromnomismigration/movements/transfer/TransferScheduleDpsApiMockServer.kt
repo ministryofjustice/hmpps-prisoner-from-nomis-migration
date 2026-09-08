@@ -16,6 +16,7 @@ import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension.Companion.dpsTransferSchedulerServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.MoveTransfersRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ReferenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ResyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncMovement
@@ -150,6 +151,18 @@ class TransferScheduleDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
       ),
     )
+
+    fun moveBookingRequest(
+      fromPrisoner: String = "A1234BC",
+      toPrisoner: String = "A1234BD",
+      transferIds: List<UUID> = listOf(UUID.randomUUID()),
+      // TODO SDIT-4117 Waiting for the DPS API to acceot unscheduledMovementIds
+      unscheduledMovementIds: List<UUID> = listOf(UUID.randomUUID()),
+    ) = MoveTransfersRequest(
+      from = fromPrisoner,
+      to = toPrisoner,
+      transferIds = transferIds.toSet(),
+    )
   }
 
   fun stubSyncTransferSchedule(personIdentifier: String, response: ReferenceId = referenceId()) {
@@ -279,6 +292,32 @@ class TransferScheduleDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     dpsTransferSchedulerServer.stubFor(
       put("/resync/transfers/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(error)),
+        ),
+    )
+  }
+
+  fun stubMoveBooking() {
+    dpsTransferSchedulerServer.stubFor(
+      put("/move/transfers")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubMoveBookingError(
+    status: Int = 500,
+    error: ErrorResponse = ErrorResponse(status = status),
+  ) {
+    dpsTransferSchedulerServer.stubFor(
+      put("/move/transfers")
         .willReturn(
           aResponse()
             .withStatus(status)

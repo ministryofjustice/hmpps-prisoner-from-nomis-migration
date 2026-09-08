@@ -17,6 +17,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension.Companion.dpsTransferSchedulerServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiMockServer.Companion.moveBookingRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiMockServer.Companion.referenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiMockServer.Companion.syncTransferMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiMockServer.Companion.syncTransferRequest
@@ -250,6 +251,70 @@ class TransferScheduleDpsApiServiceTest {
       dpsTransferSchedulerServer.stubResyncPrisonerTransfers(status = 404)
 
       assertThat(apiService.resyncPrisoner("A1234BC", request)).isNull()
+    }
+  }
+
+  @Nested
+  inner class MoveBooking {
+    val request = moveBookingRequest()
+
+    @Test
+    internal fun `should pass oath2 token`() = runTest {
+      dpsTransferSchedulerServer.stubMoveBooking()
+
+      apiService.moveBooking(request)
+
+      dpsTransferSchedulerServer.verify(
+        putRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `should call the move endpoint`() = runTest {
+      dpsTransferSchedulerServer.stubMoveBooking()
+
+      apiService.moveBooking(request)
+
+      dpsTransferSchedulerServer.verify(
+        putRequestedFor(urlPathEqualTo("/move/transfers"))
+          .withRequestBody(
+            matchingJsonPath(
+              "from",
+              equalTo(request.from),
+            ),
+          )
+          .withRequestBody(
+            matchingJsonPath(
+              "to",
+              equalTo(request.to),
+            ),
+          )
+          .withRequestBody(matchingJsonPath("transferIds.size()", equalTo("1")))
+          .withRequestBody(
+            matchingJsonPath(
+              "transferIds[0]",
+              equalTo("${request.transferIds.first()}"),
+            ),
+          ),
+// TODO SDIT-4117 Waiting for the DPS API to accept unscheduledMovementIds±
+//          .withRequestBody(matchingJsonPath("unscheduledMovementIds.size()", equalTo("1")))
+//          .withRequestBody(
+//            matchingJsonPath(
+//              "unscheduledMovementIds[0]",
+//              equalTo("${request.unscheduledMovementIds.first()}"),
+//            ),
+//          ),
+      )
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      dpsTransferSchedulerServer.stubMoveBookingError()
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.moveBooking(request)
+      }
     }
   }
 }
