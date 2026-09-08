@@ -22,4 +22,7 @@ abstract class TransferSchedulerIntegrationTestBase : SqsIntegrationTestBase() {
 
   @MockitoSpyBean
   protected lateinit var transferScheduleSyncScheduleService: TransferScheduleSyncScheduleService
+
+  @MockitoSpyBean
+  protected lateinit var transferSchedulerMigrationService: TransferScheduleMigrationService
 }

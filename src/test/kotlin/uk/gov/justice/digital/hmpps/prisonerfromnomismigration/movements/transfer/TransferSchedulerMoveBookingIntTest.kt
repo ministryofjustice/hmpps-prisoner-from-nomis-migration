@@ -8,6 +8,13 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.check
+import org.mockito.kotlin.doNothing
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -68,6 +75,7 @@ class TransferSchedulerMoveBookingIntTest(
       mappingApi.stubGetMoveBookingMappings(bookingId = 12345L, transferMappings)
       dpsApi.stubMoveBooking()
       mappingApi.stubMoveBookingMappings(bookingId = 12345L, fromOffenderNo = "A1000KT", toOffenderNo = "A1234KT")
+      doNothing().whenever(transferSchedulerMigrationService).resyncPrisonerTransferMovements(any())
 
       sendMessage(
         bookingMovedDomainEvent(
@@ -103,6 +111,110 @@ class TransferSchedulerMoveBookingIntTest(
     @Test
     fun `should move mappings to the new offender no`() {
       mappingApi.verify(putRequestedFor(urlEqualTo("/mapping/transfer-scheduler/move-booking/12345/from/A1000KT/to/A1234KT")))
+    }
+
+    @Test
+    fun `should resync each offender`() = runTest {
+      verify(transferSchedulerMigrationService).resyncPrisonerTransferMovements("A1000KT")
+      verify(transferSchedulerMigrationService).resyncPrisonerTransferMovements("A1234KT")
+    }
+
+    @Test
+    fun `should publish telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("transfer-scheduler-move-booking-success"),
+        check {
+          assertThat(it["bookingId"]).isEqualTo("12345")
+          assertThat(it["fromOffenderNo"]).isEqualTo("A1000KT")
+          assertThat(it["toOffenderNo"]).isEqualTo("A1234KT")
+          assertThat(it["nomisEventIds"]).contains("$eventId")
+          assertThat(it["dpsTransferIds"]).contains("$dpsTransferScheduleId")
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  inner class MappingFailureRetry {
+    private val eventId = 123L
+    private val dpsTransferScheduleId: UUID = UUID.randomUUID()
+
+    private val nomisTransfers = BookingTransferMovements(
+      bookingId = 12345L,
+      activeBooking = true,
+      latestBooking = true,
+      transferSchedules = listOf(
+        BookingTransferSchedule(
+          schedule = transferScheduleOutResponse(eventId = eventId),
+        ),
+      ),
+      unscheduledTransferMovements = listOf(),
+    )
+
+    private val transferMappings = TransferSchedulerMoveBookingMappingDto(
+      scheduleIds = listOf(
+        TransferScheduleIdMapping(eventId, dpsTransferScheduleId),
+      ),
+      movementIds = listOf(),
+    )
+
+    @BeforeEach
+    fun setUp() = runTest {
+      nomisApi.stubGetBookingTransferMovements(bookingId = 12345L, nomisTransfers)
+      mappingApi.stubGetMoveBookingMappings(bookingId = 12345L, transferMappings)
+      dpsApi.stubMoveBooking()
+      mappingApi.stubMoveBookingMappingsFailureFollowedBySuccess(bookingId = 12345L, fromOffenderNo = "A1000KT", toOffenderNo = "A1234KT")
+      doNothing().whenever(transferSchedulerMigrationService).resyncPrisonerTransferMovements(any())
+
+      sendMessage(
+        bookingMovedDomainEvent(
+          bookingId = 12345L,
+          movedToNomsNumber = "A1234KT",
+          movedFromNomsNumber = "A1000KT",
+        ),
+      )
+        .also { waitForAnyProcessingToComplete("transfer-scheduler-move-booking-mapping-retry-updated") }
+    }
+
+    @Test
+    fun `should move DPS IDs once`() {
+      getRequestBody<MoveTransfersRequest>(
+        putRequestedFor(urlEqualTo("/move/transfers")),
+      ).apply {
+        assertThat(from).isEqualTo("A1000KT")
+        assertThat(to).isEqualTo("A1234KT")
+        assertThat(transferIds).containsExactlyInAnyOrder(dpsTransferScheduleId)
+      }
+    }
+
+    @Test
+    fun `should attempt to move mappings to the new offender twice`() {
+      mappingApi.verify(
+        count = 2,
+        putRequestedFor(urlEqualTo("/mapping/transfer-scheduler/move-booking/12345/from/A1000KT/to/A1234KT")),
+      )
+    }
+
+    @Test
+    fun `should resync each offender`() = runTest {
+      verify(transferSchedulerMigrationService).resyncPrisonerTransferMovements("A1000KT")
+      verify(transferSchedulerMigrationService).resyncPrisonerTransferMovements("A1234KT")
+    }
+
+    @Test
+    fun `should publish telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("transfer-scheduler-move-booking-success"),
+        check {
+          assertThat(it["bookingId"]).isEqualTo("12345")
+          assertThat(it["fromOffenderNo"]).isEqualTo("A1000KT")
+          assertThat(it["toOffenderNo"]).isEqualTo("A1234KT")
+          assertThat(it["nomisEventIds"]).contains("$eventId")
+          assertThat(it["dpsTransferIds"]).contains("$dpsTransferScheduleId")
+        },
+        isNull(),
+      )
     }
   }
 

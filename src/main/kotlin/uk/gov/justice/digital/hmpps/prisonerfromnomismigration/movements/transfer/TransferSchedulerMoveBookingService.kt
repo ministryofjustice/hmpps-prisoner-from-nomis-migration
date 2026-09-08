@@ -4,13 +4,19 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.BookingMovedAdditionalInformationEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMoveBookingException
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransfersRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TRANSFER_SCHEDULER
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferScheduleIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTransferMovements
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.MoveTransfersRequest
 
 @Service
@@ -18,6 +24,8 @@ class TransferSchedulerMoveBookingService(
   private val nomisApi: TransferScheduleNomisApiService,
   private val mappingApi: TransferScheduleMappingApiService,
   private val dpsApi: TransferScheduleDpsApiService,
+  private val queueService: SynchronisationQueueService,
+  private val migrationService: TransferScheduleMigrationService,
   override val telemetryClient: TelemetryClient,
 ) : TelemetryEnabled {
   companion object {
@@ -51,7 +59,7 @@ class TransferSchedulerMoveBookingService(
         ),
       )
 
-      mappingApi.moveTransferScheduleBookingMappings(bookingId, fromOffender, toOffender)
+      tryToMoveBookingMappings(bookingId, fromOffender, toOffender, telemetry)
     }
   }
 
@@ -64,7 +72,40 @@ class TransferSchedulerMoveBookingService(
     .map { nomisEventId ->
       mappings.find { it.nomisEventId == nomisEventId }
         ?.dpsTransferScheduleId
-        ?: throw CourtSchedulerMoveBookingException("No transfer schedule mapping found for eventId=$nomisEventId")
+        ?: throw TransferSchedulerMoveBookingException("No transfer schedule mapping found for eventId=$nomisEventId")
     }
     .also { telemetry["dpsTransferIds"] = "$it" }
+
+  private suspend fun tryToMoveBookingMappings(bookingId: Long, fromOffenderNo: String, toOffenderNo: String, telemetry: MutableMap<String, Any>) {
+    try {
+      moveMappingsAndResync(bookingId, fromOffenderNo, toOffenderNo)
+    } catch (e: Exception) {
+      log.error("Failed to move booking mappings for bookingId=$bookingId", e)
+      queueService.sendMessage(
+        messageType = RETRY_MOVE_BOOKING_MAPPING_TRANSFER_SCHEDULER.name,
+        synchronisationType = SynchronisationType.TRANSFER_SCHEDULER,
+        message = BookingMovedAdditionalInformationEvent(toOffenderNo, fromOffenderNo, bookingId),
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+
+  suspend fun retryMoveBookingMapping(retryMessage: InternalMessage<BookingMovedAdditionalInformationEvent>) {
+    val (toOffenderNo, fromOffenderNo, bookingId) = retryMessage.body
+    moveMappingsAndResync(bookingId, fromOffenderNo, toOffenderNo)
+      .also {
+        telemetryClient.trackEvent(
+          "transfer-scheduler-move-booking-mapping-retry-updated",
+          retryMessage.telemetryAttributes,
+        )
+      }
+  }
+
+  suspend fun moveMappingsAndResync(bookingId: Long, fromOffenderNo: String, toOffenderNo: String) {
+    mappingApi.moveTransferScheduleBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
+    migrationService.resyncPrisonerTransferMovements(fromOffenderNo)
+    migrationService.resyncPrisonerTransferMovements(toOffenderNo)
+  }
 }
+
+class TransferSchedulerMoveBookingException(message: String) : RuntimeException(message)

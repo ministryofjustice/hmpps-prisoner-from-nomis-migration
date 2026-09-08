@@ -327,6 +327,10 @@ class TransferScheduleMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubMoveBookingMappingsFailureFollowedBySuccess(bookingId: Long = 12345L, fromOffenderNo: String = "A1234AA", toOffenderNo: String = "B1234BB") {
+    mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/transfer-scheduler/move-booking/$bookingId/from/$fromOffenderNo/to/$toOffenderNo", WireMock::put)
+  }
+
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
