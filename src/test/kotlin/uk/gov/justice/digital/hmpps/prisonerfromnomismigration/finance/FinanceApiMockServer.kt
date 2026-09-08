@@ -17,13 +17,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceAp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerPointInTimeBalance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.HoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerAccountPointInTimeBalance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleaseHoldRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleasedHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.math.BigDecimal
 import java.time.LocalDateTime
+import java.util.UUID
 
 class FinanceApiExtension :
   BeforeAllCallback,
@@ -105,6 +110,23 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
       ),
     )
+    fun addHoldDto() = SyncCreateHoldRequest(
+      prisonNumber = "A1234BC",
+      subAccountCode = 2101,
+      holdNumber = 12345,
+      createdAt = LocalDateTime.parse("2025-06-01T01:02:03"),
+      createdBy = "testUser",
+      holdFromDate = LocalDateTime.parse("2025-06-01T01:02:03"),
+      isReleased = false,
+      holdType = "HOA",
+      holdLocation = "Some location",
+      amount = BigDecimal.valueOf(10.00),
+      holdUntilDate = LocalDateTime.parse("2025-09-09T04:05:06"),
+      description = "This is a hold",
+    )
+    fun releaseHoldDto() = SyncReleaseHoldRequest(
+      releaseDateTime = LocalDateTime.parse("2025-06-04T05:06:07"),
+    )
   }
 
   fun stubHealthPing(status: Int) {
@@ -166,6 +188,54 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(200)
             .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubAddHold(
+    response: HoldResponse = HoldResponse(
+      id = UUID.randomUUID(),
+      prisonNumber = "A1234BC",
+      legacyHoldNumber = 12345,
+      subAccountRef = HoldResponse.SubAccountRef.CASH,
+      createdAt = LocalDateTime.parse("2025-06-01T01:02:03"),
+      createdBy = "testUser",
+      holdFromDate = LocalDateTime.parse("2025-06-01T01:02:03"),
+      isReleased = false,
+      holdType = HoldResponse.HoldType.HOA,
+      amount = 125,
+      holdLocation = "Some location",
+      holdUntilDate = LocalDateTime.parse("2025-06-03T04:05:06"),
+      description = "This is a hold",
+    ),
+  ) {
+    stubFor(
+      post("/sync/holds")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubReleaseHold(
+    holdNumber: Long = 12345,
+    response: SyncReleasedHoldResponse = SyncReleasedHoldResponse(
+      prisonNumber = "A1234BC",
+      holdNumber = holdNumber,
+      amountReleased = BigDecimal(12.5),
+      releasedAt = LocalDateTime.parse("2025-06-06T04:05:06"),
+    ),
+  ) {
+    stubFor(
+      post("/sync/holds/$holdNumber/release")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
