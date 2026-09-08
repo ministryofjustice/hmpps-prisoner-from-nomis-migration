@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
@@ -36,10 +37,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repos
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiMockServer.Companion.verifyUserMigrationRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUser
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccount
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffDpsApiMockServer.Companion.verifyUserSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.PrisonUserSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncPrisonUserAccount
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -119,7 +119,7 @@ class StaffMigrationIntTest(
 
         mappingApiMock.stubGetStaffByNomisIdOrNull(mapping = null)
         nomisApiMock.stubGetStaffDetailsById()
-        dpsApiMock.stubMigrateStaff(dpsStaffId = dpsStaffId)
+        dpsApiMock.stubSyncStaff(dpsStaffId = dpsStaffId)
 
         mappingApiMock.stubCreateMapping()
         mappingApiMock.stubGetPagedModelMigrationCount(migrationId = ".*", count = 1)
@@ -154,7 +154,7 @@ class StaffMigrationIntTest(
 
       @Test
       fun `will transform and migrate staff into DPS`() {
-        verifyUserMigrationRequest()
+        verifyUserSyncRequest()
       }
 
       @Test
@@ -262,8 +262,8 @@ class StaffMigrationIntTest(
         nomisApiMock.stubGetStaffDetailsById()
         nomisApiMock.stubGetStaffDetailsById(nomisStaffId = 2345)
 
-        dpsApiMock.stubMigrateStaff(dpsStaffId = dpsStaffId)
-        dpsApiMock.stubMigrateStaff(nomisStaffId = 2345, dpsStaffId = dpsStaffId)
+        dpsApiMock.stubSyncStaff(dpsStaffId = dpsStaffId)
+        dpsApiMock.stubSyncStaff(nomisStaffId = 2345, dpsStaffId = dpsStaffId)
 
         mappingApiMock.stubCreateMapping()
         mappingApiMock.stubGetPagedModelMigrationCount(migrationId = ".*", count = 2)
@@ -272,66 +272,64 @@ class StaffMigrationIntTest(
 
       @Test
       fun `will map and transform staff ids`() {
-        val migrationRequests: List<UserMigrationRequest> = StaffDpsApiExtension.getRequestBodies(
-          postRequestedFor(urlPathEqualTo("/migrate/user")),
+        val migrationRequests: List<PrisonUserSyncRequest> = StaffDpsApiExtension.getRequestBodies(
+          putRequestedFor(urlPathEqualTo("/sync/user/1234")),
         )
 
-        with(migrationRequests.first { it.user.staffId == 1234L }) {
-          with(user) {
-            assertThat(staffId).isEqualTo(1234)
-            assertThat(emails!![0].legacyEmailId).isEqualTo(3456)
-            assertThat(emails[0].email).isEqualTo("john.smith@justice.gov.uk")
-            assertThat(firstName).isEqualTo("JOHN")
-            assertThat(lastName).isEqualTo("SMITH")
-            assertThat(status).isEqualTo(MigratedUser.Status.ACTIVE)
-            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
-            assertThat(createdBy).isEqualTo("KOFEADDY")
-            assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
-            assertThat(modifiedBy).isEqualTo("KOFE_MOD")
-          }
-          assertThat(accounts!!.size).isEqualTo(1)
+        with(migrationRequests.first()) {
+          assertThat(emails[0].email).isEqualTo("john.smith@justice.gov.uk")
+          assertThat(firstName).isEqualTo("JOHN")
+          assertThat(lastName).isEqualTo("SMITH")
+          assertThat(status).isEqualTo(PrisonUserSyncRequest.Status.ACTIVE)
+          assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+          assertThat(createdBy).isEqualTo("KOFEADDY")
+          assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
+          assertThat(modifiedBy).isEqualTo("KOFE_MOD")
+
+          assertThat(accounts.size).isEqualTo(1)
           with(accounts[0]) {
             assertThat(username).isEqualTo("JOHNSMITH_ADM")
-            assertThat(accountType).isEqualTo(MigratedUserAccount.AccountType.ADMIN)
-            assertThat(accountStatus).isEqualTo(MigratedUserAccount.AccountStatus.OPEN)
+            assertThat(accountType).isEqualTo(SyncPrisonUserAccount.AccountType.ADMIN)
+            assertThat(accountStatus).isEqualTo(SyncPrisonUserAccount.AccountStatus.OPEN)
             assertThat(lastLoggedIn).isEqualTo(LocalDateTime.parse("2026-03-17T12:30:00"))
             assertThat(activeCaseloadId).isEqualTo("MDI")
             assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
             assertThat(createdBy).isEqualTo("KOFEADDY")
             assertThat(modifiedTimestamp).isEqualTo(LocalDateTime.parse("2017-08-01T10:55:00"))
             assertThat(modifiedBy).isEqualTo("KOFE_MOD")
-          }
-          assertThat(accessibleCaseloads!!.size).isEqualTo(3)
-          with(accessibleCaseloads[0]) {
-            assertThat(username).isEqualTo("JOHNSMITH_ADM")
-            assertThat(caseloadId).isEqualTo("LEI")
-            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
-            assertThat(createdBy).isEqualTo("KOFEADDY")
-          }
-          with(accessibleCaseloads[1]) {
-            assertThat(username).isEqualTo("JOHNSMITH_ADM")
-            assertThat(caseloadId).isEqualTo("MDI")
-            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
-            assertThat(createdBy).isEqualTo("KOFEADDY")
-          }
-          with(accessibleCaseloads[2]) {
-            assertThat(username).isEqualTo("JOHNSMITH_ADM")
-            assertThat(caseloadId).isEqualTo("NWEB")
-            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
-            assertThat(createdBy).isEqualTo("KOFEADDY")
-          }
-          assertThat(roles!!.size).isEqualTo(2)
-          with(roles[0]) {
-            assertThat(username).isEqualTo("JOHNSMITH_ADM")
-            assertThat(roleCode).isEqualTo("DPS_CODE_1")
-            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
-            assertThat(createdBy).isEqualTo("KOFEADDY")
-          }
-          with(roles[1]) {
-            assertThat(username).isEqualTo("JOHNSMITH_ADM")
-            assertThat(roleCode).isEqualTo("DPS_CODE_2")
-            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
-            assertThat(createdBy).isEqualTo("KOFEADDY")
+
+            assertThat(caseloads.size).isEqualTo(3)
+            with(caseloads[0]) {
+              assertThat(username).isEqualTo("JOHNSMITH_ADM")
+              assertThat(caseloadId).isEqualTo("LEI")
+              assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+              assertThat(createdBy).isEqualTo("KOFEADDY")
+            }
+            with(caseloads[1]) {
+              assertThat(username).isEqualTo("JOHNSMITH_ADM")
+              assertThat(caseloadId).isEqualTo("MDI")
+              assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+              assertThat(createdBy).isEqualTo("KOFEADDY")
+            }
+            with(caseloads[2]) {
+              assertThat(username).isEqualTo("JOHNSMITH_ADM")
+              assertThat(caseloadId).isEqualTo("NWEB")
+              assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+              assertThat(createdBy).isEqualTo("KOFEADDY")
+            }
+            assertThat(roles.size).isEqualTo(2)
+            with(roles[0]) {
+              assertThat(username).isEqualTo("JOHNSMITH_ADM")
+              assertThat(roleCode).isEqualTo("DPS_CODE_1")
+              assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+              assertThat(createdBy).isEqualTo("KOFEADDY")
+            }
+            with(roles[1]) {
+              assertThat(username).isEqualTo("JOHNSMITH_ADM")
+              assertThat(roleCode).isEqualTo("DPS_CODE_2")
+              assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+              assertThat(createdBy).isEqualTo("KOFEADDY")
+            }
           }
         }
       }
@@ -371,7 +369,7 @@ class StaffMigrationIntTest(
 
         mappingApiMock.stubGetStaffByNomisIdOrNull(mapping = null)
         nomisApiMock.stubGetStaffDetailsById()
-        dpsApiMock.stubMigrateStaff(dpsStaffId = dpsStaffId)
+        dpsApiMock.stubSyncStaff(dpsStaffId = dpsStaffId)
 
         mappingApiMock.stubCreateMappingFailureFollowedBySuccess()
         mappingApiMock.stubGetPagedModelMigrationCount(migrationId = ".*", count = 1)
@@ -437,7 +435,7 @@ class StaffMigrationIntTest(
         mappingApiMock.stubGetStaffByNomisIdOrNull(mapping = null)
         nomisApiMock.stubGetStaffDetailsById()
 
-        dpsApiMock.stubMigrateStaff(dpsStaffId = dpsStaffId)
+        dpsApiMock.stubSyncStaff(dpsStaffId = dpsStaffId)
         mappingApiMock.stubCreateMapping(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(

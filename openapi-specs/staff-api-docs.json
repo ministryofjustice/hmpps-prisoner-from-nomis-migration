@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-04.213.09e51ce"
+    "version" : "2026-09-08.218.faf597c"
   },
   "servers" : [ {
     "url" : "https://prison-users-api-dev.prison.service.justice.gov.uk",
@@ -53,8 +53,15 @@
           "required" : true
         },
         "responses" : {
-          "204" : {
-            "description" : "Prison User sync successful."
+          "200" : {
+            "description" : "Prison User sync successful.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonUserSyncResponse"
+                }
+              }
+            }
           },
           "400" : {
             "description" : "Invalid request",
@@ -87,7 +94,7 @@
             }
           },
           "409" : {
-            "description" : "Sync lock could not be acquired within max wait time",
+            "description" : "Data integrity violation or sync lock could not be acquired within max wait time",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -178,79 +185,6 @@
           "MANAGE_NOMIS_USER_ACCOUNT" : [ ]
         }, {
           "VIEW_NOMIS_STAFF_DETAILS" : [ ]
-        } ]
-      }
-    },
-    "/migrate/user" : {
-      "post" : {
-        "tags" : [ "migration-resource" ],
-        "summary" : "Migrate a single user from NOMIS into Prison Users API, including associated accounts, role and caseload link data",
-        "description" : "Creates or updates a user. Requires role ROLE_PRISON_USERS_API__MIGRATION__RW",
-        "operationId" : "migrateUser",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/UserMigrationRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "User created or updated with associated accounts, role and caseload links from NOMIS",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/UserMigrationResponse"
-                }
-              }
-            }
-          },
-          "400" : {
-            "description" : "Invalid request payload",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Conflict (eg. data integrity violation)",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Incorrect permissions to create a user",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        },
-        "security" : [ {
-          "PRISON_USERS_API__MIGRATION__RW" : [ ]
         } ]
       }
     },
@@ -820,6 +754,25 @@
         },
         "required" : [ "status" ]
       },
+      "PrisonUserSyncResponse" : {
+        "type" : "object",
+        "description" : "Response for successful migration of single NOMIS user",
+        "properties" : {
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The unique identifier for the migrated user",
+            "example" : "f59dad25-3f11-4a74-9e03-64d2ee53f498"
+          },
+          "staffId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The NOMIS staff id for the migrated user",
+            "example" : 123456
+          }
+        },
+        "required" : [ "staffId", "userId" ]
+      },
       "UserBasicDetails" : {
         "type" : "object",
         "description" : "Basic User Information",
@@ -861,265 +814,6 @@
           }
         },
         "required" : [ "enabled", "firstName", "lastName", "staffId", "username" ]
-      },
-      "MigratedUser" : {
-        "type" : "object",
-        "description" : "Single NOMIS user details",
-        "properties" : {
-          "staffId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The NOMIS staff id",
-            "example" : 123456
-          },
-          "emails" : {
-            "type" : "array",
-            "description" : "The email addresses for the user",
-            "items" : {
-              "$ref" : "#/components/schemas/MigratedUserEmail"
-            }
-          },
-          "firstName" : {
-            "type" : "string",
-            "description" : "First name of the user",
-            "example" : "John"
-          },
-          "lastName" : {
-            "type" : "string",
-            "description" : "The last name of the user",
-            "example" : "Smith"
-          },
-          "status" : {
-            "type" : "string",
-            "description" : "The status of the user e.g. ACTIVE/INACTIVE",
-            "enum" : [ "ACTIVE", "INACTIVE" ]
-          },
-          "createdTimestamp" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Record creation timestamp",
-            "example" : "2022-01-01T12:00:00"
-          },
-          "createdBy" : {
-            "type" : "string",
-            "description" : "Username of the record creator",
-            "example" : "TEST_USER"
-          },
-          "modifiedTimestamp" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Record modification timestamp",
-            "example" : "2022-01-01T12:00:00"
-          },
-          "modifiedBy" : {
-            "type" : "string",
-            "description" : "Username of the record modifier",
-            "example" : "TEST_USER"
-          }
-        },
-        "required" : [ "createdBy", "createdTimestamp", "firstName", "lastName", "staffId", "status" ]
-      },
-      "MigratedUserAccessibleCaseload" : {
-        "type" : "object",
-        "description" : "NOMIS user account to caseload link",
-        "properties" : {
-          "username" : {
-            "type" : "string",
-            "description" : "Username for the user account",
-            "example" : "TEST_USER"
-          },
-          "caseloadId" : {
-            "type" : "string",
-            "description" : "Identifier for the caseload the user account can access",
-            "example" : "MRI"
-          },
-          "createdTimestamp" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Record creation timestamp",
-            "example" : "2022-01-01T12:00:00"
-          },
-          "createdBy" : {
-            "type" : "string",
-            "description" : "Username of the record creator",
-            "example" : "TEST_USER"
-          }
-        },
-        "required" : [ "caseloadId", "createdBy", "createdTimestamp", "username" ]
-      },
-      "MigratedUserAccount" : {
-        "type" : "object",
-        "description" : "NOMIS User account details",
-        "properties" : {
-          "username" : {
-            "type" : "string",
-            "description" : "Username for the user account",
-            "example" : "TEST_USER"
-          },
-          "accountType" : {
-            "type" : "string",
-            "description" : "The user account type e.g. ADMIN/GENERAL",
-            "enum" : [ "ADMIN", "GENERAL" ]
-          },
-          "accountStatus" : {
-            "type" : "string",
-            "description" : "The user account status indicating if it is open, locked or expired",
-            "enum" : [ "OPEN", "EXPIRED", "EXPIRED_GRACE", "LOCKED_TIMED", "LOCKED", "EXPIRED_LOCKED_TIMED", "EXPIRED_GRACE_LOCKED_TIMED", "EXPIRED_LOCKED", "EXPIRED_GRACE_LOCKED" ]
-          },
-          "createdTimestamp" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Record creation timestamp",
-            "example" : "2022-01-01T12:00:00"
-          },
-          "createdBy" : {
-            "type" : "string",
-            "description" : "Username of the record creator",
-            "example" : "TEST_USER"
-          },
-          "lastLoggedIn" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "The timestamp of the last login for the account",
-            "example" : "2022-01-01T12:00:00"
-          },
-          "activeCaseloadId" : {
-            "type" : "string",
-            "description" : "Identifier for the active caseload for the account",
-            "example" : "MRI"
-          },
-          "modifiedTimestamp" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Record modification timestamp",
-            "example" : "2022-01-01T12:00:00"
-          },
-          "modifiedBy" : {
-            "type" : "string",
-            "description" : "Username of the record modifier",
-            "example" : "TEST_USER"
-          }
-        },
-        "required" : [ "accountStatus", "accountType", "createdBy", "createdTimestamp", "username" ]
-      },
-      "MigratedUserEmail" : {
-        "type" : "object",
-        "description" : "Single NOMIS user email details",
-        "properties" : {
-          "email" : {
-            "type" : "string",
-            "description" : "The email address for the user",
-            "example" : "test@email.com"
-          },
-          "legacyEmailId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The legacy NOMIS internet address ID for the email",
-            "example" : 123456
-          },
-          "createdTimestamp" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Record creation timestamp",
-            "example" : "2022-01-01T12:00:00"
-          },
-          "createdBy" : {
-            "type" : "string",
-            "description" : "Username of the record creator",
-            "example" : "TEST_USER"
-          },
-          "modifiedTimestamp" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Record modification timestamp",
-            "example" : "2022-01-01T12:00:00"
-          },
-          "modifiedBy" : {
-            "type" : "string",
-            "description" : "Username of the record modifier",
-            "example" : "TEST_USER"
-          }
-        },
-        "required" : [ "createdBy", "createdTimestamp", "email", "legacyEmailId" ]
-      },
-      "MigratedUserRole" : {
-        "type" : "object",
-        "description" : "NOMIS user account to role link",
-        "properties" : {
-          "username" : {
-            "type" : "string",
-            "description" : "Username for the user account",
-            "example" : "TEST_USER"
-          },
-          "roleCode" : {
-            "type" : "string",
-            "description" : "The role code the user account will be assigned",
-            "example" : "TEST_ROLE"
-          },
-          "createdTimestamp" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "Record creation timestamp",
-            "example" : "2022-01-01T12:00:00"
-          },
-          "createdBy" : {
-            "type" : "string",
-            "description" : "Username of the record creator",
-            "example" : "TEST_USER"
-          }
-        },
-        "required" : [ "createdBy", "createdTimestamp", "roleCode", "username" ]
-      },
-      "UserMigrationRequest" : {
-        "type" : "object",
-        "description" : "Single NOMIS user migration request",
-        "properties" : {
-          "user" : {
-            "$ref" : "#/components/schemas/MigratedUser",
-            "description" : "The NOMIS user to migrate"
-          },
-          "accounts" : {
-            "type" : "array",
-            "description" : "The NOMIS user accounts to migrate",
-            "items" : {
-              "$ref" : "#/components/schemas/MigratedUserAccount"
-            }
-          },
-          "roles" : {
-            "type" : "array",
-            "description" : "Links between the user (via user account) and roles",
-            "items" : {
-              "$ref" : "#/components/schemas/MigratedUserRole"
-            }
-          },
-          "accessibleCaseloads" : {
-            "type" : "array",
-            "description" : "Links between the user (via user account) and caseloads",
-            "items" : {
-              "$ref" : "#/components/schemas/MigratedUserAccessibleCaseload"
-            }
-          }
-        },
-        "required" : [ "user" ]
-      },
-      "UserMigrationResponse" : {
-        "type" : "object",
-        "description" : "Response for successful migration of single NOMIS user",
-        "properties" : {
-          "userId" : {
-            "type" : "string",
-            "format" : "uuid",
-            "description" : "The unique identifier for the migrated user",
-            "example" : "f59dad25-3f11-4a74-9e03-64d2ee53f498"
-          },
-          "staffId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The NOMIS staff id for the migrated user",
-            "example" : 123456
-          }
-        },
-        "required" : [ "staffId", "userId" ]
       },
       "UserDetail" : {
         "type" : "object",

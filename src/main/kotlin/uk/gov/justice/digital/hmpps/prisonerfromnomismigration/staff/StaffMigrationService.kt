@@ -12,11 +12,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.StaffMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseloadResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RoleResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffAccount
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffDetails
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffEmail
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastIdMigrationService
@@ -24,13 +19,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUser
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccessibleCaseload
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserAccount
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserEmail
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.MigratedUserRole
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.UserMigrationRequest
-import kotlin.collections.flatMap
 
 @Service
 class StaffMigrationService(
@@ -100,7 +88,7 @@ class StaffMigrationService(
       log.info("Will not migrate the nomis staff id=$nomisStaffId since it was already mapped to DPS staff $dpsId during migration $label")
     } ?: run {
       val nomisStaff = nomisApiService.getStaffDetailsById(staffId = nomisStaffId)
-      val dpsStaff = dpsApiService.migrateStaff(nomisStaff.toMigrateStaffRequest())
+      val dpsStaff = dpsApiService.syncStaff(nomisStaffId, nomisStaff.toSyncStaffRequest())
 
       val mapping = StaffMappingDto(
         dpsId = dpsStaff.userId.toString(),
@@ -172,78 +160,3 @@ class StaffMigrationService(
 
   override fun parseContextDivisionFilter(json: String): MigrationMessage<*, MigrationDivision<Any, StaffIdResponse>> = jsonMapper.readValue(json)
 }
-
-fun StaffDetails.toMigrateStaffRequest(): UserMigrationRequest = UserMigrationRequest(
-  user = MigratedUser(
-    staffId = id,
-    emails = emailAddresses.map { it.toMigratedUserEmail() },
-    firstName = firstName,
-    lastName = lastName,
-    status = if (status == "ACTIVE") MigratedUser.Status.ACTIVE else MigratedUser.Status.INACTIVE,
-
-    createdTimestamp = audit.createDatetime,
-    createdBy = audit.createUsername,
-    modifiedTimestamp = audit.modifyDatetime,
-    modifiedBy = audit.modifyUserId,
-  ),
-  accounts = accounts.map { it.toMigratedUserAccount() },
-  // n.b. only roles for staff migration are roles on the NWEB (DPS) caseload - only these are returned from Nomis
-  roles = accounts.flatMap { staffUserAccount ->
-    staffUserAccount.caseloads.flatMap { caseload ->
-      caseload.roles.map { it.toMigratedUserRole(staffUserAccount.username) }
-    }
-  },
-  accessibleCaseloads = accounts.flatMap { staffUserAccount ->
-    staffUserAccount.caseloads.map {
-      it.toMigratedUserAccessibleCaseload(staffUserAccount.username)
-    }
-  },
-)
-
-private fun StaffEmail.toMigratedUserEmail() = MigratedUserEmail(
-  legacyEmailId = emailAddressId,
-  email = email,
-  createdTimestamp = audit.createDatetime,
-  createdBy = audit.createUsername,
-  modifiedTimestamp = audit.modifyDatetime,
-  modifiedBy = audit.modifyUserId,
-)
-
-private fun StaffAccount.toMigratedUserAccount() = MigratedUserAccount(
-  username = username,
-  accountType = MigratedUserAccount.AccountType.valueOf(typeCode),
-  accountStatus = status.toDpsAccountStatus(),
-  activeCaseloadId = activeCaseloadId,
-  lastLoggedIn = lastLoggedIn,
-  createdTimestamp = audit.createDatetime,
-  createdBy = audit.createUsername,
-  modifiedTimestamp = audit.modifyDatetime,
-  modifiedBy = audit.modifyUserId,
-)
-
-private fun String.toDpsAccountStatus() = when (this) {
-  "OPEN" -> MigratedUserAccount.AccountStatus.OPEN
-  "EXPIRED" -> MigratedUserAccount.AccountStatus.EXPIRED
-  "EXPIRED & LOCKED" -> MigratedUserAccount.AccountStatus.EXPIRED_LOCKED
-  "EXPIRED & LOCKED(TIMED)" -> MigratedUserAccount.AccountStatus.EXPIRED_LOCKED_TIMED
-  "EXPIRED(GRACE)" -> MigratedUserAccount.AccountStatus.EXPIRED_GRACE
-  "EXPIRED(GRACE) & LOCKED" -> MigratedUserAccount.AccountStatus.EXPIRED_GRACE_LOCKED
-  "EXPIRED(GRACE) & LOCKED(TIMED)" -> MigratedUserAccount.AccountStatus.EXPIRED_GRACE_LOCKED_TIMED
-  "LOCKED" -> MigratedUserAccount.AccountStatus.LOCKED
-  "LOCKED(TIMED)" -> MigratedUserAccount.AccountStatus.LOCKED_TIMED
-  else -> throw IllegalArgumentException("Unknown Staff user account status  code: $this")
-}
-
-private fun RoleResponse.toMigratedUserRole(username: String) = MigratedUserRole(
-  username = username,
-  roleCode = code,
-  createdTimestamp = audit.createDatetime,
-  createdBy = audit.createUsername,
-)
-
-private fun CaseloadResponse.toMigratedUserAccessibleCaseload(username: String) = MigratedUserAccessibleCaseload(
-  username = username,
-  caseloadId = caseloadId,
-  createdTimestamp = audit.createDatetime,
-  createdBy = audit.createUsername,
-)
