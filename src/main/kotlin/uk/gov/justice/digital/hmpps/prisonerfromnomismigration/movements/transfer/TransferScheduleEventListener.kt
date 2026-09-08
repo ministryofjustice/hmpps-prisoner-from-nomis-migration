@@ -20,6 +20,7 @@ class TransferScheduleEventListener(
   private val eventFeatureSwitch: EventFeatureSwitch,
   private val transferScheduleService: TransferScheduleSyncScheduleService,
   private val transferMovementService: TransferScheduleSyncMovementService,
+  private val moveBookingService: TransferSchedulerMoveBookingService,
 ) {
 
   private companion object {
@@ -42,6 +43,7 @@ class TransferScheduleEventListener(
               "SCHEDULED_EXT_MOVE-DELETED" -> transferScheduleService.transferScheduleDeleted(sqsMessage.Message.fromJson())
               "TRANSFER_WAITLIST-INSERTED", "TRANSFER_WAITLIST-UPDATED", "TRANSFER_WAITLIST-DELETED" -> transferScheduleService.transferWaitlistChanged(sqsMessage.Message.fromJson())
               "EXTERNAL_MOVEMENT-CHANGED" -> transferMovementService.transferMovementChanged(sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.booking.moved" -> moveBookingService.moveBooking(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
