@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-04.465.f9e8eb2"
+    "version" : "2026-09-08.476.541198f"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -1418,6 +1418,278 @@
           },
           "403" : {
             "description" : "Incorrect permissions to create a court",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courts/id/{courtId}/phone-number" : {
+      "post" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Create a court phone number",
+        "description" : "Creates a new phone number for a court. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
+        "operationId" : "createCourtPhoneNumber",
+        "parameters" : [ {
+          "name" : "courtId",
+          "in" : "path",
+          "description" : "Court ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdatePhoneNumberDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Court Phone Number Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyPhoneDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to create court phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to create a court phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Court Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Phone number already exists",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courts/id/{courtId}/email-address" : {
+      "post" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Create a court email address",
+        "description" : "Creates a new email address for a court. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
+        "operationId" : "createCourtEmailAddress",
+        "parameters" : [ {
+          "name" : "courtId",
+          "in" : "path",
+          "description" : "Court ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateEmailAddressDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Court Email Address Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyEmailDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to create court email address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to create a court email address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Court Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Email address already exists",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/courts/id/{courtId}/address" : {
+      "post" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Create a court address",
+        "description" : "Creates a new address for a court. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
+        "operationId" : "createCourtAddress",
+        "parameters" : [ {
+          "name" : "courtId",
+          "in" : "path",
+          "description" : "Court ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateAddressDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Court Address Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyAddressDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to create court address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to create a court address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Court Id not found",
             "content" : {
               "application/json" : {
                 "schema" : {
