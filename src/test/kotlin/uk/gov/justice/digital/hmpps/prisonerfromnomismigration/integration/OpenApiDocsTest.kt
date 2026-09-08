@@ -76,7 +76,7 @@ class OpenApiDocsTest(
       .jsonPath("$.components.schemas.VisitsMigrationFilter.properties.fromDateTime.example").isEqualTo("2020-03-23T12:00:00")
       .jsonPath("$.components.schemas.VisitsMigrationFilter.properties.fromDateTime.description")
       .isEqualTo("Only include visits created after this date. NB this is creation date not the actual visit date")
-      .jsonPath("$.components.schemas.VisitsMigrationFilter.properties.fromDateTime.type").isEqualTo("string")
+      .jsonPath("$.components.schemas.VisitsMigrationFilter.properties.fromDateTime.type").isEqualTo(["string", "null"])
       .jsonPath("$.components.schemas.VisitsMigrationFilter.properties.fromDateTime.format").isEqualTo("date-time")
   }
 
