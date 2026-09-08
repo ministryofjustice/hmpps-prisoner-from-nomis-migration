@@ -11,8 +11,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.addHoldDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.prisonBalanceMigrationDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.prisonerBalanceMigrationDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.releaseHoldDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 
@@ -38,7 +40,7 @@ class FinanceDpsApiServiceTest {
     }
 
     @Test
-    internal fun `will migrate request data  to migrate endpoint`() = runTest {
+    internal fun `will migrate request data to migrate endpoint`() = runTest {
       financeApi.stubMigratePrisonerBalance()
 
       apiService.migratePrisonerBalance("A1234BC", prisonerBalanceMigrationDto())
@@ -109,6 +111,93 @@ class FinanceDpsApiServiceTest {
 
       financeApi.verify(
         postRequestedFor(urlPathEqualTo("/migrate/general-ledger-balances/MDI")),
+      )
+    }
+  }
+
+  @Nested
+  inner class SyncAddHold {
+    @Test
+    internal fun `will pass oath2 token to the sync endpoint`() = runTest {
+      financeApi.stubAddHold()
+
+      apiService.syncAddHoldTransaction(addHoldDto())
+
+      financeApi.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will send request data to sync endpoint`() = runTest {
+      financeApi.stubAddHold()
+
+      apiService.syncAddHoldTransaction(addHoldDto())
+
+      financeApi.verify(
+        postRequestedFor(anyUrl())
+          .withRequestBodyJsonPath("prisonNumber", equalTo("A1234BC"))
+          .withRequestBodyJsonPath("subAccountCode", equalTo("2101"))
+          .withRequestBodyJsonPath("holdNumber", equalTo("12345"))
+          .withRequestBodyJsonPath("createdAt", equalTo("2025-06-01T01:02:03"))
+          .withRequestBodyJsonPath("createdBy", equalTo("testUser"))
+          .withRequestBodyJsonPath("holdFromDate", equalTo("2025-06-01T01:02:03"))
+          .withRequestBodyJsonPath("isReleased", equalTo("false"))
+          .withRequestBodyJsonPath("holdType", equalTo("HOA"))
+          .withRequestBodyJsonPath("holdLocation", equalTo("Some location"))
+          .withRequestBodyJsonPath("amount", equalTo("10.0"))
+          .withRequestBodyJsonPath("holdUntilDate", equalTo("2025-09-09T04:05:06"))
+          .withRequestBodyJsonPath("description", equalTo("This is a hold")),
+      )
+    }
+
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      financeApi.stubAddHold()
+
+      apiService.syncAddHoldTransaction(addHoldDto())
+
+      financeApi.verify(
+        postRequestedFor(urlPathEqualTo("/sync/holds")),
+      )
+    }
+  }
+
+  @Nested
+  inner class SyncReleaseHold {
+    @Test
+    internal fun `will pass oath2 token to the sync endpoint`() = runTest {
+      financeApi.stubReleaseHold()
+
+      apiService.syncReleaseHoldTransaction(12345, releaseHoldDto())
+
+      financeApi.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will send request data to sync endpoint`() = runTest {
+      financeApi.stubReleaseHold()
+
+      apiService.syncReleaseHoldTransaction(12345, releaseHoldDto())
+
+      financeApi.verify(
+        postRequestedFor(anyUrl())
+          .withRequestBodyJsonPath("releaseDateTime", equalTo("2025-06-04T05:06:07")),
+      )
+    }
+
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      financeApi.stubReleaseHold()
+
+      apiService.syncReleaseHoldTransaction(12345, releaseHoldDto())
+
+      financeApi.verify(
+        postRequestedFor(urlPathEqualTo("/sync/holds/12345/release")),
       )
     }
   }
