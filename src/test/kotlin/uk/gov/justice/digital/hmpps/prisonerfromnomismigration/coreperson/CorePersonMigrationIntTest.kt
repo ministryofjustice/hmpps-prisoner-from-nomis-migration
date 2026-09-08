@@ -197,7 +197,7 @@ class CorePersonMigrationIntTest(
         assertThat(migrationRequest.aliases[0].nomisOffenderId).isEqualTo(10000L)
         assertThat(migrationRequest.aliases[0].titleCode).isEqualTo(MR)
         assertThat(migrationRequest.aliases[0].firstName).isEqualTo("first")
-        assertThat(migrationRequest.aliases[0].middleNames).isEqualTo("middle1")
+        assertThat(migrationRequest.aliases[0].middleNames).isEqualTo("middle1 middle2")
         assertThat(migrationRequest.aliases[0].lastName).isEqualTo("last")
         assertThat(migrationRequest.aliases[0].birthCountry).isEqualTo(UKR)
         assertThat(migrationRequest.aliases[0].sexCode).isEqualTo(M)
@@ -667,6 +667,7 @@ class CorePersonMigrationIntTest(
         ethnicity = CodeDescription("A1", "A1"),
         createDate = LocalDate.of(2000, 2, 2),
         middleName1 = "middle1",
+        middleName2 = "middle2",
         identifiers = listOf(
           Identifier(
             offenderId = offenderId,

@@ -165,7 +165,13 @@ fun List<CoreOffender>?.toMigrateAliasesAndIdentifiersRequest(): PrisonAliasesAn
     aliases = aliases.map {
       PrisonAlias(
         firstName = it.firstName,
-        middleNames = it.middleName1,
+        middleNames = (
+          listOf(it.middleName1, it.middleName2)
+            .map { middleName -> middleName?.trim() }
+            .filter { middleName -> !middleName.isNullOrBlank() }
+            .joinToString(" ")
+          )
+          .ifBlank { null },
         lastName = it.lastName,
         dateOfBirth = it.dateOfBirth,
         nomisOffenderId = it.offenderId,
