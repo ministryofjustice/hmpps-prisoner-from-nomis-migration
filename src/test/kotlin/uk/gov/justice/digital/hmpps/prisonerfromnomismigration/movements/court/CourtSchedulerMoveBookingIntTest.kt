@@ -14,6 +14,7 @@ import org.mockito.kotlin.doNothing
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.never
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -276,7 +277,7 @@ class CourtSchedulerMoveBookingIntTest(
           movedFromNomsNumber = "A1000KT",
         ),
       )
-        .also { waitForAnyProcessingToComplete("court-scheduler-move-booking-error") }
+        .also { waitForAnyProcessingToComplete("court-scheduler-move-booking-error", times = 2) }
     }
 
     @Test
@@ -289,7 +290,7 @@ class CourtSchedulerMoveBookingIntTest(
 
     @Test
     fun `should publish error telemetry`() {
-      verify(telemetryClient).trackEvent(
+      verify(telemetryClient, times(2)).trackEvent(
         eq("court-scheduler-move-booking-error"),
         check {
           assertThat(it["bookingId"]).isEqualTo("12345")
@@ -335,7 +336,7 @@ class CourtSchedulerMoveBookingIntTest(
           movedFromNomsNumber = "A1000KT",
         ),
       )
-        .also { waitForAnyProcessingToComplete("court-scheduler-move-booking-error") }
+        .also { waitForAnyProcessingToComplete("court-scheduler-move-booking-error", times = 2) }
     }
 
     @Test
@@ -348,7 +349,7 @@ class CourtSchedulerMoveBookingIntTest(
 
     @Test
     fun `should publish error telemetry`() {
-      verify(telemetryClient).trackEvent(
+      verify(telemetryClient, times(2)).trackEvent(
         eq("court-scheduler-move-booking-error"),
         check {
           assertThat(it["bookingId"]).isEqualTo("12345")
@@ -400,7 +401,7 @@ class CourtSchedulerMoveBookingIntTest(
           movedFromNomsNumber = "A1000KT",
         ),
       )
-        .also { waitForAnyProcessingToComplete("court-scheduler-move-booking-error") }
+        .also { waitForAnyProcessingToComplete("court-scheduler-move-booking-error", times = 2) }
     }
 
     @Test
@@ -426,7 +427,7 @@ class CourtSchedulerMoveBookingIntTest(
 
     @Test
     fun `should publish error telemetry`() {
-      verify(telemetryClient).trackEvent(
+      verify(telemetryClient, times(2)).trackEvent(
         eq("court-scheduler-move-booking-error"),
         check {
           assertThat(it["bookingId"]).isEqualTo("12345")
