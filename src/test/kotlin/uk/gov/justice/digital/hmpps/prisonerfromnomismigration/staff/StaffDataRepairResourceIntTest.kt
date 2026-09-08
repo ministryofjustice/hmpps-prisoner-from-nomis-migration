@@ -109,7 +109,7 @@ class StaffDataRepairResourceIntTest(
       @BeforeEach
       fun setUp() {
         nomisApiMockServer.stubGetStaffDetailsByIdNotFound(staffId)
-        dpsStaffServer.stubMigrateStaff()
+        dpsStaffServer.stubSyncStaff()
 
         webTestClient.post().uri("/staff/$staffId/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))

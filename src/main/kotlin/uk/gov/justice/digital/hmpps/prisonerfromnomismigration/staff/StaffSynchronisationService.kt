@@ -97,8 +97,6 @@ fun StaffDetails.toSyncStaffRequest() = PrisonUserSyncRequest(
 )
 
 private fun StaffEmail.toSyncUserEmail() = SyncPrisonUserEmail(
-  // TODO check if emailAddressId needed
-  // legacyEmailId = emailAddressId,
   email = email,
   createdTimestamp = audit.createDatetime,
   createdBy = audit.createUsername,
