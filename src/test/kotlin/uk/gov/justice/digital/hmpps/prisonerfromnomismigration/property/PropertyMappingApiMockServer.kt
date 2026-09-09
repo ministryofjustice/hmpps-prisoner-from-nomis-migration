@@ -7,11 +7,9 @@ import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.jsonResponse
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
-import com.github.tomakehurst.wiremock.client.WireMock.ok
 import com.github.tomakehurst.wiremock.client.WireMock.okJson
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.status
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -183,33 +181,6 @@ class PropertyMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubUpdateMappingsByNomisId() {
-    mappingApi.stubFor(
-      put(urlPathMatching("/mapping/property/merge/from/.+/to/.+")).willReturn(
-        ok(),
-      ),
-    )
-  }
-
-  fun stubUpdateMappingsByNomisIdError(
-    status: HttpStatus,
-    error: ErrorResponse = ErrorResponse(status = status.value()),
-  ) {
-    mappingApi.stubFor(
-      put(urlPathMatching("/mapping/property/merge/from/.+/to/.+")).willReturn(
-        jsonResponse(jsonMapper.writeValueAsString(error), status.value()),
-      ),
-    )
-  }
-
-  fun stubUpdateMappingsByBookingId(response: List<PropertyContainerMappingDto>) {
-    mappingApi.stubFor(
-      put(urlPathMatching("/mapping/property/merge/booking-id/.+/to/.+")).willReturn(
-        okJson(jsonMapper.writeValueAsString(response)),
-      ),
-    )
-  }
-
   fun stubPostMapping() {
     mappingApi.stubFor(post("/mapping/property").willReturn(status(201)))
   }
@@ -227,6 +198,14 @@ class PropertyMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubPostMapping(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(post("/mapping/property").willReturn(jsonResponse(error, 409)))
+  }
+
+  fun stubGetMappingsByBookingId(response: List<PropertyContainerMappingDto>) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/property/booking-id/.+")).willReturn(
+        okJson(jsonMapper.writeValueAsString(response)),
+      ),
+    )
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
