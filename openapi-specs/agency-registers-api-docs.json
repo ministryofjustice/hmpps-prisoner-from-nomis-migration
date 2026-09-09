@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-08.476.541198f"
+    "version" : "2026-09-08.481.3764ecb"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -723,6 +723,61 @@
             }
           }
         }
+      },
+      "delete" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Delete specified court",
+        "description" : "Deletes a court, along with any addresses, email addresses and phone numbers associated with it. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
+        "operationId" : "deleteCourt",
+        "parameters" : [ {
+          "name" : "courtId",
+          "in" : "path",
+          "description" : "Court ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Court Deleted"
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to delete a court",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Court Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/courts/id/{courtId}/phone-number/{phoneNumberId}" : {
@@ -800,6 +855,73 @@
           },
           "403" : {
             "description" : "Incorrect permissions to make court phone number update",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Court Id or Phone Number Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Delete specified court phone number",
+        "description" : "Deletes a single phone number for a court. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
+        "operationId" : "deleteCourtPhoneNumber",
+        "parameters" : [ {
+          "name" : "courtId",
+          "in" : "path",
+          "description" : "Court ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        }, {
+          "name" : "phoneNumberId",
+          "in" : "path",
+          "description" : "Phone Number Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Phone Number Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Court Phone Number Deleted"
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to delete a court phone number",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -915,6 +1037,73 @@
             }
           }
         }
+      },
+      "delete" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Delete specified court email address",
+        "description" : "Deletes a single email address for a court. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
+        "operationId" : "deleteCourtEmailAddress",
+        "parameters" : [ {
+          "name" : "courtId",
+          "in" : "path",
+          "description" : "Court ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        }, {
+          "name" : "emailAddressId",
+          "in" : "path",
+          "description" : "Email Address Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Email Address Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Court Email Address Deleted"
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to delete a court email address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Court Id or Email Address Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/courts/id/{courtId}/address/{addressId}" : {
@@ -992,6 +1181,73 @@
           },
           "403" : {
             "description" : "Incorrect permissions to make court address update",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Court Id or Address Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "court-resource" ],
+        "summary" : "Delete specified court address",
+        "description" : "Deletes a single address for a court. Requires role HMPPS_REGISTERS_API__MAINTAIN__RW",
+        "operationId" : "deleteCourtAddress",
+        "parameters" : [ {
+          "name" : "courtId",
+          "in" : "path",
+          "description" : "Court ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Court ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        }, {
+          "name" : "addressId",
+          "in" : "path",
+          "description" : "Address Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Address Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Court Address Deleted"
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to delete a court address",
             "content" : {
               "application/json" : {
                 "schema" : {
