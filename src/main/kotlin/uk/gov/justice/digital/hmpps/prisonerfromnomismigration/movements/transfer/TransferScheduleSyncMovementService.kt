@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.EDIT_EXTERNAL_MOVEMENTS_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -35,6 +36,7 @@ class TransferScheduleSyncMovementService(
   private val nomisApiService: TransferScheduleNomisApiService,
   private val dpsApiService: TransferScheduleDpsApiService,
   private val queueService: SynchronisationQueueService,
+  private val migrationService: TransferScheduleMigrationService,
 ) : TelemetryEnabled {
   companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -42,7 +44,7 @@ class TransferScheduleSyncMovementService(
 
   suspend fun transferMovementChanged(event: ExternalMovementEvent) = when {
     event.movementType != TRN -> {}
-    // TODO SDIT-4157 Handle edit external movements updates (with a repair)
+    event.auditModuleName == EDIT_EXTERNAL_MOVEMENTS_AUDIT_MODULE -> migrationService.resyncPrisonerTransferMovements(event.offenderIdDisplay!!)
     event.recordInserted -> transferMovementInserted(event)
     event.recordDeleted -> transferMovementDeleted(event)
     else -> transferMovementUpdated(event)

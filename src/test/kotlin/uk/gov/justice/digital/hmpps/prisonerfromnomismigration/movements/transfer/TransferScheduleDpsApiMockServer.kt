@@ -128,8 +128,8 @@ class TransferScheduleDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       nomisEventId: Long = 1,
       dpsScheduledMovementId: UUID = UUID.randomUUID(),
       nomisMovementSeq: Int = 3,
-      dpsUnscheduledMovementId: UUID = UUID.randomUUID(),
-      nomisUnscheduledMovementSeq: Int = 1,
+      dpsUnscheduledMovementId: UUID? = UUID.randomUUID(),
+      nomisUnscheduledMovementSeq: Int? = 1,
     ) = ResyncResponse(
       transfers = listOf(
         TransferMapping(
@@ -143,12 +143,14 @@ class TransferScheduleDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           ),
         ),
       ),
-      unscheduledMovements = listOf(
-        TransferMovementMapping(
-          dpsId = dpsUnscheduledMovementId,
-          offenderBookId = 12345L,
-          movementSeq = nomisUnscheduledMovementSeq,
-        ),
+      unscheduledMovements = listOfNotNull(
+        dpsUnscheduledMovementId?.let {
+          TransferMovementMapping(
+            dpsId = dpsUnscheduledMovementId,
+            offenderBookId = 12345L,
+            movementSeq = nomisUnscheduledMovementSeq!!,
+          )
+        },
       ),
     )
 
