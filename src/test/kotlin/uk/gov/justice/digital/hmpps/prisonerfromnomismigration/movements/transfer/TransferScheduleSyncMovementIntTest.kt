@@ -5,6 +5,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
 import org.junit.jupiter.api.BeforeEach
@@ -23,10 +24,18 @@ import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension.Companion.dpsTransferSchedulerServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiMockServer.Companion.resyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleNomisApiMockServer.Companion.offenderTransferMovementsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleNomisApiMockServer.Companion.transferMovementOutResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleNomisApiMockServer.Companion.transferScheduleOutResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferMovementMappingDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferMovementMappingIdsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferScheduleMappingIdsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferSchedulerPrisonerMappingIdsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTransferSchedule
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.ReferenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.transferschedule.model.SyncMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
@@ -698,6 +707,141 @@ class TransferScheduleSyncMovementIntTest(
   }
 
   @Nested
+  inner class UpdatesFromEditExternalMovements {
+    private val prisonerNumber = "A0001KT"
+    private val dpsTransferScheduleId = UUID.randomUUID()
+    private val dpsTransferMovementId = UUID.randomUUID()
+
+    @Nested
+    inner class HappyPath {
+
+      @BeforeEach
+      fun setUp() = runTest {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferSchedulerPrisonerMappingIds(
+          prisonerNumber = prisonerNumber,
+          idMappings = TransferSchedulerPrisonerMappingIdsDto(
+            prisonerNumber = prisonerNumber,
+            schedules = listOf(TransferScheduleMappingIdsDto(123L, dpsTransferScheduleId)),
+            movements = listOf(TransferMovementMappingIdsDto(12345L, 3, dpsTransferMovementId)),
+          ),
+        )
+        nomisApi.stubGetOffenderTransferMovements(
+          offenderNo = prisonerNumber,
+          response = offenderTransferMovementsResponse(
+            offenderNo = prisonerNumber,
+            schedules = listOf(
+              BookingTransferSchedule(
+                schedule = transferScheduleOutResponse(eventId = 123L),
+                movement = transferMovementOutResponse().copy(eventId = 123L, sequence = 3),
+              ),
+            ),
+            unscheduledMovements = listOf(),
+          ),
+        )
+        dpsApi.stubResyncPrisonerTransfers(
+          personIdentifier = prisonerNumber,
+          response = resyncResponse(dpsTransferScheduleId, 123L, dpsTransferMovementId, 3, null, null),
+        )
+        mappingApi.stubCreateTransferSchedulerPrisonerMappings()
+
+        sendMessage(transferMovementEvent(prisonerNumber = prisonerNumber, auditModuleName = "OUMEEMOV"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should call DPS resync API`() {
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/resync/transfers/A0001KT")))
+      }
+
+      @Test
+      fun `should update mappings`() {
+        mappingApi.verify(
+          putRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/migrate"))
+            .withRequestBodyJsonPath("offenderNo", "A0001KT"),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class FailuresAreRetried {
+
+      @BeforeEach
+      fun setUp() = runTest {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferSchedulerPrisonerMappingIds(
+          prisonerNumber = prisonerNumber,
+          idMappings = TransferSchedulerPrisonerMappingIdsDto(
+            prisonerNumber = prisonerNumber,
+            schedules = listOf(TransferScheduleMappingIdsDto(123L, dpsTransferScheduleId)),
+            movements = listOf(TransferMovementMappingIdsDto(12345L, 3, dpsTransferMovementId)),
+          ),
+        )
+        nomisApi.stubGetOffenderTransferMovements(
+          offenderNo = prisonerNumber,
+          response = offenderTransferMovementsResponse(
+            offenderNo = prisonerNumber,
+            schedules = listOf(
+              BookingTransferSchedule(
+                schedule = transferScheduleOutResponse(eventId = 123L),
+                movement = transferMovementOutResponse().copy(eventId = 123L, sequence = 3),
+              ),
+            ),
+            unscheduledMovements = listOf(),
+          ),
+        )
+        dpsApi.stubResyncPrisonerTransfers(
+          personIdentifier = prisonerNumber,
+          response = resyncResponse(dpsTransferScheduleId, 123L, dpsTransferMovementId, 3, null, null),
+        )
+        // The first call to mappings fails, but then succeeds on a retry
+        mappingApi.stubCreateTransferSchedulePrisonerMappingsFailureFollowedBySuccess()
+
+        sendMessage(transferMovementEvent(prisonerNumber = prisonerNumber, auditModuleName = "OUMEEMOV"))
+          .also { waitForAnyProcessingToComplete("transfer-scheduler-migration-entity-migrated") }
+      }
+
+      @Test
+      fun `should call DPS resync API`() {
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/resync/transfers/A0001KT")))
+      }
+
+      @Test
+      fun `should attempt to update mappings twice`() {
+        mappingApi.verify(
+          count = 2,
+          putRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/migrate"))
+            .withRequestBodyJsonPath("offenderNo", "A0001KT"),
+        )
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
   @DisplayName("EXTERNAL_MOVEMENT-CHANGED (deleted)")
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class TransferMovementDeleted {
@@ -849,6 +993,7 @@ class TransferScheduleSyncMovementIntTest(
   )
 
   private fun transferMovementEvent(
+    prisonerNumber: String = "A1234BC",
     auditModuleName: String = "OCUCANTR",
     movementType: String = "TRN",
     inserted: Boolean = false,
@@ -858,7 +1003,7 @@ class TransferScheduleSyncMovementIntTest(
          "Type" : "Notification",
          "MessageId" : "83354f3f-45cb-5e8e-9266-2e0fa1e91dcc",
          "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-160f3055cc4e04c4105ee85f2ed1fccb",
-         "Message" : "{\"eventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"eventDatetime\":\"2025-09-02T13:24:01\",\"bookingId\":12345,\"offenderIdDisplay\":\"A1234BC\",\"nomisEventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"movementSeq\":3,\"movementDateTime\":\"2025-09-02T13:23:00\",\"movementType\":\"$movementType\",\"movementReasonCode\":\"OPA\",\"directionCode\":\"OUT\",\"fromAgencyLocationId\":\"NWI\",\"recordInserted\":$inserted,\"recordDeleted\":$deleted,\"auditModuleName\":\"$auditModuleName\"}",
+         "Message" : "{\"eventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"eventDatetime\":\"2025-09-02T13:24:01\",\"bookingId\":12345,\"offenderIdDisplay\":\"$prisonerNumber\",\"nomisEventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"movementSeq\":3,\"movementDateTime\":\"2025-09-02T13:23:00\",\"movementType\":\"$movementType\",\"movementReasonCode\":\"OPA\",\"directionCode\":\"OUT\",\"fromAgencyLocationId\":\"NWI\",\"recordInserted\":$inserted,\"recordDeleted\":$deleted,\"auditModuleName\":\"$auditModuleName\"}",
          "Timestamp" : "2025-09-02T12:24:02.004Z",
          "SignatureVersion" : "1",
          "Signature" : "HDyAhgG0o4XV4eJjuLODqeyBfZfsUxLcqVyiwQQIvegES5QnWmfgKwzb+D3az1QgiJBaknq/NIR+C/71O0AFFTSRN3RFOQyLrPZBeynGIyBNzGgeJjPGrZrSBqYegtJKJPDQEQLNepk2Jgqjiu3NgKT0gq5z5mU7G45wqkC81F3/DJUAHb98BmLbWK/cibnaHrvgXW493IbWPLXQENzJ9rDJKekz6sdY6+qHcOg57xdho/Xlb6VFo28/9qoVqA+A2MUBlHBRI1BSK0QVu8duri5DHjE0I2/UG7emlt9vZ6KtxyXz/ZmFVC/nY2OD0OgFJvP7DaAJbgMo/rbGe1JlYQ==",
