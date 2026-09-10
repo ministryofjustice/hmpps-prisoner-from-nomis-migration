@@ -39,7 +39,6 @@ class CourtSchedulerSyncScheduleService(
   private val nomisApi: CourtSchedulerNomisApiService,
   private val dpsApi: CourtSchedulerDpsApiService,
   private val nomisSyncApi: CourtSchedulerNomisSyncApiService,
-  private val features: CourtSchedulerFeatureSwitches,
 ) : TelemetryEnabled {
 
   companion object {
@@ -62,7 +61,7 @@ class CourtSchedulerSyncScheduleService(
       if (caseId != null) this["caseId"] = caseId
     }
 
-    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE) || (caseId != null && features.ignoreInsertAndUpdateSentencingEvents)) {
+    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE) || caseId != null) {
       telemetryClient.trackEvent("${TELEMETRY_PREFIX}-inserted-ignored", telemetry)
       return
     }
@@ -139,7 +138,7 @@ class CourtSchedulerSyncScheduleService(
       if (caseId != null) this["caseId"] = caseId
     }
 
-    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE) || (caseId != null && features.ignoreInsertAndUpdateSentencingEvents)) {
+    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE) || caseId != null) {
       telemetryClient.trackEvent("${TELEMETRY_PREFIX}-updated-ignored", telemetry)
       return
     }
@@ -171,7 +170,7 @@ class CourtSchedulerSyncScheduleService(
       if (caseId != null) this["caseId"] = caseId
     }
 
-    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE) || (caseId != null && features.ignoreDeletedSentencingEvents)) {
+    if (event.auditExactMatchOrHasMissingAudit(COURT_SCHEDULER_SYNC_AUDIT_MODULE) || caseId != null) {
       telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-ignored", telemetry)
       return
     }

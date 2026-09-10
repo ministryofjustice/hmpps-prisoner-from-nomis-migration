@@ -18,7 +18,6 @@ import org.junit.jupiter.api.TestInstance
 import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.kotlin.any
 import org.mockito.kotlin.check
-import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doThrow
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -72,7 +71,6 @@ class CourtSchedulerSyncScheduleIntTest(
 
     reset(telemetryClient)
     reset(queueService)
-    reset(courtSchedulerFeature)
   }
 
   @Nested
@@ -169,59 +167,11 @@ class CourtSchedulerSyncScheduleIntTest(
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class HappyPathLinkedToCourtCase {
-      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
-      private val dpsSentencingCourtAppearanceId: UUID = UUID.randomUUID()
+    inner class LinkedToCourtCase {
 
       @BeforeAll
       fun setUp() {
         setUpTestClass()
-
-        mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, status = NOT_FOUND)
-        nomisApi.stubGetCourtScheduleOut("A1234BC", 123L, courtCaseId = 1314L)
-        sentencingMappingApi.stubGetCourtAppearanceByNomisId(123, "$dpsSentencingCourtAppearanceId")
-        dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
-        mappingApi.stubUpsertCourtScheduleMapping()
-
-        sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED"))
-          .also { waitForAnyProcessingToComplete() }
-      }
-
-      @Test
-      fun `should get court sentencing mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/123")))
-      }
-
-      @Test
-      fun `should create DPS scheduled movement`() {
-        CourtSchedulerDpsApiMockServer.getRequestBody<SyncCourtEvent>(
-          putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC")),
-        ).apply {
-          assertThat(courtEvent.externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
-        }
-      }
-
-      @Test
-      fun `should create success telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("court-scheduler-sync-schedule-inserted-success"),
-          check {
-            assertThat(it["dpsSentencingCourtAppearanceId"]).isEqualTo("$dpsSentencingCourtAppearanceId")
-          },
-          isNull(),
-        )
-      }
-    }
-
-    @Nested
-    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class LinkedToCourtCaseAndRasFeatureSwitchedOff {
-
-      @BeforeAll
-      fun setUp() {
-        setUpTestClass()
-        // Mock the feature switch as being turned on
-        doReturn(true).whenever(courtSchedulerFeature).ignoreInsertAndUpdateSentencingEvents
 
         sendMessage(courtScheduleEvent("COURT_EVENTS-INSERTED", caseId = 1314L))
           .also { waitForAnyProcessingToComplete() }
@@ -771,59 +721,11 @@ class CourtSchedulerSyncScheduleIntTest(
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class HappyPathLinkedToCourtCase {
-      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
-      private val dpsSentencingCourtAppearanceId: UUID = UUID.randomUUID()
+    inner class LinkedToCourtCase {
 
       @BeforeAll
       fun setUp() {
         setUpTestClass()
-
-        mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, dpsCourtAppearanceId = dpsCourtAppearanceId)
-        nomisApi.stubGetCourtScheduleOut("A1234BC", 123L, courtCaseId = 1314L)
-        sentencingMappingApi.stubGetCourtAppearanceByNomisId(123, "$dpsSentencingCourtAppearanceId")
-        dpsApi.stubSyncCourtEvent("A1234BC", referenceId(dpsCourtAppearanceId))
-        mappingApi.stubCreateCourtScheduleMapping()
-
-        sendMessage(courtScheduleEvent("COURT_EVENTS-UPDATED"))
-          .also { waitForAnyProcessingToComplete() }
-      }
-
-      @Test
-      fun `should get court sentencing mapping`() {
-        mappingApi.verify(pattern = getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/123")))
-      }
-
-      @Test
-      fun `should update DPS court appearance`() {
-        CourtSchedulerDpsApiMockServer.getRequestBody<SyncCourtEvent>(
-          putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC")),
-        ).apply {
-          assertThat(courtEvent.externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
-        }
-      }
-
-      @Test
-      fun `should create success telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("court-scheduler-sync-schedule-updated-success"),
-          check {
-            assertThat(it["dpsSentencingCourtAppearanceId"]).isEqualTo("$dpsSentencingCourtAppearanceId")
-          },
-          isNull(),
-        )
-      }
-    }
-
-    @Nested
-    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class LinkedToCourtCaseAndRasFeatureSwitchedOff {
-
-      @BeforeAll
-      fun setUp() {
-        setUpTestClass()
-        // Mock the feature switch as being turned on
-        doReturn(true).whenever(courtSchedulerFeature).ignoreInsertAndUpdateSentencingEvents
 
         sendMessage(courtScheduleEvent("COURT_EVENTS-UPDATED", caseId = 1314L))
           .also { waitForAnyProcessingToComplete() }
@@ -1131,7 +1033,7 @@ class CourtSchedulerSyncScheduleIntTest(
         mappingApi.stubDeleteCourtScheduleMapping(nomisEventId = 123L)
         dpsApi.stubDeleteCourtEvent(dpsCourtAppearanceId)
 
-        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED", caseId = null))
+        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED"))
           .also { waitForAnyProcessingToComplete() }
       }
 
@@ -1176,7 +1078,7 @@ class CourtSchedulerSyncScheduleIntTest(
       fun setUp() {
         setUpTestClass()
 
-        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED", caseId = null, auditModuleName = COURT_SCHEDULER_SYNC_AUDIT_MODULE))
+        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED", auditModuleName = COURT_SCHEDULER_SYNC_AUDIT_MODULE))
           .also { waitForAnyProcessingToComplete() }
       }
 
@@ -1221,14 +1123,12 @@ class CourtSchedulerSyncScheduleIntTest(
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class LinkedToCourtCaseAndRasFeatureSwitchedOff {
+    inner class LinkedToCourtCase {
       private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
 
       @BeforeAll
       fun setUp() {
         setUpTestClass()
-        // Mock the feature switch as being turned on
-        doReturn(true).whenever(courtSchedulerFeature).ignoreDeletedSentencingEvents
 
         sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED", caseId = 1314L))
           .also { waitForAnyProcessingToComplete() }
@@ -1285,7 +1185,7 @@ class CourtSchedulerSyncScheduleIntTest(
 
         mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, NOT_FOUND)
 
-        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED", caseId = null))
+        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED"))
           .also { waitForAnyProcessingToComplete() }
       }
 
@@ -1675,7 +1575,7 @@ class CourtSchedulerSyncScheduleIntTest(
     nomisEventType: String = eventType.replace("COURT_EVENTS", "COURT_EVENT"),
     directionCode: String? = "OUT",
     eventId: Long = 123,
-    caseId: Long? = 1314,
+    caseId: Long? = null,
   ) = // language=JSON
     """{
          "Type" : "Notification",
