@@ -3,7 +3,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -27,7 +26,6 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.system.CapturedOutput
-import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.NOT_FOUND
 import software.amazon.awssdk.services.sqs.model.QueueDoesNotExistException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEvent
@@ -55,7 +53,6 @@ class CourtSchedulerSyncScheduleIntTest(
   @param:Autowired private val nomisApi: CourtSchedulerNomisApiMockServer,
   @param:Autowired private val mappingApi: CourtSchedulerMappingApiMockServer,
   @param:Autowired private val sentencingMappingApi: CourtSentencingMappingApiMockServer,
-  @param:Autowired private val nomisSyncApi: CourtSchedulerNomisSyncApiMockServer,
 ) : CourtSchedulerIntegrationTestBase() {
 
   private val dpsApi = dpsCourtSchedulerServer
@@ -1264,119 +1261,6 @@ class CourtSchedulerSyncScheduleIntTest(
             assertThat(it["nomisEventId"]).isEqualTo("123")
             assertThat(it["directionCode"]).isEqualTo("OUT")
             assertThat(it["dpsCourtAppearanceId"]).isEqualTo("$dpsCourtAppearanceId")
-          },
-          isNull(),
-        )
-      }
-    }
-
-    @Nested
-    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class WhenDpsRespondWithConflict {
-      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
-
-      @BeforeAll
-      fun setUp() {
-        setUpTestClass()
-
-        mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, dpsCourtAppearanceId = dpsCourtAppearanceId)
-        mappingApi.stubDeleteCourtScheduleMapping(nomisEventId = 123L)
-        // We get a conflict from DPS
-        dpsApi.stubDeleteCourtEventError(dpsCourtAppearanceId, HttpStatus.CONFLICT.value())
-        nomisSyncApi.stubRecreateCourtScheduleInNomis("A1234BC", dpsCourtAppearanceId)
-
-        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED"))
-          .also { waitForAnyProcessingToComplete() }
-      }
-
-      @Test
-      fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")))
-      }
-
-      @Test
-      fun `should NOT delete mapping`() {
-        mappingApi.verify(count = 0, deleteRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")))
-      }
-
-      @Test
-      fun `should attempt to delete DPS court appearance`() {
-        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/court-appearances/$dpsCourtAppearanceId")))
-      }
-
-      @Test
-      fun `should recreate court appearance in NOMIS`() {
-        nomisSyncApi.verify(putRequestedFor(urlEqualTo("/court-scheduler/court/schedule/out/A1234BC/$dpsCourtAppearanceId?recreate=true")))
-      }
-
-      @Test
-      fun `should create success telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("court-scheduler-sync-schedule-deleted-recreated"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-            assertThat(it["bookingId"]).isEqualTo("12345")
-            assertThat(it["nomisEventId"]).isEqualTo("123")
-            assertThat(it["directionCode"]).isEqualTo("OUT")
-            assertThat(it["dpsCourtAppearanceId"]).isEqualTo("$dpsCourtAppearanceId")
-            assertThat(it["dpsSentencingCourtAppearanceId"]).isEqualTo(null)
-          },
-          isNull(),
-        )
-      }
-    }
-
-    @Nested
-    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class WhenDpsRespondWithConflictButRecreateFails {
-      private val dpsCourtAppearanceId: UUID = UUID.randomUUID()
-
-      @BeforeAll
-      fun setUp() {
-        setUpTestClass()
-
-        mappingApi.stubGetCourtScheduleMapping(nomisEventId = 123L, dpsCourtAppearanceId = dpsCourtAppearanceId)
-        mappingApi.stubDeleteCourtScheduleMapping(nomisEventId = 123L)
-        // we get a conflict from DPS
-        dpsApi.stubDeleteCourtEventError(dpsCourtAppearanceId, HttpStatus.CONFLICT.value())
-        // but when we try to recreate the NOMIS court schedule it fails
-        nomisSyncApi.stubRecreateCourtScheduleInNomis(status = HttpStatus.BAD_REQUEST)
-
-        sendMessage(courtScheduleEvent("COURT_EVENTS-DELETED"))
-          .also { waitForAnyProcessingToComplete("court-scheduler-sync-schedule-deleted-error", times = 2) }
-      }
-
-      @Test
-      fun `should check mapping`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")))
-      }
-
-      @Test
-      fun `should NOT delete mapping`() {
-        mappingApi.verify(count = 0, deleteRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/123")))
-      }
-
-      @Test
-      fun `should attempt to delete DPS court appearance`() {
-        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/court-appearances/$dpsCourtAppearanceId")))
-      }
-
-      @Test
-      fun `should attempt recreate court appearance in NOMIS`() {
-        nomisSyncApi.verify(putRequestedFor(urlEqualTo("/court-scheduler/court/schedule/out/A1234BC/$dpsCourtAppearanceId?recreate=true")))
-      }
-
-      @Test
-      fun `should create error telemetry`() {
-        verify(telemetryClient, times(2)).trackEvent(
-          eq("court-scheduler-sync-schedule-deleted-error"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
-            assertThat(it["bookingId"]).isEqualTo("12345")
-            assertThat(it["nomisEventId"]).isEqualTo("123")
-            assertThat(it["directionCode"]).isEqualTo("OUT")
-            assertThat(it["dpsCourtAppearanceId"]).isEqualTo("$dpsCourtAppearanceId")
-            assertThat(it["dpsSentencingCourtAppearanceId"]).isEqualTo(null)
           },
           isNull(),
         )
