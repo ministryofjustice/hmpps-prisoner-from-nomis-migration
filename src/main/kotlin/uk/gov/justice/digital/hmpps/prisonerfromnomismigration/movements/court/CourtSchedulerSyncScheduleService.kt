@@ -4,7 +4,6 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
-import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.CourtEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.SyncCourtEvent
@@ -26,7 +25,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.util.*
-import kotlin.collections.set
 
 private const val TELEMETRY_PREFIX: String = "${CRT_TELEMETRY_PREFIX}-schedule"
 
@@ -38,7 +36,6 @@ class CourtSchedulerSyncScheduleService(
   private val sentencingMappingApi: CourtSentencingMappingApiService,
   private val nomisApi: CourtSchedulerNomisApiService,
   private val dpsApi: CourtSchedulerDpsApiService,
-  private val nomisSyncApi: CourtSchedulerNomisSyncApiService,
 ) : TelemetryEnabled {
 
   companion object {
@@ -175,31 +172,15 @@ class CourtSchedulerSyncScheduleService(
       return
     }
 
-    fun Exception.trackAndRethrow(): Nothing {
-      telemetry["error"] = message ?: "Unknown error"
-      telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-error", telemetry)
-      throw this
-    }
-
     mappingApi.getCourtScheduleMappingOrNull(eventId)?.also {
       try {
         telemetry["dpsCourtAppearanceId"] = it.dpsCourtAppearanceId
         dpsApi.deleteCourtEvent(it.dpsCourtAppearanceId)
         mappingApi.deleteCourtScheduleMapping(eventId)
-      }
-      // A conflict from DPS always means we should try to recreate the court schedule
-      catch (_: WebClientResponseException.Conflict) {
-        try {
-          nomisSyncApi.recreateCourtScheduleInNomis(prisonerNumber, it.dpsCourtAppearanceId)
-          telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-recreated", telemetry)
-          return
-        } catch (ex: Exception) {
-          ex.trackAndRethrow()
-        }
-      }
-      // Any other error means we failed
-      catch (ex: Exception) {
-        ex.trackAndRethrow()
+      } catch (ex: Exception) {
+        telemetry["error"] = ex.message ?: "Unknown error"
+        telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-error", telemetry)
+        throw ex
       }
 
       telemetryClient.trackEvent("${TELEMETRY_PREFIX}-deleted-success", telemetry)
