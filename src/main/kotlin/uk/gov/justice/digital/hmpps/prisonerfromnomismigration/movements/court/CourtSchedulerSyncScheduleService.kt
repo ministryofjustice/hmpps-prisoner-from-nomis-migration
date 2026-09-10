@@ -25,7 +25,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.util.*
-import kotlin.collections.set
 
 private const val TELEMETRY_PREFIX: String = "${CRT_TELEMETRY_PREFIX}-schedule"
 
@@ -37,7 +36,6 @@ class CourtSchedulerSyncScheduleService(
   private val sentencingMappingApi: CourtSentencingMappingApiService,
   private val nomisApi: CourtSchedulerNomisApiService,
   private val dpsApi: CourtSchedulerDpsApiService,
-  private val nomisSyncApi: CourtSchedulerNomisSyncApiService,
 ) : TelemetryEnabled {
 
   companion object {
