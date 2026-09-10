@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-08.481.3764ecb"
+    "version" : "2026-09-09.486.c461af7"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -2206,6 +2206,29 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/AddressDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/police-custody-suites" : {
+      "get" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Get all police custody suites",
+        "description" : "Information on all police custody suites",
+        "operationId" : "getPoliceCustodySuites",
+        "responses" : {
+          "200" : {
+            "description" : "Successful Operation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PoliceCustodySuiteDto"
+                  }
                 }
               }
             }
