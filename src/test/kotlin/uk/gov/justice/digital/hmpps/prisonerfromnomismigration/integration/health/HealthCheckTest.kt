@@ -30,6 +30,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsAp
 
 @ExtendWith(
   ActivitiesApiExtension::class,
+  AgencyRegistersDpsApiExtension::class,
   AlertsDpsApiExtension::class,
   CaseNotesApiExtension::class,
   ContactPersonDpsApiExtension::class,
@@ -37,6 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsAp
   CourtSchedulerDpsApiExtension::class,
   CourtSentencingDpsApiExtension::class,
   CsraApiExtension::class,
+  FinanceApiExtension::class,
   HmppsAuthApiExtension::class,
   LocationsApiExtension::class,
   MappingApiExtension::class,
@@ -51,7 +53,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsAp
   TransferScheduleDpsApiExtension::class,
   VisitBalanceDpsApiExtension::class,
   VisitsApiExtension::class,
-  AgencyRegistersDpsApiExtension::class,
 )
 class HealthCheckTest : SqsIntegrationTestBase() {
 
@@ -67,12 +68,14 @@ class HealthCheckTest : SqsIntegrationTestBase() {
       .expectBody()
       .jsonPath("status").isEqualTo("UP")
       .jsonPath("components.activitiesApi.status").isEqualTo("UP")
+      .jsonPath("components.agencyApi.status").isEqualTo("UP")
       .jsonPath("components.alertsApi.status").isEqualTo("UP")
       .jsonPath("components.caseNotesApi.status").isEqualTo("UP")
       .jsonPath("components.corePersonApi.status").isEqualTo("UP")
       .jsonPath("components.courtSchedulerApi.status").isEqualTo("UP")
       .jsonPath("components.courtSentencingApi.status").isEqualTo("UP")
       .jsonPath("components.csraApi.status").isEqualTo("UP")
+      .jsonPath("components.financeApi.status").isEqualTo("UP")
       .jsonPath("components.hmppsAuthApiHealth.status").isEqualTo("UP")
       .jsonPath("components.locationsApi.status").isEqualTo("UP")
       .jsonPath("components.nomisApiHealth.status").isEqualTo("UP")
@@ -87,7 +90,6 @@ class HealthCheckTest : SqsIntegrationTestBase() {
       .jsonPath("components.transferSchedulerApi.status").isEqualTo("UP")
       .jsonPath("components.visitBalanceApi.status").isEqualTo("UP")
       .jsonPath("components.visitsApi.status").isEqualTo("UP")
-      .jsonPath("components.agencyApi.status").isEqualTo("UP")
   }
 
   @Test
@@ -142,6 +144,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     NomisSyncApiExtension.nomisSyncApi.stubHealthPing(status)
     MappingApiExtension.mappingApi.stubHealthPing(status)
     ActivitiesApiExtension.activitiesApi.stubHealthPing(status)
+    AgencyRegistersDpsApiExtension.agencyRegistersApi.stubHealthPing(status)
     AlertsDpsApiExtension.dpsAlertsServer.stubHealthPing(status)
     CaseNotesApiExtension.caseNotesApi.stubHealthPing(status)
     CorePersonCprApiExtension.cprCorePersonServer.stubHealthPing(status)
@@ -160,6 +163,5 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     OfficialVisitsDpsApiExtension.dpsOfficialVisitsServer.stubHealthPing(status)
     VisitBalanceDpsApiExtension.dpsVisitBalanceServer.stubHealthPing(status)
     VisitsApiExtension.visitsApi.stubHealthPing(status)
-    AgencyRegistersDpsApiExtension.agencyRegistersApi.stubHealthPing(status)
   }
 }
