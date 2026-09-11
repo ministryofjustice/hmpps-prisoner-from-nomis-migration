@@ -169,11 +169,13 @@ class PropertySyncService(
 
       telemetry["count"] = idsToResynchronise.size
 
-      propertyDpsApiService.move(
-        movedFromNomsNumber,
-        movedToNomsNumber,
-        idsToResynchronise,
-      )
+      if (idsToResynchronise.isNotEmpty()) {
+        propertyDpsApiService.move(
+          movedFromNomsNumber,
+          movedToNomsNumber,
+          idsToResynchronise,
+        )
+      }
     }
   }
 
