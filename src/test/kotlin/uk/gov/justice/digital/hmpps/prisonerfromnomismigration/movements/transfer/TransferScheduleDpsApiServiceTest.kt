@@ -296,15 +296,14 @@ class TransferScheduleDpsApiServiceTest {
               "transferIds[0]",
               equalTo("${request.transferIds.first()}"),
             ),
+          )
+          .withRequestBody(matchingJsonPath("unscheduledMovementIds.size()", equalTo("1")))
+          .withRequestBody(
+            matchingJsonPath(
+              "unscheduledMovementIds[0]",
+              equalTo("${request.unscheduledMovementIds.first()}"),
+            ),
           ),
-// TODO SDIT-4117 Waiting for the DPS API to accept unscheduledMovementIds±
-//          .withRequestBody(matchingJsonPath("unscheduledMovementIds.size()", equalTo("1")))
-//          .withRequestBody(
-//            matchingJsonPath(
-//              "unscheduledMovementIds[0]",
-//              equalTo("${request.unscheduledMovementIds.first()}"),
-//            ),
-//          ),
       )
     }
 
