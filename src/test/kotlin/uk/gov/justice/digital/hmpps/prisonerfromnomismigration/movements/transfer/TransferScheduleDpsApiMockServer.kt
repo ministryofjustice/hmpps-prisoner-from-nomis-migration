@@ -158,12 +158,12 @@ class TransferScheduleDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       fromPrisoner: String = "A1234BC",
       toPrisoner: String = "A1234BD",
       transferIds: List<UUID> = listOf(UUID.randomUUID()),
-      // TODO SDIT-4117 Waiting for the DPS API to acceot unscheduledMovementIds
       unscheduledMovementIds: List<UUID> = listOf(UUID.randomUUID()),
     ) = MoveTransfersRequest(
       from = fromPrisoner,
       to = toPrisoner,
       transferIds = transferIds.toSet(),
+      unscheduledMovementIds = unscheduledMovementIds.toSet(),
     )
   }
 
