@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-01.4765.a4b83db"
+    "version" : "2026-09-10.4915.a773c70"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -800,69 +800,6 @@
           },
           "404" : {
             "description" : "The DPS id was not found",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/court-scheduler/court/schedule/out/{prisonerNumber}/{dpsCourtAppearanceId}" : {
-      "put" : {
-        "tags" : [ "Court Scheduler Resource" ],
-        "summary" : "Synchronises a court schedule",
-        "description" : "An endpoint to synchronise a court schedule. The recreate query parameter is passed onto nomis-prisoner-api to tell it to recreate using the eventId from the existing mapping. This is to recover from court schedules deleted by remand and sentencing. Requires role <b>PRISONER_TO_NOMIS__UPDATE__RW</b>",
-        "operationId" : "synchroniseCourtSchedule",
-        "parameters" : [ {
-          "name" : "prisonerNumber",
-          "in" : "path",
-          "description" : "Prisoner number",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Prisoner number"
-          }
-        }, {
-          "name" : "dpsCourtAppearanceId",
-          "in" : "path",
-          "description" : "DPS court appearance Id",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "format" : "uuid",
-            "description" : "DPS court appearance Id"
-          }
-        }, {
-          "name" : "recreate",
-          "in" : "query",
-          "description" : "Whether to recreate a deleted court schedule with the existing mapping eventId",
-          "required" : false,
-          "schema" : {
-            "type" : "boolean",
-            "description" : "Whether to recreate a deleted court schedule with the existing mapping eventId"
-          }
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "The court schedule was synchronised",
-            "content" : { }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Incorrect permissions to start migration",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2800,16 +2737,16 @@
             "format" : "int32"
           },
           "errorCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "userMessage" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "developerMessage" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "moreInfo" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "status" ]
@@ -2818,20 +2755,20 @@
         "type" : "object",
         "properties" : {
           "date" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date"
           },
           "court" : {
             "type" : "string"
           },
           "outcome" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "type" : "string"
           },
           "mappedId" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "charges" : {
             "type" : "array",
@@ -2840,7 +2777,7 @@
             }
           },
           "chargeAsString" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "charges", "court", "id" ]
@@ -2849,7 +2786,7 @@
         "type" : "object",
         "properties" : {
           "active" : {
-            "type" : "boolean"
+            "type" : [ "boolean", "null" ]
           },
           "id" : {
             "type" : "string"
@@ -2882,21 +2819,21 @@
             "type" : "string"
           },
           "offenceDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date"
           },
           "offenceEndDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date"
           },
           "outcome" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "id" : {
             "type" : "string"
           },
           "mappedId" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "id", "offenceCode" ]
@@ -2910,7 +2847,7 @@
           "dps" : { },
           "nomis" : { },
           "id" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "property" ]
@@ -2951,14 +2888,18 @@
             "format" : "int64"
           },
           "nomisBookingId" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64"
           },
           "caseCountMismatch" : {
             "type" : "boolean"
           },
           "mismatch" : {
-            "$ref" : "#/components/schemas/MismatchCase"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/MismatchCase"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
         "required" : [ "caseCountMismatch", "dpsCaseId", "nomisCaseId", "offenderNo" ]
@@ -2967,17 +2908,17 @@
         "type" : "object",
         "properties" : {
           "sentencingAppearanceDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date"
           },
           "sentenceCategory" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "sentenceCalcType" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "fine" : {
-            "type" : "number"
+            "type" : [ "number", "null" ]
           },
           "status" : {
             "type" : "string"
@@ -2986,13 +2927,13 @@
             "type" : "string"
           },
           "mappedId" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "offenceCodes" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "termsAsString" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "terms" : {
             "type" : "array",
@@ -3007,32 +2948,32 @@
         "type" : "object",
         "properties" : {
           "sentenceTermCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "years" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int32"
           },
           "months" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int32"
           },
           "weeks" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int32"
           },
           "days" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int32"
           },
           "lifeSentenceFlag" : {
-            "type" : "boolean"
+            "type" : [ "boolean", "null" ]
           },
           "id" : {
             "type" : "string"
           },
           "mappedId" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "id" ]
@@ -3090,47 +3031,47 @@
             }
           },
           "completionCode" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "enum" : [ "NORMAL", "PRISONER_EARLY", "PRISONER_REFUSED", "STAFF_EARLY", "VISITOR_DENIED", "VISITOR_EARLY", "VISITOR_NO_SHOW", "PRISONER_CANCELLED", "STAFF_CANCELLED", "VISITOR_CANCELLED" ]
           },
           "offenderBookId" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64"
           },
           "offenderVisitId" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64"
           },
           "prisonerAttendance" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "enum" : [ "ATTENDED", "ABSENT" ]
           },
           "searchType" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "enum" : [ "FULL", "PAT", "RUB", "RUB_A", "RUB_B", "STR" ]
           },
           "visitComments" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "updatedBy" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "updatedTime" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time"
           },
           "visitorConcernNotes" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "visitOrderNumber" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64"
           },
           "overrideBanStaffUsername" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "currentTerm" : {
-            "type" : "boolean"
+            "type" : [ "boolean", "null" ]
           }
         },
         "required" : [ "createdBy", "createdTime", "dpsLocationId", "endTime", "officialVisitId", "prisonCode", "prisonVisitSlotId", "prisonerNumber", "startTime", "statusCode", "visitDate", "visitType", "visitors" ]
@@ -3150,40 +3091,40 @@
             "format" : "date-time"
           },
           "contactId" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64"
           },
           "firstName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "lastName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "relationshipType" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "enum" : [ "OFFICIAL", "SOCIAL" ]
           },
           "relationshipCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "attendanceCode" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "enum" : [ "ATTENDED", "ABSENT" ]
           },
           "leadVisitor" : {
-            "type" : "boolean"
+            "type" : [ "boolean", "null" ]
           },
           "assistedVisit" : {
-            "type" : "boolean"
+            "type" : [ "boolean", "null" ]
           },
           "visitorNotes" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "updatedBy" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "updatedTime" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time"
           }
         },
@@ -3226,7 +3167,7 @@
             "format" : "int64"
           },
           "dpsStaffId" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "differences" : {
             "type" : "object",
@@ -3281,10 +3222,18 @@
             "type" : "string"
           },
           "nomisVisit" : {
-            "$ref" : "#/components/schemas/OfficialVisitSummary"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OfficialVisitSummary"
+            }, {
+              "type" : "null"
+            } ]
           },
           "dpsVisit" : {
-            "$ref" : "#/components/schemas/OfficialVisitSummary"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/OfficialVisitSummary"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
         "required" : [ "nomisVisitId", "reason" ]
@@ -3315,7 +3264,7 @@
             "enum" : [ "SCHEDULED", "CANCELLED", "COMPLETED", "EXPIRED" ]
           },
           "visitOutcome" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "enum" : [ "NORMAL", "PRISONER_EARLY", "PRISONER_REFUSED", "STAFF_EARLY", "VISITOR_DENIED", "VISITOR_EARLY", "VISITOR_NO_SHOW", "PRISONER_CANCELLED", "STAFF_CANCELLED", "VISITOR_CANCELLED" ]
           },
           "visitors" : {
@@ -3328,7 +3277,7 @@
             "type" : "boolean"
           },
           "bookingId" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64"
           }
         },
@@ -3342,7 +3291,7 @@
             "format" : "int64"
           },
           "attendance" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "enum" : [ "ATTENDED", "ABSENT" ]
           }
         },
@@ -3356,7 +3305,7 @@
             "format" : "int64"
           },
           "dpsTransactionId" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "prisonNumber" : {
             "type" : "string"
@@ -3365,10 +3314,18 @@
             "type" : "string"
           },
           "nomisTransaction" : {
-            "$ref" : "#/components/schemas/PrisonerTransactionSummary"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PrisonerTransactionSummary"
+            }, {
+              "type" : "null"
+            } ]
           },
           "dpsTransaction" : {
-            "$ref" : "#/components/schemas/PrisonerTransactionSummary"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PrisonerTransactionSummary"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
         "required" : [ "nomisTransactionId", "prisonNumber", "reason" ]
@@ -3495,10 +3452,18 @@
             "format" : "int64"
           },
           "dpsSummary" : {
-            "$ref" : "#/components/schemas/PersonSummary"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonSummary"
+            }, {
+              "type" : "null"
+            } ]
           },
           "nomisSummary" : {
-            "$ref" : "#/components/schemas/PersonSummary"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonSummary"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
         "required" : [ "personId" ]
@@ -3510,11 +3475,11 @@
             "type" : "string"
           },
           "startDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date"
           },
           "expiryDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date"
           }
         },
@@ -3534,7 +3499,7 @@
             "type" : "string"
           },
           "dateOfBirth" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date"
           },
           "addressCount" : {
@@ -3620,10 +3585,18 @@
             "$ref" : "#/components/schemas/NonAssociationIdResponse"
           },
           "nomisNonAssociation" : {
-            "$ref" : "#/components/schemas/NonAssociationReportDetail"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/NonAssociationReportDetail"
+            }, {
+              "type" : "null"
+            } ]
           },
           "dpsNonAssociation" : {
-            "$ref" : "#/components/schemas/NonAssociationReportDetail"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/NonAssociationReportDetail"
+            }, {
+              "type" : "null"
+            } ]
           }
         },
         "required" : [ "id" ]
@@ -3651,11 +3624,11 @@
             "format" : "date"
           },
           "expiryDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date"
           },
           "closed" : {
-            "type" : "boolean"
+            "type" : [ "boolean", "null" ]
           },
           "roleReason" : {
             "type" : "string"
@@ -3664,7 +3637,7 @@
             "type" : "string"
           },
           "dpsReason" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "createdDate", "roleReason", "roleReason2", "type" ]
@@ -3673,10 +3646,10 @@
         "type" : "object",
         "properties" : {
           "type" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "status" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "reportedBy" : {
             "type" : "string"
@@ -3686,25 +3659,25 @@
             "format" : "date-time"
           },
           "offenderParties" : {
-            "type" : "array",
+            "type" : [ "array", "null" ],
             "items" : {
               "type" : "string"
             }
           },
           "totalStaffParties" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int32"
           },
           "totalQuestions" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int32"
           },
           "totalRequirements" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int32"
           },
           "totalResponses" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int32"
           }
         },
@@ -3718,14 +3691,22 @@
             "format" : "int64"
           },
           "dpsId" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "uuid"
           },
           "nomisIncident" : {
-            "$ref" : "#/components/schemas/IncidentReportDetail"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/IncidentReportDetail"
+            }, {
+              "type" : "null"
+            } ]
           },
           "dpsIncident" : {
-            "$ref" : "#/components/schemas/IncidentReportDetail"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/IncidentReportDetail"
+            }, {
+              "type" : "null"
+            } ]
           },
           "verdict" : {
             "type" : "string"
@@ -3797,15 +3778,15 @@
             "type" : "string"
           },
           "sequence" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int32"
           },
           "assessmentDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date"
           },
           "level" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "id" ]
@@ -3814,10 +3795,18 @@
         "type" : "object",
         "properties" : {
           "nomis" : {
-            "$ref" : "#/components/schemas/CsraDetailFields"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraDetailFields"
+            }, {
+              "type" : "null"
+            } ]
           },
           "dps" : {
-            "$ref" : "#/components/schemas/CsraDetailFields"
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraDetailFields"
+            }, {
+              "type" : "null"
+            } ]
           },
           "differences" : {
             "type" : "array",
@@ -3835,11 +3824,11 @@
             "type" : "string"
           },
           "incidentDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date"
           },
           "incidentTime" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "attendeeCount" : {
             "type" : "integer",
@@ -3862,10 +3851,10 @@
             "format" : "int32"
           },
           "scsOutcomeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "decisionOutcomeCode" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "csipClosedFlag" : {
             "type" : "boolean"
