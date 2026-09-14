@@ -2,7 +2,9 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerEntry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.OffenderTransaction
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncOffenderTransactionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleaseHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
 import java.util.UUID
@@ -49,3 +51,27 @@ fun GeneralLedgerTransactionDto.toDPSSyncGLTransaction() = GeneralLedgerEntry(
   postingType = GeneralLedgerEntry.PostingType.valueOf(postingType.name),
   amount = amount,
 )
+
+fun OffenderTransactionDto.toSyncAddHoldRequest(): SyncCreateHoldRequest = SyncCreateHoldRequest(
+  prisonNumber = offenderNo,
+  subAccountCode = subAccountType.toAccountCode(),
+  holdNumber = holdDetails!!.holdNumber,
+  holdUntilDate = holdDetails.holdUntilDate?.atStartOfDay(),
+  isReleased = holdDetails.holdCleared,
+  holdFromDate = generalLedgerTransactions.firstOrNull()?.transactionTimestamp ?: createdAt,
+  holdType = type,
+  holdLocation = caseloadId,
+  amount = amount,
+  description = description,
+  createdAt = createdAt,
+  createdBy = createdBy,
+)
+
+fun OffenderTransactionDto.toSyncReleaseHoldRequest(): SyncReleaseHoldRequest = SyncReleaseHoldRequest(releaseDateTime = generalLedgerTransactions.firstOrNull()?.transactionTimestamp ?: createdAt)
+
+fun OffenderTransactionDto.SubAccountType.toAccountCode() = when (this) {
+  OffenderTransactionDto.SubAccountType.REG -> 2101
+  OffenderTransactionDto.SubAccountType.SPND -> 2102
+  OffenderTransactionDto.SubAccountType.SAV -> 2103
+  else -> throw IllegalArgumentException("Unexpected sub account type: $this")
+}
