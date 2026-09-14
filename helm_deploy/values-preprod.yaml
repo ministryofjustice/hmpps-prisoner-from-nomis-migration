@@ -35,6 +35,7 @@ generic-service:
     API_BASE_URL_OFFICIALVISITS: https://official-visits-api-preprod.hmpps.service.justice.gov.uk
     API_BASE_URL_AGENCYREGISTERS: https://prison-register-preprod.hmpps.service.justice.gov.uk
     CONTACT-SENTENCING_COURT-EVENT-UPDATE_IGNORE-MISSING: true
+    OFFENDER_TRANSACTIONS-PROCESS-HOLD: true
     FEATURE_EVENT_STAFF_MEMBERS-INSERTED: false
     FEATURE_EVENT_STAFF_MEMBERS-UPDATED: false
     FEATURE_EVENT_STAFF_MEMBERS-DELETED: false

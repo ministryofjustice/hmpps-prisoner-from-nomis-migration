@@ -31,6 +31,8 @@ class TransactionSynchronisationService(
   private val transactionIdBufferRepository: TransactionIdBufferRepository,
   @Value($$"${finance.transactions.forwardingDelaySeconds}")
   private val forwardingDelaySeconds: Int,
+  @Value($$"${offender_transactions.process.hold:false}") private val processHoldTransaction: Boolean,
+
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -109,6 +111,7 @@ class TransactionSynchronisationService(
     val nomisTransactionId = event.transactionId
 
     val mapping = transactionMappingService.getMappingGivenNomisIdOrNull(nomisTransactionId)
+    var dpsTransactionId = mapping?.let { UUID.fromString(mapping.dpsTransactionId) }
     val nomisTransactions = nomisApiService.getPrisonerTransactions(nomisTransactionId)
     if (nomisTransactions.isEmpty()) {
       // We just have gl_transactions, with no associated offender_transaction - so ignore
@@ -125,12 +128,12 @@ class TransactionSynchronisationService(
         .also { financeResponse ->
           assertMappingExistenceMatchesAction(mapping, financeResponse)
           if (mapping == null) {
-            val mappingResponse = maybeCreateTransactionMapping(event, financeResponse)
-
+            dpsTransactionId = financeResponse.synchronizedTransactionId
+            val mappingResponse = maybeCreateTransactionMapping(event, dpsTransactionId)
             telemetryClient.trackEvent(
               "transactions-synchronisation-$eventType-success",
               event.toTelemetryProperties(
-                dpsTransactionId = financeResponse.synchronizedTransactionId,
+                dpsTransactionId = dpsTransactionId,
                 mappingFailed = mappingResponse == MappingResponse.MAPPING_FAILED,
               ),
             )
@@ -138,12 +141,36 @@ class TransactionSynchronisationService(
             telemetryClient.trackEvent(
               "transactions-synchronisation-$eventType-success-additional",
               event.toTelemetryProperties(
-                dpsTransactionId = financeResponse.synchronizedTransactionId,
+                dpsTransactionId = dpsTransactionId,
                 mappingFailed = false,
               ),
             )
           }
         }
+
+      val transaction = nomisTransactions.first()
+      if (processHoldTransaction && transaction.isHoldTransaction()) {
+        sendHoldTransactionToDps(transaction, dpsTransactionId!!, event, eventType)
+      }
+    }
+  }
+
+  suspend fun sendHoldTransactionToDps(nomisTransaction: OffenderTransactionDto, dpsTransactionId: UUID, event: TransactionEvent, eventType: String) {
+    if (nomisTransaction.isAddHoldTransaction()) {
+      financeService.syncAddHoldTransaction(nomisTransaction.toSyncAddHoldRequest())
+      telemetryClient.trackEvent(
+        "transactions-synchronisation-$eventType-add-hold-success",
+        event.toTelemetryProperties(dpsTransactionId = dpsTransactionId),
+      )
+    } else if (nomisTransaction.isReleaseHoldTransaction()) {
+      financeService.syncReleaseHoldTransaction(
+        holdNumber = nomisTransaction.holdDetails!!.holdNumber,
+        request = nomisTransaction.toSyncReleaseHoldRequest(),
+      )
+      telemetryClient.trackEvent(
+        "transactions-synchronisation-$eventType-release-hold-success",
+        event.toTelemetryProperties(dpsTransactionId = dpsTransactionId),
+      )
     }
   }
 
@@ -180,10 +207,10 @@ class TransactionSynchronisationService(
 
   suspend fun maybeCreateTransactionMapping(
     event: TransactionEvent,
-    receipt: SyncTransactionReceipt,
+    dpsId: UUID,
   ): MappingResponse {
     val mapping = TransactionMappingDto(
-      dpsTransactionId = receipt.synchronizedTransactionId.toString(),
+      dpsTransactionId = dpsId.toString(),
       nomisTransactionId = event.transactionId,
       nomisBookingId = event.bookingId ?: 0, // This can be null in the db - is this acceptable or should mapping table allow nulls?
       offenderNo = event.offenderIdDisplay,
@@ -211,14 +238,14 @@ class TransactionSynchronisationService(
       MappingResponse.MAPPING_CREATED
     } catch (e: Exception) {
       log.error(
-        "Failed to create mapping for dpsTransaction $receipt, nomisTransactionId ${event.transactionId}",
+        "Failed to create mapping for dpsTransaction $dpsId, nomisTransactionId ${event.transactionId}",
         e,
       )
       queueService.sendMessage(
         messageType = RETRY_SYNCHRONISATION_MAPPING.name,
         synchronisationType = SynchronisationType.FINANCE,
         message = mapping,
-        telemetryAttributes = event.toTelemetryProperties(receipt.synchronizedTransactionId),
+        telemetryAttributes = event.toTelemetryProperties(dpsId),
       )
       MappingResponse.MAPPING_FAILED
     }
@@ -276,5 +303,9 @@ private fun TransactionEvent.toTelemetryProperties(
   (offenderIdDisplay?.let { mapOf("offenderNo" to it) } ?: emptyMap()) +
   (dpsTransactionId?.let { mapOf("dpsTransactionId" to it.toString()) } ?: emptyMap()) +
   (if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap())
+
+fun OffenderTransactionDto.isHoldTransaction() = isAddHoldTransaction() || isReleaseHoldTransaction()
+fun OffenderTransactionDto.isAddHoldTransaction() = type == "HOA" || type == "WHF"
+fun OffenderTransactionDto.isReleaseHoldTransaction() = type == "HOR" || type == "WFR"
 
 data class EncapsulatedTransaction(val transactionEvent: TransactionEvent, val requestId: UUID, val eventType: String)

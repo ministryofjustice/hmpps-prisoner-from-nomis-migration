@@ -170,6 +170,28 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubPostAddHold(response: HoldResponse) {
+    stubFor(
+      post("/sync/holds").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(CREATED.value())
+          .withBody(jsonMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubPostReleaseHold(response: SyncReleasedHoldResponse) {
+    stubFor(
+      post("/sync/holds/${response.holdNumber}/release").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(CREATED.value())
+          .withBody(jsonMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
   fun stubMigratePrisonerBalance(prisonNumber: String = "A1234BC") {
     stubFor(
       post("/migrate/prisoner-balances/$prisonNumber")

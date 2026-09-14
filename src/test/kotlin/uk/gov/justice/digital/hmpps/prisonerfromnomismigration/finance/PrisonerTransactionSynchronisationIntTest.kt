@@ -25,20 +25,27 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import org.springframework.test.context.TestPropertySource
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.HoldResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleasedHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageAttributes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.HoldDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.TransactionIdBufferRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.math.BigDecimal
+import java.time.LocalDateTime
 import java.util.AbstractMap.SimpleEntry
 import java.util.UUID
 
+@TestPropertySource(properties = ["offender_transactions.process.hold=true"])
 class PrisonerTransactionSynchronisationIntTest(
   @Autowired private val financeNomisApiMockServer: FinanceNomisApiMockServer,
   @Autowired private val jsonMapper: JsonMapper,
@@ -209,6 +216,16 @@ class PrisonerTransactionSynchronisationIntTest(
             )
           }
         }
+
+        @Test
+        fun `will not call the add hold transaction in DPS`() {
+          financeApi.verify(0, postRequestedFor(urlPathEqualTo("/sync/holds")))
+        }
+
+        @Test
+        fun `will not call the release hold transaction in DPS`() {
+          financeApi.verify(0, postRequestedFor(urlPathMatching("/sync/holds/.*")))
+        }
       }
 
       @Nested
@@ -314,6 +331,298 @@ class PrisonerTransactionSynchronisationIntTest(
             0,
             postRequestedFor(urlPathEqualTo("/mapping/transactions")),
           )
+        }
+
+        @Test
+        fun `will not call the add hold transaction in DPS`() {
+          financeApi.verify(0, postRequestedFor(urlPathEqualTo("/sync/holds")))
+        }
+
+        @Test
+        fun `will not call the release hold transaction in DPS`() {
+          financeApi.verify(0, postRequestedFor(urlPathMatching("/sync/holds/.*/release")))
+        }
+      }
+
+      @Nested
+      @DisplayName("Happy path for add hold transaction")
+      inner class HappyPathOffenderAddHoldTransaction {
+        val receipt = SyncTransactionReceipt(
+          synchronizedTransactionId = dpsTransactionUuid,
+          requestId = UUID.randomUUID(),
+          action = SyncTransactionReceipt.Action.CREATED,
+        )
+        val holdResponse = HoldResponse(
+          id = UUID.randomUUID(),
+          prisonNumber = OFFENDER_ID_DISPLAY,
+          legacyHoldNumber = 12345,
+          subAccountRef = HoldResponse.SubAccountRef.CASH,
+          createdAt = LocalDateTime.parse("2025-06-01T01:02:03"),
+          createdBy = "testUser",
+          holdFromDate = LocalDateTime.parse("2025-06-01T01:02:03"),
+          isReleased = false,
+          holdType = HoldResponse.HoldType.HOA,
+          amount = 125,
+          holdLocation = "Some location",
+          holdUntilDate = LocalDateTime.parse("2025-06-03T04:05:06"),
+          description = "This is a hold",
+        )
+        val holdTransaction = offenderTransactionDto(bookingId = BOOKING_ID, transactionId = NOMIS_TRANSACTION_ID).copy(
+          type = "HOA",
+          holdDetails = HoldDto(
+            holdNumber = 65432,
+            holdCleared = false,
+          ),
+        )
+
+        @BeforeEach
+        fun setUp() {
+          financeNomisApiMockServer.stubGetPrisonerTransaction(
+            bookingId = BOOKING_ID,
+            transactionId = NOMIS_TRANSACTION_ID,
+            response = listOf(holdTransaction),
+          )
+          financeApi.stubPostPrisonerTransaction(receipt)
+          financeApi.stubPostAddHold(holdResponse)
+          financeMappingApiMockServer.stubPostMapping()
+
+          financeOffenderEventsQueue.sendMessage(
+            offenderTransactionEvent(
+              messageId = messageUuid,
+              bookingId = BOOKING_ID,
+              transactionId = NOMIS_TRANSACTION_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+        }
+
+        @Test
+        fun `will create hold transaction in DPS`() {
+          await untilAsserted {
+            val t1 = holdTransaction
+            val g1 = t1.generalLedgerTransactions.first()
+            financeApi.verify(
+              1,
+              postRequestedFor(urlPathEqualTo("/sync/offender-transactions"))
+                .withRequestBodyJsonPath("transactionId", NOMIS_TRANSACTION_ID)
+                .withRequestBodyJsonPath("requestId", MESSAGE_ID)
+                .withRequestBodyJsonPath("caseloadId", "SWI")
+                .withRequestBodyJsonPath("transactionTimestamp", g1.transactionTimestamp)
+                .withRequestBodyJsonPath("createdAt", t1.createdAt)
+                .withRequestBodyJsonPath("createdBy", t1.createdBy)
+                .withRequestBodyJsonPath("createdByDisplayName", t1.createdByDisplayName)
+                .withRequestBodyJsonPath("lastModifiedAt", t1.lastModifiedAt.toString())
+                .withRequestBodyJsonPath("lastModifiedBy", t1.lastModifiedBy.toString())
+                .withRequestBodyJsonPath("lastModifiedByDisplayName", t1.lastModifiedByDisplayName.toString())
+                .withRequestBodyJsonPath("offenderTransactions[0].entrySequence", equalTo(t1.transactionEntrySequence.toString()))
+                .withRequestBodyJsonPath("offenderTransactions[0].offenderId", OFFENDER_ID)
+                .withRequestBodyJsonPath("offenderTransactions[0].offenderDisplayId", OFFENDER_ID_DISPLAY)
+                .withRequestBodyJsonPath("offenderTransactions[0].subAccountType", t1.subAccountType.name)
+                .withRequestBodyJsonPath("offenderTransactions[0].postingType", t1.postingType.name)
+                .withRequestBodyJsonPath("offenderTransactions[0].type", t1.type)
+                .withRequestBodyJsonPath("offenderTransactions[0].description", t1.description)
+                .withRequestBodyJsonPath("offenderTransactions[0].amount", "5.42")
+                .withRequestBodyJsonPath("offenderTransactions[0].offenderBookingId", t1.bookingId.toString())
+                .withRequestBodyJsonPath("offenderTransactions[0].reference", equalTo(t1.reference))
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].entrySequence", g1.generalLedgerEntrySequence.toString())
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].code", g1.accountCode)
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].postingType", g1.postingType.name)
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].amount", "6.71"),
+            )
+          }
+        }
+
+        @Test
+        fun `will create mapping between DPS and NOMIS ids`() {
+          await untilAsserted {
+            financeMappingApiMockServer.verify(
+              postRequestedFor(urlPathEqualTo("/mapping/transactions"))
+                .withRequestBodyJsonPath("dpsTransactionId", DPS_TRANSACTION_ID)
+                .withRequestBodyJsonPath("nomisBookingId", BOOKING_ID)
+                .withRequestBodyJsonPath("offenderNo", OFFENDER_ID_DISPLAY)
+                .withRequestBodyJsonPath("nomisTransactionId", NOMIS_TRANSACTION_ID)
+                .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("transactions-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["nomisTransactionId"]).isEqualTo(NOMIS_TRANSACTION_ID.toString())
+                assertThat(it["dpsTransactionId"]).isEqualTo(DPS_TRANSACTION_ID)
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `will call the add hold transaction in DPS`() {
+          val g1 = holdTransaction.generalLedgerTransactions.first()
+
+          await untilAsserted {
+            financeApi.verify(
+              postRequestedFor(urlPathEqualTo("/sync/holds"))
+                .withRequestBodyJsonPath("prisonNumber", OFFENDER_ID_DISPLAY)
+                .withRequestBodyJsonPath("subAccountCode", 2101)
+                .withRequestBodyJsonPath("holdNumber", holdTransaction.holdDetails!!.holdNumber)
+                .withRequestBodyJsonPath("isReleased", holdTransaction.holdDetails.holdCleared)
+                .withRequestBodyJsonPath("description", holdTransaction.description)
+                .withRequestBodyJsonPath("holdType", holdTransaction.type)
+                .withRequestBodyJsonPath("holdLocation", holdTransaction.caseloadId)
+                .withRequestBodyJsonPath("amount", holdTransaction.amount)
+                .withRequestBodyJsonPath("holdFromDate", g1.transactionTimestamp)
+                .withRequestBodyJsonPath("createdAt", holdTransaction.createdAt)
+                .withRequestBodyJsonPath("createdBy", holdTransaction.createdBy),
+            )
+          }
+        }
+
+        @Test
+        fun `will not call the release hold transaction in DPS`() {
+          financeApi.verify(0, postRequestedFor(urlPathMatching("/sync/holds/.*/release")))
+        }
+      }
+
+      @Nested
+      @DisplayName("Happy path for release hold transaction")
+      inner class HappyPathOffenderReleaseHoldTransaction {
+        val receipt = SyncTransactionReceipt(
+          synchronizedTransactionId = dpsTransactionUuid,
+          requestId = UUID.randomUUID(),
+          action = SyncTransactionReceipt.Action.CREATED,
+        )
+        val holdResponse = SyncReleasedHoldResponse(
+          prisonNumber = OFFENDER_ID_DISPLAY,
+          holdNumber = 65432,
+          amountReleased = BigDecimal.valueOf(5.42),
+          releasedAt = LocalDateTime.parse("2021-02-03T04:05:09"),
+        )
+        val holdTransaction = offenderTransactionDto(bookingId = BOOKING_ID, transactionId = NOMIS_TRANSACTION_ID).copy(
+          type = "HOR",
+          holdDetails = HoldDto(
+            holdNumber = 65432,
+            holdCleared = true,
+          ),
+        )
+
+        @BeforeEach
+        fun setUp() {
+          financeNomisApiMockServer.stubGetPrisonerTransaction(
+            bookingId = BOOKING_ID,
+            transactionId = NOMIS_TRANSACTION_ID,
+            response = listOf(holdTransaction),
+          )
+          financeApi.stubPostPrisonerTransaction(receipt)
+          financeApi.stubPostReleaseHold(holdResponse)
+          financeMappingApiMockServer.stubPostMapping()
+
+          financeOffenderEventsQueue.sendMessage(
+            offenderTransactionEvent(
+              messageId = messageUuid,
+              bookingId = BOOKING_ID,
+              transactionId = NOMIS_TRANSACTION_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+        }
+
+        @Test
+        fun `will create hold transaction in DPS`() {
+          await untilAsserted {
+            val t1 = holdTransaction
+            val g1 = t1.generalLedgerTransactions.first()
+            financeApi.verify(
+              1,
+              postRequestedFor(urlPathEqualTo("/sync/offender-transactions"))
+                .withRequestBodyJsonPath("transactionId", NOMIS_TRANSACTION_ID)
+                .withRequestBodyJsonPath("requestId", MESSAGE_ID)
+                .withRequestBodyJsonPath("caseloadId", "SWI")
+                .withRequestBodyJsonPath("transactionTimestamp", g1.transactionTimestamp)
+                .withRequestBodyJsonPath("createdAt", t1.createdAt)
+                .withRequestBodyJsonPath("createdBy", t1.createdBy)
+                .withRequestBodyJsonPath("createdByDisplayName", t1.createdByDisplayName)
+                .withRequestBodyJsonPath("lastModifiedAt", t1.lastModifiedAt.toString())
+                .withRequestBodyJsonPath("lastModifiedBy", t1.lastModifiedBy.toString())
+                .withRequestBodyJsonPath("lastModifiedByDisplayName", t1.lastModifiedByDisplayName.toString())
+                .withRequestBodyJsonPath("offenderTransactions[0].entrySequence", equalTo(t1.transactionEntrySequence.toString()))
+                .withRequestBodyJsonPath("offenderTransactions[0].offenderId", OFFENDER_ID)
+                .withRequestBodyJsonPath("offenderTransactions[0].offenderDisplayId", OFFENDER_ID_DISPLAY)
+                .withRequestBodyJsonPath("offenderTransactions[0].subAccountType", t1.subAccountType.name)
+                .withRequestBodyJsonPath("offenderTransactions[0].postingType", t1.postingType.name)
+                .withRequestBodyJsonPath("offenderTransactions[0].type", t1.type)
+                .withRequestBodyJsonPath("offenderTransactions[0].description", t1.description)
+                .withRequestBodyJsonPath("offenderTransactions[0].amount", "5.42")
+                .withRequestBodyJsonPath("offenderTransactions[0].offenderBookingId", t1.bookingId.toString())
+                .withRequestBodyJsonPath("offenderTransactions[0].reference", equalTo(t1.reference))
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].entrySequence", g1.generalLedgerEntrySequence.toString())
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].code", g1.accountCode)
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].postingType", g1.postingType.name)
+                .withRequestBodyJsonPath("offenderTransactions[0].generalLedgerEntries[0].amount", "6.71"),
+            )
+          }
+        }
+
+        @Test
+        fun `will create mapping between DPS and NOMIS ids`() {
+          await untilAsserted {
+            financeMappingApiMockServer.verify(
+              postRequestedFor(urlPathEqualTo("/mapping/transactions"))
+                .withRequestBodyJsonPath("dpsTransactionId", DPS_TRANSACTION_ID)
+                .withRequestBodyJsonPath("nomisBookingId", BOOKING_ID)
+                .withRequestBodyJsonPath("offenderNo", OFFENDER_ID_DISPLAY)
+                .withRequestBodyJsonPath("nomisTransactionId", NOMIS_TRANSACTION_ID)
+                .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+            )
+          }
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          await untilAsserted {
+            verify(telemetryClient).trackEvent(
+              eq("transactions-synchronisation-created-success"),
+              check {
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["nomisTransactionId"]).isEqualTo(NOMIS_TRANSACTION_ID.toString())
+                assertThat(it["dpsTransactionId"]).isEqualTo(DPS_TRANSACTION_ID)
+                assertThat(it).doesNotContain(SimpleEntry("mapping", "initial-failure"))
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `will not call the add hold transaction in DPS`() {
+          await untilAsserted {
+            financeApi.verify(
+              0,
+              postRequestedFor(urlPathEqualTo("/sync/holds")),
+
+            )
+          }
+        }
+
+        @Test
+        fun `will call the release hold transaction in DPS`() {
+          val g1 = holdTransaction.generalLedgerTransactions.first()
+
+          await untilAsserted {
+            financeApi.verify(
+              postRequestedFor(urlPathMatching("/sync/holds/65432/release"))
+                .withRequestBodyJsonPath("releaseDateTime", g1.transactionTimestamp),
+
+            )
+          }
         }
       }
 

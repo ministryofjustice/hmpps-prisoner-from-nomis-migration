@@ -21,7 +21,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import java.util.UUID
 
 @Component
 class FinanceMappingApiMockServer(private val jsonMapper: JsonMapper) {
@@ -29,7 +28,7 @@ class FinanceMappingApiMockServer(private val jsonMapper: JsonMapper) {
     transactionId: Long = 1,
     mapping: TransactionMappingDto? = TransactionMappingDto(
       nomisBookingId = 123456,
-      dpsTransactionId = UUID.randomUUID().toString(),
+      dpsTransactionId = "a04f7a8d-61aa-400c-9395-000011112222",
       nomisTransactionId = transactionId,
       offenderNo = "A1234KT",
       mappingType = MIGRATED,
