@@ -32,7 +32,6 @@ class TransactionSynchronisationService(
   @Value($$"${finance.transactions.forwardingDelaySeconds}")
   private val forwardingDelaySeconds: Int,
   @Value($$"${offender_transactions.process.hold:false}") private val processHoldTransaction: Boolean,
-
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -111,7 +110,6 @@ class TransactionSynchronisationService(
     val nomisTransactionId = event.transactionId
 
     val mapping = transactionMappingService.getMappingGivenNomisIdOrNull(nomisTransactionId)
-    var dpsTransactionId = mapping?.let { UUID.fromString(mapping.dpsTransactionId) }
     val nomisTransactions = nomisApiService.getPrisonerTransactions(nomisTransactionId)
     if (nomisTransactions.isEmpty()) {
       // We just have gl_transactions, with no associated offender_transaction - so ignore
@@ -126,9 +124,9 @@ class TransactionSynchronisationService(
         nomisTransactions.toSyncOffenderTransactionRequest(requestId),
       )
         .also { financeResponse ->
+          val dpsTransactionId = financeResponse.synchronizedTransactionId
           assertMappingExistenceMatchesAction(mapping, financeResponse)
           if (mapping == null) {
-            dpsTransactionId = financeResponse.synchronizedTransactionId
             val mappingResponse = maybeCreateTransactionMapping(event, dpsTransactionId)
             telemetryClient.trackEvent(
               "transactions-synchronisation-$eventType-success",
@@ -146,12 +144,12 @@ class TransactionSynchronisationService(
               ),
             )
           }
-        }
 
-      val transaction = nomisTransactions.first()
-      if (processHoldTransaction && transaction.isHoldTransaction()) {
-        sendHoldTransactionToDps(transaction, dpsTransactionId!!, event, eventType)
-      }
+          val transaction = nomisTransactions.first()
+          if (processHoldTransaction && transaction.isHoldTransaction()) {
+            sendHoldTransactionToDps(transaction, dpsTransactionId, event, eventType)
+          }
+        }
     }
   }
 
