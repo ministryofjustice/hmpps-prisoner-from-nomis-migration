@@ -30,8 +30,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AllocationExclusion
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.FindActiveActivityIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.FindActiveAllocationIdsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RootOffenderIdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.ProfileDetailsNomisApiMockServer
@@ -1209,8 +1209,8 @@ internal class NomisApiServiceTest {
 
       nomisApi.verify(
         getRequestedFor(urlPathEqualTo("/prisoners/ids-in-range"))
-          .withQueryParam("fromRootOffenderId", equalTo("5"))
-          .withQueryParam("toRootOffenderId", equalTo("100")),
+          .withQueryParam("fromId", equalTo("5"))
+          .withQueryParam("toId", equalTo("100")),
       )
     }
 
@@ -1267,8 +1267,8 @@ internal class NomisApiServiceTest {
       )
 
       assertThat(prisonerIds).hasSize(2)
-      assertThat(prisonerIds[0]).isEqualTo(RootOffenderIdRange(0, 10))
-      assertThat(prisonerIds[1]).isEqualTo(RootOffenderIdRange(10, 20))
+      assertThat(prisonerIds[0]).isEqualTo(IdRange(0, 10))
+      assertThat(prisonerIds[1]).isEqualTo(IdRange(10, 20))
     }
   }
 }

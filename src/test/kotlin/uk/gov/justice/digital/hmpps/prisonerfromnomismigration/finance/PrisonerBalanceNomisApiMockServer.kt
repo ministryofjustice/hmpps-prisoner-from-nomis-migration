@@ -10,11 +10,11 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageMetadata
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagedModelLong
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAccountDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RootOffenderIdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.math.BigDecimal
 import java.time.LocalDateTime
@@ -55,8 +55,8 @@ class PrisonerBalanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
     val content: List<Long> = (fromRootOffenderId + 1..toRootOffenderId).map { it }
     nomisApi.stubFor(
       get(urlPathEqualTo("/finance/prisoners/ids-in-range"))
-        .withQueryParam("fromRootOffenderId", equalTo(fromRootOffenderId.toString()))
-        .withQueryParam("toRootOffenderId", equalTo(toRootOffenderId.toString()))
+        .withQueryParam("fromId", equalTo(fromRootOffenderId.toString()))
+        .withQueryParam("toId", equalTo(toRootOffenderId.toString()))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -70,9 +70,9 @@ class PrisonerBalanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
     pageSize: Long = 10,
     totalElements: Long = 20,
   ) {
-    val content: List<RootOffenderIdRange> = (0..(totalElements / pageSize))
+    val content: List<IdRange> = (0..(totalElements / pageSize))
       .zipWithNext()
-      .map { RootOffenderIdRange(it.first * pageSize, it.second * pageSize) }
+      .map { IdRange(it.first * pageSize, it.second * pageSize) }
     nomisApi.stubFor(
       get(urlPathEqualTo("/finance/prisoners/id-ranges"))
         .willReturn(

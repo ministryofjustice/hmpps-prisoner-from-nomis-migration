@@ -14,7 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RootOffenderIdRange
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import java.math.BigDecimal
 
@@ -116,8 +116,8 @@ class PrisonerBalanceNomisApiServiceTest {
 
       mockServer.verify(
         getRequestedFor(urlPathEqualTo("/finance/prisoners/ids-in-range"))
-          .withQueryParam("fromRootOffenderId", equalTo("100"))
-          .withQueryParam("toRootOffenderId", equalTo("200")),
+          .withQueryParam("fromId", equalTo("100"))
+          .withQueryParam("toId", equalTo("200")),
       )
     }
 
@@ -182,8 +182,8 @@ class PrisonerBalanceNomisApiServiceTest {
       )
 
       assertThat(prisonerIds).containsExactly(
-        RootOffenderIdRange(0, 10),
-        RootOffenderIdRange(10, 20),
+        IdRange(0, 10),
+        IdRange(10, 20),
       )
     }
   }

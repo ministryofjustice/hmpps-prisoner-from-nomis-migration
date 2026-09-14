@@ -64,7 +64,7 @@ class PrisonerBalanceMigrationService(
     body: PrisonerBalanceMigrationFilter,
     pageSize: Long,
   ): List<Pair<Long, Long>> = prisonerBalanceNomisApiService.getAllPrisonersIdRanges(pageSize, body.prisonId)
-    .map { Pair(it.fromRootOffenderId, it.toRootOffenderId) }
+    .map { Pair(it.fromId, it.toId) }
 
   override suspend fun getPageOfIdsFromIdRange(
     firstId: Long?,

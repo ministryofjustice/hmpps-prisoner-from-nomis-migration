@@ -239,13 +239,13 @@ class PrisonerBalanceMigrationIntTest(
       fun `will get the offenders to migrate ids in range`() {
         nomisPrisonerBalanceApiMock.verify(
           getRequestedFor(urlPathEqualTo("/finance/prisoners/ids-in-range"))
-            .withQueryParam("fromRootOffenderId", equalTo("0"))
-            .withQueryParam("toRootOffenderId", equalTo("1")),
+            .withQueryParam("fromId", equalTo("0"))
+            .withQueryParam("toId", equalTo("1")),
         )
         nomisPrisonerBalanceApiMock.verify(
           getRequestedFor(urlPathEqualTo("/finance/prisoners/ids-in-range"))
-            .withQueryParam("fromRootOffenderId", equalTo("1"))
-            .withQueryParam("toRootOffenderId", equalTo("2")),
+            .withQueryParam("fromId", equalTo("1"))
+            .withQueryParam("toId", equalTo("2")),
         )
       }
 
@@ -388,14 +388,14 @@ class PrisonerBalanceMigrationIntTest(
         nomisPrisonerBalanceApiMock.verify(
           getRequestedFor(urlPathEqualTo("/finance/prisoners/ids-in-range"))
             .withQueryParam("prisonId", equalTo("ASI"))
-            .withQueryParam("fromRootOffenderId", equalTo("0"))
-            .withQueryParam("toRootOffenderId", equalTo("1")),
+            .withQueryParam("fromId", equalTo("0"))
+            .withQueryParam("toId", equalTo("1")),
         )
         nomisPrisonerBalanceApiMock.verify(
           getRequestedFor(urlPathEqualTo("/finance/prisoners/ids-in-range"))
             .withQueryParam("prisonId", equalTo("ASI"))
-            .withQueryParam("fromRootOffenderId", equalTo("1"))
-            .withQueryParam("toRootOffenderId", equalTo("2")),
+            .withQueryParam("fromId", equalTo("1"))
+            .withQueryParam("toId", equalTo("2")),
         )
       }
 

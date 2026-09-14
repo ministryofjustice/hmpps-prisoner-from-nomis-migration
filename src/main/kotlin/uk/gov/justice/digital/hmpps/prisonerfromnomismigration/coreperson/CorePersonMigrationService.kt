@@ -70,8 +70,8 @@ class CorePersonMigrationService(
   ): List<Pair<PrisonNumberAndRootOffenderId, PrisonNumberAndRootOffenderId>> = nomisApiService.getAllPrisonersIdRanges(pageSize)
     .map {
       Pair(
-        PrisonNumberAndRootOffenderId(it.fromRootOffenderId, ""),
-        PrisonNumberAndRootOffenderId(it.toRootOffenderId, ""),
+        PrisonNumberAndRootOffenderId(it.fromId, ""),
+        PrisonNumberAndRootOffenderId(it.toId, ""),
       )
     }
 
