@@ -31,6 +31,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.FindActiveAllocationIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GetActivityResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GetAllocationResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.LocationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MoveActivityEndDateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageAppointmentIdResponse
@@ -38,7 +39,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerProfileDetailsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RootOffenderIdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.VisitRoomCountResponse
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -232,7 +232,7 @@ class NomisApiService(@Qualifier("nomisApiWebClient") private val webClient: Web
     .getAllPrisonersInRange(fromRootOffenderId, toRootOffenderId)
     .awaitSingle()
 
-  suspend fun getAllPrisonersIdRanges(pageSize: Long): List<RootOffenderIdRange> = prisonersResourceApi
+  suspend fun getAllPrisonersIdRanges(pageSize: Long): List<IdRange> = prisonersResourceApi
     .getAllPrisonersIdRanges(pageSize.toInt())
     .awaitSingle()
 }

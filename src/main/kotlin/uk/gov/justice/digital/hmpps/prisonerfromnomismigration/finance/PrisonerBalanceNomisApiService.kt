@@ -5,9 +5,9 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.PrisonerBalanceResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagedModelLong
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RootOffenderIdRange
 
 @Service
 class PrisonerBalanceNomisApiService(@Qualifier("nomisApiWebClient") webClient: WebClient) {
@@ -18,14 +18,14 @@ class PrisonerBalanceNomisApiService(@Qualifier("nomisApiWebClient") webClient: 
     .awaitSingle()
 
   suspend fun getPrisonerBalanceIdentifiersInRange(fromRootOffenderId: Long, toRootOffenderId: Long, prisonId: String?): List<Long> = api
-    .getPrisonerBalanceIdentifiersInRange(fromRootOffenderId = fromRootOffenderId, toRootOffenderId = toRootOffenderId, prisonId = if (prisonId != null) listOf(prisonId) else null)
+    .getPrisonerBalanceIdentifiersInRange(fromId = fromRootOffenderId, toId = toRootOffenderId, prisonId = if (prisonId != null) listOf(prisonId) else null)
     .awaitSingle()
 
   suspend fun getPrisonerBalanceForMigration(rootOffenderId: Long): PrisonerBalanceDto = api
     .getPrisonerAccountDetailsForMigration(rootOffenderId)
     .awaitSingle()
 
-  suspend fun getAllPrisonersIdRanges(pageSize: Long, prisonId: String?): List<RootOffenderIdRange> = api
+  suspend fun getAllPrisonersIdRanges(pageSize: Long, prisonId: String?): List<IdRange> = api
     .getPrisonerBalanceIdentifierRanges(pageSize.toInt(), prisonId = if (prisonId != null) listOf(prisonId) else null)
     .awaitSingle()
 }

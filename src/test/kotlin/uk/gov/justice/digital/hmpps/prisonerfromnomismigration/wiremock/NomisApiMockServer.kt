@@ -19,10 +19,10 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.FindActiveActivityIdsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RootOffenderIdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -553,8 +553,8 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     }
     nomisApi.stubFor(
       get(urlPathEqualTo("/prisoners/ids-in-range"))
-        .withQueryParam("fromRootOffenderId", equalTo(fromRootOffenderId.toString()))
-        .withQueryParam("toRootOffenderId", equalTo(toRootOffenderId.toString()))
+        .withQueryParam("fromId", equalTo(fromRootOffenderId.toString()))
+        .withQueryParam("toId", equalTo(toRootOffenderId.toString()))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
@@ -567,9 +567,9 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubGetAllPrisonersIdRanges(pageSize: Long = 10, totalElements: Long = 20) {
-    val content: List<RootOffenderIdRange> = (0..(totalElements / pageSize + if (totalElements % pageSize > 0) 1 else 0))
+    val content: List<IdRange> = (0..(totalElements / pageSize + if (totalElements % pageSize > 0) 1 else 0))
       .zipWithNext()
-      .map { RootOffenderIdRange(it.first * pageSize, it.second * pageSize) }
+      .map { IdRange(it.first * pageSize, it.second * pageSize) }
     nomisApi.stubFor(
       get(urlPathEqualTo("/prisoners/id-ranges")).willReturn(
         aResponse()

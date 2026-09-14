@@ -71,7 +71,7 @@ class TransferScheduleMigrationService(
     pageSize: Long,
   ): List<Pair<PrisonNumberAndRootOffenderId, PrisonNumberAndRootOffenderId>> = if (body.prisonerNumber.isNullOrBlank()) {
     nomisApi.getAllPrisonersIdRanges(pageSize)
-      .map { Pair(PrisonNumberAndRootOffenderId(it.fromRootOffenderId, ""), PrisonNumberAndRootOffenderId(it.toRootOffenderId, "")) }
+      .map { Pair(PrisonNumberAndRootOffenderId(it.fromId, ""), PrisonNumberAndRootOffenderId(it.toId, "")) }
   } else {
     // The prisoner number is supplied to us, so pretend there's a single range to get
     listOf(PrisonNumberAndRootOffenderId(0, "") to PrisonNumberAndRootOffenderId(1, ""))
