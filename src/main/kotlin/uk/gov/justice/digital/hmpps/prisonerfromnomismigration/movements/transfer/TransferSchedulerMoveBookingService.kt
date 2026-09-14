@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransfersRetryMappingMessageTypes.RETRY_MOVE_BOOKING_MAPPING_TRANSFER_SCHEDULER
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferMovementIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransferScheduleIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTransferMovements
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -51,11 +52,13 @@ class TransferSchedulerMoveBookingService(
       val mappings = mappingApi.getTransferScheduleMoveBookingMappings(bookingId)
 
       val dpsTransferIds = booking.findDpsScheduleIds(mappings.scheduleIds, telemetry)
+      val dpsUnscheduledMovementIds = booking.findDpsUnscheduledMovementIds(mappings.movementIds, telemetry)
       dpsApi.moveBooking(
         MoveTransfersRequest(
           from = fromOffender,
           to = toOffender,
           transferIds = dpsTransferIds.toSet(),
+          unscheduledMovementIds = dpsUnscheduledMovementIds.toSet(),
         ),
       )
 
@@ -75,6 +78,19 @@ class TransferSchedulerMoveBookingService(
         ?: throw TransferSchedulerMoveBookingException("No transfer schedule mapping found for eventId=$nomisEventId")
     }
     .also { telemetry["dpsTransferIds"] = "$it" }
+
+  private fun BookingTransferMovements.findDpsUnscheduledMovementIds(
+    mappings: List<TransferMovementIdMapping>,
+    telemetry: MutableMap<String, Any>,
+  ) = unscheduledTransferMovements
+    .map { it.sequence }
+    .also { telemetry["nomisUnscheduledMovementSeqs"] = "$it" }
+    .map { nomisMovementSeq ->
+      mappings.find { it.nomisMovementSeq == nomisMovementSeq }
+        ?.dpsTransferMovementId
+        ?: throw TransferSchedulerMoveBookingException("No transfer movement mapping found for bookingId=$bookingId, movementSeq=$nomisMovementSeq")
+    }
+    .also { telemetry["dpsUnscheduledMovementIds"] = "$it" }
 
   private suspend fun tryToMoveBookingMappings(bookingId: Long, fromOffenderNo: String, toOffenderNo: String, telemetry: MutableMap<String, Any>) {
     try {

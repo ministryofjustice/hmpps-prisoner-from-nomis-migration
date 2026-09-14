@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-08-26.247.9fdc397"
+    "version" : "2026-09-11.286.44b4b2c"
   },
   "servers" : [ {
     "url" : "https://transfer-scheduler-api-dev.hmpps.service.justice.gov.uk",
@@ -685,7 +685,7 @@
         } ]
       },
       "ApplyTransit" : {
-        "required" : [ "destinationCode", "logisticsCode", "occurredAt", "reasonCode", "request" ],
+        "required" : [ "request" ],
         "type" : "object",
         "allOf" : [ {
           "$ref" : "#/components/schemas/TransferAction"
@@ -696,23 +696,6 @@
               "$ref" : "#/components/schemas/MovementRequest"
             },
             "legacyId" : {
-              "type" : "string",
-              "nullable" : true
-            },
-            "occurredAt" : {
-              "type" : "string",
-              "format" : "date-time"
-            },
-            "destinationCode" : {
-              "type" : "string"
-            },
-            "reasonCode" : {
-              "type" : "string"
-            },
-            "logisticsCode" : {
-              "type" : "string"
-            },
-            "comments" : {
               "type" : "string",
               "nullable" : true
             }
@@ -747,12 +730,12 @@
         "required" : [ "destinationCode", "logisticsCode", "occurredAt", "reasonCode" ],
         "type" : "object",
         "properties" : {
+          "destinationCode" : {
+            "type" : "string"
+          },
           "occurredAt" : {
             "type" : "string",
             "format" : "date-time"
-          },
-          "destinationCode" : {
-            "type" : "string"
           },
           "reasonCode" : {
             "type" : "string"
@@ -1292,7 +1275,7 @@
         }
       },
       "MoveTransfersRequest" : {
-        "required" : [ "from", "to", "transferIds" ],
+        "required" : [ "from", "to", "transferIds", "unscheduledMovementIds" ],
         "type" : "object",
         "properties" : {
           "from" : {
@@ -1302,6 +1285,14 @@
             "type" : "string"
           },
           "transferIds" : {
+            "uniqueItems" : true,
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
+          "unscheduledMovementIds" : {
             "uniqueItems" : true,
             "type" : "array",
             "items" : {

@@ -109,6 +109,7 @@ class TransferSchedulerMoveBookingIntTest(
         assertThat(from).isEqualTo("A1000KT")
         assertThat(to).isEqualTo("A1234KT")
         assertThat(transferIds).containsExactlyInAnyOrder(dpsTransferScheduleId)
+        assertThat(unscheduledMovementIds).containsExactlyInAnyOrder(dpsMovementId2)
       }
     }
 
@@ -133,6 +134,8 @@ class TransferSchedulerMoveBookingIntTest(
           assertThat(it["toOffenderNo"]).isEqualTo("A1234KT")
           assertThat(it["nomisEventIds"]).contains("$eventId")
           assertThat(it["dpsTransferIds"]).contains("$dpsTransferScheduleId")
+          assertThat(it["nomisUnscheduledMovementSeqs"]).contains("$movementSeq2")
+          assertThat(it["dpsUnscheduledMovementIds"]).contains("$dpsMovementId2")
         },
         isNull(),
       )
