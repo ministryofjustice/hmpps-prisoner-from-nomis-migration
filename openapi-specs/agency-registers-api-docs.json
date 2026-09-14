@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-09.486.c461af7"
+    "version" : "2026-09-10.498.1bef279"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -607,6 +607,666 @@
         }, {
           "MAINTAIN_PRISON_DATA" : [ "write" ]
         } ]
+      }
+    },
+    "/police-custody-suites/id/{policeCustodySuiteId}" : {
+      "get" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Get specified police custody suite",
+        "description" : "Information on a specific police custody suite",
+        "operationId" : "getPoliceCustodySuiteFromId",
+        "parameters" : [ {
+          "name" : "policeCustodySuiteId",
+          "in" : "path",
+          "description" : "Police Custody Suite ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHFPCS"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Successful Operation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PoliceCustodySuiteDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Update specified police custody suite details",
+        "description" : "Updates police custody suite information, excluding its addresses, email addresses and phone numbers. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "updatePoliceCustodySuite",
+        "parameters" : [ {
+          "name" : "policeCustodySuiteId",
+          "in" : "path",
+          "description" : "Police Custody Suite ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHFPCS"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdatePoliceCustodySuiteDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Police Custody Suite Information Updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PoliceCustodySuiteDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to update police custody suite",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to make police custody suite update",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Police Custody Suite Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Delete specified police custody suite",
+        "description" : "Deletes a police custody suite, along with any addresses, email addresses and phone numbers associated with it. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "deletePoliceCustodySuite",
+        "parameters" : [ {
+          "name" : "policeCustodySuiteId",
+          "in" : "path",
+          "description" : "Police Custody Suite ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHFPCS"
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Police Custody Suite Deleted"
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to delete a police custody suite",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Police Custody Suite Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/police-custody-suites/id/{policeCustodySuiteId}/phone-number/{phoneNumberId}" : {
+      "put" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Update specified police custody suite phone number",
+        "description" : "Updates a single phone number for a police custody suite. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "updatePoliceCustodySuitePhoneNumber",
+        "parameters" : [ {
+          "name" : "policeCustodySuiteId",
+          "in" : "path",
+          "description" : "Police Custody Suite ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHFPCS"
+        }, {
+          "name" : "phoneNumberId",
+          "in" : "path",
+          "description" : "Phone Number Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Phone Number Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdatePhoneNumberDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Police Custody Suite Phone Number Updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyPhoneDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to update police custody suite phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to make police custody suite phone number update",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Police Custody Suite Id or Phone Number Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Delete specified police custody suite phone number",
+        "description" : "Deletes a single phone number for a police custody suite. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "deletePoliceCustodySuitePhoneNumber",
+        "parameters" : [ {
+          "name" : "policeCustodySuiteId",
+          "in" : "path",
+          "description" : "Police Custody Suite ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHFPCS"
+        }, {
+          "name" : "phoneNumberId",
+          "in" : "path",
+          "description" : "Phone Number Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Phone Number Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Police Custody Suite Phone Number Deleted"
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to delete a police custody suite phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Police Custody Suite Id or Phone Number Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/police-custody-suites/id/{policeCustodySuiteId}/email-address/{emailAddressId}" : {
+      "put" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Update specified police custody suite email address",
+        "description" : "Updates a single email address for a police custody suite. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "updatePoliceCustodySuiteEmailAddress",
+        "parameters" : [ {
+          "name" : "policeCustodySuiteId",
+          "in" : "path",
+          "description" : "Police Custody Suite ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHFPCS"
+        }, {
+          "name" : "emailAddressId",
+          "in" : "path",
+          "description" : "Email Address Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Email Address Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateEmailAddressDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Police Custody Suite Email Address Updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyEmailDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to update police custody suite email address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to make police custody suite email address update",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Police Custody Suite Id or Email Address Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Delete specified police custody suite email address",
+        "description" : "Deletes a single email address for a police custody suite. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "deletePoliceCustodySuiteEmailAddress",
+        "parameters" : [ {
+          "name" : "policeCustodySuiteId",
+          "in" : "path",
+          "description" : "Police Custody Suite ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHFPCS"
+        }, {
+          "name" : "emailAddressId",
+          "in" : "path",
+          "description" : "Email Address Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Email Address Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Police Custody Suite Email Address Deleted"
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to delete a police custody suite email address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Police Custody Suite Id or Email Address Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/police-custody-suites/id/{policeCustodySuiteId}/address/{addressId}" : {
+      "put" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Update specified police custody suite address",
+        "description" : "Updates a single address for a police custody suite. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "updatePoliceCustodySuiteAddress",
+        "parameters" : [ {
+          "name" : "policeCustodySuiteId",
+          "in" : "path",
+          "description" : "Police Custody Suite ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHFPCS"
+        }, {
+          "name" : "addressId",
+          "in" : "path",
+          "description" : "Address Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Address Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateAddressDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Police Custody Suite Address Updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyAddressDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to update police custody suite address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to make police custody suite address update",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Police Custody Suite Id or Address Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Delete specified police custody suite address",
+        "description" : "Deletes a single address for a police custody suite. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "deletePoliceCustodySuiteAddress",
+        "parameters" : [ {
+          "name" : "policeCustodySuiteId",
+          "in" : "path",
+          "description" : "Police Custody Suite ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHFPCS"
+        }, {
+          "name" : "addressId",
+          "in" : "path",
+          "description" : "Address Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Address Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Police Custody Suite Address Deleted"
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to delete a police custody suite address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Police Custody Suite Id or Address Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/courts/id/{courtId}" : {
@@ -1456,6 +2116,359 @@
         } ]
       }
     },
+    "/police-custody-suites" : {
+      "get" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Get all police custody suites",
+        "description" : "Information on all police custody suites",
+        "operationId" : "getPoliceCustodySuites",
+        "responses" : {
+          "200" : {
+            "description" : "Successful Operation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PoliceCustodySuiteDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Create a new police custody suite",
+        "description" : "Creates a police custody suite, along with any addresses, email addresses and phone numbers supplied. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "createPoliceCustodySuite",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreatePoliceCustodySuiteDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Police Custody Suite Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PoliceCustodySuiteDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to create a police custody suite",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/police-custody-suites/id/{policeCustodySuiteId}/phone-number" : {
+      "post" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Create a police custody suite phone number",
+        "description" : "Creates a new phone number for a police custody suite. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "createPoliceCustodySuitePhoneNumber",
+        "parameters" : [ {
+          "name" : "policeCustodySuiteId",
+          "in" : "path",
+          "description" : "Police Custody Suite ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHFPCS"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdatePhoneNumberDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Police Custody Suite Phone Number Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyPhoneDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to create police custody suite phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to create a police custody suite phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Police Custody Suite Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Phone number already exists",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/police-custody-suites/id/{policeCustodySuiteId}/email-address" : {
+      "post" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Create a police custody suite email address",
+        "description" : "Creates a new email address for a police custody suite. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "createPoliceCustodySuiteEmailAddress",
+        "parameters" : [ {
+          "name" : "policeCustodySuiteId",
+          "in" : "path",
+          "description" : "Police Custody Suite ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHFPCS"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateEmailAddressDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Police Custody Suite Email Address Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyEmailDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to create police custody suite email address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to create a police custody suite email address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Police Custody Suite Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Email address already exists",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/police-custody-suites/id/{policeCustodySuiteId}/address" : {
+      "post" : {
+        "tags" : [ "police-custody-suite-resource" ],
+        "summary" : "Create a police custody suite address",
+        "description" : "Creates a new address for a police custody suite. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "createPoliceCustodySuiteAddress",
+        "parameters" : [ {
+          "name" : "policeCustodySuiteId",
+          "in" : "path",
+          "description" : "Police Custody Suite ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHFPCS"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateAddressDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Police Custody Suite Address Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyAddressDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to create police custody suite address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to create a police custody suite address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Police Custody Suite Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/legacy/sync/agency/id/{agencyId}" : {
       "post" : {
         "tags" : [ "legacy-sync-resource" ],
@@ -2213,63 +3226,6 @@
         }
       }
     },
-    "/police-custody-suites" : {
-      "get" : {
-        "tags" : [ "police-custody-suite-resource" ],
-        "summary" : "Get all police custody suites",
-        "description" : "Information on all police custody suites",
-        "operationId" : "getPoliceCustodySuites",
-        "responses" : {
-          "200" : {
-            "description" : "Successful Operation",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "type" : "array",
-                  "items" : {
-                    "$ref" : "#/components/schemas/PoliceCustodySuiteDto"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/police-custody-suites/id/{policeCustodySuiteId}" : {
-      "get" : {
-        "tags" : [ "police-custody-suite-resource" ],
-        "summary" : "Get specified police custody suite",
-        "description" : "Information on a specific police custody suite",
-        "operationId" : "getPoliceCustodySuiteFromId",
-        "parameters" : [ {
-          "name" : "policeCustodySuiteId",
-          "in" : "path",
-          "description" : "Police Custody Suite ID",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Police Custody Suite ID",
-            "example" : "SHFPCS",
-            "maxLength" : 6,
-            "minLength" : 2
-          },
-          "example" : "SHFPCS"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Successful Operation",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/PoliceCustodySuiteDto"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/legacy/reconciliation/{agencyId}" : {
       "get" : {
         "tags" : [ "legacy-sync-resource" ],
@@ -2882,21 +3838,21 @@
         },
         "required" : [ "country", "postcode", "town" ]
       },
-      "UpdateCourtDto" : {
+      "UpdatePoliceCustodySuiteDto" : {
         "type" : "object",
-        "description" : "Court Update Record",
+        "description" : "Police Custody Suite Update Record",
         "properties" : {
-          "courtName" : {
+          "policeCustodySuiteName" : {
             "type" : "string",
             "description" : "Name",
-            "example" : "N Staffs Youth Court - Newcastle",
+            "example" : "Sheffield Police Custody Suite",
             "maxLength" : 40,
             "minLength" : 0
           },
           "description" : {
             "type" : [ "string", "null" ],
             "description" : "Description",
-            "example" : "North Staffordshire Youth Court - Newcastle under Lyme",
+            "example" : "Sheffield City Centre Police Custody Suite",
             "maxLength" : 3000,
             "minLength" : 0
           },
@@ -2916,12 +3872,6 @@
             "example" : "123456789",
             "maxLength" : 12,
             "minLength" : 0
-          },
-          "accessibleAccess" : {
-            "type" : [ "string", "null" ],
-            "description" : "Accessible access",
-            "enum" : [ "NONE", "ACCESSIBLE", "BY_ARRANGEMENT_ONLY", "WHEELCHAIR_ACCESS" ],
-            "example" : "ACCESSIBLE"
           },
           "areaCode" : {
             "type" : [ "string", "null" ],
@@ -2953,16 +3903,9 @@
             "type" : [ "string", "null" ],
             "description" : "Prisoner Payroll Region code",
             "example" : "NEY"
-          },
-          "courtTypeCode" : {
-            "type" : "string",
-            "description" : "Court Type code",
-            "example" : "CC",
-            "maxLength" : 12,
-            "minLength" : 0
           }
         },
-        "required" : [ "active", "courtName", "courtTypeCode" ]
+        "required" : [ "active", "policeCustodySuiteName" ]
       },
       "AgencyAddressDto" : {
         "type" : "object",
@@ -3051,6 +3994,213 @@
           }
         },
         "required" : [ "code", "description" ]
+      },
+      "PoliceCustodySuiteDto" : {
+        "type" : "object",
+        "description" : "Police Custody Suite Information",
+        "properties" : {
+          "policeCustodySuiteId" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS"
+          },
+          "policeCustodySuiteName" : {
+            "type" : "string",
+            "description" : "Name",
+            "example" : "Sheffield Police Custody Suite"
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "description" : "Description",
+            "example" : "Sheffield City Centre Police Custody Suite"
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether still active"
+          },
+          "inactiveDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "cjitCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "CJIT Code",
+            "example" : "123456789"
+          },
+          "area" : {
+            "description" : "Area",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "region" : {
+            "description" : "Region",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "geographicalArea" : {
+            "description" : "Geographical Area",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "localAuthority" : {
+            "description" : "Local Authority",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "payrollRegion" : {
+            "description" : "Prisoner Payroll Region",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "addresses" : {
+            "type" : "array",
+            "description" : "addresses",
+            "items" : {
+              "$ref" : "#/components/schemas/AgencyAddressDto"
+            }
+          },
+          "emailAddresses" : {
+            "type" : "array",
+            "description" : "emailAddresses",
+            "items" : {
+              "$ref" : "#/components/schemas/AgencyEmailDto"
+            }
+          },
+          "phoneNumbers" : {
+            "type" : "array",
+            "description" : "phoneNumbers",
+            "items" : {
+              "$ref" : "#/components/schemas/AgencyPhoneDto"
+            }
+          }
+        },
+        "required" : [ "active", "addresses", "emailAddresses", "phoneNumbers", "policeCustodySuiteId", "policeCustodySuiteName" ]
+      },
+      "UpdatePhoneNumberDto" : {
+        "type" : "object",
+        "description" : "Phone Number Update Record",
+        "properties" : {
+          "number" : {
+            "type" : "string",
+            "description" : "Phone number",
+            "example" : "0114 555 9898",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "number" ]
+      },
+      "UpdateEmailAddressDto" : {
+        "type" : "object",
+        "description" : "Email Address Update Record",
+        "properties" : {
+          "address" : {
+            "type" : "string",
+            "format" : "email",
+            "description" : "Email address",
+            "example" : "example@example.com",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "address" ]
+      },
+      "UpdateCourtDto" : {
+        "type" : "object",
+        "description" : "Court Update Record",
+        "properties" : {
+          "courtName" : {
+            "type" : "string",
+            "description" : "Name",
+            "example" : "N Staffs Youth Court - Newcastle",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "description" : "Description",
+            "example" : "North Staffordshire Youth Court - Newcastle under Lyme",
+            "maxLength" : 3000,
+            "minLength" : 0
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether still active"
+          },
+          "inactiveDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date made inactive",
+            "example" : "2023-12-31"
+          },
+          "cjitCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "CJIT Code",
+            "example" : "123456789",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "accessibleAccess" : {
+            "type" : [ "string", "null" ],
+            "description" : "Accessible access",
+            "enum" : [ "NONE", "ACCESSIBLE", "BY_ARRANGEMENT_ONLY", "WHEELCHAIR_ACCESS" ],
+            "example" : "ACCESSIBLE"
+          },
+          "areaCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Area code",
+            "example" : "52",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "regionCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Region code",
+            "example" : "YOHUM",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "geographicalAreaCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Geographical Area code",
+            "example" : "WYORKS",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "localAuthorityCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Local Authority code",
+            "example" : "00CG"
+          },
+          "payrollRegionCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Prisoner Payroll Region code",
+            "example" : "NEY"
+          },
+          "courtTypeCode" : {
+            "type" : "string",
+            "description" : "Court Type code",
+            "example" : "CC",
+            "maxLength" : 12,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "active", "courtName", "courtTypeCode" ]
       },
       "CourtDto" : {
         "type" : "object",
@@ -3163,35 +4313,6 @@
         },
         "required" : [ "active", "addresses", "courtId", "courtName", "emailAddresses", "phoneNumbers" ]
       },
-      "UpdatePhoneNumberDto" : {
-        "type" : "object",
-        "description" : "Phone Number Update Record",
-        "properties" : {
-          "number" : {
-            "type" : "string",
-            "description" : "Phone number",
-            "example" : "0114 555 9898",
-            "maxLength" : 100,
-            "minLength" : 0
-          }
-        },
-        "required" : [ "number" ]
-      },
-      "UpdateEmailAddressDto" : {
-        "type" : "object",
-        "description" : "Email Address Update Record",
-        "properties" : {
-          "address" : {
-            "type" : "string",
-            "format" : "email",
-            "description" : "Email address",
-            "example" : "example@example.com",
-            "maxLength" : 100,
-            "minLength" : 0
-          }
-        },
-        "required" : [ "address" ]
-      },
       "PrisonRequest" : {
         "type" : "object",
         "properties" : {
@@ -3279,6 +4400,103 @@
           }
         },
         "required" : [ "active", "addresses", "categories", "contracted", "female", "lthse", "male", "prisonId", "prisonName", "prisonTypes" ]
+      },
+      "CreatePoliceCustodySuiteDto" : {
+        "type" : "object",
+        "description" : "Police Custody Suite Create Record",
+        "properties" : {
+          "policeCustodySuiteId" : {
+            "type" : "string",
+            "description" : "Police Custody Suite ID",
+            "example" : "SHFPCS",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "policeCustodySuiteName" : {
+            "type" : "string",
+            "description" : "Name",
+            "example" : "Sheffield Police Custody Suite",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "description" : "Description",
+            "example" : "Sheffield City Centre Police Custody Suite",
+            "maxLength" : 3000,
+            "minLength" : 0
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether still active"
+          },
+          "inactiveDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date made inactive",
+            "example" : "2023-12-31"
+          },
+          "cjitCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "CJIT Code",
+            "example" : "123456789",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "areaCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Area code",
+            "example" : "52",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "regionCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Region code",
+            "example" : "YOHUM",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "geographicalAreaCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Geographical Area code",
+            "example" : "WYORKS",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "localAuthorityCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Local Authority code",
+            "example" : "00CG"
+          },
+          "payrollRegionCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Prisoner Payroll Region code",
+            "example" : "NEY"
+          },
+          "addresses" : {
+            "type" : "array",
+            "description" : "Addresses",
+            "items" : {
+              "$ref" : "#/components/schemas/UpdateAddressDto"
+            }
+          },
+          "emailAddresses" : {
+            "type" : "array",
+            "description" : "Email addresses",
+            "items" : {
+              "$ref" : "#/components/schemas/UpdateEmailAddressDto"
+            }
+          },
+          "phoneNumbers" : {
+            "type" : "array",
+            "description" : "Phone numbers",
+            "items" : {
+              "$ref" : "#/components/schemas/UpdatePhoneNumberDto"
+            }
+          }
+        },
+        "required" : [ "active", "addresses", "emailAddresses", "phoneNumbers", "policeCustodySuiteId", "policeCustodySuiteName" ]
       },
       "LegacyAgencyAddressDto" : {
         "type" : "object",
@@ -3701,102 +4919,6 @@
           }
         },
         "required" : [ "prisonId", "prisonName" ]
-      },
-      "PoliceCustodySuiteDto" : {
-        "type" : "object",
-        "description" : "Police Custody Suite Information",
-        "properties" : {
-          "policeCustodySuiteId" : {
-            "type" : "string",
-            "description" : "Police Custody Suite ID",
-            "example" : "SHFPCS"
-          },
-          "policeCustodySuiteName" : {
-            "type" : "string",
-            "description" : "Name",
-            "example" : "Sheffield Police Custody Suite"
-          },
-          "description" : {
-            "type" : [ "string", "null" ],
-            "description" : "Description",
-            "example" : "Sheffield City Centre Police Custody Suite"
-          },
-          "active" : {
-            "type" : "boolean",
-            "description" : "Whether still active"
-          },
-          "inactiveDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date"
-          },
-          "cjitCode" : {
-            "type" : [ "string", "null" ],
-            "description" : "CJIT Code",
-            "example" : "123456789"
-          },
-          "area" : {
-            "description" : "Area",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "region" : {
-            "description" : "Region",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "geographicalArea" : {
-            "description" : "Geographical Area",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "localAuthority" : {
-            "description" : "Local Authority",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "payrollRegion" : {
-            "description" : "Prisoner Payroll Region",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "addresses" : {
-            "type" : "array",
-            "description" : "addresses",
-            "items" : {
-              "$ref" : "#/components/schemas/AgencyAddressDto"
-            }
-          },
-          "emailAddresses" : {
-            "type" : "array",
-            "description" : "emailAddresses",
-            "items" : {
-              "$ref" : "#/components/schemas/AgencyEmailDto"
-            }
-          },
-          "phoneNumbers" : {
-            "type" : "array",
-            "description" : "phoneNumbers",
-            "items" : {
-              "$ref" : "#/components/schemas/AgencyPhoneDto"
-            }
-          }
-        },
-        "required" : [ "active", "addresses", "emailAddresses", "phoneNumbers", "policeCustodySuiteId", "policeCustodySuiteName" ]
       },
       "AgencyId" : {
         "type" : "object",
