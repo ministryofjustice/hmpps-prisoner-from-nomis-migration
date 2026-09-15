@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-10.498.1bef279"
+    "version" : "2026-09-14.506.7f978d5"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -1258,6 +1258,503 @@
           },
           "404" : {
             "description" : "Police Custody Suite Id or Address Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hospitals/id/{hospitalId}" : {
+      "get" : {
+        "tags" : [ "hospital-resource" ],
+        "summary" : "Get specified hospital",
+        "description" : "Information on a specific hospital",
+        "operationId" : "getHospitalFromId",
+        "parameters" : [ {
+          "name" : "hospitalId",
+          "in" : "path",
+          "description" : "Hospital ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Hospital ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Successful Operation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HospitalDto"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put" : {
+        "tags" : [ "hospital-resource" ],
+        "summary" : "Update specified hospital details",
+        "description" : "Updates hospital information, excluding its addresses and phone numbers. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "updateHospital",
+        "parameters" : [ {
+          "name" : "hospitalId",
+          "in" : "path",
+          "description" : "Hospital ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Hospital ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateHospitalDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Hospital Information Updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HospitalDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to update hospital",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to make hospital update",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Hospital Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "hospital-resource" ],
+        "summary" : "Delete specified hospital",
+        "description" : "Deletes a hospital, along with any addresses and phone numbers associated with it. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "deleteHospital",
+        "parameters" : [ {
+          "name" : "hospitalId",
+          "in" : "path",
+          "description" : "Hospital ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Hospital ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Hospital Deleted"
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to delete a hospital",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Hospital Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hospitals/id/{hospitalId}/phone-number/{phoneNumberId}" : {
+      "put" : {
+        "tags" : [ "hospital-resource" ],
+        "summary" : "Update specified hospital phone number",
+        "description" : "Updates a single phone number for a hospital. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "updateHospitalPhoneNumber",
+        "parameters" : [ {
+          "name" : "hospitalId",
+          "in" : "path",
+          "description" : "Hospital ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Hospital ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        }, {
+          "name" : "phoneNumberId",
+          "in" : "path",
+          "description" : "Phone Number Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Phone Number Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdatePhoneNumberDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Hospital Phone Number Updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyPhoneDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to update hospital phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to make hospital phone number update",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Hospital Id or Phone Number Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "hospital-resource" ],
+        "summary" : "Delete specified hospital phone number",
+        "description" : "Deletes a single phone number for a hospital. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "deleteHospitalPhoneNumber",
+        "parameters" : [ {
+          "name" : "hospitalId",
+          "in" : "path",
+          "description" : "Hospital ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Hospital ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        }, {
+          "name" : "phoneNumberId",
+          "in" : "path",
+          "description" : "Phone Number Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Phone Number Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Hospital Phone Number Deleted"
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to delete a hospital phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Hospital Id or Phone Number Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hospitals/id/{hospitalId}/address/{addressId}" : {
+      "put" : {
+        "tags" : [ "hospital-resource" ],
+        "summary" : "Update specified hospital address",
+        "description" : "Updates a single address for a hospital. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "updateHospitalAddress",
+        "parameters" : [ {
+          "name" : "hospitalId",
+          "in" : "path",
+          "description" : "Hospital ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Hospital ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        }, {
+          "name" : "addressId",
+          "in" : "path",
+          "description" : "Address Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Address Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateAddressDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Hospital Address Updated",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyAddressDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to update hospital address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to make hospital address update",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Hospital Id or Address Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "hospital-resource" ],
+        "summary" : "Delete specified hospital address",
+        "description" : "Deletes a single address for a hospital. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "deleteHospitalAddress",
+        "parameters" : [ {
+          "name" : "hospitalId",
+          "in" : "path",
+          "description" : "Hospital ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Hospital ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        }, {
+          "name" : "addressId",
+          "in" : "path",
+          "description" : "Address Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Address Id",
+            "example" : 234231
+          },
+          "example" : 234231
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Hospital Address Deleted"
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to delete a hospital address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Hospital Id or Address Id not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -2617,6 +3114,265 @@
         }
       }
     },
+    "/hospitals" : {
+      "get" : {
+        "tags" : [ "hospital-resource" ],
+        "summary" : "Get all hospitals",
+        "description" : "Information on all hospitals",
+        "operationId" : "getHospitals",
+        "responses" : {
+          "200" : {
+            "description" : "Successful Operation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/HospitalDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post" : {
+        "tags" : [ "hospital-resource" ],
+        "summary" : "Create a new hospital",
+        "description" : "Creates a hospital, along with any addresses and phone numbers supplied. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "createHospital",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateHospitalDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Hospital Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/HospitalDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to create a hospital",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hospitals/id/{hospitalId}/phone-number" : {
+      "post" : {
+        "tags" : [ "hospital-resource" ],
+        "summary" : "Create a hospital phone number",
+        "description" : "Creates a new phone number for a hospital. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "createHospitalPhoneNumber",
+        "parameters" : [ {
+          "name" : "hospitalId",
+          "in" : "path",
+          "description" : "Hospital ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Hospital ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdatePhoneNumberDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Hospital Phone Number Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyPhoneDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to create hospital phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to create a hospital phone number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Hospital Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Phone number already exists",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hospitals/id/{hospitalId}/address" : {
+      "post" : {
+        "tags" : [ "hospital-resource" ],
+        "summary" : "Create a hospital address",
+        "description" : "Creates a new address for a hospital. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "createHospitalAddress",
+        "parameters" : [ {
+          "name" : "hospitalId",
+          "in" : "path",
+          "description" : "Hospital ID",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Hospital ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "example" : "SHEFCC"
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateAddressDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Hospital Address Created",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AgencyAddressDto"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad information provided to create hospital address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to create a hospital address",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Hospital Id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/courts" : {
       "get" : {
         "tags" : [ "court-resource" ],
@@ -3323,40 +4079,6 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/hospitals/id/{hospitalId}" : {
-      "get" : {
-        "tags" : [ "hospital-resource" ],
-        "summary" : "Get specified hospital",
-        "description" : "Information on a specific hospital",
-        "operationId" : "getHospitalFromId",
-        "parameters" : [ {
-          "name" : "hospitalId",
-          "in" : "path",
-          "description" : "Hospital ID",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Hospital ID",
-            "example" : "SHEFCC",
-            "maxLength" : 6,
-            "minLength" : 2
-          },
-          "example" : "SHEFCC"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Successful Operation",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/HospitalDto"
                 }
               }
             }
@@ -4120,6 +4842,174 @@
         },
         "required" : [ "address" ]
       },
+      "UpdateHospitalDto" : {
+        "type" : "object",
+        "description" : "Hospital Update Record",
+        "properties" : {
+          "hospitalName" : {
+            "type" : "string",
+            "description" : "Name",
+            "example" : "N Staffs Youth Hospital - Newcastle",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "description" : "Description",
+            "example" : "North Staffordshire Youth Hospital - Newcastle under Lyme",
+            "maxLength" : 3000,
+            "minLength" : 0
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether still active"
+          },
+          "inactiveDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date made inactive",
+            "example" : "2023-12-31"
+          },
+          "cjitCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "CJIT Code",
+            "example" : "123456789",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "areaCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Area code",
+            "example" : "52",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "regionCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Region code",
+            "example" : "YOHUM",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "geographicalAreaCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Geographical Area code",
+            "example" : "WYORKS",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "localAuthorityCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Local Authority code",
+            "example" : "00CG"
+          },
+          "payrollRegionCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Prisoner Payroll Region code",
+            "example" : "NEY"
+          },
+          "highSecurity" : {
+            "type" : "boolean",
+            "description" : "Is high security restricted hospital"
+          }
+        },
+        "required" : [ "active", "highSecurity", "hospitalName" ]
+      },
+      "HospitalDto" : {
+        "type" : "object",
+        "description" : "Hospital Information",
+        "properties" : {
+          "hospitalId" : {
+            "type" : "string",
+            "description" : "Hospital ID",
+            "example" : "NWCLYC"
+          },
+          "hospitalName" : {
+            "type" : "string",
+            "description" : "Name",
+            "example" : "N Staffs Youth Hospital - Newcastle"
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "description" : "Description",
+            "example" : "North Staffordshire Youth Hospital - Newcastle under Lyme"
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether still active"
+          },
+          "inactiveDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date made inactive",
+            "example" : "2023-12-31"
+          },
+          "cjitCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "CJIT Code",
+            "example" : "123456789"
+          },
+          "area" : {
+            "description" : "Area",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "region" : {
+            "description" : "Region",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "geographicalArea" : {
+            "description" : "Geographic Region",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "localAuthority" : {
+            "description" : "Local Authority",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "payrollRegion" : {
+            "description" : "Prisoner Payroll Region",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "highSecurity" : {
+            "type" : "boolean",
+            "description" : "Is high security restricted hospital"
+          },
+          "addresses" : {
+            "type" : "array",
+            "description" : "addresses",
+            "items" : {
+              "$ref" : "#/components/schemas/AgencyAddressDto"
+            }
+          },
+          "phoneNumbers" : {
+            "type" : "array",
+            "description" : "phoneNumbers",
+            "items" : {
+              "$ref" : "#/components/schemas/AgencyPhoneDto"
+            }
+          }
+        },
+        "required" : [ "active", "addresses", "highSecurity", "hospitalId", "hospitalName", "phoneNumbers" ]
+      },
       "UpdateCourtDto" : {
         "type" : "object",
         "description" : "Court Update Record",
@@ -4672,6 +5562,100 @@
         },
         "required" : [ "updated" ]
       },
+      "CreateHospitalDto" : {
+        "type" : "object",
+        "description" : "Hospital Create Record",
+        "properties" : {
+          "hospitalId" : {
+            "type" : "string",
+            "description" : "Hospital ID",
+            "example" : "SHEFCC",
+            "maxLength" : 6,
+            "minLength" : 2
+          },
+          "hospitalName" : {
+            "type" : "string",
+            "description" : "Name",
+            "example" : "N Staffs Youth Hospital - Newcastle",
+            "maxLength" : 40,
+            "minLength" : 0
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "description" : "Description",
+            "example" : "North Staffordshire Youth Hospital - Newcastle under Lyme",
+            "maxLength" : 3000,
+            "minLength" : 0
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether still active"
+          },
+          "inactiveDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Date made inactive",
+            "example" : "2023-12-31"
+          },
+          "cjitCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "CJIT Code",
+            "example" : "123456789",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "areaCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Area code",
+            "example" : "52",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "regionCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Region code",
+            "example" : "YOHUM",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "geographicalAreaCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Geographical Area code",
+            "example" : "WYORKS",
+            "maxLength" : 12,
+            "minLength" : 0
+          },
+          "localAuthorityCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Local Authority code",
+            "example" : "00CG"
+          },
+          "payrollRegionCode" : {
+            "type" : [ "string", "null" ],
+            "description" : "Prisoner Payroll Region code",
+            "example" : "NEY"
+          },
+          "highSecurity" : {
+            "type" : "boolean",
+            "description" : "Is high security restricted hospital"
+          },
+          "addresses" : {
+            "type" : "array",
+            "description" : "Addresses",
+            "items" : {
+              "$ref" : "#/components/schemas/UpdateAddressDto"
+            }
+          },
+          "phoneNumbers" : {
+            "type" : "array",
+            "description" : "Phone numbers",
+            "items" : {
+              "$ref" : "#/components/schemas/UpdatePhoneNumberDto"
+            }
+          }
+        },
+        "required" : [ "active", "addresses", "highSecurity", "hospitalId", "hospitalName", "phoneNumbers" ]
+      },
       "CreateCourtDto" : {
         "type" : "object",
         "description" : "Court Create Record",
@@ -4940,101 +5924,6 @@
           }
         },
         "required" : [ "agencyIds" ]
-      },
-      "HospitalDto" : {
-        "type" : "object",
-        "description" : "Hospital Information",
-        "properties" : {
-          "hospitalId" : {
-            "type" : "string",
-            "description" : "Hospital ID",
-            "example" : "NWCLYC"
-          },
-          "hospitalName" : {
-            "type" : "string",
-            "description" : "Name",
-            "example" : "N Staffs Youth Hospital - Newcastle"
-          },
-          "description" : {
-            "type" : [ "string", "null" ],
-            "description" : "Description",
-            "example" : "North Staffordshire Youth Hospital - Newcastle under Lyme"
-          },
-          "active" : {
-            "type" : "boolean",
-            "description" : "Whether still active"
-          },
-          "inactiveDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date",
-            "description" : "Date made inactive",
-            "example" : "2023-12-31"
-          },
-          "cjitCode" : {
-            "type" : [ "string", "null" ],
-            "description" : "CJIT Code",
-            "example" : "123456789"
-          },
-          "area" : {
-            "description" : "Area",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "region" : {
-            "description" : "Region",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "geographicalArea" : {
-            "description" : "Geographic Region",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "localAuthority" : {
-            "description" : "Local Authority",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "payrollRegion" : {
-            "description" : "Prisoner Payroll Region",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "highSecurity" : {
-            "type" : "boolean",
-            "description" : "Is high security restricted hospital"
-          },
-          "addresses" : {
-            "type" : "array",
-            "description" : "addresses",
-            "items" : {
-              "$ref" : "#/components/schemas/AgencyAddressDto"
-            }
-          },
-          "phoneNumbers" : {
-            "type" : "array",
-            "description" : "phoneNumbers",
-            "items" : {
-              "$ref" : "#/components/schemas/AgencyPhoneDto"
-            }
-          }
-        },
-        "required" : [ "active", "addresses", "highSecurity", "hospitalId", "hospitalName", "phoneNumbers" ]
       },
       "ApprovedPremiseDto" : {
         "type" : "object",
