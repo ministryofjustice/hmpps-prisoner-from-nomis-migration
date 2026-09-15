@@ -180,7 +180,7 @@ class TransferSchedulerMigrationIntTest(
           assertThat(transferPriority).isEqualTo("3")
           assertThat(approved).isTrue
           assertThat(approvedUsername).isEqualTo("A_USER")
-          assertThat(outcomeReasonCode?.value).isEqualTo("TRANS")
+          assertThat(outcomeReasonCode).isEqualTo("TRANS")
           assertThat(commentText1).isEqualTo("some waitlist comment")
         }
       }

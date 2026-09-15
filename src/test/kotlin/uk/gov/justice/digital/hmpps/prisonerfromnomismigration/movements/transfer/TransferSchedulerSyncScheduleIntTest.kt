@@ -131,7 +131,7 @@ class TransferSchedulerSyncScheduleIntTest(
           assertThat(transfer.waitlist.transferPriority).isEqualTo("3")
           assertThat(transfer.waitlist.approved).isTrue
           assertThat(transfer.waitlist.approvedUsername).isEqualTo("A_USER")
-          assertThat(transfer.waitlist.outcomeReasonCode?.value).isEqualTo("TRANS")
+          assertThat(transfer.waitlist.outcomeReasonCode).isEqualTo("TRANS")
           assertThat(transfer.waitlist.commentText1).isEqualTo("some waitlist comment")
           assertThat(syncUser.username).isEqualTo("SYS")
           assertThat(syncUser.activeCaseloadId).isEqualTo("MDI")

@@ -228,7 +228,7 @@ fun TransferScheduleWaitlist.toDpsResyncRequest() = SyncWaitlist(
   transferPriority = priority,
   approved = approved,
   approvedUsername = approvedUserName,
-  outcomeReasonCode = cancellationReasonCode?.let { SyncWaitlist.OutcomeReasonCode.valueOf(it) },
+  outcomeReasonCode = cancellationReasonCode,
   commentText1 = comment,
 )
 

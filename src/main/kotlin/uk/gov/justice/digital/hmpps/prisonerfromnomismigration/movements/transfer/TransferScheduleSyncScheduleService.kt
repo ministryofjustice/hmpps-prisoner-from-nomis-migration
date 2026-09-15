@@ -224,7 +224,7 @@ fun TransferScheduleOut.toDpsRequest(dpsId: UUID? = null): SyncTransferRequest {
           transferPriority = waitlist.priority,
           approved = waitlist.approved,
           approvedUsername = waitlist.approvedUserName,
-          outcomeReasonCode = waitlist.cancellationReasonCode?.let { SyncWaitlist.OutcomeReasonCode.valueOf(it) },
+          outcomeReasonCode = waitlist.cancellationReasonCode,
           commentText1 = waitlist.comment,
         )
       },
