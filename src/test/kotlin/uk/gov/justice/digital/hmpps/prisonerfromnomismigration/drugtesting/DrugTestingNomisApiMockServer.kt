@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RandomTestingProgramResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Component
 class DrugTestingNomisApiMockServer(private val jsonMapper: JsonMapper) {
@@ -69,6 +70,8 @@ fun randomTestingProgramResponse(rtpId: Long = 12345): RandomTestingProgramRespo
   rtpId = rtpId,
   caseloadId = "MDI",
   rtpDate = LocalDate.parse("2025-07-01"),
+  createdByUsername = "billy",
+  createdDateTime = LocalDateTime.parse("2026-02-01T10:20:30"),
   mainPercentage = 10,
   reservePercentage = 5,
   offenderTestSelection = listOf(
