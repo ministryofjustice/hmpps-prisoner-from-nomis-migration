@@ -69,7 +69,7 @@ class DrugTestingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       prisoners = listOf(
         Prisoner(
           prisonerNumber = "A1234BC",
-          listType = "MAIN",
+          listType = "M",
           listSelectionNumber = 1,
           testedStatus = true,
           reasonNotTested = null,
@@ -85,7 +85,7 @@ class DrugTestingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(200),
+            .withStatus(201),
         ),
     )
   }

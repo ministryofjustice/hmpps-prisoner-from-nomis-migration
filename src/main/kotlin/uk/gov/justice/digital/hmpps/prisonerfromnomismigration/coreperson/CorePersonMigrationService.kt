@@ -52,8 +52,8 @@ class CorePersonMigrationService(
   migrationType = CORE_PERSON,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
-  completeCheckCount = completeCheckRetrySeconds,
-  completeCheckRetrySeconds = completeCheckCount,
+  completeCheckCount = completeCheckCount,
+  completeCheckRetrySeconds = completeCheckRetrySeconds,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
   jsonMapper = jsonMapper,
 ) {
