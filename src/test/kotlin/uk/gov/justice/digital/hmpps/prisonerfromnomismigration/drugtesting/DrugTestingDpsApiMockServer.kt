@@ -79,13 +79,13 @@ class DrugTestingDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubMigrate(prisonId: String = "MDI", rtpDate: LocalDate = LocalDate.parse("2025-07-01")) {
+  fun stubMigrate(prisonId: String = "MDI", rtpDate: LocalDate = LocalDate.parse("2025-07-01"), status: Int = 201) {
     stubFor(
       put("/resync/testing-lists/$prisonId/$rtpDate")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(201),
+            .withStatus(status),
         ),
     )
   }
