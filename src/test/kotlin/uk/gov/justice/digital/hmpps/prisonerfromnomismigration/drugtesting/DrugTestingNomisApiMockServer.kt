@@ -83,7 +83,7 @@ fun randomTestingProgramResponse(
     OffenderTestSelectionResponse(
       offenderBookId = 1001,
       prisonNumber = "A1234BC",
-      testSelectionType = "MAIN",
+      testSelectionType = "M",
       testSelectionNo = 1,
       testedFlag = true,
       notes = "Selected for testing",

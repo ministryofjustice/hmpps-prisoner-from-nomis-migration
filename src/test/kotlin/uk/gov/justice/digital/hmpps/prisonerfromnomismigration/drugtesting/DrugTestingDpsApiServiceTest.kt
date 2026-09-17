@@ -23,7 +23,7 @@ class DrugTestingDpsApiServiceTest {
   private lateinit var apiService: DrugTestingDpsApiService
 
   @Test
-  fun `will pass oath2 token to service`() = runTest {
+  fun `will pass oauth2 token to service`() = runTest {
     dpsDrugTestingServer.stubMigrate(prisonId = "MDI", rtpDate = LocalDate.parse("2025-03-04"))
 
     apiService.migrate(prisonCode = "MDI", rtpDate = LocalDate.parse("2025-03-04"), migrationRequest())
@@ -55,7 +55,7 @@ class DrugTestingDpsApiServiceTest {
       putRequestedFor(urlPathEqualTo("/resync/testing-lists/MDI/2025-03-04"))
         .withRequestBody(matchingJsonPath("createdBy", equalTo("billy")))
         .withRequestBody(matchingJsonPath("prisoners[0].prisonerNumber", equalTo("A1234BC")))
-        .withRequestBody(matchingJsonPath("prisoners[0].listType", equalTo("MAIN"))),
+        .withRequestBody(matchingJsonPath("prisoners[0].listType", equalTo("M"))),
     )
   }
 }

@@ -35,7 +35,7 @@ class DrugTestingNomisApiServiceTest(
   @Nested
   inner class GetRandomTestingProgram {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetRandomTestingProgram(rtpId = RTP_ID)
 
       apiService.getRandomTestingProgram(RTP_ID)
@@ -83,7 +83,7 @@ class DrugTestingNomisApiServiceTest(
   @Nested
   inner class GetDrugTestingIdRanges {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetDrugTestingIdRanges()
 
       apiService.getDrugTestingIdRanges(pageSize = 100, filter = filter)
@@ -120,7 +120,7 @@ class DrugTestingNomisApiServiceTest(
   @Nested
   inner class GetDrugTestingIdsInRange {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetDrugTestingIdsInRange()
 
       apiService.getDrugTestingIdsInRange(idRange = IdRange(1, 10), filter = filter)

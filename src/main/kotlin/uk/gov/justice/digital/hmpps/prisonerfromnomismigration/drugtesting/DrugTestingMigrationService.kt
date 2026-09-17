@@ -32,8 +32,8 @@ class DrugTestingMigrationService(
   migrationType = DRUG_TESTING,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
-  completeCheckCount = completeCheckRetrySeconds,
-  completeCheckRetrySeconds = completeCheckCount,
+  completeCheckCount = completeCheckCount,
+  completeCheckRetrySeconds = completeCheckRetrySeconds,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
   jsonMapper = jsonMapper,
 ) {
