@@ -33,7 +33,7 @@ class CorePersonCprApiServiceTest {
   @Nested
   inner class SyncCreateOffenderBelief {
     @Test
-    internal fun `will pass oath2 token to sync endpoint`() = runTest {
+    internal fun `will pass oauth2 token to sync endpoint`() = runTest {
       cprCorePersonServer.stubSyncCreateOffenderBelief("A1234BC")
 
       apiService.syncCreateOffenderBelief("A1234BC", prisonReligionRequest())
@@ -90,7 +90,7 @@ class CorePersonCprApiServiceTest {
   @Nested
   inner class SyncUpdateOffenderBelief {
     @Test
-    internal fun `will pass oath2 token to sync endpoint`() = runTest {
+    internal fun `will pass oauth2 token to sync endpoint`() = runTest {
       cprCorePersonServer.stubSyncUpdateOffenderBelief("A1234BC")
 
       apiService.syncUpdateOffenderBelief("A1234BC", "cprId", prisonReligionUpdateRequest())
@@ -138,7 +138,7 @@ class CorePersonCprApiServiceTest {
     @Nested
     inner class ProcessPrisonMerge {
       @Test
-      internal fun `will pass oath2 token to sync endpoint`() = runTest {
+      internal fun `will pass oauth2 token to sync endpoint`() = runTest {
         cprCorePersonServer.stubProcessPrisonMerge("A1234BC")
 
         apiService.processPrisonMerge("A1234BC", PrisonMerge(fromPrisonNumber = "B2345CD"))

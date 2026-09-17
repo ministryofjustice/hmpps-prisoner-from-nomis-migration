@@ -56,7 +56,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class ResyncContactForRepair {
     @Test
-    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+    internal fun `will pass oauth2 token to contact endpoint`() = runTest {
       dpsContactPersonServer.stubMigrateContact()
 
       apiService.resyncContactForRepair(migrateContactRequest())
@@ -82,7 +82,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class CreateContact {
     @Test
-    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+    internal fun `will pass oauth2 token to contact endpoint`() = runTest {
       dpsContactPersonServer.stubCreateContact()
 
       apiService.createContact(createContactRequest())
@@ -110,7 +110,7 @@ class ContactPersonDpsApiServiceTest {
     private val contactId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+    internal fun `will pass oauth2 token to contact endpoint`() = runTest {
       dpsContactPersonServer.stubUpdateContact(contactId)
 
       apiService.updateContact(contactId, updateContactRequest())
@@ -138,7 +138,7 @@ class ContactPersonDpsApiServiceTest {
     private val contactId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+    internal fun `will pass oauth2 token to contact endpoint`() = runTest {
       dpsContactPersonServer.stubDeleteContact(contactId)
 
       apiService.deleteContact(contactId)
@@ -171,7 +171,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class CreatePrisonerContact {
     @Test
-    internal fun `will pass oath2 token to prisoner contact endpoint`() = runTest {
+    internal fun `will pass oauth2 token to prisoner contact endpoint`() = runTest {
       dpsContactPersonServer.stubCreatePrisonerContact()
 
       apiService.createPrisonerContact(createPrisonerContactRequest())
@@ -225,7 +225,7 @@ class ContactPersonDpsApiServiceTest {
     private val prisonerContactId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+    internal fun `will pass oauth2 token to contact endpoint`() = runTest {
       dpsContactPersonServer.stubUpdatePrisonerContact(prisonerContactId)
 
       apiService.updatePrisonerContact(prisonerContactId, updatePrisonerContactRequest())
@@ -253,7 +253,7 @@ class ContactPersonDpsApiServiceTest {
     private val prisonerContactId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+    internal fun `will pass oauth2 token to contact endpoint`() = runTest {
       dpsContactPersonServer.stubDeletePrisonerContact(prisonerContactId)
 
       apiService.deletePrisonerContact(prisonerContactId)
@@ -286,7 +286,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class CreateContactAddress {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubCreateContactAddress()
 
       apiService.createContactAddress(createContactAddressRequest())
@@ -314,7 +314,7 @@ class ContactPersonDpsApiServiceTest {
     val addressId = 27272L
 
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubUpdateContactAddress(addressId)
 
       apiService.updateContactAddress(addressId, updateContactAddressRequest())
@@ -342,7 +342,7 @@ class ContactPersonDpsApiServiceTest {
     private val contactAddressId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubDeleteContactAddress(contactAddressId)
 
       apiService.deleteContactAddress(contactAddressId)
@@ -379,7 +379,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class CreateContactEmail {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubCreateContactEmail()
 
       apiService.createContactEmail(createContactEmailRequest())
@@ -405,7 +405,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class UpdateContactEmail {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubUpdateContactEmail(contactEmailId = 123456)
 
       apiService.updateContactEmail(contactEmailId = 123456, updateContactEmailRequest())
@@ -433,7 +433,7 @@ class ContactPersonDpsApiServiceTest {
     private val contactEmailId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubDeleteContactEmail(contactEmailId)
 
       apiService.deleteContactEmail(contactEmailId)
@@ -470,7 +470,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class CreateContactEmployment {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubCreateContactEmployment()
 
       apiService.createContactEmployment(createContactEmploymentRequest())
@@ -496,7 +496,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class UpdateContactEmployment {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubUpdateContactEmployment(contactEmploymentId = 123456)
 
       apiService.updateContactEmployment(contactEmploymentId = 123456, updateContactEmploymentRequest())
@@ -524,7 +524,7 @@ class ContactPersonDpsApiServiceTest {
     private val contactEmploymentId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubDeleteContactEmployment(contactEmploymentId)
 
       apiService.deleteContactEmployment(contactEmploymentId)
@@ -561,7 +561,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class CreateContactPhone {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubCreateContactPhone()
 
       apiService.createContactPhone(createContactPhoneRequest())
@@ -589,7 +589,7 @@ class ContactPersonDpsApiServiceTest {
     val contactPhoneId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubUpdateContactPhone(contactPhoneId)
 
       apiService.updateContactPhone(contactPhoneId, updateContactPhoneRequest())
@@ -617,7 +617,7 @@ class ContactPersonDpsApiServiceTest {
     val contactPhoneId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubDeleteContactPhone(contactPhoneId)
 
       apiService.deleteContactPhone(contactPhoneId)
@@ -650,7 +650,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class CreateContactAddressPhone {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubCreateContactAddressPhone()
 
       apiService.createContactAddressPhone(createContactAddressPhoneRequest())
@@ -678,7 +678,7 @@ class ContactPersonDpsApiServiceTest {
     val contactAddressPhoneId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubUpdateContactAddressPhone(contactAddressPhoneId)
 
       apiService.updateContactAddressPhone(contactAddressPhoneId, updateContactAddressPhoneRequest())
@@ -706,7 +706,7 @@ class ContactPersonDpsApiServiceTest {
     val contactAddressPhoneId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubDeleteContactAddressPhone(contactAddressPhoneId)
 
       apiService.deleteContactAddressPhone(contactAddressPhoneId)
@@ -743,7 +743,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class CreateContactIdentity {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubCreateContactIdentity()
 
       apiService.createContactIdentity(createContactIdentityRequest())
@@ -769,7 +769,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class UpdateContactIdentity {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubUpdateContactIdentity(contactIdentityId = 123456)
 
       apiService.updateContactIdentity(contactIdentityId = 123456, updateContactIdentityRequest())
@@ -797,7 +797,7 @@ class ContactPersonDpsApiServiceTest {
     private val contactIdentityId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsContactPersonServer.stubDeleteContactIdentity(contactIdentityId)
 
       apiService.deleteContactIdentity(contactIdentityId)
@@ -834,7 +834,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class CreatePrisonerContactRestriction {
     @Test
-    internal fun `will pass oath2 token to prisoner contact endpoint`() = runTest {
+    internal fun `will pass oauth2 token to prisoner contact endpoint`() = runTest {
       dpsContactPersonServer.stubCreatePrisonerContactRestriction()
 
       apiService.createPrisonerContactRestriction(createPrisonerContactRestrictionRequest())
@@ -862,7 +862,7 @@ class ContactPersonDpsApiServiceTest {
     private val prisonerContactRestrictionId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to prisoner contact restriction endpoint`() = runTest {
+    internal fun `will pass oauth2 token to prisoner contact restriction endpoint`() = runTest {
       dpsContactPersonServer.stubUpdatePrisonerContactRestriction(prisonerContactRestrictionId)
 
       apiService.updatePrisonerContactRestriction(prisonerContactRestrictionId, updatePrisonerContactRestrictionRequest())
@@ -890,7 +890,7 @@ class ContactPersonDpsApiServiceTest {
     private val prisonerContactRestrictionId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to prisoner contact restriction endpoint`() = runTest {
+    internal fun `will pass oauth2 token to prisoner contact restriction endpoint`() = runTest {
       dpsContactPersonServer.stubDeletePrisonerContactRestriction(prisonerContactRestrictionId)
 
       apiService.deletePrisonerContactRestriction(prisonerContactRestrictionId)
@@ -923,7 +923,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class CreateContactRestriction {
     @Test
-    internal fun `will pass oath2 token to  contact endpoint`() = runTest {
+    internal fun `will pass oauth2 token to  contact endpoint`() = runTest {
       dpsContactPersonServer.stubCreateContactRestriction()
 
       apiService.createContactRestriction(createContactRestrictionRequest())
@@ -951,7 +951,7 @@ class ContactPersonDpsApiServiceTest {
     private val contactRestrictionId = 1234L
 
     @Test
-    internal fun `will pass oath2 token to contact restriction endpoint`() = runTest {
+    internal fun `will pass oauth2 token to contact restriction endpoint`() = runTest {
       dpsContactPersonServer.stubUpdateContactRestriction(contactRestrictionId)
 
       apiService.updateContactRestriction(contactRestrictionId, updateContactRestrictionRequest())
@@ -979,7 +979,7 @@ class ContactPersonDpsApiServiceTest {
     private val contactRestrictionId = 1234L
 
     @Test
-    internal fun `will pass oath2 token to contact restriction endpoint`() = runTest {
+    internal fun `will pass oauth2 token to contact restriction endpoint`() = runTest {
       dpsContactPersonServer.stubDeleteContactRestriction(contactRestrictionId)
 
       apiService.deleteContactRestriction(contactRestrictionId)
@@ -1012,7 +1012,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class ReplaceMergedPrisonerContacts {
     @Test
-    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+    internal fun `will pass oauth2 token to contact endpoint`() = runTest {
       dpsContactPersonServer.stubReplaceMergedPrisonerContacts()
 
       apiService.replaceMergedPrisonerContacts(mergePrisonerContactRequest = mergePrisonerContactRequest())
@@ -1038,7 +1038,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class ResetPrisonerContacts {
     @Test
-    internal fun `will pass oath2 token to contact endpoint`() = runTest {
+    internal fun `will pass oauth2 token to contact endpoint`() = runTest {
       dpsContactPersonServer.stubResetPrisonerContacts()
 
       apiService.resetPrisonerContacts(resetPrisonerContactRequest = resetPrisonerContactRequest())
@@ -1064,7 +1064,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class CreatePrisonerRestriction {
     @Test
-    internal fun `will pass oath2 token to prisoner restriction endpoint`() = runTest {
+    internal fun `will pass oauth2 token to prisoner restriction endpoint`() = runTest {
       dpsContactPersonServer.stubCreatePrisonerRestriction()
 
       apiService.createPrisonerRestriction(createPrisonerRestrictionRequest())
@@ -1092,7 +1092,7 @@ class ContactPersonDpsApiServiceTest {
     private val prisonerRestrictionId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to prisoner restriction endpoint`() = runTest {
+    internal fun `will pass oauth2 token to prisoner restriction endpoint`() = runTest {
       dpsContactPersonServer.stubUpdatePrisonerRestriction(prisonerRestrictionId)
 
       apiService.updatePrisonerRestriction(prisonerRestrictionId, updatePrisonerRestrictionRequest())
@@ -1120,7 +1120,7 @@ class ContactPersonDpsApiServiceTest {
     private val prisonerRestrictionId = 12345L
 
     @Test
-    internal fun `will pass oath2 token to prisoner restriction endpoint`() = runTest {
+    internal fun `will pass oauth2 token to prisoner restriction endpoint`() = runTest {
       dpsContactPersonServer.stubDeletePrisonerRestriction(prisonerRestrictionId)
 
       apiService.deletePrisonerRestriction(prisonerRestrictionId)
@@ -1153,7 +1153,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class ResetPrisonerRestrictions {
     @Test
-    internal fun `will pass oath2 token to prisoner restrictions endpoint`() = runTest {
+    internal fun `will pass oauth2 token to prisoner restrictions endpoint`() = runTest {
       dpsContactPersonServer.stubResetPrisonerRestrictions()
 
       apiService.resetPrisonerRestrictions(ContactPersonDpsApiMockServer.resetPrisonerRestrictionsRequest())
@@ -1179,7 +1179,7 @@ class ContactPersonDpsApiServiceTest {
   @Nested
   inner class MergePrisonerRestrictions {
     @Test
-    internal fun `will pass oath2 token to prisoner restrictions endpoint`() = runTest {
+    internal fun `will pass oauth2 token to prisoner restrictions endpoint`() = runTest {
       dpsContactPersonServer.stubMergePrisonerRestrictions()
 
       apiService.mergePrisonerRestrictions(ContactPersonDpsApiMockServer.mergePrisonerRestrictionsRequest())

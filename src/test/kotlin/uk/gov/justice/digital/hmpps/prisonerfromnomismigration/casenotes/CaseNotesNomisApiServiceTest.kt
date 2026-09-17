@@ -33,7 +33,7 @@ class CaseNotesNomisApiServiceTest {
   @Nested
   inner class GetCaseNote {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       caseNotesNomisApiMockServer.stubGetCaseNote()
 
       apiService.getCaseNote(1001)

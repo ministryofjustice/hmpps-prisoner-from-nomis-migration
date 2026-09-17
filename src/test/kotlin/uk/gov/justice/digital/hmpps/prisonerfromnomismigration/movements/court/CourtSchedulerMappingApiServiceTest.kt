@@ -49,7 +49,7 @@ class CourtSchedulerMappingApiServiceTest {
   @Nested
   inner class CreateCourtScheduleMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubCreateCourtScheduleMapping()
 
       apiService.createCourtScheduleMapping(courtScheduleMapping())
@@ -123,7 +123,7 @@ class CourtSchedulerMappingApiServiceTest {
   @Nested
   inner class GetCourtScheduleMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubGetCourtScheduleMapping()
 
       apiService.getCourtScheduleMappingOrNull(1L)
@@ -154,7 +154,7 @@ class CourtSchedulerMappingApiServiceTest {
   @Nested
   inner class DeleteCourtScheduleMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubDeleteCourtScheduleMapping()
 
       apiService.deleteCourtScheduleMapping(1L)
@@ -177,7 +177,7 @@ class CourtSchedulerMappingApiServiceTest {
   @Nested
   inner class CreateCourtMovementMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubCreateCourtMovementMapping()
 
       apiService.createCourtMovementMapping(courtMovementMapping())
@@ -251,7 +251,7 @@ class CourtSchedulerMappingApiServiceTest {
   @Nested
   inner class GetCourtMovementMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubGetCourtMovementMapping()
 
       apiService.getCourtMovementMappingOrNull(12345L, 3)
@@ -282,7 +282,7 @@ class CourtSchedulerMappingApiServiceTest {
   @Nested
   inner class DeleteCourtMovementMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubDeleteCourtMovementMapping()
 
       apiService.deleteCourtMovementMapping(12345L, 1)
@@ -305,7 +305,7 @@ class CourtSchedulerMappingApiServiceTest {
   @Nested
   inner class CreateMigrationMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubCreateCourtSchedulerPrisonerMappings()
 
       apiService.createMapping(
@@ -353,7 +353,7 @@ class CourtSchedulerMappingApiServiceTest {
   @Nested
   inner class GetPrisonerMappingIds {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubGetCourtSchedulerPrisonerMappingIds()
 
       apiService.getCourtSchedulerPrisonMappingIds("A1234BC")
@@ -391,7 +391,7 @@ class CourtSchedulerMappingApiServiceTest {
     )
 
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubGetMoveBookingMappings(12345L, response)
 
       apiService.getCourtSchedulerMoveBookingMappings(12345L)
@@ -424,7 +424,7 @@ class CourtSchedulerMappingApiServiceTest {
   @Nested
   inner class MoveBookingMappings {
     @Test
-    fun `should pass oath2 token to service`() = runTest {
+    fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubMoveBookingMappings()
 
       apiService.moveCourtSchedulerBookingMappings(12345L, "A1234AA", "B1234BB")
@@ -447,7 +447,7 @@ class CourtSchedulerMappingApiServiceTest {
   @Nested
   inner class UpsertCourtScheduleMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubUpsertCourtScheduleMapping()
 
       apiService.upsertCourtScheduleMappingByDpsId(courtScheduleMapping())
@@ -538,7 +538,7 @@ class CourtSchedulerMappingApiServiceTest {
     )
 
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubUpdateMappingPrisoner()
 
       apiService.updateMappingPrisoner(123, request)

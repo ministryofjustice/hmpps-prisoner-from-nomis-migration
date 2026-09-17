@@ -42,7 +42,7 @@ class StaffMappingApiServiceTest {
     val errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<StaffMappingDto>>() {}
 
     @Test
-    fun `will pass oath2 token to migrate endpoint`() = runTest {
+    fun `will pass oauth2 token to migrate endpoint`() = runTest {
       mockServer.stubCreateMapping()
 
       apiService.createMapping(
@@ -123,7 +123,7 @@ class StaffMappingApiServiceTest {
     val nomisStaffId = 12345L
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetStaffByNomisIdOrNull(
         nomisId = nomisStaffId,
         mapping = StaffMappingDto(

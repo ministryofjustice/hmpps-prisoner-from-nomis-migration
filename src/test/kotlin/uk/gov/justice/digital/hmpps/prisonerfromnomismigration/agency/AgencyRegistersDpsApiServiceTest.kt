@@ -25,7 +25,7 @@ class AgencyRegistersDpsApiServiceTest {
   @Nested
   inner class MigrateAgency {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       agencyRegistersApi.stubMigrateAgency("SHEFCC", legacyAgencyResponse())
 
       apiService.migrateAgency("SHEFCC", legacyAgencyDto())

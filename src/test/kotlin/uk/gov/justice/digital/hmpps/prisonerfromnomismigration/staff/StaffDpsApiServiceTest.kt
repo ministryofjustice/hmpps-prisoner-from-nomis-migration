@@ -26,7 +26,7 @@ class StaffDpsApiServiceTest {
   @Nested
   inner class SyncStaff {
     @Test
-    internal fun `will pass oath2 token to sync endpoint`() = runTest {
+    internal fun `will pass oauth2 token to sync endpoint`() = runTest {
       dpsStaffServer.stubSyncStaff()
 
       apiService.syncStaff(1234, syncStaff())
@@ -71,7 +71,7 @@ class StaffDpsApiServiceTest {
     val nomisStaffId = 1234L
 
     @Test
-    internal fun `will pass oath2 token to delete endpoint`() = runTest {
+    internal fun `will pass oauth2 token to delete endpoint`() = runTest {
       dpsStaffServer.stubDeleteStaff()
 
       apiService.deleteStaff(nomisStaffId)

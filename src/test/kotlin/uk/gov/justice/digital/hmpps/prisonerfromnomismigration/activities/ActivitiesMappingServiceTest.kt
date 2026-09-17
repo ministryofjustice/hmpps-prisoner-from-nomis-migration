@@ -44,7 +44,7 @@ class ActivitiesMappingServiceTest {
   @Nested
   inner class CreateNomisMapping {
     @Test
-    fun `should provide oath2 token`() {
+    fun `should provide oauth2 token`() {
       mappingApi.stubMappingCreate(MappingApiExtension.ACTIVITIES_CREATE_MAPPING_URL)
 
       runBlocking {
@@ -121,7 +121,7 @@ class ActivitiesMappingServiceTest {
   @Nested
   inner class FindNomisMapping {
     @Test
-    fun `should provide oath2 token`() {
+    fun `should provide oauth2 token`() {
       mappingApi.stubFor(
         get(urlPathMatching("/mapping/activities/migration/nomis-course-activity-id/.*")).willReturn(
           aResponse()
@@ -259,7 +259,7 @@ class ActivitiesMappingServiceTest {
     private val dpsLocationId = UUID.randomUUID().toString()
 
     @Test
-    internal fun `will pass oath2 token`() = runTest {
+    internal fun `will pass oauth2 token`() = runTest {
       mappingApi.stubGetApiLocationNomis(nomisLocationId, dpsLocationId)
 
       activitiesMappingService.getDpsLocation(nomisLocationId)
@@ -304,7 +304,7 @@ class ActivitiesMappingServiceTest {
   @Nested
   inner class CountMappings {
     @Test
-    internal fun `will pass oath2 token`() = runTest {
+    internal fun `will pass oauth2 token`() = runTest {
       mappingApi.stubActivityMappingCountByMigrationId()
 
       activitiesMappingService.getMigrationCount("some-migration-id")

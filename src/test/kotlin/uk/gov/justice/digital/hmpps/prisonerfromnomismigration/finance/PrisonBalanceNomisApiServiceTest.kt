@@ -28,7 +28,7 @@ class PrisonBalanceNomisApiServiceTest {
   @Nested
   inner class GetPrisonBalanceIds {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetPrisonBalanceIds()
 
       apiService.getPrisonBalanceIds()
@@ -64,7 +64,7 @@ class PrisonBalanceNomisApiServiceTest {
   @Nested
   inner class GetPrisonBalance {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetPrisonBalance(prisonId = "MDI")
 
       apiService.getPrisonBalance(prisonId = "MDI")

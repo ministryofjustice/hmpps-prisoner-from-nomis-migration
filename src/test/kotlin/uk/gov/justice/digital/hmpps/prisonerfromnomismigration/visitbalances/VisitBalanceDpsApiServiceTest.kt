@@ -26,7 +26,7 @@ class VisitBalanceDpsApiServiceTest {
   @Nested
   inner class MigrateVisitBalance {
     @Test
-    internal fun `will pass oath2 token to migrate endpoint`() = runTest {
+    internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
       dpsVisitBalanceServer.stubMigrateVisitBalance()
 
       apiService.migrateVisitBalance(visitBalanceMigrationDto())
@@ -67,7 +67,7 @@ class VisitBalanceDpsApiServiceTest {
   @Nested
   inner class SyncVisitBalanceAdjustment {
     @Test
-    internal fun `will pass oath2 token to sync adjustment endpoint`() = runTest {
+    internal fun `will pass oauth2 token to sync adjustment endpoint`() = runTest {
       dpsVisitBalanceServer.stubSyncVisitBalanceAdjustment()
 
       apiService.syncVisitBalanceAdjustment(visitBalanceAdjustmentSyncDto())

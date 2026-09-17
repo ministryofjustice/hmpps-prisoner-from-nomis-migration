@@ -46,8 +46,8 @@ class OfficialVisitsMigrationService(
   pageSize = pageSize,
   getIdsParallelCount = getIdsParallelCount,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
-  completeCheckCount = completeCheckRetrySeconds,
-  completeCheckRetrySeconds = completeCheckCount,
+  completeCheckCount = completeCheckCount,
+  completeCheckRetrySeconds = completeCheckRetrySeconds,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
   jsonMapper = jsonMapper,
 ) {

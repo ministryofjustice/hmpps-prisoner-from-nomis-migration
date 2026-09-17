@@ -29,7 +29,7 @@ class VisitSlotsNomisApiServiceTest {
   @Nested
   inner class GetVisitTimeSlotIds {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       mockServer.stubGetVisitTimeSlotIds(
         content = listOf(
           VisitTimeSlotIdResponse(
@@ -96,7 +96,7 @@ class VisitSlotsNomisApiServiceTest {
   @Nested
   inner class GetVisitTimeSlot {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       mockServer.stubGetVisitTimeSlot(
         prisonId = "LEI",
         dayOfWeek = VisitsConfigurationResourceApi.DayOfWeekGetVisitTimeSlot.MON,

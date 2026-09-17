@@ -37,7 +37,7 @@ class AllocationsMappingServiceTest {
   @Nested
   inner class CreateNomisMapping {
     @Test
-    fun `should provide oath2 token`() {
+    fun `should provide oauth2 token`() {
       mappingApi.stubMappingCreate(MappingApiExtension.ALLOCATIONS_CREATE_MAPPING_URL)
 
       runBlocking {
@@ -114,7 +114,7 @@ class AllocationsMappingServiceTest {
   @Nested
   inner class FindNomisMapping {
     @Test
-    fun `should provide oath2 token`() {
+    fun `should provide oauth2 token`() {
       mappingApi.stubFor(
         get(urlPathMatching("/mapping/allocations/migration/nomis-allocation-id/.*")).willReturn(
           aResponse()

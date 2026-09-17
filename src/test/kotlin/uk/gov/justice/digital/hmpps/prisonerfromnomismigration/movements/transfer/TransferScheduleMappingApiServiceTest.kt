@@ -46,7 +46,7 @@ class TransferScheduleMappingApiServiceTest {
   @Nested
   inner class CreateTransferScheduleMapping {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubCreateTransferScheduleMapping()
 
       apiService.createTransferScheduleMapping(transferScheduleMapping())
@@ -108,7 +108,7 @@ class TransferScheduleMappingApiServiceTest {
   @Nested
   inner class GetTransferScheduleMapping {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubGetTransferScheduleMapping()
 
       apiService.getTransferScheduleMappingOrNull(1L)
@@ -150,7 +150,7 @@ class TransferScheduleMappingApiServiceTest {
   @Nested
   inner class DeleteTransferScheduleMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubDeleteTransferScheduleMapping()
 
       apiService.deleteTransferScheduleMapping(1L)
@@ -173,7 +173,7 @@ class TransferScheduleMappingApiServiceTest {
   @Nested
   inner class CreateTransferMovementMapping {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubCreateTransferMovementMapping()
 
       apiService.createTransferMovementMapping(transferMovementMapping())
@@ -235,7 +235,7 @@ class TransferScheduleMappingApiServiceTest {
   @Nested
   inner class GetTransferMovementMapping {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubGetTransferMovementMapping()
 
       apiService.getTransferMovementMappingOrNull(nomisBookingId = 12345L, nomisMovementSeq = 3)
@@ -278,7 +278,7 @@ class TransferScheduleMappingApiServiceTest {
   @Nested
   inner class DeleteTransferMovementMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubDeleteTransferMovementMapping()
 
       apiService.deleteTransferMovementMapping(12345L, 1)
@@ -312,7 +312,7 @@ class TransferScheduleMappingApiServiceTest {
   @Nested
   inner class CreateMigrationMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubCreateTransferSchedulerPrisonerMappings()
 
       apiService.createMapping(
@@ -341,7 +341,7 @@ class TransferScheduleMappingApiServiceTest {
   @Nested
   inner class GetPrisonerMappingIds {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubGetTransferSchedulerPrisonerMappingIds()
 
       apiService.getMappings("A1234BC")
@@ -379,7 +379,7 @@ class TransferScheduleMappingApiServiceTest {
     )
 
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubGetMoveBookingMappings(12345L, response)
 
       apiService.getTransferScheduleMoveBookingMappings(12345L)
@@ -412,7 +412,7 @@ class TransferScheduleMappingApiServiceTest {
   @Nested
   inner class MoveBookingMappings {
     @Test
-    fun `should pass oath2 token to service`() = runTest {
+    fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubMoveBookingMappings()
 
       apiService.moveTransferScheduleBookingMappings(12345L, "A1234AA", "B1234BB")

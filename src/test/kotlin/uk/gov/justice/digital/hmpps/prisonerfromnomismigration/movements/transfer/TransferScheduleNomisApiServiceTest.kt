@@ -173,7 +173,7 @@ class TransferScheduleNomisApiServiceTest {
   @Nested
   inner class GetOffenderTransferMovementsTest {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       transferScheduleNomisApiMockServer.stubGetOffenderTransferMovements(offenderNo = "A1234BC")
 
       apiService.getOffenderTransferMovementsOrNull(offenderNo = "A1234BC")
@@ -227,7 +227,7 @@ class TransferScheduleNomisApiServiceTest {
   @Nested
   inner class GetOffenderTransferMovementsByRootOffenderTest {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       transferScheduleNomisApiMockServer.stubGetOffenderTransferMovementsByRootOffender(rootOffenderId = 777)
 
       apiService.getOffenderTransferMovementsOrNull(rootOffenderId = 777)
@@ -281,7 +281,7 @@ class TransferScheduleNomisApiServiceTest {
   @Nested
   inner class GetBookingTransferMovementsTest {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       transferScheduleNomisApiMockServer.stubGetBookingTransferMovements(bookingId = 12345L)
 
       apiService.getBookingTransferMovementsOrNull(bookingId = 12345L)

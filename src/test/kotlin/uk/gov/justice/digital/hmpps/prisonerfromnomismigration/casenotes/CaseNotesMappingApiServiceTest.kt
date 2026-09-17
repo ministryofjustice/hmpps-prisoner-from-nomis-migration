@@ -42,7 +42,7 @@ class CaseNotesMappingApiServiceTest {
   @Nested
   inner class PostMappingsBatch {
     @Test
-    fun `will pass oath2 token to service`() {
+    fun `will pass oauth2 token to service`() {
       runTest {
         caseNotesMappingApiMockServer.stubPostMappingsBatch()
 

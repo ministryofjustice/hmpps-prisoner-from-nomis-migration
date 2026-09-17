@@ -126,7 +126,7 @@ internal class LocationsMappingServiceTest {
     }
 
     @Test
-    fun `should provide oath2 token`() {
+    fun `should provide oauth2 token`() {
       mappingApi.stubMappingCreate(LOCATIONS_CREATE_MAPPING_URL)
 
       runBlocking {

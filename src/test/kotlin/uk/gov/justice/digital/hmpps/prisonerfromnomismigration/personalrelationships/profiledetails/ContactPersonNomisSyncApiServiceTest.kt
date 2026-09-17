@@ -29,7 +29,7 @@ class ContactPersonNomisSyncApiServiceTest {
   @Nested
   inner class SyncProfileDetails {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       nomisSyncApi.stubSyncProfileDetails(prisonerNumber = "A1234AA", profileType = "MARITAL")
 
       apiService.syncProfileDetails(prisonerNumber = "A1234AA", profileType = "MARITAL")
