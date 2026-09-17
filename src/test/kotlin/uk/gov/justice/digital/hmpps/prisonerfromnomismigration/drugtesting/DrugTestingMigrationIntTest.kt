@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.drugtesting
 
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -94,6 +95,49 @@ class DrugTestingMigrationIntTest(
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class FilterOptions {
+      private lateinit var migrationResult: MigrationResult
+      private val includedPrisonId = "MDI"
+      private val excludedPrisonId = "LEI"
+      private val rtpDate = LocalDate.parse("2025-07-01")
+      private val testData = randomTestingProgramResponse(0, includedPrisonId, rtpDate)
+
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        drugTestingNomisApiMock.stubGetDrugTestingIdRanges(pageSize = 1, totalElements = 1)
+        drugTestingNomisApiMock.stubGetDrugTestingIdsInRange(0, 1)
+        drugTestingNomisApiMock.stubGetRandomTestingProgram(response = testData)
+        dpsApiMock.stubMigrate(prisonId = includedPrisonId, rtpDate = rtpDate)
+        migrationResult = performMigration(
+          DrugTestingMigrationFilter(
+            includedPrisonIds = setOf(includedPrisonId),
+            excludedPrisonIds = setOf(excludedPrisonId),
+          ),
+        )
+      }
+
+      @Test
+      fun `will pass filters to the id range and page requests`() {
+        drugTestingNomisApiMock.verify(
+          getRequestedFor(urlPathEqualTo("/drug-testing/id-ranges"))
+            .withQueryParam("pageSize", equalTo("1000"))
+            .withQueryParam("includedPrisonIds", equalTo(includedPrisonId))
+            .withQueryParam("excludedPrisonIds", equalTo(excludedPrisonId)),
+        )
+        drugTestingNomisApiMock.verify(
+          getRequestedFor(urlPathEqualTo("/drug-testing/ids-in-range"))
+            .withQueryParam("fromId", equalTo("0"))
+            .withQueryParam("toId", equalTo("1"))
+            .withQueryParam("includedPrisonIds", equalTo(includedPrisonId))
+            .withQueryParam("excludedPrisonIds", equalTo(excludedPrisonId)),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPath {
       private lateinit var migrationResult: MigrationResult
       private val prisonId = "MDI"
@@ -165,6 +209,43 @@ class DrugTestingMigrationIntTest(
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class DuplicateOnDpsApi {
+      private lateinit var migrationResult: MigrationResult
+      private val prisonId = "MDI"
+      private val rtpDate = LocalDate.parse("2025-07-01")
+      private val testData = randomTestingProgramResponse(0, prisonId, rtpDate)
+
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        drugTestingNomisApiMock.stubGetDrugTestingIdRanges(pageSize = 1, totalElements = 1)
+        drugTestingNomisApiMock.stubGetDrugTestingIdsInRange(0, 1)
+        drugTestingNomisApiMock.stubGetRandomTestingProgram(response = testData)
+        dpsApiMock.stubMigrate(prisonId = prisonId, rtpDate = rtpDate, status = 409)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will track telemetry for a duplicate program response`() {
+        verify(telemetryClient).trackEvent(
+          eq("drugtesting-migration-entity-duplicate"),
+          check {
+            assertThat(it["prisonId"]).isEqualTo(prisonId)
+            assertThat(it["rtpDate"]).isEqualTo(rtpDate.toString())
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will not retry the duplicate program request`() {
+        dpsApiMock.verify(1, putRequestedFor(urlPathEqualTo("/resync/testing-lists/$prisonId/$rtpDate")))
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathNoPrisoners {
       private lateinit var migrationResult: MigrationResult
       private val prisonId = "MDI"
@@ -220,10 +301,12 @@ class DrugTestingMigrationIntTest(
   }
 
   private fun performMigration(
+    migrationFilter: DrugTestingMigrationFilter = DrugTestingMigrationFilter(),
     waitUntilVerify: () -> Unit = { },
   ): MigrationResult = webTestClient.post().uri("/migrate/drug-testing")
     .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
+    .bodyValue(migrationFilter)
     .exchange()
     .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
     .also {

@@ -62,8 +62,12 @@ class DrugTestingMigrationService(
       return
     }
 
-    dpsApiService.migrate(program.caseloadId, program.rtpDate, program.toMigrationRequest())
-    telemetryClient.trackEvent("drugtesting-migration-entity-migrated", telemetryContext)
+    val response = dpsApiService.migrate(program.caseloadId, program.rtpDate, program.toMigrationRequest())
+    if (response.isError) {
+      telemetryClient.trackEvent("drugtesting-migration-entity-duplicate", telemetryContext)
+    } else {
+      telemetryClient.trackEvent("drugtesting-migration-entity-migrated", telemetryContext)
+    }
   }
 
   override suspend fun getMigrationCount(migrationId: String): Long = -1
