@@ -14,6 +14,8 @@ generic-service:
     API_BASE_URL_NOMIS-SYNC: https://prisoner-to-nomis-update.hmpps.service.justice.gov.uk
     API_BASE_URL_CORE_PERSON: https://hmpps-person-record.hmpps.service.justice.gov.uk
     API_BASE_URL_CSRA: https://cell-sharing-risk-assessment-api.hmpps.service.justice.gov.uk
+    # Currently set to self until API ready
+    API_BASE_URL_DRUG_TESTING: https://prisoner-nomis-migration.hmpps.service.justice.gov.uk
     API_BASE_URL_FINANCE: https://prisoner-finance-sync-api.hmpps.service.justice.gov.uk
     API_BASE_URL_MAPPING: https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk
     API_BASE_URL_SENTENCING: https://adjustments-api.hmpps.service.justice.gov.uk
@@ -138,6 +140,9 @@ generic-prometheus-alerts:
       - "syscon-devs-prod-migration_csra_dlq"
       - "syscon-devs-prod-prisoner_from_nomis_csra_queue"
       - "syscon-devs-prod-prisoner_from_nomis_csra_dl_queue"
+    drugtesting:
+      - "syscon-devs-prod-migration_drugtesting_queue"
+      - "syscon-devs-prod-migration_drugtesting_dlq"
     finance:
       - "syscon-devs-prod-prisoner_from_nomis_finance_dl_queue"
     prisonbalance:
