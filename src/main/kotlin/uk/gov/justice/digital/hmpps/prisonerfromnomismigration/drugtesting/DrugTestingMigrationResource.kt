@@ -20,7 +20,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 @RequestMapping("/migrate/drug-testing", produces = [MediaType.APPLICATION_JSON_VALUE])
 @Tag(name = "Drug Testing Migration Resource")
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
-class DrugTestingMigrationResource {
+class DrugTestingMigrationResource(
+  private val migrationService: DrugTestingMigrationService,
+) {
   @PostMapping
   @ResponseStatus(value = HttpStatus.ACCEPTED)
   @Operation(
@@ -49,7 +51,7 @@ class DrugTestingMigrationResource {
     ],
   )
   suspend fun startDrugTestingMigration(
-    @RequestBody @Valid
-    migrationFilter: DrugTestingMigrationFilter,
-  ) { }
+    @RequestBody(required = false) @Valid
+    migrationFilter: DrugTestingMigrationFilter = DrugTestingMigrationFilter(),
+  ) = migrationService.startMigration(migrationFilter)
 }
