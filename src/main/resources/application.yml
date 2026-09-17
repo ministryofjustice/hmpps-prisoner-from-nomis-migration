@@ -264,6 +264,11 @@ staff:
     delay-seconds: 10
     count: 9
 
+drugtesting:
+  complete-check:
+    delay-seconds: 10
+    count: 9
+
 azure:
   application-insights:
     web:
@@ -303,6 +308,9 @@ hmpps.sqs:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationcsra:
+      errorVisibilityTimeout: 1, 1, 1, 10
+      propagateTracing: false
+    migrationdrugtesting:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationproperty:

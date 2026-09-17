@@ -181,6 +181,12 @@ val models = listOf(
     url = "https://remand-and-sentencing-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
   ),
   ModelConfiguration(
+    name = "drug-testing",
+    packageName = "drugtesting",
+    url = "https://mandatory-drug-testing-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+    hasProductionVersion = false,
+  ),
+  ModelConfiguration(
     name = "finance",
     packageName = "finance",
     testPackageName = "finance",

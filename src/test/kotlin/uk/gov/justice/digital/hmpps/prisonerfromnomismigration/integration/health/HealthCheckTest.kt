@@ -8,6 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.drugtesting.DrugTestingDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension
@@ -38,6 +39,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsAp
   CourtSchedulerDpsApiExtension::class,
   CourtSentencingDpsApiExtension::class,
   CsraApiExtension::class,
+  DrugTestingDpsApiExtension::class,
   FinanceApiExtension::class,
   HmppsAuthApiExtension::class,
   LocationsApiExtension::class,
@@ -152,6 +154,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     CourtSchedulerDpsApiExtension.dpsCourtSchedulerServer.stubHealthPing(status)
     CourtSentencingDpsApiExtension.dpsCourtSentencingServer.stubHealthPing(status)
     CsraApiExtension.csraApi.stubHealthPing(status)
+    DrugTestingDpsApiExtension.dpsDrugTestingServer.stubHealthPing(status)
     FinanceApiExtension.financeApi.stubHealthPing(status)
     LocationsApiExtension.locationsApi.stubHealthPing(status)
     OrganisationsDpsApiExtension.dpsOrganisationsServer.stubHealthPing(status)

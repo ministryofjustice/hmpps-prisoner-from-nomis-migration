@@ -1,0 +1,485 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "HMPPS Mandatory Drug Testing Api",
+    "contact" : {
+      "name" : "HMPPS Digital Studio",
+      "email" : "feedback@digital.justice.gov.uk"
+    },
+    "version" : "2026-09-17.68.1ef9aca"
+  },
+  "servers" : [ {
+    "url" : "https://mandatory-drug-testing-api-dev.hmpps.service.justice.gov.uk",
+    "description" : "Development"
+  }, {
+    "url" : "https://mandatory-drug-testing-api-preprod.hmpps.service.justice.gov.uk",
+    "description" : "Pre-Production"
+  }, {
+    "url" : "https://mandatory-drug-testing-api.hmpps.service.justice.gov.uk",
+    "description" : "Production"
+  }, {
+    "url" : "http://localhost:8080",
+    "description" : "Local"
+  } ],
+  "security" : [ {
+    "bearer-jwt" : [ "read", "write" ]
+  } ],
+  "tags" : [ {
+    "name" : "List Generation",
+    "description" : "Random drug testing list generation and retrieval"
+  }, {
+    "name" : "Migration",
+    "description" : "Random drug testing NOMIS list migration"
+  } ],
+  "paths" : {
+    "/resync/testing-lists/{prisonCode}/{rtpDate}" : {
+      "put" : {
+        "tags" : [ "Migration" ],
+        "description" : "\n\nRequires one of the following roles:\n* ROLE_MANDATORY_DRUG_TESTING__MIGRATION_RW",
+        "operationId" : "migrateTestingLists",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "description" : "Prison location code",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "rtpDate",
+          "in" : "path",
+          "description" : "Report date, must be in format yyyy-MM-dd",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/MigrationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "List Migrated successfully"
+          },
+          "400" : {
+            "description" : "Invalid input parameters",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "List already exists for this prison and month"
+          }
+        }
+      }
+    },
+    "/prisons/{prisonCode}/mandatory-drug-testing-lists" : {
+      "post" : {
+        "tags" : [ "List Generation" ],
+        "summary" : "Generate a random drug testing list",
+        "description" : "Generates main and reserve lists of prisoners for random drug testing using Fisher-Yates shuffle. Only one list per prison per month is permitted.\n\nRequires one of the following roles:\n* ROLE_MANDATORY_DRUG_TESTING_UI",
+        "operationId" : "generateList",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "description" : "Prison location code",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GenerateListRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "List generated successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DrugTestingListResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid input parameters",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Prison location not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DrugTestingListResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "List already exists for this prison and month",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DrugTestingListResponse"
+                }
+              }
+            }
+          },
+          "502" : {
+            "description" : "Prison API unavailable after retry",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DrugTestingListResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised - missing or invalid token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DrugTestingListResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - missing required role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prisons/{prisonCode}/mandatory-drug-testing-lists/{listDate}" : {
+      "get" : {
+        "tags" : [ "List Generation" ],
+        "summary" : "Retrieve a drug testing list",
+        "description" : "Retrieves a previously generated drug testing list by prison location and month (YYYY-MM). Prisoner details are enriched from the Prison API.\n\nRequires one of the following roles:\n* ROLE_MANDATORY_DRUG_TESTING_UI",
+        "operationId" : "getList",
+        "parameters" : [ {
+          "name" : "prisonCode",
+          "in" : "path",
+          "description" : "Prison location code",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "listDate",
+          "in" : "path",
+          "description" : "Month of the list in YYYY-MM format",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "List retrieved successfully",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DrugTestingListResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "No list found for the given prison and month",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DrugTestingListResponse"
+                }
+              }
+            }
+          },
+          "502" : {
+            "description" : "Prison API unavailable after retry",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DrugTestingListResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised - missing or invalid token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DrugTestingListResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - missing required role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "MigrationRequest" : {
+        "type" : "object",
+        "properties" : {
+          "dateGenerated" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "mainPercentage" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 100,
+            "minimum" : 1
+          },
+          "reservePercentage" : {
+            "type" : "integer",
+            "format" : "int32",
+            "maximum" : 300,
+            "minimum" : 1
+          },
+          "mainCount" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
+          },
+          "reserveCount" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
+          },
+          "eligibleCount" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
+          },
+          "prisoners" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Prisoner"
+            },
+            "minItems" : 1
+          }
+        },
+        "required" : [ "createdBy", "dateGenerated", "eligibleCount", "mainCount", "mainPercentage", "prisoners", "reserveCount", "reservePercentage" ]
+      },
+      "Prisoner" : {
+        "type" : "object",
+        "properties" : {
+          "prisonerNumber" : {
+            "type" : "string",
+            "minLength" : 1
+          },
+          "listType" : {
+            "type" : "string",
+            "minLength" : 1,
+            "pattern" : "M|R"
+          },
+          "testedStatus" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "reasonNotTested" : {
+            "type" : [ "string", "null" ]
+          },
+          "listSelectionNumber" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 1
+          },
+          "notes" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "listSelectionNumber", "listType", "prisonerNumber" ]
+      },
+      "ErrorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "errorCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "userMessage" : {
+            "type" : [ "string", "null" ]
+          },
+          "developerMessage" : {
+            "type" : [ "string", "null" ]
+          },
+          "moreInfo" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "status" ]
+      },
+      "GenerateListRequest" : {
+        "type" : "object",
+        "description" : "Request body for generating a random drug testing list",
+        "properties" : {
+          "mainListPercentage" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Percentage of prison population for the main list",
+            "example" : 10,
+            "maximum" : 100,
+            "minimum" : 1
+          },
+          "reserveListPercentage" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Percentage of main list size for the reserve list",
+            "example" : 100,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        },
+        "required" : [ "mainListPercentage", "reserveListPercentage" ]
+      },
+      "DrugTestingListResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The unique identifier for the drug testing list",
+            "example" : "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "month" : {
+            "type" : "string",
+            "description" : "The month (and year) of the generated list in the format YYYY-MM",
+            "example" : "2026-06"
+          },
+          "prisonCode" : {
+            "type" : "string",
+            "description" : "The prison location code for where the list was generated",
+            "example" : "MDI"
+          },
+          "mainList" : {
+            "type" : "array",
+            "description" : "The main list of randomly selected prisoners for mandatory drug testing",
+            "items" : {
+              "$ref" : "#/components/schemas/PrisonerSelectionResponse"
+            }
+          },
+          "reserveList" : {
+            "type" : "array",
+            "description" : "The reserve list of randomly selected prisoners for mandatory drug testing",
+            "items" : {
+              "$ref" : "#/components/schemas/PrisonerSelectionResponse"
+            }
+          }
+        },
+        "required" : [ "id", "mainList", "month", "prisonCode", "reserveList" ]
+      },
+      "PrisonerSelectionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The unique identifier for the prisoner selection",
+            "example" : "123e4567-e89b-12d3-a456-426614174000"
+          },
+          "listType" : {
+            "type" : "string",
+            "description" : "The type of list this prisoner selection belongs to (e.g., 'main (M)' or 'reserve(R)')",
+            "example" : "M"
+          },
+          "testedStatus" : {
+            "type" : [ "string", "null" ],
+            "description" : "The tested status of the prisoner selection (e.g., 'Tested', 'Not Tested', or null if not applicable)",
+            "example" : "true"
+          },
+          "reasonNotTested" : {
+            "type" : [ "string", "null" ],
+            "description" : "The reason why the prisoner was not tested (if applicable)",
+            "example" : "Refused to take the test"
+          },
+          "listSelectionNumber" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The selection order number of the prisoner in the list",
+            "example" : 1
+          },
+          "lastTestedDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The date when the prisoner was last tested (if applicable)",
+            "example" : "2026-06-15"
+          },
+          "notes" : {
+            "type" : [ "string", "null" ],
+            "description" : "Additional notes about the selected prisoners drug profile",
+            "example" : "Requires special handling"
+          },
+          "prisoner" : {
+            "$ref" : "#/components/schemas/Prisoner",
+            "description" : "The prisoner details for the selected prisoner"
+          }
+        },
+        "required" : [ "id", "listSelectionNumber", "listType", "prisoner" ]
+      }
+    },
+    "securitySchemes" : {
+      "bearer-jwt" : {
+        "type" : "http",
+        "description" : "Token with required roles ROLE_MANDATORY_DRUG_TESTING_*",
+        "name" : "Authorization",
+        "in" : "header",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      }
+    }
+  }
+}
