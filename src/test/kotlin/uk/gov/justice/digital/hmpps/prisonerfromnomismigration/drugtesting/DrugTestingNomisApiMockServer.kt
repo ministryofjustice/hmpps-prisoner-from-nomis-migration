@@ -19,12 +19,14 @@ import java.time.LocalDateTime
 class DrugTestingNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetRandomTestingProgram(
     rtpId: Long = 12345,
-    response: RandomTestingProgramResponse = randomTestingProgramResponse(rtpId = rtpId),
+    prisonId: String = "MDI",
+    month: LocalDate = LocalDate.parse("2025-07-01"),
+    response: RandomTestingProgramResponse = randomTestingProgramResponse(rtpId = rtpId, prisonId = prisonId, month = month),
     status: HttpStatus = HttpStatus.OK,
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     nomisApi.stubFor(
-      get(urlPathEqualTo("/drug-testing/$rtpId")).willReturn(
+      get(urlPathEqualTo("/drug-testing/${response.rtpId}")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -33,32 +35,31 @@ class DrugTestingNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetDrugTestingIdRanges(
-    response: List<IdRange> = listOf(IdRange(1, 10), IdRange(11, 20)),
-  ) {
+  fun stubGetDrugTestingIdRanges(pageSize: Long = 10, totalElements: Long = 20) {
+    val content: List<IdRange> = (0..(totalElements / pageSize + if (totalElements % pageSize > 0) 1 else 0))
+      .zipWithNext()
+      .map { IdRange(it.first * pageSize, it.second * pageSize) }
     nomisApi.stubFor(
       get(urlPathEqualTo("/drug-testing/id-ranges"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
-            .withBody(jsonMapper.writeValueAsString(response)),
+            .withBody(jsonMapper.writeValueAsString(content)),
         ),
     )
   }
 
-  fun stubGetDrugTestingIdsInRange(
-    response: List<Long> = listOf(2, 3, 4),
-  ) {
-    val builder = get(urlPathEqualTo("/drug-testing/ids-in-range"))
-
+  fun stubGetDrugTestingIdsInRange(fromId: Long = 1L, toId: Long = 20L) {
+    val content: List<Long> = (fromId..<toId).toList()
     nomisApi.stubFor(
-      builder.willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(jsonMapper.writeValueAsString(response)),
-      ),
+      get(urlPathEqualTo("/drug-testing/ids-in-range"))
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(jsonMapper.writeValueAsString(content)),
+        ),
     )
   }
 
@@ -66,10 +67,14 @@ class DrugTestingNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
 
-fun randomTestingProgramResponse(rtpId: Long = 12345): RandomTestingProgramResponse = RandomTestingProgramResponse(
+fun randomTestingProgramResponse(
+  rtpId: Long = 12345,
+  prisonId: String = "MDI",
+  month: LocalDate = LocalDate.parse("2025-07-01"),
+): RandomTestingProgramResponse = RandomTestingProgramResponse(
   rtpId = rtpId,
-  caseloadId = "MDI",
-  rtpDate = LocalDate.parse("2025-07-01"),
+  caseloadId = prisonId,
+  rtpDate = month,
   createdByUsername = "billy",
   createdDateTime = LocalDateTime.parse("2026-02-01T10:20:30"),
   mainPercentage = 10,

@@ -16,7 +16,7 @@ class DrugTestingNomisApiService(@Qualifier("nomisApiWebClient") private val web
     .getRandomTestingProgramWithOffenders(rtpId = rtpId)
     .awaitSingle()
 
-  suspend fun getDrugTestingIdRanges(pageSize: Int? = 1000, filter: DrugTestingMigrationFilter) = api.getDrugTestingIdRanges(pageSize = pageSize, includedPrisonIds = filter.includedPrisonIds, excludedPrisonIds = filter.excludedPrisonIds)
+  suspend fun getDrugTestingIdRanges(pageSize: Long = 1000, filter: DrugTestingMigrationFilter) = api.getDrugTestingIdRanges(pageSize = pageSize.toInt(), includedPrisonIds = filter.includedPrisonIds, excludedPrisonIds = filter.excludedPrisonIds)
     .awaitSingle()
 
   suspend fun getDrugTestingIdsInRange(idRange: IdRange, filter: DrugTestingMigrationFilter) = api.getDrugTestingIdsInRange(fromId = idRange.fromId, toId = idRange.toId, includedPrisonIds = filter.includedPrisonIds, excludedPrisonIds = filter.excludedPrisonIds)

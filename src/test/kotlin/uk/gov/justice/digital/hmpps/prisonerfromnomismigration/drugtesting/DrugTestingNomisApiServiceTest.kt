@@ -109,11 +109,11 @@ class DrugTestingNomisApiServiceTest(
 
     @Test
     fun `will return id ranges`() = runTest {
-      mockServer.stubGetDrugTestingIdRanges(response = listOf(IdRange(1, 10), IdRange(11, 20)))
+      mockServer.stubGetDrugTestingIdRanges(pageSize = 10, totalElements = 20)
 
-      val response = apiService.getDrugTestingIdRanges(pageSize = 100, filter = filter)
+      val response = apiService.getDrugTestingIdRanges(pageSize = 10, filter = filter)
 
-      assertThat(response).containsExactly(IdRange(1, 10), IdRange(11, 20))
+      assertThat(response).containsExactly(IdRange(0, 10), IdRange(10, 20))
     }
   }
 
@@ -147,11 +147,11 @@ class DrugTestingNomisApiServiceTest(
 
     @Test
     fun `will return ids in range`() = runTest {
-      mockServer.stubGetDrugTestingIdsInRange(response = listOf(2, 3, 4))
+      mockServer.stubGetDrugTestingIdsInRange(fromId = 1, toId = 5)
 
-      val response = apiService.getDrugTestingIdsInRange(idRange = IdRange(1, 10), filter = filter)
+      val response = apiService.getDrugTestingIdsInRange(idRange = IdRange(1, 5), filter = filter)
 
-      assertThat(response).containsExactly(2, 3, 4)
+      assertThat(response).containsExactly(1, 2, 3, 4)
     }
   }
 }

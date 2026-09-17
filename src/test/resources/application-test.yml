@@ -31,6 +31,7 @@ api.base.url:
   property: http://localhost:8107
   movements-transfer: http://localhost:8108
   agencyregisters: http://localhost:8109
+  drug.testing: http://localhost:8110
 
 visits:
   page:

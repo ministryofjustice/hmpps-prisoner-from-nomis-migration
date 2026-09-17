@@ -5,7 +5,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.Activi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.AllocationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonMappingService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.ReligionsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonBalanceMappingApiService
@@ -24,7 +23,6 @@ class GeneralMappingService(
   private val visitMappingService: VisitMappingService,
   private val activityMappingService: ActivitiesMappingService,
   private val allocationsMappingService: AllocationsMappingService,
-  private val religionsMappingService: ReligionsMappingService,
   private val corePersonMappingService: CorePersonMappingService,
   private val csraMappingApiService: CsraMappingApiService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
@@ -46,6 +44,7 @@ class GeneralMappingService(
     MigrationType.COURT_SCHEDULER -> courtSchedulerMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
     MigrationType.CSRA -> csraMappingApiService.getMigrationCount(migrationId)
+    MigrationType.DRUG_TESTING -> -1 // No implementation necessary
     MigrationType.EXTERNAL_MOVEMENTS -> tapMappingApiService.getMigrationCount(migrationId)
     MigrationType.OFFICIAL_VISITS -> officialVisitsMappingService.getMigrationCount(migrationId)
     MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
