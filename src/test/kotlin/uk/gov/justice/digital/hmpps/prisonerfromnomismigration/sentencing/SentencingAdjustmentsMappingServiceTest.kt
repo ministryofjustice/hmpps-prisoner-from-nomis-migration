@@ -33,7 +33,7 @@ class SentencingAdjustmentsMappingServiceTest {
   @Nested
   inner class CreateNomisSentencingAdjustmentSynchronisationMapping {
     @Test
-    internal fun `will pass oath2 token to service`() {
+    internal fun `will pass oauth2 token to service`() {
       mappingApi.stubMappingCreate(ADJUSTMENTS_CREATE_MAPPING_URL)
 
       runBlocking {
@@ -84,7 +84,7 @@ class SentencingAdjustmentsMappingServiceTest {
   @Nested
   inner class DeleteNomisSentencingAdjustmentMapping {
     @Test
-    internal fun `will pass oath2 token to service`() {
+    internal fun `will pass oauth2 token to service`() {
       mappingApi.stubSentenceAdjustmentMappingDelete(ADJUSTMENT_ID)
 
       runBlocking {

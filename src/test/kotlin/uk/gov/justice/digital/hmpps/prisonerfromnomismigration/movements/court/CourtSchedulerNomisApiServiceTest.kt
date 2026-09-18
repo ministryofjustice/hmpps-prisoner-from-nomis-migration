@@ -37,7 +37,7 @@ class CourtSchedulerNomisApiServiceTest {
   @Nested
   inner class GetCourtSchedule {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       courtSchedulerNomisApiMockServer.stubGetCourtScheduleOut(offenderNo = "A1234BC", eventId = 1)
 
       apiService.getCourtScheduleOut(offenderNo = "A1234BC", eventId = 1)
@@ -94,7 +94,7 @@ class CourtSchedulerNomisApiServiceTest {
   @Nested
   inner class GetCourtMovementOut {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       courtSchedulerNomisApiMockServer.stubGetCourtMovementOut(offenderNo = "A1234BC", bookingId = 12345L, movementSeq = 3)
 
       apiService.getCourtMovementOut(offenderNo = "A1234BC", bookingId = 12345L, movementSequence = 3)
@@ -151,7 +151,7 @@ class CourtSchedulerNomisApiServiceTest {
   @Nested
   inner class GetCourtMovementIn {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       courtSchedulerNomisApiMockServer.stubGetCourtMovementIn(offenderNo = "A1234BC", bookingId = 12345L, movementSeq = 3)
 
       apiService.getCourtMovementIn(offenderNo = "A1234BC", bookingId = 12345L, movementSequence = 3)
@@ -208,7 +208,7 @@ class CourtSchedulerNomisApiServiceTest {
   @Nested
   inner class GetOffenderCourtMovementsTest {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       courtSchedulerNomisApiMockServer.stubGetOffenderCourtMovements(offenderNo = "A1234BC")
 
       apiService.getOffenderCourtMovementsOrNull(offenderNo = "A1234BC")
@@ -266,7 +266,7 @@ class CourtSchedulerNomisApiServiceTest {
   @Nested
   inner class GetBookingCourtMovementsTest {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       courtSchedulerNomisApiMockServer.stubGetBookingCourtMovements(bookingId = 12345L)
 
       apiService.getBookingCourtMovementsOrNull(bookingId = 12345L)

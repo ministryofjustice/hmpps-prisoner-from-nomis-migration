@@ -36,7 +36,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class MigrateVisitConfiguration {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubMigrateVisitConfiguration()
 
       apiService.migrateVisitConfiguration(migrateVisitConfigRequest())
@@ -62,7 +62,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class CreateTimeSlot {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubCreateTimeSlot()
 
       apiService.createTimeSlot(syncCreateTimeSlotRequest())
@@ -88,7 +88,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class UpdateTimeSlot {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubUpdateTimeSlot(123)
 
       apiService.updateTimeSlot(prisonTimeSlotId = 123, syncUpdateTimeSlotRequest())
@@ -114,7 +114,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class DeleteTimeSlot {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubDeleteTimeSlot(123)
 
       apiService.deleteTimeSlot(prisonTimeSlotId = 123)
@@ -140,7 +140,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class CreateVisitSlot {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubCreateVisitSlot()
 
       apiService.createVisitSlot(syncCreateVisitSlotRequest())
@@ -166,7 +166,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class UpdateVisitSlot {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubUpdateVisitSlot(123)
 
       apiService.updateVisitSlot(prisonVisitSlotId = 123, syncUpdateVisitSlotRequest())
@@ -192,7 +192,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class DeleteVisitSlot {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubDeleteVisitSlot(123)
 
       apiService.deleteVisitSlot(prisonVisitSlotId = 123)
@@ -218,7 +218,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class MigrateVisit {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubMigrateVisit()
 
       apiService.migrateVisit(migrateVisitRequest())
@@ -244,7 +244,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class RepairVisits {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubRepairVisits(offenderNo = "A1234KT")
 
       apiService.repairVisits("A1234KT", RepairPrisonerVisitsRequest(emptyList()))
@@ -270,7 +270,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class CreateVisit {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubCreateVisit()
 
       apiService.createVisit(syncCreateOfficialVisitRequest())
@@ -296,7 +296,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class UpdateVisit {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubUpdateVisit(123)
 
       apiService.updateVisit(123, syncUpdateOfficialVisitRequest())
@@ -322,7 +322,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class DeleteVisit {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubDeleteVisit(123)
 
       apiService.deleteVisit(123)
@@ -348,7 +348,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class CreateVisitor {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubCreateVisitor(123)
 
       apiService.createVisitor(officialVisitId = 123, syncCreateOfficialVisitorRequest())
@@ -374,7 +374,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class UpdateVisitor {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubUpdateVisitor(123, 987)
 
       apiService.updateVisitor(
@@ -408,7 +408,7 @@ class OfficialVisitsDpsApiServiceTest {
   @Nested
   inner class DeleteVisitor {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       dpsOfficialVisitsServer.stubDeleteVisitor(123, 987)
 
       apiService.deleteVisitor(123, 987)

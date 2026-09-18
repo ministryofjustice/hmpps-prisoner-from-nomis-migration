@@ -29,7 +29,7 @@ class StaffNomisApiServiceTest {
   @Nested
   inner class GetStaffDetailById {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetStaffDetailsById(nomisStaffId = 10000)
 
       apiService.getStaffDetailsById(staffId = 10000)
@@ -123,7 +123,7 @@ class StaffNomisApiServiceTest {
   @Nested
   inner class GetStaffDetailByUsername {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetStaffDetailsByUsername(username = "FRED_SMITH")
 
       apiService.getStaffDetailsByUsername("FRED_SMITH")
@@ -217,7 +217,7 @@ class StaffNomisApiServiceTest {
   @Nested
   inner class GetStaffIdsFromId {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       mockServer.stubGetStaffIdsFromId(
         content = listOf(
           StaffIdResponse(
@@ -264,7 +264,7 @@ class StaffNomisApiServiceTest {
   @Nested
   inner class GetStaffIds {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       mockServer.stubGetStaffIds(
         pageNumber = 0,
         pageSize = 20,

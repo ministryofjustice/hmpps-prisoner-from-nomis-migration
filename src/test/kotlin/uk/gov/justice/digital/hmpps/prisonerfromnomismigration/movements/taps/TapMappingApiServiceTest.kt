@@ -48,7 +48,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class CreateMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubCreateTapPrisonerMappings()
 
       apiService.createMapping(
@@ -96,7 +96,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class CreateApplicationMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubCreateTapApplicationMapping()
 
       apiService.createTapApplicationMapping(
@@ -178,7 +178,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class GetApplicationMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubGetTapApplicationMapping()
 
       apiService.getTapApplicationMappingOrNull(1L)
@@ -209,7 +209,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class DeleteApplicationMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubDeleteTapApplicationMapping()
 
       apiService.deleteTapApplicationMapping(1L)
@@ -232,7 +232,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class CreateScheduledMovementMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubCreateTapScheduleMapping()
 
       apiService.createTapScheduleMapping(
@@ -325,7 +325,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class UpdateScheduledMovementMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubUpdateTapScheduleMapping()
 
       apiService.updateTapScheduleMapping(
@@ -373,7 +373,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class GetScheduledMovementMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubGetTapScheduleMapping()
 
       apiService.getTapScheduleMappingOrNull(1L)
@@ -404,7 +404,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class DeleteScheduledMovementMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubDeleteTapScheduleMapping()
 
       apiService.deleteTapScheduleMapping(1L)
@@ -427,7 +427,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class CreateTapMovementMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubCreateTapMovementMapping()
 
       apiService.createTapMovementMapping(tapMovementMapping())
@@ -507,7 +507,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class UpdateTapMovementMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubUpdateTapMovementMapping()
 
       apiService.updateTapMovementMapping(tapMovementMapping())
@@ -549,7 +549,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class GetTapMovementMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubGetTapMovementMapping()
 
       apiService.getTapMovementMappingOrNull(12345L, 1)
@@ -580,7 +580,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class DeleteTapMovementMappings {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubDeleteTapMovementMapping()
 
       apiService.deleteTapMovementMapping(12345L, 1)
@@ -603,7 +603,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class FindTapScheduleMappingsForAddresses {
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubFindTapScheduleMappingsForAddressForPrisoners()
 
       apiService.findTapScheduleMappingsForAddress(123L)
@@ -649,7 +649,7 @@ class TapMappingApiServiceTest {
     )
 
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubGetMoveBookingMappings(12345L, response)
 
       apiService.getTapMoveBookingMappings(12345L)
@@ -682,7 +682,7 @@ class TapMappingApiServiceTest {
   @Nested
   inner class MoveBookingMappings {
     @Test
-    fun `should pass oath2 token to service`() = runTest {
+    fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubMoveBookingMappings()
 
       apiService.moveTapBookingMappings(12345L, "A1234AA", "B1234BB")
@@ -710,7 +710,7 @@ class TapMappingApiServiceTest {
     )
 
     @Test
-    internal fun `should pass oath2 token to service`() = runTest {
+    internal fun `should pass oauth2 token to service`() = runTest {
       mappingApi.stubGetTapPrisonerMappingIds()
 
       apiService.getTapPrisonerMappingIds("A1234BC")

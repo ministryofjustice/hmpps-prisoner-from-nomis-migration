@@ -37,7 +37,7 @@ class PrisonerRestrictionMappingApiServiceTest {
   @Nested
   inner class GetByNomisPrisonerRestrictionIdOrNull {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisPrisonerRestrictionIdOrNull(nomisRestrictionId = 1234567)
 
       apiService.getByNomisPrisonerRestrictionIdOrNull(nomisPrisonerRestrictionId = 1234567)
@@ -89,7 +89,7 @@ class PrisonerRestrictionMappingApiServiceTest {
   @Nested
   inner class GetByNomisPrisonerRestrictionId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisPrisonerRestrictionId(nomisPrisonerRestrictionId = 1234567)
 
       apiService.getByNomisPrisonerRestrictionId(nomisPrisonerRestrictionId = 1234567)
@@ -114,7 +114,7 @@ class PrisonerRestrictionMappingApiServiceTest {
   @Nested
   inner class DeleteByNomisPrisonerRestrictionId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubDeleteByNomisPrisonerRestrictionId(nomisPrisonerRestrictionId = 1234567)
 
       apiService.deleteByNomisPrisonerRestrictionId(nomisPrisonerRestrictionId = 1234567)
@@ -139,7 +139,7 @@ class PrisonerRestrictionMappingApiServiceTest {
   @Nested
   inner class CreateMapping {
     @Test
-    internal fun `will pass oath2 token to migrate endpoint`() = runTest {
+    internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
       mockServer.stubCreateMapping()
 
       apiService.createMapping(
@@ -226,7 +226,7 @@ class PrisonerRestrictionMappingApiServiceTest {
   @Nested
   inner class Replace {
     @Test
-    internal fun `will pass oath2 token to replace endpoint`() = runTest {
+    internal fun `will pass oauth2 token to replace endpoint`() = runTest {
       mockServer.stubReplacePrisonerRestrictions("A1234KT")
 
       apiService.replace(
@@ -246,7 +246,7 @@ class PrisonerRestrictionMappingApiServiceTest {
   @Nested
   inner class ReplaceAfterMerge {
     @Test
-    internal fun `will pass oath2 token to replace after merge endpoint`() = runTest {
+    internal fun `will pass oauth2 token to replace after merge endpoint`() = runTest {
       mockServer.stubReplaceAfterMergePrisonerRestrictions("A1234KT", "B2345KT")
 
       apiService.replaceAfterMerge(

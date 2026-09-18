@@ -35,7 +35,7 @@ class CourtSchedulerDpsApiServiceTest {
   inner class SyncCourtEvent {
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       dpsCourtSchedulerServer.stubSyncCourtEvent("A1234BC")
 
       apiService.syncCourtEvent("A1234BC", syncCourtEvent())
@@ -84,7 +84,7 @@ class CourtSchedulerDpsApiServiceTest {
   inner class DeleteCourtEvent {
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       val courtAppearanceId = UUID.randomUUID()
       dpsCourtSchedulerServer.stubDeleteCourtEvent(courtAppearanceId)
 
@@ -123,7 +123,7 @@ class CourtSchedulerDpsApiServiceTest {
   inner class SyncCourtMovement {
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       dpsCourtSchedulerServer.stubSyncCourtMovement("A1234BC")
 
       apiService.syncCourtMovement("A1234BC", syncCourtMovement())
@@ -173,7 +173,7 @@ class CourtSchedulerDpsApiServiceTest {
   inner class DeleteCourtMovement {
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       val courtMovementId = UUID.randomUUID()
       dpsCourtSchedulerServer.stubDeleteCourtMovement(courtMovementId)
 
@@ -213,7 +213,7 @@ class CourtSchedulerDpsApiServiceTest {
     val request = ResyncCourtEvents(listOf(), listOf())
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       dpsCourtSchedulerServer.stubResyncPrisonerCourtAppearances()
 
       apiService.resyncPrisoner("A1234BC", request)
@@ -257,7 +257,7 @@ class CourtSchedulerDpsApiServiceTest {
     val request = moveBookingRequest()
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       dpsCourtSchedulerServer.stubMoveBooking()
 
       apiService.moveBooking(request)

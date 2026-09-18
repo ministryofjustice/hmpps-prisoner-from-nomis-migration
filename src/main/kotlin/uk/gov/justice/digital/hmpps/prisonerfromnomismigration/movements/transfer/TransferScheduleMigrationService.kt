@@ -54,8 +54,8 @@ class TransferScheduleMigrationService(
   migrationType = TRANSFER_MOVEMENTS,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
-  completeCheckCount = completeCheckRetrySeconds,
-  completeCheckRetrySeconds = completeCheckCount,
+  completeCheckCount = completeCheckCount,
+  completeCheckRetrySeconds = completeCheckRetrySeconds,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
   jsonMapper = jsonMapper,
 ) {

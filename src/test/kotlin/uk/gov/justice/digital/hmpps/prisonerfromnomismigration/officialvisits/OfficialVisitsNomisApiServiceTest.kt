@@ -29,7 +29,7 @@ class OfficialVisitsNomisApiServiceTest {
   @Nested
   inner class GetOfficialVisitIds {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       mockServer.stubGetOfficialVisitIds(
         pageNumber = 0,
         pageSize = 20,
@@ -116,7 +116,7 @@ class OfficialVisitsNomisApiServiceTest {
   @Nested
   inner class GetOfficialVisitIdsByLastId {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       mockServer.stubGetOfficialVisitIdsByLastId(
         content = listOf(
           VisitIdResponse(
@@ -173,7 +173,7 @@ class OfficialVisitsNomisApiServiceTest {
   @Nested
   inner class GetOfficialVisit {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       mockServer.stubGetOfficialVisit(
         visitId = 1234,
       )
@@ -206,7 +206,7 @@ class OfficialVisitsNomisApiServiceTest {
   @Nested
   inner class GetOfficialVisitsForPrisoner {
     @Test
-    internal fun `will pass oath2 token to endpoint`() = runTest {
+    internal fun `will pass oauth2 token to endpoint`() = runTest {
       mockServer.stubGetOfficialVisitsForPrisoner(
         offenderNo = "A1234KT",
       )

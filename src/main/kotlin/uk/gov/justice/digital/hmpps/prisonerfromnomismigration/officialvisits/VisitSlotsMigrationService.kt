@@ -42,8 +42,8 @@ class VisitSlotsMigrationService(
   migrationType = MigrationType.VISIT_SLOTS,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
-  completeCheckCount = completeCheckRetrySeconds,
-  completeCheckRetrySeconds = completeCheckCount,
+  completeCheckCount = completeCheckCount,
+  completeCheckRetrySeconds = completeCheckRetrySeconds,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
   jsonMapper = jsonMapper,
 ) {

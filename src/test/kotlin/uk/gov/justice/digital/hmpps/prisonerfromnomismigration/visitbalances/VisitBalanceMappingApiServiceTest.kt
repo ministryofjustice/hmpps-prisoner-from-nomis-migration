@@ -35,7 +35,7 @@ class VisitBalanceMappingApiServiceTest {
     @Nested
     inner class CreateMapping {
       @Test
-      internal fun `will pass oath2 token to migrate endpoint`() = runTest {
+      internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
         mockServer.stubCreateVisitBalanceAdjustmentMapping()
 
         apiService.createVisitBalanceAdjustmentMapping(
@@ -115,7 +115,7 @@ class VisitBalanceMappingApiServiceTest {
     @Nested
     inner class GetByNomisVisitBalanceAdjustmentIdOrNull {
       @Test
-      internal fun `will pass oath2 token to service`() = runTest {
+      internal fun `will pass oauth2 token to service`() = runTest {
         mockServer.stubGetVisitBalanceAdjustmentByNomisIdOrNull(nomisVisitBalanceAdjustmentId = 12345L)
 
         apiService.getByNomisVisitBalanceAdjustmentIdOrNull(nomisVisitBalanceAdjustmentId = 12345L)
@@ -166,7 +166,7 @@ class VisitBalanceMappingApiServiceTest {
     @Nested
     inner class GetByNomisVisitBalanceId {
       @Test
-      internal fun `will pass oath2 token to service`() = runTest {
+      internal fun `will pass oauth2 token to service`() = runTest {
         mockServer.stubGetVisitBalanceAdjustmentByNomisIdOrNull(nomisVisitBalanceAdjustmentId = 12345L)
 
         apiService.getByNomisVisitBalanceAdjustmentIdOrNull(nomisVisitBalanceAdjustmentId = 12345L)

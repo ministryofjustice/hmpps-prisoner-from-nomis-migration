@@ -27,7 +27,7 @@ class OrganisationsNomisApiServiceTest {
   @Nested
   inner class GetCorporateOrganisation {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetCorporateOrganisation(corporateId = 1234567)
 
       apiService.getCorporateOrganisation(nomisCorporateId = 1234567)

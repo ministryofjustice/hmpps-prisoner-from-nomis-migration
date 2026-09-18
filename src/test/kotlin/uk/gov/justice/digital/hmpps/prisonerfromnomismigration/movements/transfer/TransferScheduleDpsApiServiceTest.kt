@@ -86,7 +86,7 @@ class TransferScheduleDpsApiServiceTest {
   inner class DeleteTransferSchedule {
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       val dpsId = UUID.randomUUID()
       dpsTransferSchedulerServer.stubDeleteTransferSchedule(dpsId)
 
@@ -175,7 +175,7 @@ class TransferScheduleDpsApiServiceTest {
   inner class DeleteTransferMovement {
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       val dpsId = UUID.randomUUID()
       dpsTransferSchedulerServer.stubDeleteTransferMovement(dpsId)
 
@@ -215,7 +215,7 @@ class TransferScheduleDpsApiServiceTest {
     val request = ResyncTransfersRequest(listOf(), listOf())
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       dpsTransferSchedulerServer.stubResyncPrisonerTransfers()
 
       apiService.resyncPrisoner("A1234BC", request)
@@ -259,7 +259,7 @@ class TransferScheduleDpsApiServiceTest {
     val request = moveBookingRequest()
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       dpsTransferSchedulerServer.stubMoveBooking()
 
       apiService.moveBooking(request)

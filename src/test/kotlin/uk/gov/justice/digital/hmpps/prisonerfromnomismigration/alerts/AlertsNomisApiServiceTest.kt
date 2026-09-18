@@ -36,7 +36,7 @@ class AlertsNomisApiServiceTest {
   @Nested
   inner class GetAlert {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       alertsNomisApiMockServer.stubGetAlert(bookingId = 1234567, alertSequence = 3)
 
       apiService.getAlert(bookingId = 1234567, alertSequence = 3)
@@ -107,7 +107,7 @@ class AlertsNomisApiServiceTest {
   @Nested
   inner class GetPrisonerDetails {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       alertsNomisApiMockServer.stubGetPrisonerDetails(offenderNo = "A1234TT")
 
       apiService.getPrisonerDetails("A1234TT")
