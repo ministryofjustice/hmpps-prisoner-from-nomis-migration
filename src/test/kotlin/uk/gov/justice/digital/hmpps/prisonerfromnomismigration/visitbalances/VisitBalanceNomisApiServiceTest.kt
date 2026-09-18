@@ -28,7 +28,7 @@ class VisitBalanceNomisApiServiceTest {
   @Nested
   inner class GetVisitBalanceDetail {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetVisitBalanceDetail(nomisVisitBalanceId = 10000)
 
       apiService.getVisitBalanceDetail(visitBalanceId = 10000)
@@ -65,7 +65,7 @@ class VisitBalanceNomisApiServiceTest {
   @Nested
   inner class GetVisitBalanceAdjustment {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetVisitBalanceAdjustment(nomisVisitBalanceAdjustmentId = 10000)
 
       apiService.getVisitBalanceAdjustment(10000)

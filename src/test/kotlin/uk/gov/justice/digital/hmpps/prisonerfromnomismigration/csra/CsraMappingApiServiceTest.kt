@@ -51,7 +51,7 @@ class CsraMappingApiServiceTest {
   @Nested
   inner class MigrationPostMappings {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       csraMappingApiMockServer.stubPostMappings(OFFENDER_NUMBER)
 
       migrationApiService.createMappings(
@@ -195,7 +195,7 @@ class CsraMappingApiServiceTest {
     val dpsCsraId1 = "a04f7a8d-61aa-400c-9395-f4dc62f36ab0"
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       csraMappingApiMockServer.stubPostMapping()
 
       syncApiService.createMapping(

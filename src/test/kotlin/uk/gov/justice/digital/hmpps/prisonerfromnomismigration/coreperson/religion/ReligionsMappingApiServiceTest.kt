@@ -44,7 +44,7 @@ class ReligionsMappingApiServiceTest {
   @Nested
   inner class CreateMappingsForMigration {
     @Test
-    fun `will pass oath2 token to migrate endpoint`() = runTest {
+    fun `will pass oauth2 token to migrate endpoint`() = runTest {
       mockServer.stubCreateMappingsForMigration()
 
       apiService.createMapping(
@@ -130,7 +130,7 @@ class ReligionsMappingApiServiceTest {
     val nomisPrisonNumber = "A1234BC"
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetReligionsByNomisPrisonNumber(
         nomisPrisonNumber = nomisPrisonNumber,
         mapping = ReligionsMappingDto(
@@ -173,7 +173,7 @@ class ReligionsMappingApiServiceTest {
   @Nested
   inner class CreateReligionMapping {
     @Test
-    fun `will pass oath2 token to create endpoint`() = runTest {
+    fun `will pass oauth2 token to create endpoint`() = runTest {
       mockServer.stubCreateReligionMapping()
 
       apiService.createReligionMapping(
@@ -257,7 +257,7 @@ class ReligionsMappingApiServiceTest {
     val nomisId = 123456L
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetReligionByNomisId(
         nomisId = nomisId,
         mapping = ReligionMappingDto(
@@ -304,7 +304,7 @@ class ReligionsMappingApiServiceTest {
     val nomisId = 123456L
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubDeleteReligionByNomisId(
         nomisId = nomisId,
       )

@@ -26,7 +26,7 @@ class SentencingAdjustmentsNomisApiServiceTest {
   @Nested
   inner class GetAllByBookingId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       sentencingAdjustmentsNomisApi.stubGetAllByBookingId(1234567)
 
       apiService.getAllByBookingId(bookingId = 1234567)
@@ -62,7 +62,7 @@ class SentencingAdjustmentsNomisApiServiceTest {
   @Nested
   inner class GetSentenceAdjustment {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       sentencingAdjustmentsNomisApi.stubGetSentenceAdjustment(1234567)
 
       apiService.getSentenceAdjustment(nomisSentenceAdjustmentId = 1234567)
@@ -87,7 +87,7 @@ class SentencingAdjustmentsNomisApiServiceTest {
   @Nested
   inner class GetKeyDateAdjustment {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       sentencingAdjustmentsNomisApi.stubGetKeyDateAdjustment(1234567)
 
       apiService.getKeyDateAdjustment(nomisKeyDateAdjustmentId = 1234567)

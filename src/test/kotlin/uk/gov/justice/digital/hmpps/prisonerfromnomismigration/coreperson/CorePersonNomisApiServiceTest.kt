@@ -30,7 +30,7 @@ class CorePersonNomisApiServiceTest {
   @Nested
   inner class GetPerson {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetCorePerson(prisonNumber = "A12345BC")
 
       apiService.getCorePerson(nomisPrisonNumber = "A12345BC")

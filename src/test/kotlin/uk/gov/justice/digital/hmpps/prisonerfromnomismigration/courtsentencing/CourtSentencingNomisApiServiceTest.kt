@@ -37,7 +37,7 @@ class CourtSentencingNomisApiServiceTest {
   @Nested
   inner class GetCourtCase {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       courtSentencingNomisApiMockServer.stubGetCourtCase(offenderNo = OFFENDER_NO, courtCaseId = NOMIS_COURT_CASE_ID)
 
       apiService.getCourtCase(offenderNo = OFFENDER_NO, courtCaseId = NOMIS_COURT_CASE_ID)
@@ -91,7 +91,7 @@ class CourtSentencingNomisApiServiceTest {
   @Nested
   inner class GetCourtCasesChangedByMerge {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       courtSentencingNomisApiMockServer.stubGetCourtCasesChangedByMerge(offenderNo = OFFENDER_NO)
 
       apiService.getCourtCasesChangedByMerge(offenderNo = OFFENDER_NO)
@@ -125,7 +125,7 @@ class CourtSentencingNomisApiServiceTest {
   @Nested
   inner class GetCourtCases {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       courtSentencingNomisApiMockServer.stubGetCourtCases(offenderNo = OFFENDER_NO)
 
       apiService.getCourtCases(offenderNo = OFFENDER_NO, courtCaseIds = listOf(1L, 2L, 3L))

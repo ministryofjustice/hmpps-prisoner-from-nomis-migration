@@ -38,7 +38,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class CreateOrganisation {
     @Test
-    internal fun `will pass oath2 token to organisation endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation endpoint`() = runTest {
       dpsOrganisationsServer.stubCreateOrganisation()
 
       apiService.createOrganisation(syncCreateOrganisationRequest())
@@ -64,7 +64,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class UpdateOrganisation {
     @Test
-    internal fun `will pass oath2 token to organisation endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation endpoint`() = runTest {
       dpsOrganisationsServer.stubUpdateOrganisation(12345)
 
       apiService.updateOrganisation(12345, syncUpdateOrganisationRequest())
@@ -90,7 +90,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class DeleteOrganisation {
     @Test
-    internal fun `will pass oath2 token to organisation endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation endpoint`() = runTest {
       dpsOrganisationsServer.stubDeleteOrganisation(12345)
 
       apiService.deleteOrganisation(12345)
@@ -116,7 +116,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class CreateOrganisationAddress {
     @Test
-    internal fun `will pass oath2 token to organisation address endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation address endpoint`() = runTest {
       dpsOrganisationsServer.stubCreateOrganisationAddress()
 
       apiService.createOrganisationAddress(syncCreateAddressRequest())
@@ -142,7 +142,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class UpdateOrganisationAddress {
     @Test
-    internal fun `will pass oath2 token to organisation-address endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation-address endpoint`() = runTest {
       dpsOrganisationsServer.stubUpdateOrganisationAddress(12345)
 
       apiService.updateOrganisationAddress(12345, syncUpdateAddressRequest())
@@ -168,7 +168,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class DeleteOrganisationAddress {
     @Test
-    internal fun `will pass oath2 token to organisation-address endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation-address endpoint`() = runTest {
       dpsOrganisationsServer.stubDeleteOrganisationAddress(12345)
 
       apiService.deleteOrganisationAddress(12345)
@@ -194,7 +194,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class CreateOrganisationPhone {
     @Test
-    internal fun `will pass oath2 token to organisation phone endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation phone endpoint`() = runTest {
       dpsOrganisationsServer.stubCreateOrganisationPhone()
 
       apiService.createOrganisationPhone(syncCreatePhoneRequest())
@@ -220,7 +220,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class UpdateOrganisationPhone {
     @Test
-    internal fun `will pass oath2 token to organisation-phone endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation-phone endpoint`() = runTest {
       dpsOrganisationsServer.stubUpdateOrganisationPhone(12345)
 
       apiService.updateOrganisationPhone(12345, syncUpdatePhoneRequest())
@@ -246,7 +246,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class DeleteOrganisationPhone {
     @Test
-    internal fun `will pass oath2 token to organisation phone endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation phone endpoint`() = runTest {
       dpsOrganisationsServer.stubDeleteOrganisationPhone(12345)
 
       apiService.deleteOrganisationPhone(12345)
@@ -272,7 +272,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class CreateOrganisationAddressPhone {
     @Test
-    internal fun `will pass oath2 token to organisation address phone endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation address phone endpoint`() = runTest {
       dpsOrganisationsServer.stubCreateOrganisationAddressPhone()
 
       apiService.createOrganisationAddressPhone(syncCreateOrganisationAddressPhoneRequest())
@@ -298,7 +298,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class UpdateOrganisationAddressPhone {
     @Test
-    internal fun `will pass oath2 token to organisation address phone endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation address phone endpoint`() = runTest {
       dpsOrganisationsServer.stubUpdateOrganisationAddressPhone(12345)
 
       apiService.updateOrganisationAddressPhone(12345, syncUpdateAddressPhoneRequest())
@@ -324,7 +324,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class DeleteOrganisationAddressPhone {
     @Test
-    internal fun `will pass oath2 token to organisation address phone endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation address phone endpoint`() = runTest {
       dpsOrganisationsServer.stubDeleteOrganisationAddressPhone(12345)
 
       apiService.deleteOrganisationAddressPhone(12345)
@@ -350,7 +350,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class CreateOrganisationWebAddress {
     @Test
-    internal fun `will pass oath2 token to organisation web address endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation web address endpoint`() = runTest {
       dpsOrganisationsServer.stubCreateOrganisationWebAddress()
 
       apiService.createOrganisationWebAddress(syncCreateWebRequest())
@@ -376,7 +376,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class UpdateOrganisationWebAddress {
     @Test
-    internal fun `will pass oath2 token to organisation web address endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation web address endpoint`() = runTest {
       dpsOrganisationsServer.stubUpdateOrganisationWebAddress(12345)
 
       apiService.updateOrganisationWebAddress(12345, syncUpdateWebRequest())
@@ -402,7 +402,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class DeleteOrganisationWebAddress {
     @Test
-    internal fun `will pass oath2 token to organisation web address endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation web address endpoint`() = runTest {
       dpsOrganisationsServer.stubDeleteOrganisationWebAddress(12345)
 
       apiService.deleteOrganisationWebAddress(12345)
@@ -428,7 +428,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class CreateOrganisationEmail {
     @Test
-    internal fun `will pass oath2 token to organisation email endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation email endpoint`() = runTest {
       dpsOrganisationsServer.stubCreateOrganisationEmail()
 
       apiService.createOrganisationEmail(syncCreateEmailRequest())
@@ -454,7 +454,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class UpdateOrganisationEmail {
     @Test
-    internal fun `will pass oath2 token to organisation-email endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation-email endpoint`() = runTest {
       dpsOrganisationsServer.stubUpdateOrganisationEmail(12345)
 
       apiService.updateOrganisationEmail(12345, syncUpdateEmailRequest())
@@ -480,7 +480,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class DeleteOrganisationEmail {
     @Test
-    internal fun `will pass oath2 token to organisation email endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation email endpoint`() = runTest {
       dpsOrganisationsServer.stubDeleteOrganisationEmail(12345)
 
       apiService.deleteOrganisationEmail(12345)
@@ -506,7 +506,7 @@ class OrganisationsDpsApiServiceTest {
   @Nested
   inner class UpdateOrganisationTypes {
     @Test
-    internal fun `will pass oath2 token to organisation-types endpoint`() = runTest {
+    internal fun `will pass oauth2 token to organisation-types endpoint`() = runTest {
       dpsOrganisationsServer.stubUpdateOrganisationTypes(12345)
 
       apiService.updateOrganisationTypes(12345, syncUpdateTypesRequest())

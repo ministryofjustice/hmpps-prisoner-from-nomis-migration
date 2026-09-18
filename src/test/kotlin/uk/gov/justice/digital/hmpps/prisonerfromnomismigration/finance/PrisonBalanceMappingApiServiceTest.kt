@@ -48,7 +48,7 @@ class PrisonBalanceMappingApiServiceTest {
     @Nested
     inner class GetByNomisIdOrNull {
       @Test
-      internal fun `will pass oath2 token to service`() = runTest {
+      internal fun `will pass oauth2 token to service`() = runTest {
         mockServer.stubGetPrisonBalanceByNomisIdOrNull(nomisId = "LEI")
 
         apiService.getByNomisIdOrNull(nomisId = "LEI")
@@ -99,7 +99,7 @@ class PrisonBalanceMappingApiServiceTest {
     @Nested
     inner class GetByNomisId {
       @Test
-      internal fun `will pass oath2 token to service`() = runTest {
+      internal fun `will pass oauth2 token to service`() = runTest {
         mockServer.stubGetByNomisId(nomisId = "MDI")
 
         apiService.getByNomisId(nomisId = "MDI")
@@ -197,7 +197,7 @@ class PrisonBalanceMappingApiServiceTest {
     @Nested
     inner class CreateMapping {
       @Test
-      internal fun `will pass oath2 token to migrate endpoint`() = runTest {
+      internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
         mockServer.stubCreateMappingsForMigration()
 
         apiService.createMapping(

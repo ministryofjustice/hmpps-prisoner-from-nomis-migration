@@ -36,7 +36,7 @@ class AlertsDpsApiServiceTest {
   @Nested
   inner class CreateAlert {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       dpsAlertsServer.stubPostAlert("A1234KL")
 
       apiService.createAlert(
@@ -131,7 +131,7 @@ class AlertsDpsApiServiceTest {
   @Nested
   inner class UpdateAlert {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       dpsAlertsServer.stubPutAlert()
 
       apiService.updateAlert(
@@ -211,7 +211,7 @@ class AlertsDpsApiServiceTest {
   @Nested
   inner class DeleteAlert {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       dpsAlertsServer.stubDeleteAlert()
 
       apiService.deleteAlert(
@@ -255,7 +255,7 @@ class AlertsDpsApiServiceTest {
   @Nested
   inner class ResynchroniseAlerts {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       dpsAlertsServer.stubResynchroniseAlerts(offenderNo = "A1234KL")
 
       apiService.resynchroniseAlerts(

@@ -45,7 +45,7 @@ class OfficialVisitsMappingApiServiceTest {
     val errorJavaClass = object : ParameterizedTypeReference<DuplicateErrorResponse<OfficialVisitMigrationMappingDto>>() {}
 
     @Test
-    fun `will pass oath2 token to migrate endpoint`() = runTest {
+    fun `will pass oauth2 token to migrate endpoint`() = runTest {
       mockServer.stubCreateMappingsForMigration()
 
       apiService.createMapping(
@@ -130,7 +130,7 @@ class OfficialVisitsMappingApiServiceTest {
   inner class CreateVisitMapping {
 
     @Test
-    fun `will pass oath2 token to migrate endpoint`() = runTest {
+    fun `will pass oauth2 token to migrate endpoint`() = runTest {
       mockServer.stubCreateVisitMapping()
 
       apiService.createVisitMapping(
@@ -208,7 +208,7 @@ class OfficialVisitsMappingApiServiceTest {
     val nomisVisitId = 12345L
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByVisitNomisIdOrNull(
         nomisVisitId = nomisVisitId,
         mapping = OfficialVisitMappingDto(
@@ -285,7 +285,7 @@ class OfficialVisitsMappingApiServiceTest {
     val nomisVisitId = 12345L
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByVisitNomisId(
         nomisVisitId = nomisVisitId,
         mapping = OfficialVisitMappingDto(
@@ -330,7 +330,7 @@ class OfficialVisitsMappingApiServiceTest {
     val nomisVisitId = 12345L
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubDeleteByVisitNomisId(
         nomisVisitId = nomisVisitId,
       )
@@ -364,7 +364,7 @@ class OfficialVisitsMappingApiServiceTest {
   inner class CreateVisitorMapping {
 
     @Test
-    fun `will pass oath2 token to migrate endpoint`() = runTest {
+    fun `will pass oauth2 token to migrate endpoint`() = runTest {
       mockServer.stubCreateVisitorMapping()
 
       apiService.createVisitorMapping(
@@ -442,7 +442,7 @@ class OfficialVisitsMappingApiServiceTest {
     val nomisVisitorId = 12345L
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubDeleteByVisitorNomisId(
         nomisVisitorId = nomisVisitorId,
       )
@@ -477,7 +477,7 @@ class OfficialVisitsMappingApiServiceTest {
     val nomisVisitorId = 12345L
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByVisitorNomisIdOrNull(
         nomisVisitorId = nomisVisitorId,
         mapping = OfficialVisitorMappingDto(
@@ -554,7 +554,7 @@ class OfficialVisitsMappingApiServiceTest {
     val nomisVisitorId = 12345L
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByVisitorNomisId(
         nomisVisitorId = nomisVisitorId,
         mapping = OfficialVisitorMappingDto(
@@ -599,7 +599,7 @@ class OfficialVisitsMappingApiServiceTest {
     val nomisLocationId = 1234L
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetInternalLocationByNomisId(
         nomisLocationId = nomisLocationId,
       )

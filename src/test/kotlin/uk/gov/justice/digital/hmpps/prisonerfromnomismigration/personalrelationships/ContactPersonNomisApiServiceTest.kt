@@ -32,7 +32,7 @@ class ContactPersonNomisApiServiceTest {
   @Nested
   inner class GetPerson {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetPerson(personId = 1234567)
 
       apiService.getPerson(nomisPersonId = 1234567)
@@ -75,7 +75,7 @@ class ContactPersonNomisApiServiceTest {
   @Nested
   inner class GetContact {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetContact(contactId = 1234567)
 
       apiService.getContact(nomisContactId = 1234567)
@@ -100,7 +100,7 @@ class ContactPersonNomisApiServiceTest {
   @Nested
   inner class GetContactsForPrisoner {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubContactsForPrisoner("A1234KT")
 
       apiService.getContactsForPrisoner("A1234KT")
@@ -127,7 +127,7 @@ class ContactPersonNomisApiServiceTest {
   @Nested
   inner class GetPrisonerDetails {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetPrisonerDetails(offenderNo = "A1234TT")
 
       apiService.getPrisonerDetails("A1234TT")
@@ -162,7 +162,7 @@ class ContactPersonNomisApiServiceTest {
   @Nested
   inner class GetPrisonerRestrictionById {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetPrisonerRestrictionById(restrictionId = 1234567)
 
       apiService.getPrisonerRestrictionById(prisonerRestrictionId = 1234567)
@@ -187,7 +187,7 @@ class ContactPersonNomisApiServiceTest {
   @Nested
   inner class GetPrisonerRestrictions {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetPrisonerRestrictions(offenderNo = "A1234KT")
 
       apiService.getPrisonerRestrictions(offenderNo = "A1234KT")

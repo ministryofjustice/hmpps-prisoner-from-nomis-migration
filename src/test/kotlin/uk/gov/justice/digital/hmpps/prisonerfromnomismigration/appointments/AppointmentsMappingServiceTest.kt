@@ -27,7 +27,7 @@ class AppointmentsMappingServiceTest {
   @Nested
   inner class CreateNomisMapping {
     @Test
-    fun `will pass oath2 token to service`() {
+    fun `will pass oauth2 token to service`() {
       mappingApi.stubMappingCreate(APPOINTMENTS_CREATE_MAPPING_URL)
 
       runBlocking {

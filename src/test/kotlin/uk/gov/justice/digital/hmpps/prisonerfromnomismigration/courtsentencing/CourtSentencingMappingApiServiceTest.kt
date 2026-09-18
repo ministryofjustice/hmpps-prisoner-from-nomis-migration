@@ -49,7 +49,7 @@ class CourtSentencingMappingApiServiceTest {
   @Nested
   inner class GetByNomisId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       courtSentencingMappingApiMockServer.stubGetByNomisId()
 
       apiService.getCourtCaseOrNullByNomisId(courtCaseId = NOMIS_COURT_CASE_ID)
@@ -105,7 +105,7 @@ class CourtSentencingMappingApiServiceTest {
   @Nested
   inner class PostMapping {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       courtSentencingMappingApiMockServer.stubPostMapping()
 
       apiService.createMapping(
@@ -153,7 +153,7 @@ class CourtSentencingMappingApiServiceTest {
   @Nested
   inner class ReplaceOrCreateMappings {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       courtSentencingMappingApiMockServer.stubReplaceOrCreateMappings()
 
       apiService.replaceOrCreateMappings(
@@ -197,7 +197,7 @@ class CourtSentencingMappingApiServiceTest {
   @Nested
   inner class GetAllCourtAppearancesByNomisIds {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       courtSentencingMappingApiMockServer.stubGetAllCourtAppearanceByNomisIds()
 
       apiService.getAllCourtAppearancesByNomisIds(listOf(123, 456))

@@ -38,7 +38,7 @@ class TapNomisApiServiceTest {
   @Nested
   inner class GetOffenderAllTapsTest {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       tapNomisApiMockServer.stubGetAllOffenderTaps(offenderNo = "A1234BC")
 
       apiService.getAllOffenderTapsOrNull(offenderNo = "A1234BC")
@@ -96,7 +96,7 @@ class TapNomisApiServiceTest {
   @Nested
   inner class GetTapApplication {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       tapNomisApiMockServer.stubGetTapApplication(offenderNo = "A1234BC", applicationId = 111)
 
       apiService.getTapApplication(offenderNo = "A1234BC", applicationId = 111)
@@ -155,7 +155,7 @@ class TapNomisApiServiceTest {
   @Nested
   inner class GetTapSchedule {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       tapNomisApiMockServer.stubGetTapScheduleOut(offenderNo = "A1234BC", eventId = 1)
 
       apiService.getTapScheduleOut(offenderNo = "A1234BC", eventId = 1)
@@ -216,7 +216,7 @@ class TapNomisApiServiceTest {
   @Nested
   inner class GetTapMovement {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       tapNomisApiMockServer.stubGetTapMovementOut(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)
 
       apiService.getTapMovementOut(offenderNo = "A1234BC", bookingId = 12345, movementSeq = 1)

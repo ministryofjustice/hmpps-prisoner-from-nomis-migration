@@ -34,7 +34,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class CreateCorporateMapping {
     @Test
-    internal fun `will pass oath2 token to create corporate mapping endpoint`() = runTest {
+    internal fun `will pass oauth2 token to create corporate mapping endpoint`() = runTest {
       mockServer.stubCreateCorporateMapping()
 
       apiService.createOrganisationMapping(
@@ -108,7 +108,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class GetByNomisCorporateIdOrNull {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisCorporateIdOrNull(nomisCorporateId = 1234567)
 
       apiService.getByNomisCorporateIdOrNull(nomisCorporateId = 1234567)
@@ -159,7 +159,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class GetByNomisCorporateId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisCorporateId(nomisCorporateId = 1234567)
 
       apiService.getByNomisCorporateId(nomisCorporateId = 1234567)
@@ -184,7 +184,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class DeleteByNomisCorporateId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubDeleteByNomisCorporateId(nomisCorporateId = 1234567)
 
       apiService.deleteByNomisCorporateId(nomisCorporateId = 1234567)
@@ -209,7 +209,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class CreateAddressMapping {
     @Test
-    internal fun `will pass oath2 token to create address mapping endpoint`() = runTest {
+    internal fun `will pass oauth2 token to create address mapping endpoint`() = runTest {
       mockServer.stubCreateAddressMapping()
 
       apiService.createAddressMapping(
@@ -283,7 +283,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class GetByNomisAddressIdOrNull {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisAddressIdOrNull(nomisAddressId = 1234567)
 
       apiService.getByNomisAddressIdOrNull(nomisAddressId = 1234567)
@@ -334,7 +334,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class GetByNomisAddressId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisAddressId(nomisAddressId = 1234567)
 
       apiService.getByNomisAddressId(nomisAddressId = 1234567)
@@ -359,7 +359,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class DeleteByNomisAddressId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubDeleteByNomisAddressId(nomisAddressId = 1234567)
 
       apiService.deleteByNomisAddressId(nomisAddressId = 1234567)
@@ -384,7 +384,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class CreatePhoneMapping {
     @Test
-    internal fun `will pass oath2 token to create phone mapping endpoint`() = runTest {
+    internal fun `will pass oauth2 token to create phone mapping endpoint`() = runTest {
       mockServer.stubCreatePhoneMapping()
 
       apiService.createPhoneMapping(
@@ -458,7 +458,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class GetByNomisPhoneIdOrNull {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisPhoneIdOrNull(nomisPhoneId = 1234567)
 
       apiService.getByNomisPhoneIdOrNull(nomisPhoneId = 1234567)
@@ -509,7 +509,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class GetByNomisPhoneId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisPhoneId(nomisPhoneId = 1234567)
 
       apiService.getByNomisPhoneId(nomisPhoneId = 1234567)
@@ -534,7 +534,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class DeleteByNomisPhoneId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubDeleteByNomisPhoneId(nomisPhoneId = 1234567)
 
       apiService.deleteByNomisPhoneId(nomisPhoneId = 1234567)
@@ -559,7 +559,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class CreateAddressPhoneMapping {
     @Test
-    internal fun `will pass oath2 token to create phone mapping endpoint`() = runTest {
+    internal fun `will pass oauth2 token to create phone mapping endpoint`() = runTest {
       mockServer.stubCreateAddressPhoneMapping()
 
       apiService.createAddressPhoneMapping(
@@ -633,7 +633,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class GetByNomisAddressPhoneIdOrNull {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisAddressPhoneIdOrNull(nomisPhoneId = 1234567)
 
       apiService.getByNomisAddressPhoneIdOrNull(nomisPhoneId = 1234567)
@@ -684,7 +684,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class GetByNomisAddressPhoneId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisAddressPhoneId(nomisPhoneId = 1234567)
 
       apiService.getByNomisAddressPhoneId(nomisPhoneId = 1234567)
@@ -709,7 +709,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class DeleteByNomisAddressPhoneId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubDeleteByNomisAddressPhoneId(nomisPhoneId = 1234567)
 
       apiService.deleteByNomisAddressPhoneId(nomisPhoneId = 1234567)
@@ -734,7 +734,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class CreateWebMapping {
     @Test
-    internal fun `will pass oath2 token to create web mapping endpoint`() = runTest {
+    internal fun `will pass oauth2 token to create web mapping endpoint`() = runTest {
       mockServer.stubCreateWebMapping()
 
       apiService.createWebMapping(
@@ -808,7 +808,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class GetByNomisWebIdOrNull {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisWebIdOrNull(nomisWebId = 1234567)
 
       apiService.getByNomisWebIdOrNull(nomisWebId = 1234567)
@@ -859,7 +859,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class GetByNomisWebId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisWebId(nomisWebId = 1234567)
 
       apiService.getByNomisWebId(nomisWebId = 1234567)
@@ -884,7 +884,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class DeleteByNomisWebId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubDeleteByNomisWebId(nomisWebId = 1234567)
 
       apiService.deleteByNomisWebId(nomisWebId = 1234567)
@@ -909,7 +909,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class CreateEmailMapping {
     @Test
-    internal fun `will pass oath2 token to create email mapping endpoint`() = runTest {
+    internal fun `will pass oauth2 token to create email mapping endpoint`() = runTest {
       mockServer.stubCreateEmailMapping()
 
       apiService.createEmailMapping(
@@ -983,7 +983,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class GetByNomisEmailIdOrNull {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisEmailIdOrNull(nomisEmailId = 1234567)
 
       apiService.getByNomisEmailIdOrNull(nomisEmailId = 1234567)
@@ -1034,7 +1034,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class GetByNomisEmailId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetByNomisEmailId(nomisEmailId = 1234567)
 
       apiService.getByNomisEmailId(nomisEmailId = 1234567)
@@ -1059,7 +1059,7 @@ class OrganisationsMappingApiServiceTest {
   @Nested
   inner class DeleteByNomisEmailId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubDeleteByNomisEmailId(nomisEmailId = 1234567)
 
       apiService.deleteByNomisEmailId(nomisEmailId = 1234567)

@@ -36,7 +36,7 @@ class TapDpsApiServiceTest {
   @Nested
   inner class SyncTapApplication {
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       dpsTapsServer.stubSyncTapAuthorisation()
 
       apiService.syncTapAuthorisation("A1234BC", syncTapAuthorisation())
@@ -93,7 +93,7 @@ class TapDpsApiServiceTest {
   inner class DeleteTapAuthorisation {
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       val authorisationId = UUID.randomUUID()
       dpsTapsServer.stubDeleteTapAuthorisation(authorisationId)
 
@@ -133,7 +133,7 @@ class TapDpsApiServiceTest {
     val parentId = UUID.randomUUID()
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       dpsTapsServer.stubSyncTapOccurrence(parentId)
 
       apiService.syncTapOccurrence(parentId, syncTapOccurrence())
@@ -190,7 +190,7 @@ class TapDpsApiServiceTest {
   inner class DeleteTapOccurrence {
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       val occurrenceId = UUID.randomUUID()
       dpsTapsServer.stubDeleteTapOccurrence(occurrenceId)
 
@@ -231,7 +231,7 @@ class TapDpsApiServiceTest {
     val occurrenceId = UUID.randomUUID()
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       dpsTapsServer.stubSyncTapMovement()
 
       apiService.syncTapMovement(
@@ -293,7 +293,7 @@ class TapDpsApiServiceTest {
   inner class DeleteTapMovement {
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       val movementId = UUID.randomUUID()
       dpsTapsServer.stubDeleteTapMovement(movementId)
 
@@ -333,7 +333,7 @@ class TapDpsApiServiceTest {
     val request = moveBookingRequest()
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       dpsTapsServer.stubMoveBooking()
 
       apiService.moveBooking(request)
@@ -396,7 +396,7 @@ class TapDpsApiServiceTest {
     val request = MigrateTapRequest(listOf(), listOf())
 
     @Test
-    internal fun `should pass oath2 token`() = runTest {
+    internal fun `should pass oauth2 token`() = runTest {
       dpsTapsServer.stubResyncPrisonerTaps()
 
       apiService.resyncPrisonerTaps("A1234BC", request)

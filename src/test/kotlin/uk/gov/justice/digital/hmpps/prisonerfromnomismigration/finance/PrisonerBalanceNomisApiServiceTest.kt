@@ -33,7 +33,7 @@ class PrisonerBalanceNomisApiServiceTest {
   inner class GetRootOffenderIdsToMigrate {
 
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetRootOffenderIdsToMigrate(1, 20)
 
       apiService.getRootOffenderIdsToMigrate(prisonId = null, pageNumber = 0, pageSize = 20)
@@ -84,7 +84,7 @@ class PrisonerBalanceNomisApiServiceTest {
   @DisplayName("GET /finance/prisoners/ids-in-range")
   inner class GetPrisonerBalanceIdentifiersInRange {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetPrisonerBalanceIdentifiersInRange(
         fromRootOffenderId = 100,
         toRootOffenderId = 200,
@@ -142,7 +142,7 @@ class PrisonerBalanceNomisApiServiceTest {
   @DisplayName("GET /finance/prisoners/id-ranges")
   inner class GetAllPrisonersIdRanges {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetAllPrisonersIdRanges(pageSize = 10)
 
       apiService.getAllPrisonersIdRanges(
@@ -192,7 +192,7 @@ class PrisonerBalanceNomisApiServiceTest {
   @DisplayName("GET /finance/prisoners/rootOffenderId/{rootOffenderId}/balance")
   inner class GetPrisonerBalance {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetPrisonerBalance()
 
       apiService.getPrisonerBalanceForMigration(10000)

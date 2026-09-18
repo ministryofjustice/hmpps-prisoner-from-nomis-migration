@@ -933,7 +933,7 @@ internal class NomisApiServiceTest {
   @Nested
   inner class GetPrisonerIds {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       nomisApi.stubGetPrisonerIds()
 
       nomisService.getPrisonerIds(
@@ -986,7 +986,7 @@ internal class NomisApiServiceTest {
     @Nested
     inner class GetProfileDetails {
       @Test
-      internal fun `will pass oath2 token to service`() = runTest {
+      internal fun `will pass oauth2 token to service`() = runTest {
         profileDetailsNomisApi.stubGetProfileDetails(
           offenderNo = "A1234AA",
           profileTypes = listOf("MARITAL", "CHILD"),
@@ -1081,7 +1081,7 @@ internal class NomisApiServiceTest {
   @Nested
   inner class CheckServiceAgencyForPrisoner {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       nomisApi.stubCheckServiceAgencyForPrisoner()
 
       nomisService.isServiceAgencyOnForPrisoner(
@@ -1133,7 +1133,7 @@ internal class NomisApiServiceTest {
   @Nested
   inner class IsAgencySwitchOnForAgency {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       nomisApi.stubCheckAgencySwitchForAgency()
 
       nomisService.isAgencySwitchOnForAgency(
@@ -1232,7 +1232,7 @@ internal class NomisApiServiceTest {
   @Nested
   inner class GetAllPrisonersIsRanges {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       nomisApi.stubGetAllPrisonersIdRanges(pageSize = 10)
 
       nomisService.getAllPrisonersIdRanges(

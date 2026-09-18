@@ -29,7 +29,7 @@ class CsraNomisApiServiceTest {
   @Nested
   inner class GetCsra {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       csraNomisApiMockServer.stubGetCsrasForPrisoner(OFFENDER_NUMBER)
 
       apiService.getCsras(OFFENDER_NUMBER)

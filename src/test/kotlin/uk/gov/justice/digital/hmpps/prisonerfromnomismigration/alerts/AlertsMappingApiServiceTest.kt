@@ -44,7 +44,7 @@ class AlertsMappingApiServiceTest {
   @Nested
   inner class GetByNomisId {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       alertsMappingApiMockServer.stubGetByNomisId(bookingId = 1234567, alertSequence = 3)
 
       apiService.getOrNullByNomisId(bookingId = 1234567, alertSequence = 3)
@@ -106,7 +106,7 @@ class AlertsMappingApiServiceTest {
     private val dpsAlertId = UUID.randomUUID().toString()
 
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       alertsMappingApiMockServer.stubDeleteMapping()
 
       apiService.deleteMappingByDpsId(dpsAlertId)
@@ -132,7 +132,7 @@ class AlertsMappingApiServiceTest {
   @Nested
   inner class PostMapping {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       alertsMappingApiMockServer.stubPostMapping()
 
       apiService.createMapping(
@@ -178,7 +178,7 @@ class AlertsMappingApiServiceTest {
   @Nested
   inner class PostMappingsBatch {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       alertsMappingApiMockServer.stubPostBatchMappings()
 
       apiService.createMappingsBatch(
@@ -304,7 +304,7 @@ class AlertsMappingApiServiceTest {
   @Nested
   inner class ReplaceMappings {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       alertsMappingApiMockServer.stubReplaceMappings("A1234KT")
 
       apiService.replaceMappings(
@@ -358,7 +358,7 @@ class AlertsMappingApiServiceTest {
   @Nested
   inner class ReplaceMappingsForMerge {
     @Test
-    internal fun `will pass oath2 token to service`() = runTest {
+    internal fun `will pass oauth2 token to service`() = runTest {
       alertsMappingApiMockServer.stubReplaceMappingsForMerge("A1234KT")
 
       apiService.replaceMappingsForMerge(

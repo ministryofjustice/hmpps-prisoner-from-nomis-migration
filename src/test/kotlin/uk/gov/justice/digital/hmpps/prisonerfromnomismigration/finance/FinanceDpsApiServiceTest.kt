@@ -28,7 +28,7 @@ class FinanceDpsApiServiceTest {
   @Nested
   inner class MigratePrisonerBalance {
     @Test
-    internal fun `will pass oath2 token to migrate endpoint`() = runTest {
+    internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
       financeApi.stubMigratePrisonerBalance()
 
       apiService.migratePrisonerBalance("A1234BC", prisonerBalanceMigrationDto())
@@ -77,7 +77,7 @@ class FinanceDpsApiServiceTest {
   @Nested
   inner class MigratePrisonBalance {
     @Test
-    internal fun `will pass oath2 token to migrate endpoint`() = runTest {
+    internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
       financeApi.stubMigratePrisonBalance()
 
       apiService.migratePrisonBalance("MDI", prisonBalanceMigrationDto())
@@ -118,7 +118,7 @@ class FinanceDpsApiServiceTest {
   @Nested
   inner class SyncAddHold {
     @Test
-    internal fun `will pass oath2 token to the sync endpoint`() = runTest {
+    internal fun `will pass oauth2 token to the sync endpoint`() = runTest {
       financeApi.stubAddHold()
 
       apiService.syncAddHoldTransaction(addHoldDto())
@@ -167,7 +167,7 @@ class FinanceDpsApiServiceTest {
   @Nested
   inner class SyncReleaseHold {
     @Test
-    internal fun `will pass oath2 token to the sync endpoint`() = runTest {
+    internal fun `will pass oauth2 token to the sync endpoint`() = runTest {
       financeApi.stubReleaseHold()
 
       apiService.syncReleaseHoldTransaction(12345, releaseHoldDto())

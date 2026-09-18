@@ -44,7 +44,7 @@ class VisitSlotsMappingApiServiceTest {
   @Nested
   inner class CreateMappingsForMigration {
     @Test
-    fun `will pass oath2 token to migrate endpoint`() = runTest {
+    fun `will pass oauth2 token to migrate endpoint`() = runTest {
       mockServer.stubCreateMappingsForMigration()
 
       apiService.createMapping(
@@ -138,7 +138,7 @@ class VisitSlotsMappingApiServiceTest {
   @Nested
   inner class CreateTimeSlotMapping {
     @Test
-    fun `will pass oath2 token to migrate endpoint`() = runTest {
+    fun `will pass oauth2 token to migrate endpoint`() = runTest {
       mockServer.stubCreateTimeSlotMapping()
 
       apiService.createTimeSlotMapping(
@@ -228,7 +228,7 @@ class VisitSlotsMappingApiServiceTest {
     val nomisSlotSequence = 2
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetTimeSlotByNomisIdsOrNull(
         nomisPrisonId = nomisPrisonId,
         nomisDayOfWeek = nomisDayOfWeek,
@@ -329,7 +329,7 @@ class VisitSlotsMappingApiServiceTest {
     val nomisSlotSequence = 2
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetTimeSlotByNomisIds(
         nomisPrisonId = nomisPrisonId,
         nomisDayOfWeek = nomisDayOfWeek,
@@ -388,7 +388,7 @@ class VisitSlotsMappingApiServiceTest {
     val nomisSlotSequence = 2
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubDeleteTimeSlotByNomisIds(
         nomisPrisonId = nomisPrisonId,
         nomisDayOfWeek = nomisDayOfWeek,
@@ -429,7 +429,7 @@ class VisitSlotsMappingApiServiceTest {
   @Nested
   inner class CreateVisitSlotMapping {
     @Test
-    fun `will pass oath2 token to create endpoint`() = runTest {
+    fun `will pass oauth2 token to create endpoint`() = runTest {
       mockServer.stubCreateVisitSlotMapping()
 
       apiService.createVisitSlotMapping(
@@ -508,7 +508,7 @@ class VisitSlotsMappingApiServiceTest {
     val nomisId = 123456L
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetVisitSlotByNomisId(
         nomisId = nomisId,
         mapping = VisitSlotMappingDto(
@@ -553,7 +553,7 @@ class VisitSlotsMappingApiServiceTest {
     val nomisId = 123456L
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubDeleteVisitSlotByNomisId(
         nomisId = nomisId,
       )
@@ -588,7 +588,7 @@ class VisitSlotsMappingApiServiceTest {
     val nomisLocationId = 1234L
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       mockServer.stubGetInternalLocationByNomisId(
         nomisLocationId = nomisLocationId,
       )
