@@ -145,7 +145,7 @@ class CsraMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubUpdateMappingsByBookingId(response: List<CsraMappingDto>) {
     mappingApi.stubFor(
-      put(urlPathMatching("/mapping/csras/merge/booking-id/.+/to/.+")).willReturn(
+      put(urlPathMatching("/mapping/csras/move/booking-id/.+/from/.+/to/.+")).willReturn(
         okJson(jsonMapper.writeValueAsString(response)),
       ),
     )
