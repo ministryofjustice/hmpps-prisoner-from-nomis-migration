@@ -36,11 +36,12 @@ class CsraSynchronisationEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "csra")) {
             when (eventType) {
               "ASSESSMENT-INSERTED" -> csraSyncService.create(sqsMessage.Message.fromJson())
+              // TODO a CSRA can apparently be inserted and deleted at the same time, so we may need to ignore an insert if it doesn't exist in Nomis
               "ASSESSMENT-UPDATED" -> csraSyncService.update(sqsMessage.Message.fromJson())
               "ASSESSMENT-DELETED" -> csraSyncService.delete(sqsMessage.Message.fromJson())
 
-              "prison-offender-events.prisoner.merged" -> null // csraSynchronisationService.synchronisePrisonerMerged(sqsMessage.Message.fromJson())
-              "prison-offender-events.prisoner.booking.moved" -> null // csraSynchronisationService.synchronisePrisonerBookingMoved(sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.merged" -> null // csraSyncService.synchronisePrisonerMerged(sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.booking.moved" -> csraSyncService.handleBookingMoved(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a csra message I wasn't expecting {}", eventType)
             }

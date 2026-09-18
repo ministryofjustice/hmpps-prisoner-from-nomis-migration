@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.Telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
@@ -133,6 +133,22 @@ class CsraSyncService(
     TODO()
   }
 
+  suspend fun handleBookingMoved(prisonerMergeEvent: PrisonerBookingMovedDomainEvent) {
+    val (movedToNomsNumber, movedFromNomsNumber, bookingId) = prisonerMergeEvent.additionalInformation
+
+    val telemetry = telemetryOf(
+      "bookingId" to bookingId.toString(),
+      "movedToNomsNumber" to movedToNomsNumber,
+      "movedFromNomsNumber" to movedFromNomsNumber,
+    )
+    track("csras-booking-moved", telemetry) {
+      val csras = csraMappingApiService.updateMappingsByBookingId(bookingId, movedFromNomsNumber, movedToNomsNumber)
+      val idsToResynchronise = csras.map { UUID.fromString(it.dpsCsraId) }
+      telemetry["count"] = idsToResynchronise.size
+      csraDpsApiService.moveCsras(movedFromNomsNumber, movedToNomsNumber, csras = idsToResynchronise)
+    }
+  }
+
   enum class MappingResponse {
     MAPPING_CREATED,
     MAPPING_FAILED,
@@ -200,18 +216,3 @@ class CsraSyncService(
     }
   }
 }
-
-private fun AssessmentEvent.toTelemetryProperties2(
-  dpsCsraId: String? = null,
-  mappingFailed: Boolean? = null,
-) = mapOf(
-  "bookingId" to this.bookingId.toString(),
-  "sequence" to this.assessmentSeq.toString(),
-  "offenderNo" to this.offenderIdDisplay,
-  "assessmentType" to this.assessmentType.toString(),
-) + (dpsCsraId?.let { mapOf("dpsCsraId" to it) } ?: emptyMap()) + (
-  if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap()
-  )
-
-private fun AssessmentEvent.auditMissing() = auditModuleName == null
-private fun AssessmentEvent.isSourcedFromDPS() = auditModuleName.originatesInDps()

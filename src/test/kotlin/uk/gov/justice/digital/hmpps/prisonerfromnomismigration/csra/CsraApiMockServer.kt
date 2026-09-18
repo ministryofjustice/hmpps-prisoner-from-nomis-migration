@@ -4,8 +4,11 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.jsonResponse
+import com.github.tomakehurst.wiremock.client.WireMock.ok
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.status
+import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -99,6 +102,12 @@ class CsraApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withBody(if (status == 200) "pong" else "some error")
           .withStatus(status),
       ),
+    )
+  }
+
+  fun stubMove() {
+    csraApi.stubFor(
+      put(urlMatching("/nomis-sync/move/from/.+/to/.+")).willReturn(ok()),
     )
   }
 }
