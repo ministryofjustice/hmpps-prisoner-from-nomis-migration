@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.relig
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
-import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -24,7 +23,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionsMigrationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
@@ -122,51 +120,6 @@ class ReligionsMappingApiServiceTest {
       assertThat(result.isError).isTrue()
       assertThat(result.errorResponse!!.moreInfo.duplicate.cprId).isEqualTo(cprId)
       assertThat(result.errorResponse.moreInfo.existing.cprId).isEqualTo(existingCprId)
-    }
-  }
-
-  @Nested
-  inner class GetReligionsByNomisPrisonNumber {
-    val nomisPrisonNumber = "A1234BC"
-
-    @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubGetReligionsByNomisPrisonNumber(
-        nomisPrisonNumber = nomisPrisonNumber,
-        mapping = ReligionsMappingDto(
-          cprId = "1234",
-          nomisPrisonNumber = nomisPrisonNumber,
-          mappingType = ReligionsMappingDto.MappingType.MIGRATED,
-        ),
-      )
-
-      apiService.getReligionsByPrisonNumberOrNull(
-        prisonNumber = nomisPrisonNumber,
-      )
-
-      mockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetReligionsByNomisPrisonNumber(
-        nomisPrisonNumber = nomisPrisonNumber,
-        mapping = ReligionsMappingDto(
-          cprId = "1234",
-          nomisPrisonNumber = nomisPrisonNumber,
-          mappingType = ReligionsMappingDto.MappingType.MIGRATED,
-        ),
-      )
-
-      apiService.getReligionsByPrisonNumberOrNull(
-        prisonNumber = nomisPrisonNumber,
-      )
-
-      mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/mapping/core-person-religion/religions/nomis-prison-number/$nomisPrisonNumber")),
-      )
     }
   }
 
@@ -295,41 +248,6 @@ class ReligionsMappingApiServiceTest {
 
       mockServer.verify(
         getRequestedFor(urlPathEqualTo("/mapping/core-person-religion/religion/nomis-id/$nomisId")),
-      )
-    }
-  }
-
-  @Nested
-  inner class DeleteReligionByNomisId {
-    val nomisId = 123456L
-
-    @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubDeleteReligionByNomisId(
-        nomisId = nomisId,
-      )
-
-      apiService.deleteReligionByNomisId(
-        nomisReligionId = nomisId,
-      )
-
-      mockServer.verify(
-        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubDeleteReligionByNomisId(
-        nomisId = nomisId,
-      )
-
-      apiService.deleteReligionByNomisId(
-        nomisReligionId = nomisId,
-      )
-
-      mockServer.verify(
-        deleteRequestedFor(urlPathEqualTo("/mapping/core-person-religion/religion/nomis-id/$nomisId")),
       )
     }
   }

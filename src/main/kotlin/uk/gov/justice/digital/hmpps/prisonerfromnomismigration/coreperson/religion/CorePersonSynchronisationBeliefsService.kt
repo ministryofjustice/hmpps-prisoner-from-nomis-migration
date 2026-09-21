@@ -1,16 +1,18 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonNomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CORE_PERSON_RELIGION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.OffenderBeliefEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.ReligionsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -23,9 +25,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Telemetry
 
 private const val TELEMETRY_PREFIX = "coreperson-beliefs-synchronisation"
-typealias Telemetry = MutableMap<String, Any>
 
 @Service
 class CorePersonSynchronisationBeliefsService(
