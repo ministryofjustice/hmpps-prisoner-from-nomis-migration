@@ -46,7 +46,7 @@ abstract class MigrationService<FILTER : Any, NOMIS_ID : Any, MAPPING : Any, PAG
 
   abstract suspend fun migrateNomisEntity(context: MigrationContext<NOMIS_ID>)
 
-  open suspend fun getContextProperties(migrationFilter: FILTER): MutableMap<String, Any> = mutableMapOf()
+  open suspend fun getContextProperties(migrationFilter: FILTER): Telemetry = mutableMapOf()
 
   open suspend fun getMigrationCount(migrationId: String): Long = mappingService.getMigrationCount(migrationId)
 
@@ -279,3 +279,5 @@ data class MigrationStatusCheck(val checkCount: Int = 0) {
   fun hasCheckedAReasonableNumberOfTimes(closeDownCheckCount: Int) = checkCount > closeDownCheckCount
   fun increment() = this.copy(checkCount = checkCount + 1)
 }
+
+typealias Telemetry = MutableMap<String, Any>
