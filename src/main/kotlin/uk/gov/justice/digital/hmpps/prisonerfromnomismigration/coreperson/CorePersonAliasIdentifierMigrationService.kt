@@ -31,12 +31,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.CORE_PERSON
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.CORE_PERSON_ALIAS_IDENTIFIER
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.time.LocalDateTime
 
 @Service
-class CorePersonMigrationService(
+class CorePersonAliasIdentifierMigrationService(
   private val corePersonMappingService: CorePersonMappingService,
   private val corePersonNomisApiService: CorePersonNomisApiService,
   private val cprApiService: CorePersonCprApiService,
@@ -49,7 +49,7 @@ class CorePersonMigrationService(
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
 ) : ByIdRangeMigrationService<Any, PrisonNumberAndRootOffenderId, CorePersonMappingsDto>(
   mappingService = corePersonMappingService,
-  migrationType = CORE_PERSON,
+  migrationType = CORE_PERSON_ALIAS_IDENTIFIER,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
@@ -124,7 +124,7 @@ class CorePersonMigrationService(
       if (it.isError) {
         val duplicateErrorDetails = it.errorResponse!!.moreInfo
         telemetryClient.trackEvent(
-          "${CORE_PERSON.telemetryName}-migration-duplicate",
+          "${CORE_PERSON_ALIAS_IDENTIFIER.telemetryName}-migration-duplicate",
           mapOf(
             "duplicateCprId" to duplicateErrorDetails.duplicate.personMapping.cprId,
             "duplicateNomisPrisonNumber" to duplicateErrorDetails.duplicate.personMapping.nomisPrisonNumber,
@@ -135,7 +135,7 @@ class CorePersonMigrationService(
         )
       } else {
         telemetryClient.trackEvent(
-          "${CORE_PERSON.telemetryName}-migration-entity-migrated",
+          "${CORE_PERSON_ALIAS_IDENTIFIER.telemetryName}-migration-entity-migrated",
           mapOf(
             "nomisPrisonNumber" to mapping.personMapping.nomisPrisonNumber,
             "cprId" to mapping.personMapping.cprId,

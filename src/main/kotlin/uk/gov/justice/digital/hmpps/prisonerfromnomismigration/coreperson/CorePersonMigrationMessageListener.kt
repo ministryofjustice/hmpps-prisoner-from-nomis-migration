@@ -11,7 +11,7 @@ import java.util.concurrent.CompletableFuture
 @Service
 class CorePersonMigrationMessageListener(
   jsonMapper: JsonMapper,
-  migrationService: CorePersonMigrationService,
+  migrationService: CorePersonAliasIdentifierMigrationService,
 ) : MigrationMessageListener(
   jsonMapper,
   migrationService,
