@@ -245,7 +245,7 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will track telemetry for each prisoner migrated`() {
         verify(telemetryClient).trackEvent(
-          eq("coreperson-migration-entity-migrated"),
+          eq("coreperson-alias-identifier-migration-entity-migrated"),
           check {
             assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
             assertThat(it["cprId"]).isEqualTo(nomisPrisonNumber)
@@ -331,7 +331,7 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will track telemetry for each prisoner migrated`() {
         verify(telemetryClient).trackEvent(
-          eq("coreperson-migration-entity-migrated"),
+          eq("coreperson-alias-identifier-migration-entity-migrated"),
           check {
             assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
             assertThat(it["cprId"]).isEqualTo(nomisPrisonNumber)
@@ -401,7 +401,7 @@ class CorePersonMigrationIntTest(
         mappingApiMock.stubGetMigrationCount(count = 81, testData().corePersonMapping)
         // wait until all records have individually migrated since status check might finish just before some entities are still in flight due to the "big" numbers
         migrationResult = performMigration {
-          verify(telemetryClient, times(80)).trackEvent(eq("coreperson-migration-entity-migrated"), any(), isNull())
+          verify(telemetryClient, times(80)).trackEvent(eq("coreperson-alias-identifier-migration-entity-migrated"), any(), isNull())
         }
       }
 
@@ -473,7 +473,7 @@ class CorePersonMigrationIntTest(
       fun `will eventually track telemetry for each slot migrated`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("coreperson-migration-entity-migrated"),
+            eq("coreperson-alias-identifier-migration-entity-migrated"),
             check {
               assertThat(it["nomisPrisonNumber"]).isEqualTo(nomisPrisonNumber)
               assertThat(it["cprId"]).isEqualTo(nomisPrisonNumber)
@@ -573,7 +573,7 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will never track telemetry for each slot migrated`() {
         verify(telemetryClient, times(0)).trackEvent(
-          eq("coreperson-migration-entity-migrated"),
+          eq("coreperson-alias-identifier-migration-entity-migrated"),
           any(),
           isNull(),
         )
@@ -606,7 +606,7 @@ class CorePersonMigrationIntTest(
 
   private fun waitUntilCompleted(waitUntilVerify: () -> Unit) = await atMost Duration.ofSeconds(60) untilAsserted {
     waitUntilVerify()
-    verify(telemetryClient).trackEvent(eq("coreperson-migration-completed"), any(), isNull())
+    verify(telemetryClient).trackEvent(eq("coreperson-alias-identifier-migration-completed"), any(), isNull())
   }
 
   private data class TestData(
