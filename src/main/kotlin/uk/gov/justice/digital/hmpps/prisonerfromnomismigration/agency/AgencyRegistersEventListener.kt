@@ -33,11 +33,25 @@ class AgencyRegistersEventListener(
         "Notification" -> {
           val eventType = sqsMessage.MessageAttributes!!.eventType.Value
           if (eventFeatureSwitch.isEnabled(eventType, "agencyregisters")) {
+            // the only event not handled is AGENCY_LOCATIONS-DELETED
             when (eventType) {
               "ADDRESSES_AGENCY-INSERTED",
               "ADDRESSES_AGENCY-UPDATED",
               "ADDRESSES_AGENCY-DELETED",
+              "AGENCY_LOCATIONS-INSERTED",
+              "AGENCY_LOCATIONS-UPDATED",
+              "AGENCY_LOCATION-AUTHORITIES-INSERTED",
+              "AGENCY_LOCATION-AUTHORITIES-UPDATED",
+              "AGENCY_LOCATION-AUTHORITIES-DELETED",
+              "PHONES_AGENCY-INSERTED",
+              "PHONES_AGENCY-UPDATED",
+              "PHONES_AGENCY-DELETED",
+              "INTERNET_ADDRESSES_AGENCY-INSERTED",
+              "INTERNET_ADDRESSES_AGENCY-UPDATED",
+              "INTERNET_ADDRESSES_AGENCY-DELETED",
               -> agencyRegistersSynchronisationService.agencyUpdated(sqsMessage.Message.fromJson())
+
+              "AGENCY_LOCATIONS-DELETED" -> throw UnsupportedOperationException("AGENCY_LOCATIONS-DELETED event is not supported")
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
