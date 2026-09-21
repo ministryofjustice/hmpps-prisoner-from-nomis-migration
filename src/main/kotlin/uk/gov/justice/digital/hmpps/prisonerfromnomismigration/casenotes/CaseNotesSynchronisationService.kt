@@ -9,9 +9,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNot
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesSynchronisationService.MappingResponse.MAPPING_FAILED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.model.MoveCaseNotesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.NomisBookingDeletedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
@@ -32,9 +36,9 @@ class CaseNotesSynchronisationService(
   private val caseNotesMappingService: CaseNotesMappingApiService,
   private val caseNotesByPrisonerMigrationMappingApiService: CaseNotesByPrisonerMigrationMappingApiService,
   private val caseNotesService: CaseNotesApiService,
-  private val telemetryClient: TelemetryClient,
+  override val telemetryClient: TelemetryClient,
   private val queueService: SynchronisationQueueService,
-) {
+) : TelemetryEnabled {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
@@ -84,7 +88,7 @@ class CaseNotesSynchronisationService(
     } catch (e: Exception) {
       telemetryClient.trackEvent(
         "casenotes-synchronisation-created-failed",
-        event.toTelemetryProperties() + mapOf("error" to (e.message ?: "unknown error")),
+        event.toTelemetryProperties() + mapOf("error" to (e.message ?: e.javaClass.name)),
       )
       throw e
     }
@@ -112,7 +116,7 @@ class CaseNotesSynchronisationService(
     } catch (e: Exception) {
       telemetryClient.trackEvent(
         "casenotes-synchronisation-updated-failed",
-        event.toTelemetryProperties() + mapOf("error" to (e.message ?: "unknown error")),
+        event.toTelemetryProperties() + mapOf("error" to (e.message ?: e.javaClass.name)),
       )
       throw e
     }
@@ -168,6 +172,7 @@ class CaseNotesSynchronisationService(
             "dpsCaseNoteId" to mapping.dpsCaseNoteId,
           ),
         )
+        // NB events DO NOW have auditModuleName set!
       }
   }
 
@@ -201,13 +206,13 @@ class CaseNotesSynchronisationService(
           )
         }
         ?: telemetryClient.trackEvent(
-          "casenotes-deleted-synchronisation-skipped",
+          "casenotes-synchronisation-deleted-skipped",
           event.toTelemetryProperties(),
         )
     } catch (e: Exception) {
       telemetryClient.trackEvent(
         "casenotes-synchronisation-deleted-failed",
-        event.toTelemetryProperties() + mapOf("error" to (e.message ?: "unknown error")),
+        event.toTelemetryProperties() + mapOf("error" to (e.message ?: e.javaClass.name)),
       )
       log.warn(
         "Unable to delete mapping for prisoner ${event.offenderIdDisplay} nomisCaseNoteId=${event.caseNoteId}. Please delete manually",
@@ -326,7 +331,7 @@ Also add new mappings for the new booking id for the copied case notes, which po
           "offenderNo" to nomsNumber,
           "removedOffenderNo" to removedNomsNumber,
           "bookingId" to bookingId,
-          "error" to (e.message ?: "unknown error"),
+          "error" to (e.message ?: e.javaClass.name),
         ),
       )
       throw e
@@ -369,10 +374,20 @@ Also add new mappings for the new booking id for the copied case notes, which po
           "bookingId" to bookingId,
           "movedToNomsNumber" to movedToNomsNumber,
           "movedFromNomsNumber" to movedFromNomsNumber,
-          "error" to (e.message ?: "unknown error"),
+          "error" to (e.message ?: e.javaClass.name),
         ),
       )
       throw e
+    }
+  }
+
+  suspend fun bookingDeleted(bookingDeletedEvent: NomisBookingDeletedEvent) {
+    val telemetry = telemetryOf(
+      "bookingId" to bookingDeletedEvent.bookingId.toString(),
+      "offenderNo" to bookingDeletedEvent.offenderIdDisplay,
+    )
+    track("casenotes-booking-deleted", telemetry) {
+      caseNotesMappingService.deleteMappingsByBookingId(bookingDeletedEvent.bookingId)
     }
   }
 

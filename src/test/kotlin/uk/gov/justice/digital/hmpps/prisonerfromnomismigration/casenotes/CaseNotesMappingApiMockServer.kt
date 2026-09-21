@@ -166,6 +166,12 @@ class CaseNotesMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubDeleteMappingsForBooking() {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/casenotes/booking-id/.*")).willReturn(status(204)),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)

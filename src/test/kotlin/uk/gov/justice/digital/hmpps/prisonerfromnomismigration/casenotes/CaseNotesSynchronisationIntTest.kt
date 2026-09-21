@@ -31,6 +31,7 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.caseNotesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiMockServer.Companion.dpsCaseNote
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingDeletedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.MIGRATED
@@ -806,7 +807,7 @@ class CaseNotesSynchronisationIntTest(
         fun `telemetry added to track that the delete was ignored`() {
           await untilAsserted {
             verify(telemetryClient, atLeastOnce()).trackEvent(
-              eq("casenotes-deleted-synchronisation-skipped"),
+              eq("casenotes-synchronisation-deleted-skipped"),
               check {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
@@ -1103,6 +1104,47 @@ class CaseNotesSynchronisationIntTest(
       }
     }
   }
+
+  @Nested
+  @DisplayName("BOOKING-DELETED")
+  inner class BookingDeleted {
+    @Nested
+    @DisplayName("When mapping does exist")
+    inner class MappingExists {
+      @BeforeEach
+      fun setUp() {
+        caseNotesMappingApiMockServer.stubDeleteMappingsForBooking()
+        awsSqsCaseNoteOffenderEventsClient.sendMessage(
+          caseNotesQueueOffenderEventsUrl,
+          bookingDeletedEvent(BOOKING_ID, OFFENDER_ID_DISPLAY),
+        )
+      }
+
+      @Test
+      fun `will delete CaseNote mapping`() {
+        await untilAsserted {
+          caseNotesMappingApiMockServer.verify(
+            1,
+            deleteRequestedFor(urlPathEqualTo("/mapping/casenotes/booking-id/$BOOKING_ID")),
+          )
+        }
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("casenotes-booking-deleted-success"),
+            check {
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+  }
 }
 
 fun caseNoteEvent(
@@ -1138,7 +1180,6 @@ fun caseNoteDeleteEvent(
     }
 }
 """.trimIndent()
-// // "{\"eventType\":\"OFFENDER_CASE_NOTES-DELETED\",\"eventDatetime\":\"2025-01-08T08:21:34\",\"bookingId\":2981341,\"recordDeleted\":true,\"caseNoteId\":115082013,\"caseNoteType\":\"PRISON\",\"caseNoteSubType\":\"RELEASE\"}",
 
 private fun caseNote(bookingId: Long = 123456, caseNoteId: Long = 3) = CaseNoteResponse(
   bookingId = bookingId,
