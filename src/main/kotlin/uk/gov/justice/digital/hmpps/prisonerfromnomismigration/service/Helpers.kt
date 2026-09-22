@@ -63,7 +63,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   AGENCY_REGISTERS(AGENCY_REGISTERS_QUEUE_ID, "agencyregisters"),
   ALLOCATIONS(ALLOCATIONS_QUEUE_ID, "activity-allocation"),
   APPOINTMENTS(APPOINTMENTS_QUEUE_ID, "appointments"),
-  CORE_PERSON_ALIAS_IDENTIFIER(CORE_PERSON_QUEUE_ID, "coreperson-alias-identifier"),
+  CORE_PERSON_ADDRESS_CONTACT(CORE_PERSON_QUEUE_ID, "coreperson-address-contact"),
   CSRA(CSRA_QUEUE_ID, "csras"),
   COURT_SCHEDULER(COURT_SCHEDULER_QUEUE_ID, "court-scheduler"),
   COURT_SENTENCING(COURT_SENTENCING_QUEUE_ID, "court-sentencing"),

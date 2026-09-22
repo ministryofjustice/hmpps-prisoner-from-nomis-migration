@@ -19,22 +19,22 @@ class CorePersonDataRepairResource(
   private val synchronisationService: CorePersonSynchronisationService,
   private val telemetryClient: TelemetryClient,
 ) {
-  @PostMapping("/prisoners/{prisonNumber}/core-person/aliases-identifiers/repair")
+  @PostMapping("/prisoners/{prisonNumber}/core-person/addresses-contacts/repair")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @Operation(
-    summary = "Resynchronises an offender's aliases and identifiers for the given prisoner from NOMIS to DPS",
+    summary = "Resynchronises an offender's addresses and contacts for the given prisoner from NOMIS to DPS",
     description = """
       Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, 
       so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW""",
   )
-  suspend fun repairCorePersonAliasesAndIdentifiers(@PathVariable prisonNumber: String) {
+  suspend fun repairCorePersonAddressesAndContacts(@PathVariable prisonNumber: String) {
     try {
-      synchronisationService.resynchroniseAliasesAndIdentifiers(prisonNumber)
+      synchronisationService.resynchroniseAddressesAndContacts(prisonNumber)
     } catch (_: NotFound) {
       throw NotFoundException("Prisoner $prisonNumber not found")
     }
     telemetryClient.trackEvent(
-      "core-person-aliases-identifiers-resynchronisation-repair",
+      "coreperson-address-contact-resynchronisation-repair",
       mapOf(
         "prisonNumber" to prisonNumber,
       ),
