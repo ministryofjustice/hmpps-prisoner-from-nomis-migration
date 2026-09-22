@@ -29,11 +29,11 @@ class CorePersonSynchronisationService(
     telemetryClient.trackEvent("coreperson-prisoner-merge-synchronisation", telemetry)
   }
 
-  suspend fun resynchroniseAliasesAndIdentifiers(prisonNumber: String) {
-    val aliasesAndIdentifiers = corePersonNomisApiService.getCorePerson(nomisPrisonNumber = prisonNumber).offenders
-    val mapping = corePersonCprApiService.migrateCorePersonAliasesAndIdentifiers(
+  suspend fun resynchroniseAddressesAndContacts(prisonNumber: String) {
+    val addressesAndContacts = corePersonNomisApiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = prisonNumber)
+    val mapping = corePersonCprApiService.migrateCorePersonAddressesAndContacts(
       prisonNumber,
-      aliasesAndIdentifiers.toMigrateAliasesAndIdentifiersRequest(),
+      addressesAndContacts.toMigrateAddressesAndContactsRequest(),
     ).toCorePersonMappingsDto(migrationType = CorePersonMappingsDto.MappingType.NOMIS_CREATED)
     corePersonMappingService.replaceMappings(mapping)
   }

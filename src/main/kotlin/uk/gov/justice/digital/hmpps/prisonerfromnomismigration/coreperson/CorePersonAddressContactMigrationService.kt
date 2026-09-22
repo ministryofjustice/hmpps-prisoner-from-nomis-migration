@@ -7,33 +7,24 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.NomisIdentifierId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias.BirthCountry
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias.Ethnicity
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias.SexCode
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias.TitleCode
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAliasesAndIdentifiersRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonIdentifier
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonIdentifier.Type
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasesAndIdentifiersResponseBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderAliasMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderIdentifierMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRangeMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.CORE_PERSON_ALIAS_IDENTIFIER
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.CORE_PERSON_ADDRESS_CONTACT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import java.time.LocalDateTime
 
 @Service
 class CorePersonAliasIdentifierMigrationService(
@@ -49,7 +40,7 @@ class CorePersonAliasIdentifierMigrationService(
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
 ) : ByIdRangeMigrationService<Any, PrisonNumberAndRootOffenderId, CorePersonMappingsDto>(
   mappingService = corePersonMappingService,
-  migrationType = CORE_PERSON_ALIAS_IDENTIFIER,
+  migrationType = CORE_PERSON_ADDRESS_CONTACT,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
@@ -90,10 +81,10 @@ class CorePersonAliasIdentifierMigrationService(
     alreadyMigratedMapping?.run {
       log.info("Will not migrate the prisoner=$nomisPrisonNumber since it was already mapped to CPR $cprId during migration $label")
     } ?: run {
-      val aliasesAndIdentifiers = corePersonNomisApiService.getCorePerson(nomisPrisonNumber = prisonNumber).offenders
-      val response = cprApiService.migrateCorePersonAliasesAndIdentifiers(
+      val addressesAndContacts = corePersonNomisApiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = prisonNumber)
+      val response = cprApiService.migrateCorePersonAddressesAndContacts(
         prisonNumber,
-        aliasesAndIdentifiers.toMigrateAliasesAndIdentifiersRequest(),
+        addressesAndContacts.toMigrateAddressesAndContactsRequest(),
       )
       val mapping = response.toCorePersonMappingsDto(migrationId = context.migrationId)
       createMappingOrOnFailureDo(context, mapping) {
@@ -124,7 +115,7 @@ class CorePersonAliasIdentifierMigrationService(
       if (it.isError) {
         val duplicateErrorDetails = it.errorResponse!!.moreInfo
         telemetryClient.trackEvent(
-          "${CORE_PERSON_ALIAS_IDENTIFIER.telemetryName}-migration-duplicate",
+          "${CORE_PERSON_ADDRESS_CONTACT.telemetryName}-migration-duplicate",
           mapOf(
             "duplicateCprId" to duplicateErrorDetails.duplicate.personMapping.cprId,
             "duplicateNomisPrisonNumber" to duplicateErrorDetails.duplicate.personMapping.nomisPrisonNumber,
@@ -135,7 +126,7 @@ class CorePersonAliasIdentifierMigrationService(
         )
       } else {
         telemetryClient.trackEvent(
-          "${CORE_PERSON_ALIAS_IDENTIFIER.telemetryName}-migration-entity-migrated",
+          "${CORE_PERSON_ADDRESS_CONTACT.telemetryName}-migration-entity-migrated",
           mapOf(
             "nomisPrisonNumber" to mapping.personMapping.nomisPrisonNumber,
             "cprId" to mapping.personMapping.cprId,
@@ -158,53 +149,16 @@ class CorePersonAliasIdentifierMigrationService(
   override fun parseContextMapping(json: String): MigrationMessage<*, CorePersonMappingsDto> = jsonMapper.readValue(json)
 }
 
-fun List<CoreOffender>?.toMigrateAliasesAndIdentifiersRequest(): PrisonAliasesAndIdentifiersRequest {
-  val aliases = this ?: emptyList()
-  val identifiers = aliases.flatMap { it.identifiers }
-  return PrisonAliasesAndIdentifiersRequest(
-    aliases = aliases.map {
-      PrisonAlias(
-        firstName = it.firstName,
-        middleNames = (
-          listOf(it.middleName1, it.middleName2)
-            .map { middleName -> middleName?.trim() }
-            .filter { middleName -> !middleName.isNullOrBlank() }
-            .joinToString(" ")
-          )
-          .ifBlank { null },
-        lastName = it.lastName,
-        dateOfBirth = it.dateOfBirth,
-        nomisOffenderId = it.offenderId,
-        titleCode = it.title?.code?.let { code -> TitleCode.valueOf(code) },
-        sexCode = it.sex?.code?.let { code -> SexCode.valueOf(code) },
-        isPrimary = it.workingName,
-        birthPlace = it.birthPlace,
-        birthCountry = it.birthCountry?.code?.let { code -> BirthCountry.valueOf(code) },
-        ethnicity = it.ethnicity?.code?.let { code -> Ethnicity.valueOf(code) },
-        createDate = it.createDate,
-      )
-    },
-    identifiers = identifiers.map {
-      PrisonIdentifier(
-        nomisIdentifierId = NomisIdentifierId(it.offenderId, it.sequence.toInt()),
-        type = Type.valueOf(it.type.code),
-        value = it.identifier,
-        verified = it.verified,
-        comment = it.issuedAuthority,
-        issuedDate = it.issuedDate,
-      )
-    },
-  )
-}
+internal fun CorePersonAddressContact.toMigrateAddressesAndContactsRequest(): PrisonAddressesAndContactsRequest = PrisonAddressesAndContactsRequest()
 
-fun SysconAliasesAndIdentifiersResponseBody.toCorePersonMappingsDto(
+fun SysconAddressesAndContactsResponseBody.toCorePersonMappingsDto(
   migrationId: String? = null,
   migrationType: CorePersonMappingsDto.MappingType = CorePersonMappingsDto.MappingType.MIGRATED,
 ): CorePersonMappingsDto {
   val (aliasMigrationType, identifierMigrationType) = when (migrationType) {
-    CorePersonMappingsDto.MappingType.MIGRATED -> OffenderAliasMappingDto.MappingType.MIGRATED to OffenderIdentifierMappingDto.MappingType.MIGRATED
-    CorePersonMappingsDto.MappingType.CPR_CREATED -> OffenderAliasMappingDto.MappingType.CPR_CREATED to OffenderIdentifierMappingDto.MappingType.CPR_CREATED
-    CorePersonMappingsDto.MappingType.NOMIS_CREATED -> OffenderAliasMappingDto.MappingType.NOMIS_CREATED to OffenderIdentifierMappingDto.MappingType.NOMIS_CREATED
+    CorePersonMappingsDto.MappingType.MIGRATED -> CorePersonAddressMappingDto.MappingType.MIGRATED to CorePersonAddressUsageMappingDto.MappingType.MIGRATED
+    CorePersonMappingsDto.MappingType.CPR_CREATED -> CorePersonAddressMappingDto.MappingType.CPR_CREATED to CorePersonAddressUsageMappingDto.MappingType.CPR_CREATED
+    CorePersonMappingsDto.MappingType.NOMIS_CREATED -> CorePersonAddressMappingDto.MappingType.NOMIS_CREATED to CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED
   }
   return CorePersonMappingsDto(
     mappingType = migrationType,
@@ -213,26 +167,9 @@ fun SysconAliasesAndIdentifiersResponseBody.toCorePersonMappingsDto(
       cprId = prisonNumber,
       nomisPrisonNumber = prisonNumber,
     ),
-    aliases = aliasesMappings.map {
-      OffenderAliasMappingDto(
-        cprId = it.cprAliasId,
-        nomisOffenderId = it.nomisOffenderId,
-        nomisPrisonNumber = prisonNumber,
-        mappingType = aliasMigrationType,
-        label = migrationId,
-        whenCreated = LocalDateTime.now().toString(),
-      )
-    },
-    identifiers = identifiersMappings.map {
-      OffenderIdentifierMappingDto(
-        cprId = it.cprIdentifierId,
-        nomisOffenderId = it.nomisIdentifierId.nomisOffenderId,
-        nomisIdentifierSequence = it.nomisIdentifierId.nomisSequence,
-        nomisPrisonNumber = prisonNumber,
-        mappingType = identifierMigrationType,
-        label = migrationId,
-        whenCreated = LocalDateTime.now().toString(),
-      )
-    },
+    addresses = emptyList(),
+    addressUsages = emptyList(),
+    phoneNumbers = emptyList(),
+    emailAddresses = emptyList(),
   )
 }
