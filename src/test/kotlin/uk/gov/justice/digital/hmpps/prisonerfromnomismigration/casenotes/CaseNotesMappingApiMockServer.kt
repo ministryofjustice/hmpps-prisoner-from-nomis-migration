@@ -68,6 +68,14 @@ class CaseNotesMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetByBooking(bookingId: Long, mappings: List<CaseNoteMappingDto>) {
+    mappingApi.stubFor(
+      get("/mapping/casenotes/booking-id/$bookingId").willReturn(
+        okJson(jsonMapper.writeValueAsString(mappings)),
+      ),
+    )
+  }
+
   fun stubPostMapping() {
     mappingApi.stubFor(
       post("/mapping/casenotes").willReturn(
@@ -163,6 +171,12 @@ class CaseNotesMappingApiMockServer(private val jsonMapper: JsonMapper) {
       put(urlPathMatching("/mapping/casenotes/merge/booking-id/.+/to/.+")).willReturn(
         okJson(jsonMapper.writeValueAsString(response)),
       ),
+    )
+  }
+
+  fun stubDeleteMappingsForBooking() {
+    mappingApi.stubFor(
+      delete(urlPathMatching("/mapping/casenotes/booking-id/.*")).willReturn(status(204)),
     )
   }
 

@@ -11,9 +11,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderBelief
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -33,6 +38,92 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
           .withStatus(status.value())
           .withBody(
             jsonMapper.writeValueAsString(if (status == HttpStatus.OK) corePerson else error),
+          ),
+      ),
+    )
+  }
+
+  fun stubGetCorePersonAddressesAndContacts(
+    prisonNumber: String = "A1234BC",
+    addressesAndContacts: CorePersonAddressContact = CorePersonAddressContact(
+      addresses = listOf(
+        OffenderAddress(
+          addressId = 12345,
+          primaryAddress = true,
+          mailAddress = true,
+          createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
+          createdByUsername = "TEST",
+          lastUpdatedDateTime = null,
+          lastUpdatedByUsername = null,
+          flat = "Flat 2",
+          premise = "The Priory",
+          street = "Main Street",
+          locality = "Sheffield",
+          postcode = "S1 1AA",
+          city = CodeDescription("SHEF", "Sheffield"),
+          county = CodeDescription("YOR", "Yorkshire"),
+          country = CodeDescription("GBR", "United Kingdom"),
+          phoneNumbers = listOf(
+            OffenderPhoneNumber(
+              phoneId = 20000,
+              number = "0114 123 4567",
+              type = CodeDescription("HOME", "Home"),
+              createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
+              createdByUsername = "SYSTEM",
+              lastUpdatedDateTime = null,
+              lastUpdatedByUsername = null,
+              extension = "123",
+            ),
+          ),
+          noFixedAddress = false,
+          comment = "Address comment",
+          startDate = LocalDate.of(2001, 3, 3),
+          endDate = null,
+          usages = listOf(
+            OffenderAddressUsage(
+              addressId = 10000,
+              usage = CodeDescription("HOME", "Home"),
+              active = true,
+              createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
+              createdByUsername = "SYSTEM",
+              lastUpdatedDateTime = null,
+              lastUpdatedByUsername = null,
+            ),
+          ),
+        ),
+      ),
+      phoneNumbers = listOf(
+        OffenderPhoneNumber(
+          phoneId = 30000,
+          number = "07700 900123",
+          type = CodeDescription("MOBILE", "Mobile"),
+          createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
+          createdByUsername = "SYSTEM",
+          lastUpdatedDateTime = null,
+          lastUpdatedByUsername = null,
+        ),
+      ),
+      emailAddresses = listOf(
+        OffenderEmailAddress(
+          emailAddressId = 40000,
+          email = "test@example.com",
+          createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
+          createdByUsername = "SYSTEM",
+          lastUpdatedDateTime = null,
+          lastUpdatedByUsername = null,
+        ),
+      ),
+    ),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$prisonNumber/addresses-contacts")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(
+            jsonMapper.writeValueAsString(if (status == HttpStatus.OK) addressesAndContacts else error),
           ),
       ),
     )

@@ -15,6 +15,8 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.cprCorePersonServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
@@ -26,9 +28,56 @@ import java.time.LocalDateTime
 @ExtendWith(CorePersonCprApiExtension::class)
 @SpringAPIServiceTest
 @Import(CorePersonCprApiService::class, CorePersonConfiguration::class)
-class CorePersonCprApiServiceTest {
-  @Autowired
-  private lateinit var apiService: CorePersonCprApiService
+class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonCprApiService) {
+
+  @Nested
+  inner class MigrateCorePersonAddresses {
+    @Test
+    internal fun `will pass oauth2 token to sync endpoint`() = runTest {
+      cprCorePersonServer.stubMigrateAddressesAndContacts("A1234BC")
+
+      apiService.migrateCorePersonAddressesAndContacts("A1234BC", prisonAddressesRequest())
+
+      cprCorePersonServer.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will post request data to the sync endpoint`() = runTest {
+      cprCorePersonServer.stubMigrateAddressesAndContacts()
+
+      apiService.migrateCorePersonAddressesAndContacts("A1234BC", prisonAddressesRequest())
+
+      cprCorePersonServer.verify(
+        postRequestedFor(anyUrl())
+          .withRequestBodyJsonPath("addresses[0].nomisAddressId", equalTo("12345"))
+          .withRequestBodyJsonPath("addresses[0].isPrimary", equalTo("true"))
+          .withRequestBodyJsonPath("addresses[0].postcode", equalTo("MK15 2ST")),
+      )
+    }
+
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubMigrateAddressesAndContacts("A1234BC")
+
+      apiService.migrateCorePersonAddressesAndContacts("A1234BC", prisonAddressesRequest())
+
+      cprCorePersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/syscon-sync/addresses-contacts/A1234BC")),
+      )
+    }
+
+    @Test
+    fun `should throw if bad request`() = runTest {
+      cprCorePersonServer.stubMigrateAddressesAndContacts("A1234BC", status = BAD_REQUEST)
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.migrateCorePersonAddressesAndContacts("A1234BC", prisonAddressesRequest())
+      }
+    }
+  }
 
   @Nested
   inner class SyncCreateOffenderBelief {
@@ -195,6 +244,20 @@ class CorePersonCprApiServiceTest {
     createUserId = "FRED_GEN",
     modifyDateTime = LocalDateTime.parse("2020-11-01T04:05:00"),
     modifyUserId = "FRED_ADM",
+  )
+
+  fun prisonAddressesRequest() = PrisonAddressesAndContactsRequest(
+    addresses = listOf(
+      PrisonAddress(
+        nomisAddressId = 12345,
+        isPrimary = true,
+        addressUsage = emptyList(),
+        contacts = emptyList(),
+        postcode = "MK15 2ST",
+        createDateTime = LocalDateTime.parse("2019-11-01T04:05:00"),
+        createUserId = "joebiggs",
+      ),
+    ),
   )
 
   fun prisonReligionUpdateRequest() = PrisonReligionUpdateRequest(

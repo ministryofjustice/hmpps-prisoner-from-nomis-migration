@@ -1,50 +1,42 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes
 
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.awaitBodilessEntity
-import org.springframework.web.reactive.function.client.awaitBody
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitSingleOrNullForNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CaseNotesMappingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 
 @Service
 class CaseNotesMappingApiService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CaseNoteMappingDto>(domainUrl = "/mapping/casenotes", webClient) {
-  suspend fun getMappings(
-    ids: List<Long>,
-  ): List<CaseNoteMappingDto> = webClient.post()
-    .uri("/mapping/casenotes/nomis-casenote-id")
-    .bodyValue(ids)
-    .retrieve()
-    .awaitBody()
+  private val api = CaseNotesMappingResourceApi(webClient)
+
+  suspend fun getMappings(ids: List<Long>): List<CaseNoteMappingDto> = api
+    .getCaseNotesMappingsByNomisId(ids).awaitSingle()
 
   suspend fun deleteMappingGivenDpsId(dpsCaseNoteId: String) {
-    webClient.delete()
-      .uri("/mapping/casenotes/dps-casenote-id/{dpsCaseNoteId}", dpsCaseNoteId)
-      .retrieve()
-      .awaitBodilessEntity()
+    api.deleteCaseNotesMappingsByDpsId(dpsCaseNoteId).awaitSingle()
   }
 
-  suspend fun getByDpsId(caseNoteId: String): List<CaseNoteMappingDto> = webClient.get()
-    .uri("/mapping/casenotes/dps-casenote-id/{casenoteId}/all", caseNoteId)
-    .retrieve()
-    .awaitBody()
+  suspend fun getByDpsId(caseNoteId: String): List<CaseNoteMappingDto> = api
+    .getCaseNotesMappingsByDpsId(caseNoteId).awaitSingle()
 
-  suspend fun getMappingGivenNomisIdOrNull(caseNoteId: Long): CaseNoteMappingDto? = webClient.get()
-    .uri("/mapping/casenotes/nomis-casenote-id/{caseNoteId}", caseNoteId)
-    .retrieve()
-    .awaitBodyOrNullWhenNotFound()
+  suspend fun getMappingGivenNomisIdOrNull(caseNoteId: Long): CaseNoteMappingDto? = api
+    .getCaseNotesMappingByNomisId(caseNoteId).awaitSingleOrNullForNotFound()
 
   suspend fun updateMappingsByNomisId(oldOffenderNo: String, newOffenderNo: String) {
-    webClient.put()
-      .uri("/mapping/casenotes/merge/from/{oldOffenderNo}/to/{newOffenderNo}", oldOffenderNo, newOffenderNo)
-      .retrieve()
-      .awaitBodilessEntity()
+    api.updateCaseNoteMappingsByNomisId(oldOffenderNo, newOffenderNo).awaitSingle()
   }
 
-  suspend fun updateMappingsByBookingId(bookingId: Long, newOffenderNo: String): List<CaseNoteMappingDto> = webClient.put()
-    .uri("/mapping/casenotes/merge/booking-id/{bookingId}/to/{newOffenderNo}", bookingId, newOffenderNo)
-    .retrieve()
-    .awaitBody()
+  suspend fun updateMappingsByBookingId(bookingId: Long, newOffenderNo: String): List<CaseNoteMappingDto> = api
+    .updateCaseNotesMappingsByBookingId(bookingId, newOffenderNo).awaitSingle()
+
+  suspend fun deleteMappingsByBookingId(bookingId: Long) {
+    api.deleteCaseNotesMappingByBookingId(bookingId).awaitSingle()
+  }
+
+  suspend fun getMappingsByBookingId(bookingId: Long): List<CaseNoteMappingDto> = api
+    .getCaseNotesMappingsByBookingId(bookingId).awaitSingle()
 }

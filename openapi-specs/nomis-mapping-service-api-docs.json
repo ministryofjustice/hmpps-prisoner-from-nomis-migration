@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-18.820.19a2785"
+    "version" : "2026-09-22.837.4fe98df"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -5780,60 +5780,6 @@
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/ReligionMappingDto"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "201" : {
-            "description" : "Mappings created",
-            "content" : { }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Access forbidden for this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "409" : {
-            "description" : "Indicates a duplicate mapping has been rejected. If Error code = 1409 the body will return a DuplicateErrorResponse",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/DuplicateMappingErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/mapping/core-person-religion" : {
-      "post" : {
-        "tags" : [ "religion-resource" ],
-        "summary" : "Creates a mini tree of religion mappings typically for a migration",
-        "description" : "Requires ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
-        "operationId" : "createReligionMigrationMappings",
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/ReligionsMigrationMappingDto"
               }
             }
           },
@@ -17751,68 +17697,6 @@
         }
       }
     },
-    "/mapping/core-person-religion/religions/nomis-prison-number/{nomisPrisonNumber}" : {
-      "get" : {
-        "tags" : [ "religion-resource" ],
-        "summary" : "Get religions mapping by nomis prison number",
-        "description" : "Requires role ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
-        "operationId" : "getReligionsMappingByNomisPrisonNumber",
-        "parameters" : [ {
-          "name" : "nomisPrisonNumber",
-          "in" : "path",
-          "description" : "NOMIS prison number",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "NOMIS prison number",
-            "example" : "A1234BC"
-          },
-          "example" : "A1234BC"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Mapping data",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ReligionsMappingDto"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Access this endpoint is forbidden",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "404" : {
-            "description" : "Id does not exist in mapping table",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/mapping/core-person-religion/religion/nomis-prison-number/{nomisPrisonNumber}/exists" : {
       "get" : {
         "tags" : [ "religion-resource" ],
@@ -17936,51 +17820,6 @@
             }
           }
         }
-      },
-      "delete" : {
-        "tags" : [ "religion-resource" ],
-        "summary" : "Deletes religion mapping by nomis religion id",
-        "description" : "Requires role ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
-        "operationId" : "deleteReligionMappingByNomisId",
-        "parameters" : [ {
-          "name" : "nomisId",
-          "in" : "path",
-          "description" : "NOMIS religion id",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "NOMIS religion id",
-            "example" : 1234
-          },
-          "example" : 1234
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Mapping deleted or does not exist",
-            "content" : { }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Access this endpoint is forbidden",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/mapping/core-person-religion/religion/cpr-ids" : {
@@ -18090,65 +17929,6 @@
           },
           "404" : {
             "description" : "Id does not exist in mapping table",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/mapping/core-person-religion/migration-id/{migrationId}" : {
-      "get" : {
-        "tags" : [ "religion-resource" ],
-        "summary" : "Get paged religions mappings by migration id",
-        "description" : "Requires role ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
-        "operationId" : "getReligionsMappingsByMigrationId",
-        "parameters" : [ {
-          "name" : "pageRequest",
-          "in" : "query",
-          "required" : true,
-          "schema" : {
-            "$ref" : "#/components/schemas/Pageable"
-          }
-        }, {
-          "name" : "migrationId",
-          "in" : "path",
-          "description" : "Migration Id",
-          "required" : true,
-          "schema" : {
-            "type" : "string",
-            "description" : "Migration Id",
-            "example" : "2020-03-24T12:00:00"
-          },
-          "example" : "2020-03-24T12:00:00"
-        } ],
-        "responses" : {
-          "200" : {
-            "description" : "Religions mapping page returned",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/PageReligionsMappingDto"
-                }
-              }
-            }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden to access this endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -20371,6 +20151,107 @@
           },
           "404" : {
             "description" : "Id does not exist in mapping table",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/casenotes/booking-id/{bookingId}" : {
+      "get" : {
+        "tags" : [ "case-notes-mapping-resource" ],
+        "summary" : "get mappings by booking id",
+        "description" : "Retrieves mappings by NOMIS booking id. If there aren't any, an empty list is returned. Requires role NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "operationId" : "getCaseNotesMappingsByBookingId",
+        "parameters" : [ {
+          "name" : "bookingId",
+          "in" : "path",
+          "description" : "NOMIS booking id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "NOMIS booking id",
+            "example" : 123456
+          },
+          "example" : 123456
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Mapping Information Returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CaseNoteMappingDto"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Id does not exist in mapping table",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "case-notes-mapping-resource" ],
+        "summary" : "Deletes all mappings for this booking id",
+        "description" : "Deletes mappings by booking id. Requires role NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "operationId" : "deleteCaseNotesMappingByBookingId",
+        "parameters" : [ {
+          "name" : "bookingId",
+          "in" : "path",
+          "description" : "The booking id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The booking id",
+            "example" : 1234567
+          },
+          "example" : 1234567
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Mappings Deleted",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -22859,40 +22740,6 @@
           },
           "403" : {
             "description" : "Access this endpoint is forbidden",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/mapping/core-person-religion/all" : {
-      "delete" : {
-        "tags" : [ "religion-resource" ],
-        "summary" : "Delete all religions and religion mappings",
-        "description" : "Requires role ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
-        "operationId" : "deleteAllReligionMappings",
-        "responses" : {
-          "204" : {
-            "description" : "All mappings deleted",
-            "content" : { }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden to access this endpoint",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -26225,6 +26072,112 @@
         },
         "required" : [ "dpsId", "mappingType", "nomisId" ]
       },
+      "CorePersonAddressMappingDto" : {
+        "type" : "object",
+        "properties" : {
+          "cprId" : {
+            "type" : "string",
+            "description" : "CPR id"
+          },
+          "nomisId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "NOMIS id"
+          },
+          "nomisPrisonNumber" : {
+            "type" : "string",
+            "description" : "NOMIS prison number aka Offender number"
+          },
+          "label" : {
+            "type" : [ "string", "null" ],
+            "description" : "Label (a timestamp for migrated ids)"
+          },
+          "mappingType" : {
+            "type" : "string",
+            "description" : "Mapping type",
+            "enum" : [ "MIGRATED", "CPR_CREATED", "NOMIS_CREATED" ]
+          },
+          "whenCreated" : {
+            "type" : "string",
+            "description" : "Date time the mapping was created",
+            "example" : "2021-07-05T10:35:17",
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
+          }
+        },
+        "required" : [ "cprId", "mappingType", "nomisId", "nomisPrisonNumber" ]
+      },
+      "CorePersonAddressUsageMappingDto" : {
+        "type" : "object",
+        "properties" : {
+          "cprId" : {
+            "type" : "string",
+            "description" : "CPR id"
+          },
+          "nomisId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "NOMIS id"
+          },
+          "addressUsageCode" : {
+            "type" : "string",
+            "description" : "NOMIS address usage code"
+          },
+          "nomisPrisonNumber" : {
+            "type" : "string",
+            "description" : "NOMIS prison number aka Offender number"
+          },
+          "label" : {
+            "type" : [ "string", "null" ],
+            "description" : "Label (a timestamp for migrated ids)"
+          },
+          "mappingType" : {
+            "type" : "string",
+            "description" : "Mapping type",
+            "enum" : [ "MIGRATED", "CPR_CREATED", "NOMIS_CREATED" ]
+          },
+          "whenCreated" : {
+            "type" : "string",
+            "description" : "Date time the mapping was created",
+            "example" : "2021-07-05T10:35:17",
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
+          }
+        },
+        "required" : [ "addressUsageCode", "cprId", "mappingType", "nomisId", "nomisPrisonNumber" ]
+      },
+      "CorePersonEmailAddressMappingDto" : {
+        "type" : "object",
+        "properties" : {
+          "cprId" : {
+            "type" : "string",
+            "description" : "CPR id"
+          },
+          "nomisId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "NOMIS id"
+          },
+          "nomisPrisonNumber" : {
+            "type" : "string",
+            "description" : "NOMIS prison number aka Offender number"
+          },
+          "label" : {
+            "type" : [ "string", "null" ],
+            "description" : "Label (a timestamp for migrated ids)"
+          },
+          "mappingType" : {
+            "type" : "string",
+            "description" : "Mapping type",
+            "enum" : [ "MIGRATED", "CPR_CREATED", "NOMIS_CREATED" ]
+          },
+          "whenCreated" : {
+            "type" : "string",
+            "description" : "Date time the mapping was created",
+            "example" : "2021-07-05T10:35:17",
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
+          }
+        },
+        "required" : [ "cprId", "mappingType", "nomisId", "nomisPrisonNumber" ]
+      },
       "CorePersonMappingIdDto" : {
         "type" : "object",
         "description" : "NOMIS to CPR core person mapping IDs",
@@ -26263,34 +26216,53 @@
             "$ref" : "#/components/schemas/CorePersonMappingIdDto",
             "description" : "Core Person mapping"
           },
-          "aliases" : {
+          "addresses" : {
             "type" : "array",
-            "description" : "Core Person alias mappings",
+            "description" : "Core Person address mappings",
             "items" : {
-              "$ref" : "#/components/schemas/OffenderAliasMappingDto"
+              "$ref" : "#/components/schemas/CorePersonAddressMappingDto"
             }
           },
-          "identifiers" : {
+          "phoneNumbers" : {
             "type" : "array",
-            "description" : "Core Person identifier mappings",
+            "description" : "Core Person phone numbers mappings",
             "items" : {
-              "$ref" : "#/components/schemas/OffenderIdentifierMappingDto"
+              "$ref" : "#/components/schemas/CorePersonPhoneMappingDto"
+            }
+          },
+          "emailAddresses" : {
+            "type" : "array",
+            "description" : "Core Person email addresses mappings",
+            "items" : {
+              "$ref" : "#/components/schemas/CorePersonEmailAddressMappingDto"
+            }
+          },
+          "addressUsages" : {
+            "type" : "array",
+            "description" : "Core Person address usage mappings",
+            "items" : {
+              "$ref" : "#/components/schemas/CorePersonAddressUsageMappingDto"
             }
           }
         },
-        "required" : [ "aliases", "identifiers", "mappingType", "personMapping" ]
+        "required" : [ "addressUsages", "addresses", "emailAddresses", "mappingType", "personMapping", "phoneNumbers" ]
       },
-      "OffenderAliasMappingDto" : {
+      "CorePersonPhoneMappingDto" : {
         "type" : "object",
         "properties" : {
           "cprId" : {
             "type" : "string",
             "description" : "CPR id"
           },
-          "nomisOffenderId" : {
+          "nomisId" : {
             "type" : "integer",
             "format" : "int64",
-            "description" : "NOMIS offender id"
+            "description" : "NOMIS id"
+          },
+          "cprPhoneType" : {
+            "type" : "string",
+            "description" : "CPR phone type",
+            "enum" : [ "ADDRESS", "CORE_PERSON" ]
           },
           "nomisPrisonNumber" : {
             "type" : "string",
@@ -26312,7 +26284,35 @@
             "pattern" : "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
           }
         },
-        "required" : [ "cprId", "mappingType", "nomisOffenderId", "nomisPrisonNumber" ]
+        "required" : [ "cprId", "cprPhoneType", "mappingType", "nomisId", "nomisPrisonNumber" ]
+      },
+      "ProfileMappingIdDto" : {
+        "type" : "object",
+        "properties" : {
+          "cprId" : {
+            "type" : "string",
+            "description" : "CPR profile id"
+          },
+          "nomisBookingId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "NOMIS booking id"
+          },
+          "nomisProfileType" : {
+            "type" : "string",
+            "description" : "NOMIS profile type"
+          },
+          "nomisPrisonNumber" : {
+            "type" : "string",
+            "description" : "NOMIS Prison number aka Offender number"
+          },
+          "mappingType" : {
+            "type" : "string",
+            "description" : "Mapping type - currently defaulted to be NOMIS_CREATED",
+            "enum" : [ "MIGRATED", "CPR_CREATED", "NOMIS_CREATED" ]
+          }
+        },
+        "required" : [ "cprId", "mappingType", "nomisBookingId", "nomisPrisonNumber", "nomisProfileType" ]
       },
       "OffenderIdentifierMappingDto" : {
         "type" : "object",
@@ -26353,33 +26353,39 @@
         },
         "required" : [ "cprId", "mappingType", "nomisIdentifierSequence", "nomisOffenderId", "nomisPrisonNumber" ]
       },
-      "ProfileMappingIdDto" : {
+      "OffenderAliasMappingDto" : {
         "type" : "object",
         "properties" : {
           "cprId" : {
             "type" : "string",
-            "description" : "CPR profile id"
+            "description" : "CPR id"
           },
-          "nomisBookingId" : {
+          "nomisOffenderId" : {
             "type" : "integer",
             "format" : "int64",
-            "description" : "NOMIS booking id"
-          },
-          "nomisProfileType" : {
-            "type" : "string",
-            "description" : "NOMIS profile type"
+            "description" : "NOMIS offender id"
           },
           "nomisPrisonNumber" : {
             "type" : "string",
-            "description" : "NOMIS Prison number aka Offender number"
+            "description" : "NOMIS prison number aka Offender number"
+          },
+          "label" : {
+            "type" : [ "string", "null" ],
+            "description" : "Label (a timestamp for migrated ids)"
           },
           "mappingType" : {
             "type" : "string",
-            "description" : "Mapping type - currently defaulted to be NOMIS_CREATED",
+            "description" : "Mapping type",
             "enum" : [ "MIGRATED", "CPR_CREATED", "NOMIS_CREATED" ]
+          },
+          "whenCreated" : {
+            "type" : "string",
+            "description" : "Date time the mapping was created",
+            "example" : "2021-07-05T10:35:17",
+            "pattern" : "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
           }
         },
-        "required" : [ "cprId", "mappingType", "nomisBookingId", "nomisPrisonNumber", "nomisProfileType" ]
+        "required" : [ "cprId", "mappingType", "nomisOffenderId", "nomisPrisonNumber" ]
       },
       "OffenderAliasMapping" : {
         "type" : "object",
@@ -28304,41 +28310,6 @@
         },
         "required" : [ "cprId", "mappingType", "nomisBookingId", "nomisPrisonNumber", "nomisProfileType" ]
       },
-      "CorePersonPhoneMappingDto" : {
-        "type" : "object",
-        "properties" : {
-          "cprId" : {
-            "type" : "string",
-            "description" : "CPR id"
-          },
-          "nomisId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "NOMIS id"
-          },
-          "cprPhoneType" : {
-            "type" : "string",
-            "description" : "CPR phone type",
-            "enum" : [ "ADDRESS", "CORE_PERSON" ]
-          },
-          "label" : {
-            "type" : [ "string", "null" ],
-            "description" : "Label (a timestamp for migrated ids)"
-          },
-          "mappingType" : {
-            "type" : "string",
-            "description" : "Mapping type",
-            "enum" : [ "MIGRATED", "CPR_CREATED", "NOMIS_CREATED" ]
-          },
-          "whenCreated" : {
-            "type" : "string",
-            "description" : "Date time the mapping was created",
-            "example" : "2021-07-05T10:35:17",
-            "pattern" : "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
-          }
-        },
-        "required" : [ "cprId", "cprPhoneType", "mappingType", "nomisId" ]
-      },
       "CorePersonMappingDto" : {
         "type" : "object",
         "properties" : {
@@ -28414,90 +28385,6 @@
           }
         }
       },
-      "CorePersonEmailAddressMappingDto" : {
-        "type" : "object",
-        "properties" : {
-          "cprId" : {
-            "type" : "string",
-            "description" : "CPR id"
-          },
-          "nomisId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "NOMIS id"
-          },
-          "label" : {
-            "type" : [ "string", "null" ],
-            "description" : "Label (a timestamp for migrated ids)"
-          },
-          "mappingType" : {
-            "type" : "string",
-            "description" : "Mapping type",
-            "enum" : [ "MIGRATED", "CPR_CREATED", "NOMIS_CREATED" ]
-          },
-          "whenCreated" : {
-            "type" : "string",
-            "description" : "Date time the mapping was created",
-            "example" : "2021-07-05T10:35:17",
-            "pattern" : "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
-          }
-        },
-        "required" : [ "cprId", "mappingType", "nomisId" ]
-      },
-      "CorePersonAddressMappingDto" : {
-        "type" : "object",
-        "properties" : {
-          "cprId" : {
-            "type" : "string",
-            "description" : "CPR id"
-          },
-          "nomisId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "NOMIS id"
-          },
-          "label" : {
-            "type" : [ "string", "null" ],
-            "description" : "Label (a timestamp for migrated ids)"
-          },
-          "mappingType" : {
-            "type" : "string",
-            "description" : "Mapping type",
-            "enum" : [ "MIGRATED", "CPR_CREATED", "NOMIS_CREATED" ]
-          },
-          "whenCreated" : {
-            "type" : "string",
-            "description" : "Date time the mapping was created",
-            "example" : "2021-07-05T10:35:17",
-            "pattern" : "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
-          }
-        },
-        "required" : [ "cprId", "mappingType", "nomisId" ]
-      },
-      "ReligionsMappingDto" : {
-        "type" : "object",
-        "properties" : {
-          "cprId" : {
-            "type" : "string"
-          },
-          "nomisPrisonNumber" : {
-            "type" : "string"
-          },
-          "label" : {
-            "type" : [ "string", "null" ]
-          },
-          "mappingType" : {
-            "type" : "string",
-            "enum" : [ "MIGRATED", "DPS_CREATED", "NOMIS_CREATED" ]
-          },
-          "whenCreated" : {
-            "type" : "string",
-            "example" : "2021-07-05T10:35:17",
-            "pattern" : "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
-          }
-        },
-        "required" : [ "cprId", "mappingType", "nomisPrisonNumber" ]
-      },
       "BooleanResult" : {
         "type" : "object",
         "properties" : {
@@ -28506,52 +28393,6 @@
           }
         },
         "required" : [ "exists" ]
-      },
-      "PageReligionsMappingDto" : {
-        "type" : "object",
-        "properties" : {
-          "totalPages" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "totalElements" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "size" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "content" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ReligionsMappingDto"
-            }
-          },
-          "number" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
-          "pageable" : {
-            "$ref" : "#/components/schemas/PageableObject"
-          },
-          "numberOfElements" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
-          "first" : {
-            "type" : "boolean"
-          },
-          "last" : {
-            "type" : "boolean"
-          },
-          "empty" : {
-            "type" : "boolean"
-          }
-        }
       },
       "PagePersonMappingDto" : {
         "type" : "object",
