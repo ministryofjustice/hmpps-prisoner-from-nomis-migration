@@ -11,8 +11,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderBelief
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
@@ -33,6 +35,36 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
           .withStatus(status.value())
           .withBody(
             jsonMapper.writeValueAsString(if (status == HttpStatus.OK) corePerson else error),
+          ),
+      ),
+    )
+  }
+
+  fun stubGetCorePersonAddressesAndContacts(
+    prisonNumber: String = "A1234BC",
+    addressesAndContacts: CorePersonAddressContact = CorePersonAddressContact(
+      addresses = listOf(
+        OffenderAddress(
+          addressId = 12345,
+          primaryAddress = true,
+          mailAddress = true,
+          createdDateTime = LocalDateTime.MIN,
+          createdByUsername = "TEST",
+          lastUpdatedDateTime = null,
+          lastUpdatedByUsername = null,
+        ),
+      ),
+    ),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$prisonNumber/addresses-contacts")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(
+            jsonMapper.writeValueAsString(if (status == HttpStatus.OK) addressesAndContacts else error),
           ),
       ),
     )
