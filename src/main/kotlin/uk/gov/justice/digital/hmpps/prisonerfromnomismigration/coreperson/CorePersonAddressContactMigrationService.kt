@@ -280,15 +280,26 @@ fun SysconAddressesAndContactsResponseBody.toCorePersonMappingsDto(
         )
       }
     },
-    phoneNumbers = contactMappings.filter { it.nomisContactType != SysconContactMapping.NomisContactType.EMAIL }.map {
-      CorePersonPhoneMappingDto(
-        cprId = it.cprContactId,
-        nomisId = it.nomisContactId,
-        nomisPrisonNumber = prisonNumber,
-        mappingType = migrationTypes.phoneType,
-        label = migrationId,
-      )
-    },
+    phoneNumbers = addressesMappings.flatMap { a ->
+      a.contactMappings.map {
+        CorePersonPhoneMappingDto(
+          cprId = it.cprContactId,
+          nomisId = it.nomisContactId,
+          nomisPrisonNumber = prisonNumber,
+          mappingType = migrationTypes.phoneType,
+          label = migrationId,
+        )
+      }
+    } +
+      contactMappings.filter { it.nomisContactType != SysconContactMapping.NomisContactType.EMAIL }.map {
+        CorePersonPhoneMappingDto(
+          cprId = it.cprContactId,
+          nomisId = it.nomisContactId,
+          nomisPrisonNumber = prisonNumber,
+          mappingType = migrationTypes.phoneType,
+          label = migrationId,
+        )
+      },
     emailAddresses = contactMappings.filter { it.nomisContactType == SysconContactMapping.NomisContactType.EMAIL }.map {
       CorePersonEmailAddressMappingDto(
         cprId = it.cprContactId,

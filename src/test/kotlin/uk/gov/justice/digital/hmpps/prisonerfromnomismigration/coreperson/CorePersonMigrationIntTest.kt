@@ -227,11 +227,11 @@ class CorePersonMigrationIntTest(
         with(mappingRequests.first()) {
           assertThat(mappingType).isEqualTo(CorePersonMappingsDto.MappingType.MIGRATED)
           assertThat(label).isEqualTo(migrationResult.migrationId)
-          assertThat(nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
+          assertThat(personMapping.cprId).isEqualTo(nomisPrisonNumber)
           assertThat(personMapping.nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
           assertThat(addresses).hasSize(1)
           assertThat(addressUsages).hasSize(1)
-          assertThat(phoneNumbers).hasSize(1)
+          assertThat(phoneNumbers).hasSize(2)
           assertThat(emailAddresses).hasSize(1)
         }
       }
@@ -315,7 +315,7 @@ class CorePersonMigrationIntTest(
         with(mappingRequests.first()) {
           assertThat(mappingType).isEqualTo(CorePersonMappingsDto.MappingType.MIGRATED)
           assertThat(label).isEqualTo(migrationResult.migrationId)
-          assertThat(nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
+          assertThat(personMapping.cprId).isEqualTo(nomisPrisonNumber)
           assertThat(personMapping.nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
           assertThat(addresses).hasSize(1)
           assertThat(phoneNumbers).hasSize(0)
@@ -397,18 +397,18 @@ class CorePersonMigrationIntTest(
         mappingApiMock.stubGetMigrationCount(count = 81, testData().corePersonMapping)
         // wait until all records have individually migrated since status check might finish just before some entities are still in flight due to the "big" numbers
         migrationResult = performMigration {
-          verify(telemetryClient, times(80)).trackEvent(eq("coreperson-address-contact-migration-entity-migrated"), any(), isNull())
+          verify(telemetryClient, times(81)).trackEvent(eq("coreperson-address-contact-migration-entity-migrated"), any(), isNull())
         }
       }
 
       @Test
-      fun `will migrate 80 records exactly once`() {
+      fun `will migrate 81 records exactly once`() {
         val migrationRequests =
           cprApiMock.getRequestsAsString(postRequestedFor(urlPathMatching("/syscon-sync/addresses-contacts/.*")))
 
-        assertThat(migrationRequests).hasSize(80)
+        assertThat(migrationRequests).hasSize(81)
         assertThat(migrationRequests).containsExactlyInAnyOrderElementsOf(
-          (0L..<80L).map { "/syscon-sync/addresses-contacts/${nomisPrisonNumber.replacePrisonNumber(it)}" },
+          (0L..<81L).map { "/syscon-sync/addresses-contacts/${nomisPrisonNumber.replacePrisonNumber(it)}" },
         )
       }
     }
@@ -732,7 +732,13 @@ class CorePersonMigrationIntTest(
             cprAddressUsageId = "d50f33bf-8c98-4c55-a4a3-b4d8d1e73732",
           ),
         ),
-        contactMappings = emptyList(),
+        contactMappings = listOf(
+          SysconContactMapping(
+            nomisContactId = 30001L,
+            nomisContactType = SysconContactMapping.NomisContactType.MOBILE,
+            cprContactId = "f48fc155-0cfe-4c3f-94b0-869bab03645b",
+          ),
+        ),
       ),
     ),
     contactsMapping = listOf(

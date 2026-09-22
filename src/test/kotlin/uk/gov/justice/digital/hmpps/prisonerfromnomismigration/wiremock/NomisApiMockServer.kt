@@ -567,9 +567,9 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubGetAllPrisonersIdRanges(pageSize: Long = 10, totalElements: Long = 20) {
-    val content: List<IdRange> = (0..(totalElements / pageSize + if (totalElements % pageSize > 0) 1 else 0))
-      .zipWithNext()
-      .map { IdRange(it.first * pageSize, it.second * pageSize) }
+    val content = generateSequence(0L) { start -> (start + pageSize).takeIf { it < totalElements } }
+      .map { start -> IdRange(start, minOf(start + pageSize, totalElements)) }
+      .toList()
     nomisApi.stubFor(
       get(urlPathEqualTo("/prisoners/id-ranges")).willReturn(
         aResponse()
