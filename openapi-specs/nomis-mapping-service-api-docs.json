@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-22.837.4fe98df"
+    "version" : "2026-09-22.840.60e8d40"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -26259,11 +26259,6 @@
             "format" : "int64",
             "description" : "NOMIS id"
           },
-          "cprPhoneType" : {
-            "type" : "string",
-            "description" : "CPR phone type",
-            "enum" : [ "ADDRESS", "CORE_PERSON" ]
-          },
           "nomisPrisonNumber" : {
             "type" : "string",
             "description" : "NOMIS prison number aka Offender number"
@@ -26284,7 +26279,7 @@
             "pattern" : "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}$"
           }
         },
-        "required" : [ "cprId", "cprPhoneType", "mappingType", "nomisId", "nomisPrisonNumber" ]
+        "required" : [ "cprId", "mappingType", "nomisId", "nomisPrisonNumber" ]
       },
       "ProfileMappingIdDto" : {
         "type" : "object",
