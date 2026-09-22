@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.caseNotesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingMovedDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.generateUUID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
@@ -353,8 +354,6 @@ class CaseNotesMergeIntTest(
   inner class OffenderMergedNoMergeCopies {
     private val survivorOffenderNo = "A1234BB"
     private val removedOffenderNo = "A1234AA"
-    private val aMomentAgo = LocalDateTime.now().minusSeconds(1).toString()
-    private val fiveMinutesAgo = LocalDateTime.now().minusMinutes(5).toString()
 
     @BeforeEach
     fun setUp() {
@@ -594,8 +593,6 @@ class CaseNotesMergeIntTest(
         )
       }
     }
-
-    private fun generateUUID(i: Int): String = "00001111-2222-3333-4444-000000${i.toString().padStart(6, '0')}"
   }
 }
 

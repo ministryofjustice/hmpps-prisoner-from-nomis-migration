@@ -31,6 +31,7 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension.Companion.caseNotesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiMockServer.Companion.dpsCaseNote
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingDeletedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CaseNoteMappingDto.MappingType.MIGRATED
@@ -41,8 +42,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
 import java.time.LocalDateTime
-import java.util.*
 import java.util.AbstractMap.SimpleEntry
+import java.util.UUID
 
 private const val BOOKING_ID = 1234L
 private const val NOMIS_CASE_NOTE_ID = 2345678L
@@ -806,7 +807,7 @@ class CaseNotesSynchronisationIntTest(
         fun `telemetry added to track that the delete was ignored`() {
           await untilAsserted {
             verify(telemetryClient, atLeastOnce()).trackEvent(
-              eq("casenotes-deleted-synchronisation-skipped"),
+              eq("casenotes-synchronisation-deleted-skipped"),
               check {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
@@ -1103,6 +1104,126 @@ class CaseNotesSynchronisationIntTest(
       }
     }
   }
+
+  @Nested
+  @DisplayName("BOOKING-DELETED")
+  inner class BookingDeleted {
+    val caseNote1 = CaseNoteMappingDto(
+      nomisBookingId = BOOKING_ID,
+      nomisCaseNoteId = NOMIS_CASE_NOTE_ID,
+      dpsCaseNoteId = DPS_CASE_NOTE_ID,
+      offenderNo = OFFENDER_ID_DISPLAY,
+      mappingType = MIGRATED,
+    )
+    val caseNote2 = CaseNoteMappingDto(
+      nomisBookingId = 999999L,
+      nomisCaseNoteId = NOMIS_CASE_NOTE_ID2,
+      dpsCaseNoteId = DPS_CASE_NOTE_ID,
+      offenderNo = OFFENDER_ID_DISPLAY,
+      mappingType = MIGRATED,
+    )
+
+    @Nested
+    @DisplayName("When mapping does exist")
+    inner class MappingExists {
+      @BeforeEach
+      fun setUp() {
+        caseNotesMappingApiMockServer.stubGetByBooking(BOOKING_ID, listOf(caseNote1))
+        caseNotesMappingApiMockServer.stubGetByDpsId(DPS_CASE_NOTE_ID, listOf(caseNote1))
+        caseNotesApi.stubDeleteCaseNote()
+        caseNotesMappingApiMockServer.stubDeleteMappingsForBooking()
+        awsSqsCaseNoteOffenderEventsClient.sendMessage(
+          caseNotesQueueOffenderEventsUrl,
+          bookingDeletedEvent(BOOKING_ID, OFFENDER_ID_DISPLAY),
+        )
+      }
+
+      @Test
+      fun `will delete CaseNote in DPS`() {
+        await untilAsserted {
+          caseNotesApi.verify(
+            1,
+            deleteRequestedFor(urlPathEqualTo("/sync/case-notes/$DPS_CASE_NOTE_ID")),
+          )
+        }
+      }
+
+      @Test
+      fun `will delete CaseNote mappings`() {
+        await untilAsserted {
+          caseNotesMappingApiMockServer.verify(
+            1,
+            deleteRequestedFor(urlPathEqualTo("/mapping/casenotes/booking-id/$BOOKING_ID")),
+          )
+        }
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("casenotes-booking-deleted-success"),
+            check {
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["count"]).isEqualTo("1")
+              assertThat(it["deleted-count"]).isEqualTo("1")
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("When mapping for DPS CaseNote is not unique")
+    inner class MappingShared {
+      @BeforeEach
+      fun setUp() {
+        caseNotesMappingApiMockServer.stubGetByBooking(BOOKING_ID, listOf(caseNote1))
+        caseNotesMappingApiMockServer.stubGetByDpsId(DPS_CASE_NOTE_ID, listOf(caseNote1, caseNote2))
+        caseNotesApi.stubDeleteCaseNote()
+        caseNotesMappingApiMockServer.stubDeleteMappingsForBooking()
+        awsSqsCaseNoteOffenderEventsClient.sendMessage(
+          caseNotesQueueOffenderEventsUrl,
+          bookingDeletedEvent(BOOKING_ID, OFFENDER_ID_DISPLAY),
+        )
+      }
+
+      @Test
+      fun `will NOT delete CaseNote in DPS`() {
+        await untilAsserted {
+          caseNotesApi.verify(0, deleteRequestedFor(urlPathEqualTo("/sync/case-notes/$DPS_CASE_NOTE_ID")))
+        }
+      }
+
+      @Test
+      fun `will delete CaseNote mappings`() {
+        await untilAsserted {
+          caseNotesMappingApiMockServer.verify(
+            1,
+            deleteRequestedFor(urlPathEqualTo("/mapping/casenotes/booking-id/$BOOKING_ID")),
+          )
+        }
+      }
+
+      @Test
+      fun `will track a telemetry event for success`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("casenotes-booking-deleted-success"),
+            check {
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["count"]).isEqualTo("1")
+              assertThat(it["deleted-count"]).isEqualTo("0")
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+  }
 }
 
 fun caseNoteEvent(
@@ -1138,7 +1259,6 @@ fun caseNoteDeleteEvent(
     }
 }
 """.trimIndent()
-// // "{\"eventType\":\"OFFENDER_CASE_NOTES-DELETED\",\"eventDatetime\":\"2025-01-08T08:21:34\",\"bookingId\":2981341,\"recordDeleted\":true,\"caseNoteId\":115082013,\"caseNoteType\":\"PRISON\",\"caseNoteSubType\":\"RELEASE\"}",
 
 private fun caseNote(bookingId: Long = 123456, caseNoteId: Long = 3) = CaseNoteResponse(
   bookingId = bookingId,
