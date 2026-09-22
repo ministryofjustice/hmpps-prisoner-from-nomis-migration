@@ -6,7 +6,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
@@ -14,10 +13,7 @@ import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ReligionsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
-import java.time.LocalDateTime
 
 @Component
 class ReligionsMappingApiMockServer(private val jsonMapper: JsonMapper) {
@@ -44,70 +40,6 @@ class ReligionsMappingApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
   }
-  fun stubGetMigrationCount(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
-    mappingApi.stubFor(
-      get(urlPathMatching("/mapping/core-person-religion/migration-id/.*")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            pageContent(
-              jsonMapper = jsonMapper,
-              content = listOf(
-                ReligionsMappingDto(
-                  cprId = "654321",
-                  label = migrationId,
-                  whenCreated = LocalDateTime.now().toString(),
-                  nomisPrisonNumber = "A1234BC",
-                  mappingType = ReligionsMappingDto.MappingType.MIGRATED,
-                ),
-              ),
-              pageSize = 1L,
-              pageNumber = 0L,
-              totalElements = count.toLong(),
-              size = 1,
-            ),
-          ),
-      ),
-    )
-  }
-
-  fun stubGetReligionsByNomisPrisonNumberOrNull(
-    nomisPrisonNumber: String = "A1234BC",
-    mapping: ReligionsMappingDto? = ReligionsMappingDto(
-      cprId = "123456",
-      mappingType = ReligionsMappingDto.MappingType.MIGRATED,
-      nomisPrisonNumber = nomisPrisonNumber,
-    ),
-  ) {
-    mapping?.apply {
-      mappingApi.stubFor(
-        get(urlEqualTo("/mapping/core-person-religion/religions/nomis-prison-number/$nomisPrisonNumber")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.OK.value())
-            .withBody(jsonMapper.writeValueAsString(mapping)),
-        ),
-      )
-    } ?: run {
-      mappingApi.stubFor(
-        get(urlEqualTo("/mapping/core-person-religion/religions/nomis-prison-number/$nomisPrisonNumber")).willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.NOT_FOUND.value())
-            .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = 404))),
-        ),
-      )
-    }
-  }
-
-  fun stubGetReligionsByNomisPrisonNumber(
-    nomisPrisonNumber: String = "A1234BC",
-    mapping: ReligionsMappingDto = ReligionsMappingDto(
-      cprId = "123456",
-      mappingType = ReligionsMappingDto.MappingType.MIGRATED,
-      nomisPrisonNumber = nomisPrisonNumber,
-    ),
-  ) = stubGetReligionsByNomisPrisonNumberOrNull(nomisPrisonNumber, mapping)
 
   fun stubCreateReligionMapping() {
     mappingApi.stubFor(
