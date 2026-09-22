@@ -7,17 +7,30 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressUsage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressUsage.AddressUsageCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto.CprPhoneType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddressUsage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRangeMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
@@ -27,7 +40,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
 @Service
-class CorePersonAliasIdentifierMigrationService(
+class CorePersonAddressContactMigrationService(
   private val corePersonMappingService: CorePersonMappingService,
   private val corePersonNomisApiService: CorePersonNomisApiService,
   private val cprApiService: CorePersonCprApiService,
@@ -149,16 +162,96 @@ class CorePersonAliasIdentifierMigrationService(
   override fun parseContextMapping(json: String): MigrationMessage<*, CorePersonMappingsDto> = jsonMapper.readValue(json)
 }
 
-internal fun CorePersonAddressContact.toMigrateAddressesAndContactsRequest(): PrisonAddressesAndContactsRequest = PrisonAddressesAndContactsRequest()
+internal fun CorePersonAddressContact.toMigrateAddressesAndContactsRequest(): PrisonAddressesAndContactsRequest = PrisonAddressesAndContactsRequest(
+  addresses = addresses?.map { it.toPrisonAddressRequest() },
+  contacts = (phoneNumbers?.map { it.toPrisonPhoneNumberRequest() } ?: emptyList()) + (emailAddresses?.map { it.toPrisonEmailAddressRequest() } ?: emptyList()),
+)
+
+private fun OffenderAddress.toPrisonAddressRequest(): PrisonAddress = PrisonAddress(
+  nomisAddressId = addressId,
+  subBuildingName = flat,
+  buildingNumber = premise,
+  thoroughfareName = street,
+  dependentLocality = locality,
+  postcode = postcode,
+  postTown = city?.description,
+  county = county?.description,
+  countryCode = country.mapCountryCode(),
+  isPrimary = primaryAddress,
+  noFixedAbode = noFixedAddress,
+  isMail = mailAddress,
+  comment = comment,
+  startDate = startDate,
+  endDate = endDate,
+  createDateTime = createdDateTime,
+  createUserId = createdByUsername,
+  modifyDateTime = lastUpdatedDateTime,
+  modifyUserId = lastUpdatedByUsername,
+  addressUsage = usages?.map { it.toPrisonAddressUsageRequest() } ?: emptyList(),
+  contacts = phoneNumbers?.map { it.toPrisonPhoneNumberRequest() } ?: emptyList(),
+)
+
+private fun CodeDescription?.mapCountryCode(): PrisonAddress.CountryCode? = when (this?.code) {
+  null -> null
+  "IOM" -> PrisonAddress.CountryCode.IMN
+  "ROM" -> PrisonAddress.CountryCode.ROU
+  else -> PrisonAddress.CountryCode.valueOf(this.code)
+}
+
+private fun OffenderAddressUsage.toPrisonAddressUsageRequest(): PrisonAddressUsage = PrisonAddressUsage(
+  nomisAddressUsageId = addressId,
+  addressUsageCode = if (usage.code == "DISC") AddressUsageCode.RELEASE else AddressUsageCode.valueOf(usage.code),
+  isActive = active,
+  createDateTime = createdDateTime,
+  createUserId = createdByUsername,
+  modifyDateTime = lastUpdatedDateTime,
+  modifyUserId = lastUpdatedByUsername,
+)
+
+private fun OffenderPhoneNumber.toPrisonPhoneNumberRequest(): PrisonContact = PrisonContact(
+  type = if (type.code == "MOB") PrisonContact.Type.MOBILE else PrisonContact.Type.valueOf(type.code),
+  createDateTime = createdDateTime,
+  createUserId = createdByUsername,
+  nomisContactId = phoneId,
+  value = number,
+  extension = extension,
+  modifyDateTime = lastUpdatedDateTime,
+  modifyUserId = lastUpdatedByUsername,
+)
+
+private fun OffenderEmailAddress.toPrisonEmailAddressRequest(): PrisonContact = PrisonContact(
+  type = PrisonContact.Type.EMAIL,
+  createDateTime = createdDateTime,
+  createUserId = createdByUsername,
+  nomisContactId = emailAddressId,
+  value = email,
+  modifyDateTime = lastUpdatedDateTime,
+  modifyUserId = lastUpdatedByUsername,
+)
 
 fun SysconAddressesAndContactsResponseBody.toCorePersonMappingsDto(
   migrationId: String? = null,
   migrationType: CorePersonMappingsDto.MappingType = CorePersonMappingsDto.MappingType.MIGRATED,
 ): CorePersonMappingsDto {
-  val (aliasMigrationType, identifierMigrationType) = when (migrationType) {
-    CorePersonMappingsDto.MappingType.MIGRATED -> CorePersonAddressMappingDto.MappingType.MIGRATED to CorePersonAddressUsageMappingDto.MappingType.MIGRATED
-    CorePersonMappingsDto.MappingType.CPR_CREATED -> CorePersonAddressMappingDto.MappingType.CPR_CREATED to CorePersonAddressUsageMappingDto.MappingType.CPR_CREATED
-    CorePersonMappingsDto.MappingType.NOMIS_CREATED -> CorePersonAddressMappingDto.MappingType.NOMIS_CREATED to CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED
+  val migrationTypes = when (migrationType) {
+    CorePersonMappingsDto.MappingType.MIGRATED -> MigrationTypes(
+      CorePersonAddressMappingDto.MappingType.MIGRATED,
+      CorePersonAddressUsageMappingDto.MappingType.MIGRATED,
+      CorePersonPhoneMappingDto.MappingType.MIGRATED,
+      CorePersonEmailAddressMappingDto.MappingType.MIGRATED,
+    )
+    CorePersonMappingsDto.MappingType.CPR_CREATED -> MigrationTypes(
+      CorePersonAddressMappingDto.MappingType.CPR_CREATED,
+      CorePersonAddressUsageMappingDto.MappingType.CPR_CREATED,
+      CorePersonPhoneMappingDto.MappingType.CPR_CREATED,
+      CorePersonEmailAddressMappingDto.MappingType.CPR_CREATED,
+    )
+    CorePersonMappingsDto.MappingType.NOMIS_CREATED -> MigrationTypes(
+      CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
+      CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED,
+      CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+      CorePersonEmailAddressMappingDto.MappingType.NOMIS_CREATED,
+    )
   }
   return CorePersonMappingsDto(
     mappingType = migrationType,
@@ -167,9 +260,53 @@ fun SysconAddressesAndContactsResponseBody.toCorePersonMappingsDto(
       cprId = prisonNumber,
       nomisPrisonNumber = prisonNumber,
     ),
-    addresses = emptyList(),
-    addressUsages = emptyList(),
-    phoneNumbers = emptyList(),
-    emailAddresses = emptyList(),
+    addresses = addressesMappings.map {
+      CorePersonAddressMappingDto(
+        cprId = it.cprAddressId,
+        nomisId = it.nomisAddressId,
+        nomisPrisonNumber = prisonNumber,
+        mappingType = migrationTypes.addressType,
+        label = migrationId,
+      )
+    },
+    addressUsages = addressesMappings.flatMap { a ->
+      a.addressUsageMappings.map {
+        CorePersonAddressUsageMappingDto(
+          cprId = it.cprAddressUsageId,
+          nomisId = it.nomisAddressUsageId,
+          nomisPrisonNumber = prisonNumber,
+          mappingType = migrationTypes.addressUsageType,
+          addressUsageCode = it.nomisAddressUsageCode.value,
+          label = migrationId,
+        )
+      }
+    },
+    phoneNumbers = contactMappings.filter { it.nomisContactType != SysconContactMapping.NomisContactType.EMAIL }.map {
+      CorePersonPhoneMappingDto(
+        cprId = it.cprContactId,
+        nomisId = it.nomisContactId,
+        // TODO: Work out what is going on here and how to map
+        cprPhoneType = CprPhoneType.CORE_PERSON,
+        nomisPrisonNumber = prisonNumber,
+        mappingType = migrationTypes.phoneType,
+        label = migrationId,
+      )
+    },
+    emailAddresses = contactMappings.filter { it.nomisContactType == SysconContactMapping.NomisContactType.EMAIL }.map {
+      CorePersonEmailAddressMappingDto(
+        cprId = it.cprContactId,
+        nomisId = it.nomisContactId,
+        nomisPrisonNumber = prisonNumber,
+        mappingType = migrationTypes.emailType,
+        label = migrationId,
+      )
+    },
   )
 }
+
+data class MigrationTypes(
+  val addressType: CorePersonAddressMappingDto.MappingType,
+  val addressUsageType: CorePersonAddressUsageMappingDto.MappingType,
+  val phoneType: CorePersonPhoneMappingDto.MappingType,
+  val emailType: CorePersonEmailAddressMappingDto.MappingType,
+)
