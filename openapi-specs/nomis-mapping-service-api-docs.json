@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-21.827.736c013"
+    "version" : "2026-09-22.833.fdda0e0"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -20162,6 +20162,107 @@
         }
       }
     },
+    "/mapping/casenotes/booking-id/{bookingId}" : {
+      "get" : {
+        "tags" : [ "case-notes-mapping-resource" ],
+        "summary" : "get mappings by booking id",
+        "description" : "Retrieves mappings by NOMIS booking id. If there aren't any, an empty list is returned. Requires role NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "operationId" : "getCaseNotesMappingsByBookingId",
+        "parameters" : [ {
+          "name" : "bookingId",
+          "in" : "path",
+          "description" : "NOMIS booking id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "NOMIS booking id",
+            "example" : 123456
+          },
+          "example" : 123456
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Mapping Information Returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CaseNoteMappingDto"
+                  }
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Id does not exist in mapping table",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete" : {
+        "tags" : [ "case-notes-mapping-resource" ],
+        "summary" : "Deletes all mappings for this booking id",
+        "description" : "Deletes mappings by booking id. Requires role NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "operationId" : "deleteCaseNotesMappingByBookingId",
+        "parameters" : [ {
+          "name" : "bookingId",
+          "in" : "path",
+          "description" : "The booking id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The booking id",
+            "example" : 1234567
+          },
+          "example" : 1234567
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Mappings Deleted",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/appointments/nomis-event-id/{eventId}" : {
       "get" : {
         "tags" : [ "appointment-mapping-resource" ],
@@ -22752,53 +22853,6 @@
         "responses" : {
           "204" : {
             "description" : "Mapping Deleted",
-            "content" : { }
-          },
-          "401" : {
-            "description" : "Unauthorized to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          },
-          "403" : {
-            "description" : "Forbidden to access this endpoint",
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/mapping/casenotes/booking-id/{bookingId}" : {
-      "delete" : {
-        "tags" : [ "case-notes-mapping-resource" ],
-        "summary" : "Deletes all mappings for this booking id",
-        "description" : "Deletes mappings by booking id. Requires role NOMIS_MAPPING_API__SYNCHRONISATION__RW",
-        "operationId" : "deleteCaseNotesMappingByBookingId",
-        "parameters" : [ {
-          "name" : "bookingId",
-          "in" : "path",
-          "description" : "The booking id",
-          "required" : true,
-          "schema" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "The booking id",
-            "example" : 1234567
-          },
-          "example" : 1234567
-        } ],
-        "responses" : {
-          "204" : {
-            "description" : "Mappings Deleted",
             "content" : { }
           },
           "401" : {

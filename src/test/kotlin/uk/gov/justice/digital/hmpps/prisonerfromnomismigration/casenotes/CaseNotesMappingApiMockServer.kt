@@ -68,6 +68,14 @@ class CaseNotesMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetByBooking(bookingId: Long, mappings: List<CaseNoteMappingDto>) {
+    mappingApi.stubFor(
+      get("/mapping/casenotes/booking-id/$bookingId").willReturn(
+        okJson(jsonMapper.writeValueAsString(mappings)),
+      ),
+    )
+  }
+
   fun stubPostMapping() {
     mappingApi.stubFor(
       post("/mapping/casenotes").willReturn(

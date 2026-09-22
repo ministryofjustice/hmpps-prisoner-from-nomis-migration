@@ -1113,6 +1113,19 @@ class CaseNotesSynchronisationIntTest(
     inner class MappingExists {
       @BeforeEach
       fun setUp() {
+        caseNotesMappingApiMockServer.stubGetByBooking(
+          BOOKING_ID,
+          listOf(
+            CaseNoteMappingDto(
+              nomisBookingId = BOOKING_ID,
+              nomisCaseNoteId = NOMIS_CASE_NOTE_ID,
+              dpsCaseNoteId = DPS_CASE_NOTE_ID,
+              offenderNo = OFFENDER_ID_DISPLAY,
+              mappingType = MIGRATED,
+            ),
+          ),
+        )
+        caseNotesApi.stubDeleteCaseNote()
         caseNotesMappingApiMockServer.stubDeleteMappingsForBooking()
         awsSqsCaseNoteOffenderEventsClient.sendMessage(
           caseNotesQueueOffenderEventsUrl,
@@ -1121,7 +1134,17 @@ class CaseNotesSynchronisationIntTest(
       }
 
       @Test
-      fun `will delete CaseNote mapping`() {
+      fun `will delete CaseNote in DPS`() {
+        await untilAsserted {
+          caseNotesApi.verify(
+            1,
+            deleteRequestedFor(urlPathEqualTo("/sync/case-notes/$DPS_CASE_NOTE_ID")),
+          )
+        }
+      }
+
+      @Test
+      fun `will delete CaseNote mappings`() {
         await untilAsserted {
           caseNotesMappingApiMockServer.verify(
             1,
@@ -1138,6 +1161,7 @@ class CaseNotesSynchronisationIntTest(
             check {
               assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
               assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["count"]).isEqualTo("1")
             },
             isNull(),
           )

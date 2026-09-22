@@ -382,12 +382,15 @@ Also add new mappings for the new booking id for the copied case notes, which po
   }
 
   suspend fun bookingDeleted(bookingDeletedEvent: NomisBookingDeletedEvent) {
-    val telemetry = telemetryOf(
-      "bookingId" to bookingDeletedEvent.bookingId.toString(),
-      "offenderNo" to bookingDeletedEvent.offenderIdDisplay,
-    )
+    val (bookingId, offenderIdDisplay) = bookingDeletedEvent
+    val telemetry = telemetryOf("bookingId" to bookingId.toString(), "offenderNo" to offenderIdDisplay)
+
     track("casenotes-booking-deleted", telemetry) {
-      caseNotesMappingService.deleteMappingsByBookingId(bookingDeletedEvent.bookingId)
+      caseNotesMappingService.getMappingsByBookingId(bookingId)
+        .also { telemetry["count"] = it.size.toString() }
+        .forEach { mapping -> caseNotesService.deleteCaseNote(mapping.dpsCaseNoteId) }
+
+      caseNotesMappingService.deleteMappingsByBookingId(bookingId)
     }
   }
 

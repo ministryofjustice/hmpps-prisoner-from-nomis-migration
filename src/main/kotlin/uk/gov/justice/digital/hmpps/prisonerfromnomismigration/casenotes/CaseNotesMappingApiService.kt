@@ -57,4 +57,8 @@ class CaseNotesMappingApiService(@Qualifier("mappingApiWebClient") webClient: We
       .deleteCaseNotesMappingByBookingId(bookingId)
       .awaitSingle()
   }
+
+  suspend fun getMappingsByBookingId(bookingId: Long): List<CaseNoteMappingDto> = api
+    .getCaseNotesMappingsByBookingId(bookingId)
+    .awaitSingle()
 }
