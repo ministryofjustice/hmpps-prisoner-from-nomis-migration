@@ -386,10 +386,17 @@ Also add new mappings for the new booking id for the copied case notes, which po
     val telemetry = telemetryOf("bookingId" to bookingId.toString(), "offenderNo" to offenderIdDisplay)
 
     track("casenotes-booking-deleted", telemetry) {
+      var deleted = 0
       caseNotesMappingService.getMappingsByBookingId(bookingId)
         .also { telemetry["count"] = it.size.toString() }
-        .forEach { mapping -> caseNotesService.deleteCaseNote(mapping.dpsCaseNoteId) }
-
+        .forEach { mapping ->
+          if (caseNotesMappingService.getByDpsId(mapping.dpsCaseNoteId).size == 1) {
+            // Only delete the DPS CN if this is the only mapping for it, otherwise it is still referenced by another booking / prisoner
+            caseNotesService.deleteCaseNote(mapping.dpsCaseNoteId)
+            deleted++
+          }
+        }
+      telemetry["deleted-count"] = deleted.toString()
       caseNotesMappingService.deleteMappingsByBookingId(bookingId)
     }
   }
