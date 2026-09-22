@@ -387,7 +387,7 @@ class PrisonerTransactionSynchronisationIntTest(
               offenderNo = OFFENDER_ID_DISPLAY,
             ),
           )
-          waitForAnyProcessingToComplete("transactions-synchronisation-created-add-hold-success")
+          waitForAnyProcessingToComplete("transactions-synchronisation-created-success", "transactions-synchronisation-created-add-hold-success")
         }
 
         @Test
@@ -533,7 +533,7 @@ class PrisonerTransactionSynchronisationIntTest(
               offenderNo = OFFENDER_ID_DISPLAY,
             ),
           )
-          waitForAnyProcessingToComplete("transactions-synchronisation-created-release-hold-success")
+          waitForAnyProcessingToComplete("transactions-synchronisation-created-success", "transactions-synchronisation-created-release-hold-success")
         }
 
         @Test
