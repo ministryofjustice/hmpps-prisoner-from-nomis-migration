@@ -80,7 +80,7 @@ class CaseNotesDataRepairIntTest(
         fun `telemetry added to track that the delete was ignored`() {
           await untilAsserted {
             verify(telemetryClient, atLeastOnce()).trackEvent(
-              eq("casenotes-deleted-synchronisation-skipped"),
+              eq("casenotes-synchronisation-deleted-skipped"),
               check {
                 assertThat(it["nomisCaseNoteId"]).isEqualTo(NOMIS_CASE_NOTE_ID.toString())
               },
