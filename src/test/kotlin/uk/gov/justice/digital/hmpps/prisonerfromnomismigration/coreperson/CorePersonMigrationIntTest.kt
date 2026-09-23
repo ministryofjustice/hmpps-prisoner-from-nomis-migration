@@ -118,8 +118,7 @@ class CorePersonMigrationIntTest(
         setupMigrationTest()
 
         nomisApiMock.stubGetPrisonerIds(1, 1, "A0000BC")
-        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(0, 1, "A0000BC")
+        nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = "A0000BC")
         mappingApiMock.stubGetCorePersonByNomisPrisonNumberOrNull(
           nomisPrisonNumber = "A0000BC",
           mapping = CorePersonMappingDto(
@@ -163,8 +162,7 @@ class CorePersonMigrationIntTest(
         setupMigrationTest()
 
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = nomisPrisonNumber)
         corePersonNomisApiMock.stubGetAddressesAndContacts(
           prisonNumber = nomisPrisonNumber,
           addressesAndContacts = testData.addressesAndContacts,
@@ -227,11 +225,11 @@ class CorePersonMigrationIntTest(
         with(mappingRequests.first()) {
           assertThat(mappingType).isEqualTo(CorePersonMappingsDto.MappingType.MIGRATED)
           assertThat(label).isEqualTo(migrationResult.migrationId)
-          assertThat(nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
+          assertThat(personMapping.cprId).isEqualTo(nomisPrisonNumber)
           assertThat(personMapping.nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
           assertThat(addresses).hasSize(1)
           assertThat(addressUsages).hasSize(1)
-          assertThat(phoneNumbers).hasSize(1)
+          assertThat(phoneNumbers).hasSize(2)
           assertThat(emailAddresses).hasSize(1)
         }
       }
@@ -273,8 +271,7 @@ class CorePersonMigrationIntTest(
       fun setUp() {
         setupMigrationTest()
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = nomisPrisonNumber)
         corePersonNomisApiMock.stubGetAddressesAndContacts(
           prisonNumber = nomisPrisonNumber,
           addressesAndContacts = testData.addressesAndContacts,
@@ -315,7 +312,7 @@ class CorePersonMigrationIntTest(
         with(mappingRequests.first()) {
           assertThat(mappingType).isEqualTo(CorePersonMappingsDto.MappingType.MIGRATED)
           assertThat(label).isEqualTo(migrationResult.migrationId)
-          assertThat(nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
+          assertThat(personMapping.cprId).isEqualTo(nomisPrisonNumber)
           assertThat(personMapping.nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
           assertThat(addresses).hasSize(1)
           assertThat(phoneNumbers).hasSize(0)
@@ -363,16 +360,7 @@ class CorePersonMigrationIntTest(
         // estimated count
         nomisApiMock.stubGetPrisonerIds(81, 1, nomisPrisonNumber)
 
-        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 10, totalElements = 81)
-        nomisApiMock.stubGetAllPrisonersInRange(0, 10, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(10, 20, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(20, 30, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(30, 40, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(40, 50, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(50, 60, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(60, 70, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(70, 80, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(80, 81, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 10, totalElements = 81, firstOffenderNo = nomisPrisonNumber)
 
         (0L..<81L)
           .map { nomisPrisonNumber.replacePrisonNumber(it) }
@@ -397,18 +385,18 @@ class CorePersonMigrationIntTest(
         mappingApiMock.stubGetMigrationCount(count = 81, testData().corePersonMapping)
         // wait until all records have individually migrated since status check might finish just before some entities are still in flight due to the "big" numbers
         migrationResult = performMigration {
-          verify(telemetryClient, times(80)).trackEvent(eq("coreperson-address-contact-migration-entity-migrated"), any(), isNull())
+          verify(telemetryClient, times(81)).trackEvent(eq("coreperson-address-contact-migration-entity-migrated"), any(), isNull())
         }
       }
 
       @Test
-      fun `will migrate 80 records exactly once`() {
+      fun `will migrate 81 records exactly once`() {
         val migrationRequests =
           cprApiMock.getRequestsAsString(postRequestedFor(urlPathMatching("/syscon-sync/addresses-contacts/.*")))
 
-        assertThat(migrationRequests).hasSize(80)
+        assertThat(migrationRequests).hasSize(81)
         assertThat(migrationRequests).containsExactlyInAnyOrderElementsOf(
-          (0L..<80L).map { "/syscon-sync/addresses-contacts/${nomisPrisonNumber.replacePrisonNumber(it)}" },
+          (0L..<81L).map { "/syscon-sync/addresses-contacts/${nomisPrisonNumber.replacePrisonNumber(it)}" },
         )
       }
     }
@@ -425,8 +413,7 @@ class CorePersonMigrationIntTest(
         setupMigrationTest()
 
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = nomisPrisonNumber)
         corePersonNomisApiMock.stubGetAddressesAndContacts(
           prisonNumber = nomisPrisonNumber,
           addressesAndContacts = testData.addressesAndContacts,
@@ -505,8 +492,7 @@ class CorePersonMigrationIntTest(
         setupMigrationTest()
 
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = nomisPrisonNumber)
         corePersonNomisApiMock.stubGetAddressesAndContacts(
           prisonNumber = nomisPrisonNumber,
           addressesAndContacts = testData.addressesAndContacts,
@@ -732,7 +718,13 @@ class CorePersonMigrationIntTest(
             cprAddressUsageId = "d50f33bf-8c98-4c55-a4a3-b4d8d1e73732",
           ),
         ),
-        contactMappings = emptyList(),
+        contactMappings = listOf(
+          SysconContactMapping(
+            nomisContactId = 30001L,
+            nomisContactType = SysconContactMapping.NomisContactType.MOBILE,
+            cprContactId = "f48fc155-0cfe-4c3f-94b0-869bab03645b",
+          ),
+        ),
       ),
     ),
     contactsMapping = listOf(
