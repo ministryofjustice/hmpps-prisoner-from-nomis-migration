@@ -1,9 +1,9 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff
 
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.awaitBodilessEntity
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.api.SyncResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.PrisonUserSyncRequest
@@ -19,9 +19,7 @@ class StaffDpsApiService(
     .awaitOrLogAndRethrowBadRequest()
 
   suspend fun deleteStaff(nomisStaffId: Long) {
-    webClient.delete()
-      .uri("/prison-users/staff/{nomisStaffId}", nomisStaffId)
-      .retrieve()
-      .awaitBodilessEntity()
+    syncApi.deletePrisonUserForSync(nomisStaffId)
+      .awaitSingle()
   }
 }

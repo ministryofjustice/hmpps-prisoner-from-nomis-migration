@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-08.218.faf597c"
+    "version" : "2026-09-23.244.309aaff"
   },
   "servers" : [ {
     "url" : "https://prison-users-api-dev.prison.service.justice.gov.uk",
@@ -95,6 +95,63 @@
           },
           "409" : {
             "description" : "Data integrity violation or sync lock could not be acquired within max wait time",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "ROLE_PRISON_USERS_API__SYNC__RW" : [ ]
+        } ]
+      },
+      "delete" : {
+        "tags" : [ "sync-resource" ],
+        "summary" : "Delete a Prison User and all linked data",
+        "description" : "Deletes a Prison User by the legacy staffId, including linked accounts, roles, emails, and caseload links. Requires role ROLE_PRISON_USERS_API__SYNC__RW",
+        "operationId" : "deletePrisonUserForSync",
+        "parameters" : [ {
+          "name" : "legacyStaffId",
+          "in" : "path",
+          "description" : "The legacy NOMIS staff Id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The legacy NOMIS staff Id",
+            "example" : 123456
+          },
+          "example" : 123456
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Prison User delete successful."
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "User not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409" : {
+            "description" : "Sync lock could not be acquired within max wait time",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -558,13 +615,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           },
@@ -619,13 +676,13 @@
             }
           },
           "lastLoggedIn" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "The timestamp of the last login for the account",
             "example" : "2022-01-01T12:00:00"
           },
           "activeCaseloadId" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Identifier for the active caseload for the account",
             "example" : "MRI"
           },
@@ -641,13 +698,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           }
@@ -698,13 +755,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           }
@@ -742,14 +799,14 @@
             "format" : "int32"
           },
           "errorCode" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int32"
           },
           "userMessage" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "developerMessage" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "status" ]
@@ -799,7 +856,7 @@
             "example" : "Smith"
           },
           "activeCaseloadId" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Active Caseload of the user",
             "example" : "BXI"
           },
@@ -808,7 +865,7 @@
             "description" : "User is enabled flag"
           },
           "accountStatus" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Status of the user",
             "example" : "OPEN"
           }
@@ -841,12 +898,12 @@
             "example" : "Smith"
           },
           "activeCaseloadId" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Active Caseload of the user",
             "example" : "BXI"
           },
           "accountStatus" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Status of the user",
             "enum" : [ "OPEN", "EXPIRED", "EXPIRED_GRACE", "LOCKED_TIMED", "LOCKED", "EXPIRED_LOCKED_TIMED", "EXPIRED_GRACE_LOCKED_TIMED", "EXPIRED_LOCKED", "EXPIRED_GRACE_LOCKED" ],
             "example" : "OPEN"
@@ -858,7 +915,7 @@
             "example" : "GENERAL"
           },
           "primaryEmail" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Email addresses of user",
             "example" : "test@test.com"
           },
@@ -877,11 +934,11 @@
             }
           },
           "accountNonLocked" : {
-            "type" : "boolean",
+            "type" : [ "boolean", "null" ],
             "description" : "Account is not locked"
           },
           "credentialsNonExpired" : {
-            "type" : "boolean",
+            "type" : [ "boolean", "null" ],
             "description" : "Credentials are not expired flag"
           },
           "enabled" : {
@@ -889,7 +946,7 @@
             "description" : "User is enabled flag"
           },
           "admin" : {
-            "type" : "boolean",
+            "type" : [ "boolean", "null" ],
             "description" : "User is admin flag"
           },
           "active" : {
@@ -897,12 +954,12 @@
             "description" : "User is active flag"
           },
           "staffStatus" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Staff Status",
             "example" : "ACTIVE"
           },
           "lastLogonDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "Last logon date",
             "example" : "2023-01-01T12:13:14.123"
@@ -969,9 +1026,13 @@
             "example" : "GENERAL"
           },
           "activeCaseload" : {
-            "$ref" : "#/components/schemas/PrisonCaseload",
             "description" : "Active Caseload of the user",
-            "example" : "BXI"
+            "example" : "BXI",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PrisonCaseload"
+            }, {
+              "type" : "null"
+            } ]
           },
           "caseloads" : {
             "type" : "array",
@@ -1017,13 +1078,13 @@
             }
           },
           "lastLoggedIn" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "The timestamp of the last login for the account",
             "example" : "2022-01-01T12:00:00"
           },
           "activeCaseloadId" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Identifier for the active caseload for the account",
             "example" : "MRI"
           },
@@ -1039,13 +1100,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           }
@@ -1107,13 +1168,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           },
@@ -1167,13 +1228,13 @@
             "example" : "TEST_USER"
           },
           "modifiedTimestamp" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "Record modification timestamp",
             "example" : "2022-01-01T12:00:00"
           },
           "modifiedBy" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "Username of the record modifier",
             "example" : "TEST_USER"
           },

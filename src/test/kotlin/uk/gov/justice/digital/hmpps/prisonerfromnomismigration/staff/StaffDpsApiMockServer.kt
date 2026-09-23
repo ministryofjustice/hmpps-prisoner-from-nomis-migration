@@ -228,7 +228,7 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubDeleteStaff(nomisStaffId: Long = 1234) {
     stubFor(
-      delete(urlPathMatching("/prison-users/staff/$nomisStaffId"))
+      delete(urlPathMatching("/sync/user/$nomisStaffId"))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
