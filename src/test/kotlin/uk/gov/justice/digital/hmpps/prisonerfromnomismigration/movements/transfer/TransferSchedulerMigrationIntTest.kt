@@ -79,12 +79,7 @@ class TransferSchedulerMigrationIntTest(
 
   private fun stubMigrationDependencies(entities: Int = 2, resync: Boolean = false, pageSize: Long = 1) {
     nomisApi.stubGetPrisonerIds(entities.toLong(), 1, prisonerNumber)
-    nomisApi.stubGetAllPrisonersIdRanges(pageSize = pageSize, totalElements = entities.toLong())
-    (1..(entities / pageSize + if (entities % pageSize > 0) 1 else 0)).forEach { page ->
-      val fromRootOffenderId = ((page - 1) * pageSize)
-      val toRootOffenderId = fromRootOffenderId + pageSize
-      nomisApi.stubGetAllPrisonersInRange(fromRootOffenderId, toRootOffenderId)
-    }
+    nomisApi.stubGetAllPrisonersIdRangesAndInRange(pageSize = pageSize, totalElements = entities.toLong())
     (0 until entities)
       .map { index -> "A%04dKT".format(index) }
       .forEach { prisonerNumber ->
@@ -381,6 +376,17 @@ class TransferSchedulerMigrationIntTest(
       // The call to update mappings fails then succeeds on a retry
       mappingApi.stubCreateTransferSchedulePrisonerMappingsFailureFollowedBySuccess()
       migrationId = performMigration()
+      await atMost Duration.ofSeconds(60) untilAsserted {
+        mappingApi.verify(
+          count = 2,
+          putRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/migrate")),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("transfer-scheduler-migration-entity-migrated"),
+          any(),
+          isNull(),
+        )
+      }
     }
 
     @Test

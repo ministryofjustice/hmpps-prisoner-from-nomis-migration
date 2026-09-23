@@ -118,8 +118,7 @@ class CorePersonMigrationIntTest(
         setupMigrationTest()
 
         nomisApiMock.stubGetPrisonerIds(1, 1, "A0000BC")
-        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(0, 1, "A0000BC")
+        nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = "A0000BC")
         mappingApiMock.stubGetCorePersonByNomisPrisonNumberOrNull(
           nomisPrisonNumber = "A0000BC",
           mapping = CorePersonMappingDto(
@@ -163,8 +162,7 @@ class CorePersonMigrationIntTest(
         setupMigrationTest()
 
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = nomisPrisonNumber)
         corePersonNomisApiMock.stubGetAddressesAndContacts(
           prisonNumber = nomisPrisonNumber,
           addressesAndContacts = testData.addressesAndContacts,
@@ -273,8 +271,7 @@ class CorePersonMigrationIntTest(
       fun setUp() {
         setupMigrationTest()
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = nomisPrisonNumber)
         corePersonNomisApiMock.stubGetAddressesAndContacts(
           prisonNumber = nomisPrisonNumber,
           addressesAndContacts = testData.addressesAndContacts,
@@ -363,16 +360,7 @@ class CorePersonMigrationIntTest(
         // estimated count
         nomisApiMock.stubGetPrisonerIds(81, 1, nomisPrisonNumber)
 
-        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 10, totalElements = 81)
-        nomisApiMock.stubGetAllPrisonersInRange(0, 10, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(10, 20, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(20, 30, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(30, 40, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(40, 50, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(50, 60, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(60, 70, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(70, 80, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersInRange(80, 81, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 10, totalElements = 81, firstOffenderNo = nomisPrisonNumber)
 
         (0L..<81L)
           .map { nomisPrisonNumber.replacePrisonNumber(it) }
@@ -425,8 +413,7 @@ class CorePersonMigrationIntTest(
         setupMigrationTest()
 
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = nomisPrisonNumber)
         corePersonNomisApiMock.stubGetAddressesAndContacts(
           prisonNumber = nomisPrisonNumber,
           addressesAndContacts = testData.addressesAndContacts,
@@ -505,8 +492,7 @@ class CorePersonMigrationIntTest(
         setupMigrationTest()
 
         nomisApiMock.stubGetPrisonerIds(1, 1, nomisPrisonNumber)
-        nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisApiMock.stubGetAllPrisonersInRange(0, 1, nomisPrisonNumber)
+        nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = nomisPrisonNumber)
         corePersonNomisApiMock.stubGetAddressesAndContacts(
           prisonNumber = nomisPrisonNumber,
           addressesAndContacts = testData.addressesAndContacts,
