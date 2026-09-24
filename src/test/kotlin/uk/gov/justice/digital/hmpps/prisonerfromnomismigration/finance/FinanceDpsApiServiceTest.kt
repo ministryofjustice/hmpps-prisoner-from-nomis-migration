@@ -144,6 +144,7 @@ class FinanceDpsApiServiceTest {
           .withRequestBodyJsonPath("createdBy", equalTo("testUser"))
           .withRequestBodyJsonPath("holdFromDate", equalTo("2025-06-01T01:02:03"))
           .withRequestBodyJsonPath("isReleased", equalTo("false"))
+          .withRequestBodyJsonPath("holdTransactionId", equalTo("12344"))
           .withRequestBodyJsonPath("holdType", equalTo("HOA"))
           .withRequestBodyJsonPath("holdLocation", equalTo("Some location"))
           .withRequestBodyJsonPath("amount", equalTo("10.0"))

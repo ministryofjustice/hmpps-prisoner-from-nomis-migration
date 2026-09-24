@@ -114,6 +114,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       prisonNumber = "A1234BC",
       subAccountCode = 2101,
       holdNumber = 12345,
+      holdTransactionId = 12344,
       createdAt = LocalDateTime.parse("2025-06-01T01:02:03"),
       createdBy = "testUser",
       holdFromDate = LocalDateTime.parse("2025-06-01T01:02:03"),

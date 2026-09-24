@@ -460,6 +460,7 @@ class PrisonerTransactionSynchronisationIntTest(
               .withRequestBodyJsonPath("prisonNumber", OFFENDER_ID_DISPLAY)
               .withRequestBodyJsonPath("subAccountCode", 2101)
               .withRequestBodyJsonPath("holdNumber", holdTransaction.holdDetails!!.holdNumber)
+              .withRequestBodyJsonPath("holdTransactionId", holdTransaction.transactionId)
               .withRequestBodyJsonPath("isReleased", holdTransaction.holdDetails.holdCleared)
               .withRequestBodyJsonPath("description", holdTransaction.description)
               .withRequestBodyJsonPath("holdType", holdTransaction.type)
