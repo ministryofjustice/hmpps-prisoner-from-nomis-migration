@@ -7,6 +7,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.SysconSyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAliasesAndIdentifiersRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDisabilityStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
@@ -18,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasesAndIdentifiersResponseBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 
@@ -67,6 +69,19 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
 
   suspend fun syncUpdateOffenderBelief(prisonNumber: String, cprReligionId: String, religion: PrisonReligionUpdateRequest): Unit = api
     .updatePrisonReligion(prisonNumber, cprReligionId, religion)
+    .awaitSingle()
+
+  suspend fun syncCreateEmail(prisonNumber: String, email: PrisonContact): SysconContactMapping = api
+    .prepare(api.createPrisonerContactRequestConfig(prisonNumber, email))
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun syncUpdateEmail(prisonNumber: String, cprContactId: String, email: PrisonContact): Unit = api
+    .updatePrisonerContact(prisonNumber, cprContactId, email)
+    .awaitSingle()
+
+  suspend fun syncDeleteEmail(prisonNumber: String, cprContactId: String): Unit = api
+    .deletePrisonerContact(prisonNumber, cprContactId)
     .awaitSingle()
 
   suspend fun processPrisonMerge(prisonNumber: String, prisonMerge: PrisonMerge): Unit = api

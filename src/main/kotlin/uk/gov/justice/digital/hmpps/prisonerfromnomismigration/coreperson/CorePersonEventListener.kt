@@ -20,6 +20,7 @@ class CorePersonEventListener(
   private val service: CorePersonSynchronisationService,
   private val profileDetailsService: CorePersonSynchronisationProfileDetailsService,
   private val beliefsService: CorePersonSynchronisationBeliefsService,
+  private val addressContactService: CorePersonSynchronisationAddressContactService,
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -43,6 +44,10 @@ class CorePersonEventListener(
               "OFFENDER_BELIEFS-DELETED" -> beliefsService.offenderBeliefDeleted(sqsMessage.Message.fromJson())
 
               "OFFENDER_PHYSICAL_DETAILS-CHANGED" -> profileDetailsService.offenderProfileDetailsChanged(sqsMessage.Message.fromJson())
+
+              "OFFENDER_EMAIL-INSERTED" -> addressContactService.offenderEmailAdded(sqsMessage.Message.fromJson())
+              "OFFENDER_EMAIL-UPDATED" -> addressContactService.offenderEmailUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_EMAIL-DELETED" -> addressContactService.offenderEmailDeleted(sqsMessage.Message.fromJson())
 
               "prison-offender-events.prisoner.merged" -> service.synchronisePrisonerMerge(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
@@ -79,3 +84,10 @@ data class OffenderProfileDetailsEvent(
   val bookingId: Long,
   val profileType: String,
 )
+
+data class OffenderEmailEvent(
+  val offenderIdDisplay: String,
+  val offenderId: Long,
+  val internetAddressId: Long,
+  override val auditModuleName: String,
+) : EventAudited
