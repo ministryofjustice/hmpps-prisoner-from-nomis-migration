@@ -58,6 +58,7 @@ fun OffenderTransactionDto.toSyncAddHoldRequest(): SyncCreateHoldRequest = SyncC
   holdNumber = holdDetails!!.holdNumber,
   holdUntilDate = holdDetails.holdUntilDate?.atStartOfDay(),
   isReleased = holdDetails.holdCleared,
+  holdTransactionId = transactionId,
   holdFromDate = generalLedgerTransactions.firstOrNull()?.transactionTimestamp ?: createdAt,
   holdType = type,
   holdLocation = caseloadId,
