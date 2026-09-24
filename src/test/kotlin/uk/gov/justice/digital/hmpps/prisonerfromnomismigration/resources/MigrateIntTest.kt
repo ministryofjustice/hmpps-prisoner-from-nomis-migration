@@ -97,8 +97,7 @@ class MigrateIntTest : SqsIntegrationTestBase() {
         pageSize = 10,
         firstRootOffenderId = 1L,
       )
-      nomisApiMock.stubGetAllPrisonersIdRanges(pageSize = 2, totalElements = 2)
-      nomisApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 0, toRootOffenderId = 2)
+      nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 2, totalElements = 2)
 
       mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
         nomisRootOffenderId = 1,

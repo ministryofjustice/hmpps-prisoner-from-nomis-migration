@@ -229,10 +229,6 @@ hmpps.sqs:
     eventvisitbalance:
       dlqMaxReceiveCount: 1
 
-    migrationofficialvisits:
-      dlqMaxReceiveCount: 2
-    migrationvisitslots:
-      dlqMaxReceiveCount: 2
     migrationagencyregisters:
       dlqMaxReceiveCount: 2
     migrationactivities:

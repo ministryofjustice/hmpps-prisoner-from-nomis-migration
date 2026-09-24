@@ -89,7 +89,7 @@ class StaffDpsApiServiceTest {
       apiService.deleteStaff(nomisStaffId)
 
       dpsStaffServer.verify(
-        deleteRequestedFor(urlPathEqualTo("/prison-users/staff/$nomisStaffId")),
+        deleteRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")),
       )
     }
   }

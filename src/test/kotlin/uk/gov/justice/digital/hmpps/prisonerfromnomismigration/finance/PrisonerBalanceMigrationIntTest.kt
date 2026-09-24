@@ -119,9 +119,7 @@ class PrisonerBalanceMigrationIntTest(
           pageSize = 1,
           firstRootOffenderId = 1,
         )
-        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 2)
-        nomisPrisonerBalanceApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 0, toRootOffenderId = 1)
-        nomisPrisonerBalanceApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 1, toRootOffenderId = 2)
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 2)
 
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
           nomisRootOffenderId = 1,
@@ -178,9 +176,7 @@ class PrisonerBalanceMigrationIntTest(
           pageSize = 10,
           firstRootOffenderId = 0L,
         )
-        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 2)
-        nomisPrisonerBalanceApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 0, toRootOffenderId = 1)
-        nomisPrisonerBalanceApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 1, toRootOffenderId = 2)
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 2)
 
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
           nomisRootOffenderId = 1,
@@ -322,9 +318,7 @@ class PrisonerBalanceMigrationIntTest(
           pageSize = 10,
           firstRootOffenderId = 0L,
         )
-        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 2)
-        nomisPrisonerBalanceApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 0, toRootOffenderId = 1)
-        nomisPrisonerBalanceApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 1, toRootOffenderId = 2)
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 2)
 
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
           nomisRootOffenderId = 1,
@@ -563,8 +557,7 @@ class PrisonerBalanceMigrationIntTest(
           pageSize = 10,
           firstRootOffenderId = 0,
         )
-        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisPrisonerBalanceApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 0, toRootOffenderId = 1)
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1)
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = 1, mapping = null)
         nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
           rootOffenderId = 1,
@@ -645,8 +638,7 @@ class PrisonerBalanceMigrationIntTest(
           pageSize = 10,
           firstRootOffenderId = 0,
         )
-        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisPrisonerBalanceApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 0, toRootOffenderId = 1)
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1)
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = 1, mapping = null)
         nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
           rootOffenderId = 1,
@@ -811,8 +803,7 @@ class PrisonerBalanceMigrationIntTest(
           pageSize = 10,
           firstRootOffenderId = 0,
         )
-        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisPrisonerBalanceApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 0, toRootOffenderId = 1)
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1)
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
           nomisRootOffenderId = 1,
           mapping = PrisonerBalanceMappingDto(
@@ -848,8 +839,7 @@ class PrisonerBalanceMigrationIntTest(
           pageSize = 10,
           firstRootOffenderId = 0,
         )
-        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisPrisonerBalanceApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 0, toRootOffenderId = 1)
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1)
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
           nomisRootOffenderId = 1,
           mapping = PrisonerBalanceMappingDto(
@@ -885,8 +875,7 @@ class PrisonerBalanceMigrationIntTest(
           pageSize = 10,
           firstRootOffenderId = 0,
         )
-        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 1)
-        nomisPrisonerBalanceApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 0, toRootOffenderId = 1)
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1)
         mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
           nomisRootOffenderId = 1,
           mapping = PrisonerBalanceMappingDto(
@@ -925,9 +914,7 @@ class PrisonerBalanceMigrationIntTest(
     financeApi.resetAll()
     mappingApiMock.resetAll()
     nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(totalElements = 2, pageSize = 10, firstRootOffenderId = nomisRootOffenderIds.first())
-    nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRanges(pageSize = 1, totalElements = 2)
-    nomisPrisonerBalanceApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 0, toRootOffenderId = 1)
-    nomisPrisonerBalanceApiMock.stubGetPrisonerBalanceIdentifiersInRange(fromRootOffenderId = 1, toRootOffenderId = 2)
+    nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 2)
     prisonerAccounts.forEachIndexed { index, nomisPrisonerBalance ->
       nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(rootOffenderId = nomisRootOffenderIds[index], prisonerBalance = nomisPrisonerBalance)
       mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = nomisRootOffenderIds[index], mapping = null, dpsId = "A0001BC")

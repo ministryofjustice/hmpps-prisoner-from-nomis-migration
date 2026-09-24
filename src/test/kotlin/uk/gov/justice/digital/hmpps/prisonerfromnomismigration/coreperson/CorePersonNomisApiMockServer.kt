@@ -43,7 +43,7 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetCorePersonAddressesAndContacts(
+  fun stubGetAddressesAndContacts(
     prisonNumber: String = "A1234BC",
     addressesAndContacts: CorePersonAddressContact = CorePersonAddressContact(
       addresses = listOf(

@@ -24,7 +24,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto.CprPhoneType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
@@ -281,17 +280,26 @@ fun SysconAddressesAndContactsResponseBody.toCorePersonMappingsDto(
         )
       }
     },
-    phoneNumbers = contactMappings.filter { it.nomisContactType != SysconContactMapping.NomisContactType.EMAIL }.map {
-      CorePersonPhoneMappingDto(
-        cprId = it.cprContactId,
-        nomisId = it.nomisContactId,
-        // TODO: Work out what is going on here and how to map
-        cprPhoneType = CprPhoneType.CORE_PERSON,
-        nomisPrisonNumber = prisonNumber,
-        mappingType = migrationTypes.phoneType,
-        label = migrationId,
-      )
-    },
+    phoneNumbers = addressesMappings.flatMap { a ->
+      a.contactMappings.map {
+        CorePersonPhoneMappingDto(
+          cprId = it.cprContactId,
+          nomisId = it.nomisContactId,
+          nomisPrisonNumber = prisonNumber,
+          mappingType = migrationTypes.phoneType,
+          label = migrationId,
+        )
+      }
+    } +
+      contactMappings.filter { it.nomisContactType != SysconContactMapping.NomisContactType.EMAIL }.map {
+        CorePersonPhoneMappingDto(
+          cprId = it.cprContactId,
+          nomisId = it.nomisContactId,
+          nomisPrisonNumber = prisonNumber,
+          mappingType = migrationTypes.phoneType,
+          label = migrationId,
+        )
+      },
     emailAddresses = contactMappings.filter { it.nomisContactType == SysconContactMapping.NomisContactType.EMAIL }.map {
       CorePersonEmailAddressMappingDto(
         cprId = it.cprContactId,

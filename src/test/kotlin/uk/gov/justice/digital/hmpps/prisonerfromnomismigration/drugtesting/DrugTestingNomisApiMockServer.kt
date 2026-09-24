@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.IdRange
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTestSelectionResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RandomTestingProgramResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.idRanges
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -35,10 +36,19 @@ class DrugTestingNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetDrugTestingIdRanges(pageSize: Long = 10, totalElements: Long = 20) {
-    val content: List<IdRange> = (0..(totalElements / pageSize + if (totalElements % pageSize > 0) 1 else 0))
-      .zipWithNext()
-      .map { IdRange(it.first * pageSize, it.second * pageSize) }
+  fun stubGetDrugTestingIdRangesAndInRange(pageSize: Long = 10, totalElements: Long = 20) {
+    val content = idRanges(pageSize, totalElements)
+    stubGetDrugTestingIdRanges(pageSize, totalElements, content)
+    content.forEach { range ->
+      stubGetDrugTestingIdsInRange(range.fromId, range.toId)
+    }
+  }
+
+  fun stubGetDrugTestingIdRanges(
+    pageSize: Long = 10,
+    totalElements: Long = 20,
+    content: List<IdRange> = idRanges(pageSize, totalElements),
+  ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/drug-testing/id-ranges"))
         .willReturn(

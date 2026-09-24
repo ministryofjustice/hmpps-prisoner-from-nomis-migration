@@ -26,14 +26,12 @@ const val COURT_SCHEDULER_QUEUE_ID = "migrationcourtmovements"
 const val COURT_SENTENCING_QUEUE_ID = "migrationcourtsentencing"
 const val DRUG_TESTING_QUEUE_ID = "migrationdrugtesting"
 const val EXTERNAL_MOVEMENTS_QUEUE_ID = "migrationexternalmovements"
-const val OFFICIAL_VISITS_QUEUE_ID = "migrationofficialvisits"
 const val PRISON_BALANCE_QUEUE_ID = "migrationprisonbalance"
 const val PRISONER_BALANCE_QUEUE_ID = "migrationprisonerbalance"
 const val PROPERTY_QUEUE_ID = "migrationproperty"
 const val STAFF_QUEUE_ID = "migrationstaff"
 const val TRANSFER_MOVEMENTS_QUEUE_ID = "migrationtransfermovements"
 const val VISITS_QUEUE_ID = "migrationvisits"
-const val VISIT_SLOTS_QUEUE_ID = "migrationvisitslots"
 
 const val AGENCY_REGISTERS_SYNC_QUEUE_ID = "eventagencyregisters"
 const val ALERTS_SYNC_QUEUE_ID = "eventalerts"
@@ -69,14 +67,12 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   COURT_SENTENCING(COURT_SENTENCING_QUEUE_ID, "court-sentencing"),
   DRUG_TESTING(DRUG_TESTING_QUEUE_ID, "drugtesting"),
   EXTERNAL_MOVEMENTS(EXTERNAL_MOVEMENTS_QUEUE_ID, "temporary-absences"),
-  OFFICIAL_VISITS(OFFICIAL_VISITS_QUEUE_ID, "officialvisits"),
   PRISON_BALANCE(PRISON_BALANCE_QUEUE_ID, "prisonbalance"),
   PRISONER_BALANCE(PRISONER_BALANCE_QUEUE_ID, "prisonerbalance"),
   PROPERTY(PROPERTY_QUEUE_ID, "property"),
   STAFF(STAFF_QUEUE_ID, "staff"),
   TRANSFER_MOVEMENTS(TRANSFER_MOVEMENTS_QUEUE_ID, "transfer-scheduler"),
   VISITS(VISITS_QUEUE_ID, "visits"),
-  VISIT_SLOTS(VISIT_SLOTS_QUEUE_ID, "visitslots"),
 }
 
 enum class SynchronisationType(val queueId: String) {

@@ -80,7 +80,7 @@ fun CodeDescription.toLegacyAgencyType(): LegacyAgencyType = when (code) {
   "COMM" -> LegacyAgencyType.PROBATION_OFFICE
   "CRC" -> LegacyAgencyType.PROBATION_CRC
   "POLICE", "POLSTN" -> LegacyAgencyType.POLICE_CUSTODY_SUITE
-  "APPR" -> LegacyAgencyType.APPROVED_PREMISE
+  "APPR" -> LegacyAgencyType.APPROVED_PREMISES
   "AIRPORT" -> LegacyAgencyType.AIRPORT
   "HOST" -> LegacyAgencyType.VOLUNTARY_HOSTEL
   "IMDC" -> LegacyAgencyType.IMMIGRATION_DETENTION_CENTRE

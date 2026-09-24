@@ -74,7 +74,7 @@ class CorePersonNomisApiServiceTest(
   inner class GetPersonAddressesAndContacts {
     @Test
     fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubGetCorePersonAddressesAndContacts(prisonNumber = "A12345BC")
+      mockServer.stubGetAddressesAndContacts(prisonNumber = "A12345BC")
 
       apiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = "A12345BC")
 
@@ -85,7 +85,7 @@ class CorePersonNomisApiServiceTest(
 
     @Test
     fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetCorePersonAddressesAndContacts(prisonNumber = "A12345BC")
+      mockServer.stubGetAddressesAndContacts(prisonNumber = "A12345BC")
 
       apiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = "A12345BC")
 
@@ -96,7 +96,7 @@ class CorePersonNomisApiServiceTest(
 
     @Test
     fun `will return the addresses and contacts`() = runTest {
-      mockServer.stubGetCorePersonAddressesAndContacts(
+      mockServer.stubGetAddressesAndContacts(
         prisonNumber = "A12345BC",
         addressesAndContacts = CorePersonAddressContact(
           addresses = listOf(
@@ -120,7 +120,7 @@ class CorePersonNomisApiServiceTest(
 
     @Test
     fun `will throw error when person does not exist`() = runTest {
-      mockServer.stubGetCorePersonAddressesAndContacts(prisonNumber = "A12345BC", status = HttpStatus.NOT_FOUND)
+      mockServer.stubGetAddressesAndContacts(prisonNumber = "A12345BC", status = HttpStatus.NOT_FOUND)
 
       assertThrows<WebClientResponseException.NotFound> {
         apiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = "A12345BC")

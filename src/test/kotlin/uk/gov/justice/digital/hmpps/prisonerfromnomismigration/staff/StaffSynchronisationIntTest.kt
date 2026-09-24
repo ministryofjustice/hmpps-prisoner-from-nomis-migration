@@ -225,7 +225,7 @@ class StaffSynchronisationIntTest(
             await untilAsserted {
               dpsStaffServer.verify(
                 1,
-                deleteRequestedFor(urlPathEqualTo("/prison-users/staff/$nomisStaffId")),
+                deleteRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")),
               )
             }
           }

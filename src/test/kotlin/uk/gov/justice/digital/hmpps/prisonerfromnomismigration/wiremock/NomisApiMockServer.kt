@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerDetails
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.idRanges
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.lang.Long.min
@@ -50,6 +51,11 @@ class NomisApiExtension :
       enableResetBeforeEach = false
       nomisApi.resetAll()
     }
+
+    fun idRanges(pageSize: Long, totalElements: Long): List<IdRange> = generateSequence(0L) { start -> (start + pageSize).takeIf { it < totalElements } }
+      .filter { it < totalElements }
+      .map { start -> IdRange(start, minOf(start + pageSize, totalElements)) }
+      .toList()
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -544,6 +550,14 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubGetAllPrisonersIdRangesAndInRange(pageSize: Long = 10, totalElements: Long = 20, firstOffenderNo: String = "A0001KT") {
+    val content = idRanges(pageSize, totalElements)
+    stubGetAllPrisonersIdRanges(pageSize, totalElements, content)
+    content.forEach { range ->
+      stubGetAllPrisonersInRange(range.fromId, range.toId, firstOffenderNo)
+    }
+  }
+
   fun stubGetAllPrisonersInRange(fromRootOffenderId: Long = 1L, toRootOffenderId: Long = 20L, firstOffenderNo: String = "A0001KT") {
     val content: List<PrisonNumberAndRootOffenderId> = (fromRootOffenderId..<toRootOffenderId).map {
       PrisonNumberAndRootOffenderId(
@@ -566,10 +580,11 @@ class NomisApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubGetAllPrisonersIdRanges(pageSize: Long = 10, totalElements: Long = 20) {
-    val content: List<IdRange> = (0..(totalElements / pageSize + if (totalElements % pageSize > 0) 1 else 0))
-      .zipWithNext()
-      .map { IdRange(it.first * pageSize, it.second * pageSize) }
+  fun stubGetAllPrisonersIdRanges(
+    pageSize: Long = 10,
+    totalElements: Long = 20,
+    content: List<IdRange> = idRanges(pageSize, totalElements),
+  ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/prisoners/id-ranges")).willReturn(
         aResponse()

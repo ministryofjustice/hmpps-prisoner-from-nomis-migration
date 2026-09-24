@@ -152,14 +152,6 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONTRANSFERMOVEMENTS_QUEUE_NAME: "sqs_name"
     sqs-migration-transfermovements-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONTRANSFERMOVEMENTS_DLQ_NAME: "sqs_name"
-    sqs-migration-officialvisits-queue:
-      HMPPS_SQS_QUEUES_MIGRATIONOFFICIALVISITS_QUEUE_NAME: "sqs_name"
-    sqs-migration-officialvisits-dlq:
-      HMPPS_SQS_QUEUES_MIGRATIONOFFICIALVISITS_DLQ_NAME: "sqs_name"
-    sqs-migration-visitslots-queue:
-      HMPPS_SQS_QUEUES_MIGRATIONVISITSLOTS_QUEUE_NAME: "sqs_name"
-    sqs-migration-visitslots-dlq:
-      HMPPS_SQS_QUEUES_MIGRATIONVISITSLOTS_DLQ_NAME: "sqs_name"
     sqs-migration-agencyregisters-queue:
       HMPPS_SQS_QUEUES_MIGRATIONAGENCYREGISTERS_QUEUE_NAME: "sqs_name"
     sqs-migration-agencyregisters-dlq:

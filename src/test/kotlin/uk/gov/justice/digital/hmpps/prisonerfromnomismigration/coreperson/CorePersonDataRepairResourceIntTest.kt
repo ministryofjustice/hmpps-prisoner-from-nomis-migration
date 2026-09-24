@@ -156,7 +156,7 @@ class CorePersonDataRepairResourceIntTest(
 
       @BeforeEach
       fun setUp() {
-        nomisApiMockServer.stubGetCorePersonAddressesAndContacts(prisonNumber, addressesAndContacts = addressesAndContacts)
+        nomisApiMockServer.stubGetAddressesAndContacts(prisonNumber, addressesAndContacts = addressesAndContacts)
         cprApiMock.stubMigrateAddressesAndContacts(
           nomisPrisonNumber = prisonNumber,
           response = SysconAddressesAndContactsResponseBody(

@@ -16,9 +16,11 @@ import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionSaveResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasesAndIdentifiersResponseBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconIdentifierMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
@@ -104,11 +106,13 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubMigrateAddressesAndContacts(
     nomisPrisonNumber: String = "A1234BC",
+    addressMappings: List<SysconAddressMapping> = emptyList(),
+    contactMappings: List<SysconContactMapping> = emptyList(),
     status: HttpStatus = HttpStatus.CREATED,
     response: SysconAddressesAndContactsResponseBody = SysconAddressesAndContactsResponseBody(
       prisonNumber = nomisPrisonNumber,
-      addressesMappings = emptyList(),
-      contactMappings = emptyList(),
+      addressesMappings = addressMappings,
+      contactMappings = contactMappings,
     ),
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {

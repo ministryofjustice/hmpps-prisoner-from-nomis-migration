@@ -14,8 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.dpsOfficialVisitsServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitConfigRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.migrateVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateOfficialVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateOfficialVisitorRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiMockServer.Companion.syncCreateTimeSlotRequest
@@ -32,32 +30,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 class OfficialVisitsDpsApiServiceTest {
   @Autowired
   private lateinit var apiService: OfficialVisitsDpsApiService
-
-  @Nested
-  inner class MigrateVisitConfiguration {
-    @Test
-    internal fun `will pass oauth2 token to endpoint`() = runTest {
-      dpsOfficialVisitsServer.stubMigrateVisitConfiguration()
-
-      apiService.migrateVisitConfiguration(migrateVisitConfigRequest())
-
-      dpsOfficialVisitsServer.verify(
-        postRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will call the migrate endpoint`() = runTest {
-      dpsOfficialVisitsServer.stubMigrateVisitConfiguration()
-
-      apiService.migrateVisitConfiguration(migrateVisitConfigRequest())
-
-      dpsOfficialVisitsServer.verify(
-        postRequestedFor(urlPathEqualTo("/migrate/visit-configuration")),
-      )
-    }
-  }
 
   @Nested
   inner class CreateTimeSlot {
@@ -211,32 +183,6 @@ class OfficialVisitsDpsApiServiceTest {
 
       dpsOfficialVisitsServer.verify(
         deleteRequestedFor(urlPathEqualTo("/sync/visit-slot/123")),
-      )
-    }
-  }
-
-  @Nested
-  inner class MigrateVisit {
-    @Test
-    internal fun `will pass oauth2 token to endpoint`() = runTest {
-      dpsOfficialVisitsServer.stubMigrateVisit()
-
-      apiService.migrateVisit(migrateVisitRequest())
-
-      dpsOfficialVisitsServer.verify(
-        postRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will call the migrate endpoint`() = runTest {
-      dpsOfficialVisitsServer.stubMigrateVisit()
-
-      apiService.migrateVisit(migrateVisitRequest())
-
-      dpsOfficialVisitsServer.verify(
-        postRequestedFor(urlPathEqualTo("/migrate/visit")),
       )
     }
   }

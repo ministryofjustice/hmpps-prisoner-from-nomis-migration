@@ -17,12 +17,7 @@ import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.DayType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.IdPair
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitSlot
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitor
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.RepairPrisonerVisitsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitorRequest
@@ -82,35 +77,6 @@ class OfficialVisitsDpsApiExtension :
 class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8104
-    fun migrateVisitSlot() = MigrateVisitSlot(
-      agencyVisitSlotId = 123,
-      dpsLocationId = UUID.randomUUID(),
-      maxGroups = 99,
-      maxAdults = 99,
-    )
-    fun migrateVisitConfigRequest() = MigrateVisitConfigRequest(
-      prisonCode = "MDI",
-      dayCode = "MON",
-      timeSlotSeq = 1,
-      startTime = "10:00",
-      endTime = "11:00",
-      effectiveDate = LocalDate.parse("2021-01-01"),
-      visitSlots = listOf(migrateVisitSlot()),
-    )
-
-    fun migrateVisitConfigResponse(request: MigrateVisitConfigRequest = migrateVisitConfigRequest()) = MigrateVisitConfigResponse(
-      prisonCode = request.prisonCode!!,
-      dayCode = request.dayCode!!,
-      timeSlotSeq = request.timeSlotSeq!!,
-      dpsTimeSlotId = 678,
-      visitSlots = request.visitSlots.map {
-        IdPair(
-          elementType = IdPair.ElementType.PRISON_VISIT_SLOT,
-          nomisId = it.agencyVisitSlotId!!,
-          dpsId = it.agencyVisitSlotId * 10,
-        )
-      },
-    )
 
     fun syncCreateTimeSlotRequest() = SyncCreateTimeSlotRequest(
       prisonCode = "MDI",
@@ -170,30 +136,6 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       maxGroups = 2,
       updatedBy = "T.SMITH",
       updatedTime = LocalDateTime.parse("2020-01-01T08:00"),
-    )
-
-    fun migrateVisitRequest() = MigrateVisitRequest(
-      offenderVisitId = 1,
-      prisonVisitSlotId = 10,
-      prisonCode = "MDI",
-      offenderBookId = 20,
-      prisonerNumber = "A1234KT",
-      currentTerm = true,
-      visitDate = LocalDate.parse("2020-01-01"),
-      startTime = "10:00",
-      endTime = "11:00",
-      dpsLocationId = UUID.fromString("d0cc8fcd-22db-46a7-bdb3-ada7ac1828f5"),
-      visitStatusCode = VisitStatusType.SCHEDULED,
-      createDateTime = LocalDateTime.parse("2020-01-01T08:00"),
-      createUsername = "T.SMITH",
-      visitors = listOf(
-        MigrateVisitor(
-          offenderVisitVisitorId = 30,
-          personId = 40,
-          createDateTime = LocalDateTime.parse("2020-01-01T08:00"),
-          createUsername = "T.SMITH",
-        ),
-      ),
     )
 
     fun migrateVisitResponse() = MigrateVisitResponse(
@@ -286,18 +228,6 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubMigrateVisitConfiguration(response: MigrateVisitConfigResponse = migrateVisitConfigResponse()) {
-    stubFor(
-      post("/migrate/visit-configuration")
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(201)
-            .withBody(jsonMapper.writeValueAsString(response)),
-        ),
-    )
-  }
-
   fun stubCreateTimeSlot(response: SyncTimeSlot = syncTimeSlot()) {
     stubFor(
       post("/sync/time-slot")
@@ -362,18 +292,6 @@ class OfficialVisitsDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(204),
-        ),
-    )
-  }
-
-  fun stubMigrateVisit(response: MigrateVisitResponse = migrateVisitResponse()) {
-    stubFor(
-      post("/migrate/visit")
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(201)
-            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }

@@ -106,8 +106,7 @@ class DrugTestingMigrationIntTest(
       fun setUp() {
         setupMigrationTest()
 
-        drugTestingNomisApiMock.stubGetDrugTestingIdRanges(pageSize = 1, totalElements = 1)
-        drugTestingNomisApiMock.stubGetDrugTestingIdsInRange(0, 1)
+        drugTestingNomisApiMock.stubGetDrugTestingIdRangesAndInRange(pageSize = 1, totalElements = 1)
         drugTestingNomisApiMock.stubGetRandomTestingProgram(response = testData)
         dpsApiMock.stubMigrate(prisonId = includedPrisonId, rtpDate = rtpDate)
         migrationResult = performMigration(
@@ -148,8 +147,7 @@ class DrugTestingMigrationIntTest(
       fun setUp() {
         setupMigrationTest()
 
-        drugTestingNomisApiMock.stubGetDrugTestingIdRanges(pageSize = 1, totalElements = 1)
-        drugTestingNomisApiMock.stubGetDrugTestingIdsInRange(0, 1)
+        drugTestingNomisApiMock.stubGetDrugTestingIdRangesAndInRange(pageSize = 1, totalElements = 1)
         drugTestingNomisApiMock.stubGetRandomTestingProgram(response = testData)
         dpsApiMock.stubMigrate(prisonId = prisonId, rtpDate = rtpDate)
         migrationResult = performMigration()
@@ -219,8 +217,7 @@ class DrugTestingMigrationIntTest(
       fun setUp() {
         setupMigrationTest()
 
-        drugTestingNomisApiMock.stubGetDrugTestingIdRanges(pageSize = 1, totalElements = 1)
-        drugTestingNomisApiMock.stubGetDrugTestingIdsInRange(0, 1)
+        drugTestingNomisApiMock.stubGetDrugTestingIdRangesAndInRange(pageSize = 1, totalElements = 1)
         drugTestingNomisApiMock.stubGetRandomTestingProgram(response = testData)
         dpsApiMock.stubMigrate(prisonId = prisonId, rtpDate = rtpDate, status = 409)
         migrationResult = performMigration()
@@ -256,8 +253,7 @@ class DrugTestingMigrationIntTest(
       fun setUp() {
         setupMigrationTest()
 
-        drugTestingNomisApiMock.stubGetDrugTestingIdRanges(pageSize = 1, totalElements = 1)
-        drugTestingNomisApiMock.stubGetDrugTestingIdsInRange(0, 1)
+        drugTestingNomisApiMock.stubGetDrugTestingIdRangesAndInRange(pageSize = 1, totalElements = 1)
         drugTestingNomisApiMock.stubGetRandomTestingProgram(response = testData)
         dpsApiMock.stubMigrate(prisonId = prisonId, rtpDate = rtpDate)
         migrationResult = performMigration()
