@@ -4,13 +4,8 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.api.MigrationApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.api.RepairPrisonerVisitsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.api.SynchronisationApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitConfigResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.MigrateVisitResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.RepairPrisonerVisitsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.RepairPrisonerVisitsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.model.SyncCreateOfficialVisitRequest
@@ -30,11 +25,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.mo
 class OfficialVisitsDpsApiService(
   @Qualifier("officialVisitsApiWebClient") private val webClient: WebClient,
 ) {
-  private val migrationApi = MigrationApi(webClient)
   private val syncApi = SynchronisationApi(webClient)
   private val repairApi = RepairPrisonerVisitsApi(webClient)
 
-  suspend fun migrateVisitConfiguration(request: MigrateVisitConfigRequest): MigrateVisitConfigResponse = migrationApi.migrateVisitConfiguration(request).awaitSingle()
   suspend fun createTimeSlot(request: SyncCreateTimeSlotRequest): SyncTimeSlot = syncApi.syncCreateTimeSlot(request).awaitSingle()
   suspend fun updateTimeSlot(prisonTimeSlotId: Long, request: SyncUpdateTimeSlotRequest): SyncTimeSlot = syncApi.syncUpdateTimeSlot(prisonTimeSlotId, request).awaitSingle()
   suspend fun deleteTimeSlot(prisonTimeSlotId: Long) {
@@ -45,7 +38,6 @@ class OfficialVisitsDpsApiService(
   suspend fun deleteVisitSlot(prisonVisitSlotId: Long) {
     syncApi.syncDeleteVisitSlot(prisonVisitSlotId).awaitSingle()
   }
-  suspend fun migrateVisit(request: MigrateVisitRequest): MigrateVisitResponse = migrationApi.migrateVisit(request).awaitSingle()
   suspend fun repairVisits(offenderNo: String, request: RepairPrisonerVisitsRequest): RepairPrisonerVisitsResponse = repairApi.repairPrisonerVisits(prisonerNumber = offenderNo, request).awaitSingle()
   suspend fun createVisit(request: SyncCreateOfficialVisitRequest): SyncOfficialVisit = syncApi.syncCreateOfficialVisit(request).awaitSingle()
   suspend fun updateVisit(officialVisitId: Long, request: SyncUpdateOfficialVisitRequest): SyncOfficialVisit = syncApi.syncUpdateOfficialVisit(officialVisitId, request).awaitSingle()

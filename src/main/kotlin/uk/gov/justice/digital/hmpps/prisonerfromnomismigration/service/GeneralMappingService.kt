@@ -11,8 +11,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonBal
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsMappingService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.VisitSlotsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.PropertyMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMappingService
@@ -31,8 +29,6 @@ class GeneralMappingService(
   private val propertyMappingService: PropertyMappingService,
   private val staffMappingApiService: StaffMappingApiService,
   private val tapMappingApiService: TapMappingApiService,
-  private val visitSlotsMappingService: VisitSlotsMappingService,
-  private val officialVisitsMappingService: OfficialVisitsMappingService,
   private val courtSchedulerMappingService: CourtSchedulerMappingApiService,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long = when (migrationType) {
@@ -46,13 +42,11 @@ class GeneralMappingService(
     MigrationType.CSRA -> csraMappingApiService.getMigrationCount(migrationId)
     MigrationType.DRUG_TESTING -> -1 // No implementation necessary
     MigrationType.EXTERNAL_MOVEMENTS -> tapMappingApiService.getMigrationCount(migrationId)
-    MigrationType.OFFICIAL_VISITS -> officialVisitsMappingService.getMigrationCount(migrationId)
     MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.PROPERTY -> propertyMappingService.getMigrationCount(migrationId)
     MigrationType.STAFF -> staffMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.TRANSFER_MOVEMENTS -> 0 // TODO SDIT-4104 - implement
-    MigrationType.VISIT_SLOTS -> visitSlotsMappingService.getMigrationCount(migrationId)
     MigrationType.VISITS -> visitMappingService.getMigrationCount(migrationId)
   }
 }
