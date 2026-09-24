@@ -14,7 +14,6 @@ import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.FindTapScheduleMappingsForAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingsDto
@@ -103,41 +102,6 @@ class TapMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubCreateTapApplicationMapping() {
-    mappingApi.stubFor(
-      post("/mapping/taps/application")
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(201),
-        ),
-    )
-  }
-
-  fun stubCreateTapApplicationMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    mappingApi.stubFor(
-      post("/mapping/taps/application").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubCreateTapApplicationMappingConflict(error: DuplicateMappingErrorResponse) {
-    mappingApi.stubFor(
-      post("/mapping/taps/application").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(409)
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubCreateTapApplicationMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/taps/application")
-
   fun stubGetTapApplicationMapping(nomisApplicationId: Long = 1L, dpsAuthorisationId: UUID = UUID.randomUUID()) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/taps/application/nomis-id/$nomisApplicationId")).willReturn(
@@ -159,86 +123,6 @@ class TapMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubDeleteTapApplicationMapping(nomisApplicationId: Long = 1L) {
-    mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/taps/application/nomis-id/$nomisApplicationId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(204),
-      ),
-    )
-  }
-
-  fun stubDeleteTapApplicationMapping(nomisApplicationId: Long = 1L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/taps/application/nomis-id/$nomisApplicationId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubCreateTapScheduleMapping() {
-    mappingApi.stubFor(
-      post("/mapping/taps/schedule")
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(201),
-        ),
-    )
-  }
-
-  fun stubCreateTapScheduleMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    mappingApi.stubFor(
-      post("/mapping/taps/schedule").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubCreateTapScheduleMappingConflict(error: DuplicateMappingErrorResponse) {
-    mappingApi.stubFor(
-      post("/mapping/taps/schedule").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(409)
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubCreateTapScheduleMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/taps/schedule")
-
-  fun stubUpdateTapScheduleMapping() {
-    mappingApi.stubFor(
-      put("/mapping/taps/schedule")
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(200),
-        ),
-    )
-  }
-
-  fun stubUpdateTapScheduleMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    mappingApi.stubFor(
-      put("/mapping/taps/schedule").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubUpdateTapScheduleMappingFailureFollowedBySuccess() = mappingApi.stubMappingUpdateFailureFollowedBySuccess("/mapping/taps/schedule")
-
   fun stubGetTapScheduleMapping(nomisEventId: Long = 1L, dpsOccurrenceId: UUID = UUID.randomUUID(), eventTime: LocalDateTime = LocalDateTime.now(), dpsUprn: Long = 987L) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/taps/schedule/nomis-id/$nomisEventId")).willReturn(
@@ -252,27 +136,6 @@ class TapMappingApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetTapScheduleMapping(nomisEventId: Long = 1L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/taps/schedule/nomis-id/$nomisEventId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubDeleteTapScheduleMapping(nomisEventId: Long = 1L) {
-    mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/taps/schedule/nomis-id/$nomisEventId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(204),
-      ),
-    )
-  }
-
-  fun stubDeleteTapScheduleMapping(nomisEventId: Long = 1L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    mappingApi.stubFor(
-      delete(urlPathMatching("/mapping/taps/schedule/nomis-id/$nomisEventId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -388,55 +251,6 @@ class TapMappingApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubDeleteTapMovementMapping(bookingId: Long = 12345L, movementSeq: Int = 1, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     mappingApi.stubFor(
       delete(urlPathMatching("/mapping/taps/movement/nomis-id/$bookingId/$movementSeq")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubFindTapScheduleMappingsForAddressForPrisoners(
-    nomisAddressId: Long = 123L,
-    prisoners: List<String> = listOf("A1234AA", "B1234BB"),
-  ) {
-    mappingApi.stubFor(
-      get(urlPathMatching("/mapping/taps/schedule/nomis-address-id/$nomisAddressId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            jsonMapper.writeValueAsString(
-              FindTapScheduleMappingsForAddressResponse(
-                prisoners.mapIndexed { index, _ ->
-                  tapScheduleMapping(prisonerNumber = prisoners[index])
-                },
-              ),
-            ),
-          ),
-      ),
-    )
-  }
-
-  fun stubFindTapScheduleMappingsForAddressForMappings(
-    nomisAddressId: Long = 321L,
-    mappings: List<TapScheduleMappingDto>,
-  ) {
-    mappingApi.stubFor(
-      get(urlPathMatching("/mapping/taps/schedule/nomis-address-id/$nomisAddressId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withBody(
-            jsonMapper.writeValueAsString(
-              FindTapScheduleMappingsForAddressResponse(scheduleMappings = mappings),
-            ),
-          ),
-      ),
-    )
-  }
-
-  fun stubFindTapScheduleMappingsForAddressError(nomisAddressId: Long = 123L, status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    mappingApi.stubFor(
-      get(urlPathMatching("/mapping/taps/schedule/nomis-address-id/$nomisAddressId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())

@@ -19,10 +19,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTaps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTapsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapApplication
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapMovementIn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapMovementOut
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.TapScheduleOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -54,75 +52,6 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetAllOffenderTaps(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
     nomisApi.stubFor(
       get(urlPathMatching("/movements/.*/taps")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubGetTapApplication(
-    offenderNo: String = "A1234BC",
-    applicationId: Long = 12345L,
-    response: TapApplication = tapApplication(),
-  ) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/movements/$offenderNo/taps/application/$applicationId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(jsonMapper.writeValueAsString(response)),
-      ),
-    )
-  }
-
-  fun stubGetTapApplication(
-    status: HttpStatus,
-    error: ErrorResponse = ErrorResponse(status = status.value()),
-  ) {
-    nomisApi.stubFor(
-      get(urlPathMatching("/movements/.*/taps/application/.*")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
-    )
-  }
-
-  fun stubGetTapScheduleOut(
-    offenderNo: String = "A1234BC",
-    eventId: Long = 12345L,
-    eventTime: LocalDateTime = yesterday,
-    applicationId: Long = 111L,
-    addressOwnerClass: String = "OFF",
-    eventStatus: String = "COMP",
-    toAddress: String = "to full address",
-    toAddressId: Long = 321,
-    response: TapScheduleOut = tapScheduleOutResponse(
-      startTime = eventTime,
-      applicationId = applicationId,
-      eventId = eventId,
-      addressOwnerClass = addressOwnerClass,
-      eventStatus = eventStatus,
-      toAddress = toAddress,
-      toAddressId = toAddressId,
-    ),
-  ) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/movements/$offenderNo/taps/schedule/out/$eventId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(jsonMapper.writeValueAsString(response)),
-      ),
-    )
-  }
-
-  fun stubGetTapScheduleOut(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    nomisApi.stubFor(
-      get(urlPathMatching("/movements/.*/taps/schedule/out/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -203,46 +132,6 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
     private val now = LocalDateTime.now()
     private val yesterday = now.minusDays(1)
     private val tomorrow = now.plusDays(1)
-
-    fun tapScheduleOutResponse(
-      startTime: LocalDateTime = now,
-      applicationId: Long = 111,
-      eventId: Long = 1,
-      addressOwnerClass: String = "OFF",
-      eventStatus: String = "COMP",
-      toAddress: String = "to full address",
-      toAddressId: Long = 321,
-    ) = TapScheduleOut(
-      bookingId = 12345,
-      tapApplicationId = applicationId,
-      eventId = eventId,
-      eventSubType = "C5",
-      eventStatus = eventStatus,
-      inboundEventStatus = "SCH",
-      returnDate = tomorrow.toLocalDate(),
-      returnTime = tomorrow,
-      applicationDate = now,
-      eventDate = startTime.toLocalDate(),
-      startTime = startTime,
-      comment = "scheduled absence comment",
-      contactPersonName = "Derek",
-      escort = "PECS",
-      fromPrison = "LEI",
-      toAgency = "COURT1",
-      transportType = "VAN",
-      tapAbsenceType = "RDR",
-      tapSubType = "RR",
-      toAddressId = toAddressId,
-      toAddressOwnerClass = addressOwnerClass,
-      toFullAddress = toAddress,
-      toAddressDescription = "some description",
-      toAddressPostcode = "S1 1AB",
-      applicationTime = now,
-      audit = NomisAudit(
-        createDatetime = now,
-        createUsername = "PRISONER_MANAGER_API",
-      ),
-    )
 
     fun offenderTapsResponse(
       movementPrison: String = "LEI",
@@ -398,44 +287,6 @@ class TapNomisApiMockServer(private val jsonMapper: JsonMapper) {
       toFullAddress = "Schedule full address",
       toAddressPostcode = "S1 1AA",
       contactPersonName = "Derek",
-      audit = NomisAudit(
-        createDatetime = now,
-        createUsername = "PRISONER_MANAGER_API",
-      ),
-    )
-
-    fun tapApplication(
-      activeBooking: Boolean = true,
-      latestBooking: Boolean = true,
-      status: String = "APP-SCH",
-      fromDate: LocalDate = now.toLocalDate(),
-      toDate: LocalDate = tomorrow.toLocalDate(),
-    ) = TapApplication(
-      bookingId = 12345,
-      activeBooking = activeBooking,
-      latestBooking = latestBooking,
-      tapApplicationId = 111,
-      eventSubType = "C5",
-      applicationDate = now.toLocalDate(),
-      fromDate = fromDate,
-      releaseTime = now,
-      toDate = toDate,
-      returnTime = tomorrow,
-      applicationStatus = status,
-      applicationType = "SINGLE",
-      escortCode = "P",
-      transportType = "VAN",
-      comment = "application comment",
-      prisonId = "LEI",
-      toAgencyId = "COURT1",
-      toAddressId = 321,
-      toAddressOwnerClass = "OFF",
-      toAddressDescription = "some address description",
-      toFullAddress = "some full address",
-      toAddressPostcode = "S1 1AA",
-      contactPersonName = "Jeff",
-      tapType = "RR",
-      tapSubType = "SPL",
       audit = NomisAudit(
         createDatetime = now,
         createUsername = "PRISONER_MANAGER_API",
