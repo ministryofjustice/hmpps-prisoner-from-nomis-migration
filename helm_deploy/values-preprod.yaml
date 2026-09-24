@@ -167,10 +167,6 @@ generic-prometheus-alerts:
       - "syscon-devs-preprod-prisoner_from_nomis_externalmovements_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_externalmovements_dl_queue"
     officialvisits:
-      - "syscon-devs-preprod-migration_visitslots_queue"
-      - "syscon-devs-preprod-migration_visitslots_dlq"
-      - "syscon-devs-preprod-migration_officialvisits_queue"
-      - "syscon-devs-preprod-migration_officialvisits_dlq"
       - "syscon-devs-preprod-prisoner_from_nomis_officialvisits_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_officialvisits_dl_queue"
     agencyregisters:
