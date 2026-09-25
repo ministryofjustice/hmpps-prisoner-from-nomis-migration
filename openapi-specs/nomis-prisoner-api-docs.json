@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-24.2116.64297cf"
+    "version" : "2026-09-24.2119.c5e5675"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -24163,7 +24163,7 @@
       "get" : {
         "tags" : [ "prisoner-advance-resource" ],
         "summary" : "Get a prisoner's advances by their prison number",
-        "description" : "Retrieves a prisoner's advances. Requires NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "description" : "Retrieves a prisoner's advances by prison number. Requires NOMIS_PRISONER_API__SYNCHRONISATION__RW",
         "operationId" : "getPrisonerAdvances",
         "parameters" : [ {
           "name" : "prisonNumber",
@@ -24446,6 +24446,72 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/PrisonerBalanceDto"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden to access this endpoint when role NOMIS_PRISONER_API__SYNCHRONISATION__RW not present",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Prisoner does not exist",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/finance/prisoners/root-offender-id/{rootOffenderId}/advances" : {
+      "get" : {
+        "tags" : [ "prisoner-advance-resource" ],
+        "summary" : "Get a prisoner's advances by their root offender id",
+        "description" : "Retrieves a prisoner's advances by root offender id. Requires NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "operationId" : "getPrisonerAdvancesById",
+        "parameters" : [ {
+          "name" : "rootOffenderId",
+          "in" : "path",
+          "description" : "root offender id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "root offender id",
+            "example" : 123456
+          },
+          "example" : 123456
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Advance Information Returned",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PrisonerAdvanceDto"
+                  }
                 }
               }
             }
@@ -44415,11 +44481,6 @@
             "description" : "The caseload",
             "example" : "MDI"
           },
-          "transactionType" : {
-            "type" : "string",
-            "description" : "transaction type",
-            "example" : "TELE"
-          },
           "advanceAmount" : {
             "type" : "integer",
             "format" : "int64",
@@ -44459,13 +44520,19 @@
             "description" : "The user who created the advance",
             "example" : "FRED_SMITH"
           },
+          "createDatetime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date time when the advance was created",
+            "example" : "2024-06-01T12:00:00"
+          },
           "status" : {
             "type" : [ "string", "null" ],
             "description" : "The status of the advance",
             "example" : "ACTIVE"
           }
         },
-        "required" : [ "advanceAmount", "caseloadId", "createdBy", "id", "prisonNumber", "repaymentAmount", "startDate", "transactionType" ]
+        "required" : [ "advanceAmount", "caseloadId", "createDatetime", "createdBy", "id", "prisonNumber", "repaymentAmount", "startDate" ]
       },
       "PagedModelLong" : {
         "type" : "object",
@@ -44522,13 +44589,13 @@
           "txnEntryAmount" : {
             "type" : "number"
           },
-          "txnEntryDate" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
           "txnEntrySeq" : {
             "type" : "integer",
             "format" : "int32"
+          },
+          "txnEntryDate" : {
+            "type" : "string",
+            "format" : "date-time"
           }
         },
         "required" : [ "txnEntryAmount", "txnEntryDate", "txnEntrySeq", "txnId" ]
