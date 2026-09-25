@@ -21,6 +21,7 @@ class CsraMergeIntTest2(
   @Autowired private val csraMappingApiMockServer: CsraMappingApiMockServer,
   @Autowired private val csraNomisApiMockServer: CsraNomisApiMockServer,
 ) : CsraIntegrationTestBase() {
+  override fun getQueues() = listOf(csraEventQueue)
   private val survivorOffenderNo = "A1234BB"
   private val removedOffenderNo = "A1234AA"
 
