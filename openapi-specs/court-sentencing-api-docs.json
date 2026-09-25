@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-23.2565.ccc3b24"
+    "version" : "2026-09-24.2569.1292f1c"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -7355,7 +7355,7 @@
             "uniqueItems" : true
           }
         },
-        "required" : [ "eventType", "isBreach", "prisonerId" ]
+        "required" : [ "eventType", "prisonerId" ]
       },
       "LegacyLinkCase" : {
         "type" : "object",
@@ -7457,7 +7457,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:44:37.632344382"
+            "example" : "07:44:40.894549489"
           },
           "outcomeDispositionCode" : {
             "type" : [ "string", "null" ]
@@ -7836,7 +7836,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:44:37.632344382"
+            "example" : "07:44:40.894549489"
           },
           "courtCode" : {
             "type" : "string"
@@ -8076,6 +8076,9 @@
             "type" : "string",
             "minLength" : 1
           },
+          "hmctsCode" : {
+            "type" : [ "string", "null" ]
+          },
           "status" : {
             "type" : "string",
             "enum" : [ "ACTIVE", "INACTIVE" ]
@@ -8105,6 +8108,9 @@
           },
           "dispositionCode" : {
             "type" : "string"
+          },
+          "hmctsCode" : {
+            "type" : [ "string", "null" ]
           },
           "status" : {
             "type" : "string",
@@ -10791,7 +10797,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:44:37.632344382"
+            "example" : "07:44:40.894549489"
           },
           "courtCode" : {
             "type" : "string"
@@ -11483,7 +11489,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "07:44:37.632344382"
+            "example" : "07:44:40.894549489"
           },
           "nomisOutcomeCode" : {
             "type" : [ "string", "null" ]
@@ -11562,7 +11568,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:44:37.632344382"
+            "example" : "07:44:40.894549489"
           },
           "courtId" : {
             "type" : "string"
@@ -11714,7 +11720,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "07:44:37.632344382"
+            "example" : "07:44:40.894549489"
           },
           "charges" : {
             "type" : "array",
@@ -11751,7 +11757,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:44:37.632344382"
+            "example" : "07:44:40.894549489"
           },
           "courtId" : {
             "type" : "string"
@@ -12347,7 +12353,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:44:37.632344382"
+            "example" : "07:44:40.894549489"
           },
           "courtCode" : {
             "type" : [ "string", "null" ]
@@ -12497,6 +12503,9 @@
             "type" : "integer",
             "format" : "int64"
           },
+          "last" : {
+            "type" : "boolean"
+          },
           "totalElements" : {
             "type" : "integer",
             "format" : "int64"
@@ -12504,9 +12513,6 @@
           "totalPages" : {
             "type" : "integer",
             "format" : "int32"
-          },
-          "last" : {
-            "type" : "boolean"
           },
           "size" : {
             "type" : "integer",
@@ -12516,11 +12522,11 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "sort" : {
-            "$ref" : "#/components/schemas/SortObject"
-          },
           "first" : {
             "type" : "boolean"
+          },
+          "sort" : {
+            "$ref" : "#/components/schemas/SortObject"
           },
           "numberOfElements" : {
             "type" : "integer",
