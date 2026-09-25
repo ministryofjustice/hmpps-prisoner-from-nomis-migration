@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-10.4915.a773c70"
+    "version" : "2026-09-24.5056.26612e3"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -1007,6 +1007,33 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/appointments/repair/{appointmentAttendeeId}" : {
+      "put" : {
+        "tags" : [ "Appointments Resource" ],
+        "summary" : "Resynchronise an appointment instance / attendee to Nomis",
+        "description" : "Create or update a DPS appointment attendee in Nomis, depending on whether a mapping exists. \n      Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairAppointment",
+        "parameters" : [ {
+          "name" : "appointmentAttendeeId",
+          "in" : "path",
+          "description" : "Appointment attendee DPS id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Appointment attendee DPS id",
+            "example" : 123456789
+          },
+          "example" : 123456789
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Appointment repaired",
+            "content" : { }
           }
         }
       }
