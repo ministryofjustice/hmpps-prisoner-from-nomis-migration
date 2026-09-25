@@ -66,6 +66,55 @@ class AdvancesNomisApiServiceTest {
         assertThat(startDate).isEqualTo(LocalDate.parse("2024-06-18"))
         assertThat(reference).isEqualTo("description of the advance")
         assertThat(comment).isEqualTo("This is a comment")
+        // TODO add informationNumber test when returned
+        assertThat(status).isEqualTo("active")
+        assertThat(createDatetime).isEqualTo(LocalDateTime.parse("2024-06-18T12:30:45"))
+        assertThat(createdBy).isEqualTo("JD12345")
+      }
+    }
+  }
+
+  @Nested
+  inner class GetPrisonerAdvances {
+    @Test
+    fun `will pass oauth2 token to service`() = runTest {
+      mockServer.stubGetPrisonerAdvances()
+
+      apiService.getPrisonerAdvances(12345)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetPrisonerAdvances()
+
+      apiService.getPrisonerAdvances(12345)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/12345/advances")),
+      )
+    }
+
+    @Test
+    fun `will return advance details`() = runTest {
+      mockServer.stubGetPrisonerAdvances()
+
+      val advance = apiService.getPrisonerAdvances(12345).first()
+
+      with(advance) {
+        assertThat(id).isEqualTo(12345)
+        assertThat(prisonNumber).isEqualTo("A0001BC")
+        assertThat(caseloadId).isEqualTo("LEI")
+        assertThat(advanceAmount).isEqualTo(210)
+        assertThat(advanceDate).isEqualTo(LocalDate.parse("2024-06-18"))
+        assertThat(repaymentAmount).isEqualTo(50)
+        assertThat(startDate).isEqualTo(LocalDate.parse("2024-06-18"))
+        assertThat(reference).isEqualTo("description of the advance")
+        assertThat(comment).isEqualTo("This is a comment")
+        // TODO add informationNumber test when returned
         assertThat(status).isEqualTo("active")
         assertThat(createDatetime).isEqualTo(LocalDateTime.parse("2024-06-18T12:30:45"))
         assertThat(createdBy).isEqualTo("JD12345")

@@ -53,6 +53,24 @@ class AdvancesNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetPrisonerAdvances(
+    rootOffenderId: Long = 12345,
+    prisonNumber: String = "A0001BC",
+    prisonerAdvance: PrisonerAdvanceDto? = prisonerAdvance(prisonNumber = prisonNumber),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/finance/prisoners/root-offender-id/$rootOffenderId/advances")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(
+            jsonMapper.writeValueAsString(listOf(prisonerAdvance)),
+
+          ),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
