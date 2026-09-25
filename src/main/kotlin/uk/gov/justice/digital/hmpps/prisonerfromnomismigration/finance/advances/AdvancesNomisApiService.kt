@@ -11,7 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 class AdvancesNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
   private val api = PrisonerAdvanceResourceApi(webClient)
 
-  suspend fun getPrisonerAdvance(advanceId: Long): PrisonerAdvanceDto? = api
+  suspend fun getPrisonerAdvanceById(advanceId: Long): PrisonerAdvanceDto? = api
     .getAdvance(advanceId)
     .awaitSingleOrNullForNotFound()
 }

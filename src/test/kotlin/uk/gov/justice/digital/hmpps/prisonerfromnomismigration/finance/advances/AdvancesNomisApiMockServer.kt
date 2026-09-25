@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
@@ -11,14 +11,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAdvanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.Month
 import kotlin.Long
 import kotlin.String
 
 @Component
-class PrisonerAdvanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
+class AdvancesNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
-  fun stubGetPrisonerAdvance(
+  fun stubGetAdvanceById(
     advanceId: Long = 12345,
     prisonNumber: String = "A0001BC",
     prisonerAdvance: PrisonerAdvanceDto? = prisonerAdvance(prisonNumber = prisonNumber),
@@ -35,7 +36,7 @@ class PrisonerAdvanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetPrisonerAdvanceNotFound(
+  fun stubGetAdvanceByIdNotFound(
     advanceId: Long = 12345,
     status: HttpStatus = HttpStatus.NOT_FOUND,
     error: ErrorResponse = ErrorResponse(status = status.value()),
@@ -60,13 +61,13 @@ fun prisonerAdvance(prisonNumber: String = "A0001BC"): PrisonerAdvanceDto = Pris
   id = 12345L,
   prisonNumber = prisonNumber,
   caseloadId = "LEI",
-  transactionType = "TELE",
   advanceAmount = 210,
   advanceDate = LocalDate.of(2024, Month.JUNE, 18),
   repaymentAmount = 50,
   startDate = LocalDate.of(2024, Month.JUNE, 18),
   reference = "description of the advance",
-  createdBy = "JD12345",
   comment = "This is a comment",
   status = "active",
+  createdBy = "JD12345",
+  createDatetime = LocalDateTime.of(2024, Month.JUNE, 18, 12, 30, 45),
 )
