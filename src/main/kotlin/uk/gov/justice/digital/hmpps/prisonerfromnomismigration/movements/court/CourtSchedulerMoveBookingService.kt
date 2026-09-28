@@ -5,7 +5,6 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.MoveCourtEventRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.BookingMovedAdditionalInformationEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
@@ -22,7 +21,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 
 @Service
 class CourtSchedulerMoveBookingService(
-  private val dpsApi: CourtSchedulerDpsApiService,
   private val nomisApi: CourtSchedulerNomisApiService,
   private val mappingApi: CourtSchedulerMappingApiService,
   private val queueService: SynchronisationQueueService,
@@ -51,48 +49,58 @@ class CourtSchedulerMoveBookingService(
 
       val mappings = mappingApi.getCourtSchedulerMoveBookingMappings(bookingId)
 
-      val dpsCourtAppearanceIds = booking.findDpsScheduleIds(mappings.scheduleIds, telemetry)
-      val dpsUnscheduleMovementIds = booking.findDpsMovementIds(mappings.movementIds, telemetry)
-      dpsApi.moveBooking(
-        MoveCourtEventRequest(
-          fromPersonIdentifier = fromOffender,
-          toPersonIdentifier = toOffender,
-          scheduleIds = dpsCourtAppearanceIds.toSet(),
-          unscheduledMovementIds = dpsUnscheduleMovementIds.toSet(),
-        ),
-      )
+      val nomisEventIds = booking.findNomisEventIds()
+      val dpsCourtAppearanceIds = booking.findDpsScheduleIds(mappings.scheduleIds)
+      val nomisMovementSeqs = mappings.movementIds.map { it.nomisMovementSeq }
+      val dpsMovementIds = booking.findDpsMovementIds(mappings.movementIds)
+      telemetry.apply {
+        put("nomisEventIds", nomisEventIds)
+        put("dpsCourtAppearanceIds", dpsCourtAppearanceIds)
+        put("nomisMovementSeqs", nomisMovementSeqs)
+        put("dpsMovementIds", dpsMovementIds)
+      }
 
-      tryToMoveBookingMappings(bookingId, fromOffender, toOffender, telemetry)
+      tryToMoveBookingMappings(bookingId, fromOffender, toOffender, telemetry.mapValues { (_, value) -> value.toString() })
     }
   }
 
-  private fun BookingCourtMovements.findDpsScheduleIds(
-    mappings: List<CourtScheduleIdMapping>,
-    telemetry: MutableMap<String, Any>,
-  ) = courtSchedules
+  private fun BookingCourtMovements.findNomisEventIds() = courtSchedules
     .filter { it.courtCaseId == null }
     .map { it.eventId }
-    .also { telemetry["nomisEventIds"] = "$it" }
+
+  private fun BookingCourtMovements.findDpsScheduleIds(
+    mappings: List<CourtScheduleIdMapping>,
+  ) = findNomisEventIds()
     .map { nomisEventId ->
       mappings.find { it.nomisEventId == nomisEventId }
         ?.dpsCourtAppearanceId
         ?: throw CourtSchedulerMoveBookingException("No court schedule mapping found for eventId=$nomisEventId")
     }
-    .also { telemetry["dpsCourtAppearanceIds"] = "$it" }
+
+  private fun BookingCourtMovements.findNomisMovementSeqs() = buildList {
+    addAll(courtSchedules.mapNotNull { it.courtMovementOut?.sequence })
+    addAll(courtSchedules.mapNotNull { it.courtMovementIn?.sequence })
+    addAll(unscheduledCourtMovementOuts.map { it.sequence })
+    addAll(unscheduledCourtMovementIns.map { it.sequence })
+  }
 
   private fun BookingCourtMovements.findDpsMovementIds(
     mappings: List<CourtMovementIdMapping>,
-    telemetry: MutableMap<String, Any>,
-  ) = (unscheduledCourtMovementOuts.map { it.sequence } + unscheduledCourtMovementIns.map { it.sequence })
-    .also { telemetry["nomisUnscheduledMovementSeqs"] = "$it" }
-    .map { nomisMovementSeq ->
-      mappings.find { it.nomisMovementSeq == nomisMovementSeq }
-        ?.dpsCourtMovementId
-        ?: throw CourtSchedulerMoveBookingException("No court movement mapping found for bookingId=$bookingId, movementSeq=$nomisMovementSeq")
-    }
-    .also { telemetry["dpsUnscheduledCourtMovementIds"] = "$it" }
+  ) = findNomisMovementSeqs().map { nomisMovementSeq ->
+    nomisMovementSeq to
+      (
+        mappings.find { it.nomisMovementSeq == nomisMovementSeq }
+          ?.dpsCourtMovementId
+          ?: throw CourtSchedulerMoveBookingException("No court movement mapping found for bookingId=$bookingId, movementSeq=$nomisMovementSeq")
+        )
+  }
 
-  private suspend fun tryToMoveBookingMappings(bookingId: Long, fromOffenderNo: String, toOffenderNo: String, telemetry: MutableMap<String, Any>) {
+  private suspend fun tryToMoveBookingMappings(
+    bookingId: Long,
+    fromOffenderNo: String,
+    toOffenderNo: String,
+    telemetry: Map<String, String>,
+  ) {
     try {
       moveMappingsAndResync(bookingId, fromOffenderNo, toOffenderNo)
     } catch (e: Exception) {

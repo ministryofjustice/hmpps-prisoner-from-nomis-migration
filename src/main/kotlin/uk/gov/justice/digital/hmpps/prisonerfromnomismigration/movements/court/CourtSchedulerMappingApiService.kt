@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodilessEntityIgnoreNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitSuccessOrDuplicate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitSuccessWithResponseOrDuplicate
@@ -78,6 +79,9 @@ class CourtSchedulerMappingApiService(@Qualifier("courtSchedulerMappingApiWebCli
 
   suspend fun getCourtSchedulerMoveBookingMappings(bookingId: Long): CourtSchedulerMoveBookingMappingDto = prisonerApi.getCourtSchedulerBookingMappings(bookingId).awaitSingle()
 
-  suspend fun moveCourtSchedulerBookingMappings(bookingId: Long, fromOffenderNo: String, toOffenderNo: String): Unit = prisonerApi.moveCourtSchedulerBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
-    .awaitSingle()
+  // Note that we ignore a NotFound - this can happen if the only court appearances are from court sentencing so there
+  // are no mappings to move. But we still need to carry on and resync each prisoner
+  suspend fun moveCourtSchedulerBookingMappings(bookingId: Long, fromOffenderNo: String, toOffenderNo: String) = prisonerApi.prepare(prisonerApi.moveCourtSchedulerBookingMappingsRequestConfig(bookingId, fromOffenderNo, toOffenderNo))
+    .retrieve()
+    .awaitBodilessEntityIgnoreNotFound()
 }
