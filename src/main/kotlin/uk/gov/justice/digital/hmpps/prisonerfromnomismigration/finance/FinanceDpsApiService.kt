@@ -7,10 +7,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.Advan
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.HoldsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.NOMISSyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.HoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncOffenderTransactionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleaseHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleasedHoldResponse
@@ -38,20 +38,18 @@ class FinanceDpsApiService(@Qualifier("financeApiWebClient") private val webClie
       .awaitOrLogAndRethrowBadRequest()
   }
 
-  suspend fun syncAddHoldTransaction(request: SyncCreateHoldRequest): HoldResponse = holdsApi.postHolds(request)
+  suspend fun syncAddHoldTransaction(request: SyncCreateHoldRequest): SyncCreateHoldResponse = holdsApi.postHolds(request)
     .awaitOrLogAndRethrowBadRequest()
 
   suspend fun syncReleaseHoldTransaction(holdNumber: Long, request: SyncReleaseHoldRequest): SyncReleasedHoldResponse = holdsApi.releaseHold(holdNumber, request)
     .awaitOrLogAndRethrowBadRequest()
 
+  // TODO use openapi docs call for syncPrisonerAdvance when the API is updated
   suspend fun syncPrisonerAdvance(request: SyncCreateAdvanceRecordRequest): SyncCreateAdvanceResponse = webClient.post()
     .uri("/sync/advances")
     .bodyValue(request)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
-  // TODO add correct return type for syncPrisonerAdvance when the API is updated
-  // advancesApi.postAdvance(request)
-  //  .awaitOrLogAndRethrowBadRequest()
 }
 
 class SyncCreateAdvanceResponse(val id: UUID)

@@ -28,7 +28,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.test.context.TestPropertySource
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.HoldResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleasedHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -345,21 +345,11 @@ class PrisonerTransactionSynchronisationIntTest(
           requestId = UUID.randomUUID(),
           action = SyncTransactionReceipt.Action.CREATED,
         )
-        val holdResponse = HoldResponse(
-          id = UUID.randomUUID(),
-          prisonNumber = OFFENDER_ID_DISPLAY,
-          legacyHoldNumber = 12345,
-          subAccountRef = HoldResponse.SubAccountRef.CASH,
-          createdAt = LocalDateTime.parse("2025-06-01T01:02:03"),
-          createdBy = "testUser",
-          holdFromDate = LocalDateTime.parse("2025-06-01T01:02:03"),
-          isReleased = false,
-          holdType = HoldResponse.HoldType.HOA,
-          amount = 125,
-          holdLocation = "Some location",
-          holdUntilDate = LocalDateTime.parse("2025-06-03T04:05:06"),
-          description = "This is a hold",
+        val holdResponse = SyncCreateHoldResponse(
+          holdUuid = UUID.randomUUID(),
+          holdNumber = 65432,
         )
+
         val holdTransaction = offenderTransactionDto(bookingId = BOOKING_ID, transactionId = NOMIS_TRANSACTION_ID).copy(
           type = "HOA",
           holdDetails = HoldDto(
