@@ -21,9 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncAtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.dpsTapsServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
@@ -69,51 +67,10 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8103
     private val today = LocalDateTime.now()
-    private val tomorrow = today.plusDays(1)
 
     @Suppress("unused")
-    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsTapsServer.getRequestBody(pattern, TapDpsApiExtension.jsonMapper)
-    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsTapsServer.getRequestBodies(pattern, TapDpsApiExtension.jsonMapper)
-
-    fun syncTapAuthorisation() = SyncWriteTapAuthorisation(
-      prisonCode = "LEI",
-      statusCode = "APPROVED",
-      absenceTypeCode = "RDR",
-      absenceSubTypeCode = "RR",
-      absenceReasonCode = "C5",
-      accompaniedByCode = "U",
-      transportCode = "TNR",
-      repeat = false,
-      start = today.toLocalDate(),
-      end = tomorrow.toLocalDate(),
-      startTime = "$today",
-      endTime = "$tomorrow",
-      comments = "Authorisation comment",
-      created = SyncAtAndBy(today, "AAA11A"),
-      updated = SyncAtAndBy(today, "AAA11A"),
-      legacyId = 1234,
-    )
-
-    fun syncTapOccurrence() = SyncWriteTapOccurrence(
-      start = today,
-      end = tomorrow,
-      location = Location(
-        description = "Boots",
-        address = "High Street, Sheffield",
-        postcode = "S1 1AA",
-        uprn = 987L,
-      ),
-      absenceTypeCode = "RDR",
-      absenceSubTypeCode = "RR",
-      absenceReasonCode = "C5",
-      accompaniedByCode = "P",
-      transportCode = "VAN",
-      comments = "Occurrence comment",
-      created = SyncAtAndBy(today, "AAA11A"),
-      updated = SyncAtAndBy(today, "AAA11A"),
-      isCancelled = false,
-      legacyId = 1234,
-    )
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsTapsServer.getRequestBody(pattern, jsonMapper)
+    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsTapsServer.getRequestBodies(pattern, jsonMapper)
 
     fun syncTapMovement(occurrenceId: UUID? = null) = SyncWriteTapMovement(
       occurrenceId = occurrenceId,
@@ -200,114 +157,6 @@ class TapDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           .withBody(if (status == 200) "pong" else "some error")
           .withStatus(status),
       ),
-    )
-  }
-
-  fun stubSyncTapAuthorisation(personIdentifier: String = "A1234BC", response: SyncResponse = syncResponse()) {
-    dpsTapsServer.stubFor(
-      put("/sync/temporary-absence-authorisations/$personIdentifier")
-        .willReturn(
-          aResponse()
-            .withStatus(201)
-            .withHeader("Content-Type", "application/json")
-            .withBody(jsonMapper.writeValueAsString(response)),
-        ),
-    )
-  }
-
-  fun stubSyncTapAuthorisationError(
-    personIdentifier: String = "A1234BC",
-    status: Int = 500,
-    error: ErrorResponse = ErrorResponse(status = status),
-  ) {
-    dpsTapsServer.stubFor(
-      put("/sync/temporary-absence-authorisations/$personIdentifier")
-        .willReturn(
-          aResponse()
-            .withStatus(status)
-            .withHeader("Content-Type", "application/json")
-            .withBody(jsonMapper.writeValueAsString(error)),
-        ),
-    )
-  }
-
-  fun stubDeleteTapAuthorisation(authorisationId: UUID) {
-    dpsTapsServer.stubFor(
-      delete("/sync/temporary-absence-authorisations/$authorisationId")
-        .willReturn(
-          aResponse()
-            .withStatus(204),
-        ),
-    )
-  }
-
-  fun stubDeleteTapAuthorisationError(
-    authorisationId: UUID,
-    status: Int = 500,
-    error: ErrorResponse = ErrorResponse(status = status),
-  ) {
-    dpsTapsServer.stubFor(
-      delete("/sync/temporary-absence-authorisations/$authorisationId")
-        .willReturn(
-          aResponse()
-            .withStatus(status)
-            .withHeader("Content-Type", "application/json")
-            .withBody(jsonMapper.writeValueAsString(error)),
-        ),
-    )
-  }
-
-  fun stubSyncTapOccurrence(authorisationId: UUID, response: SyncResponse = syncResponse()) {
-    dpsTapsServer.stubFor(
-      put("/sync/temporary-absence-authorisations/$authorisationId/occurrences")
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(jsonMapper.writeValueAsString(response)),
-        ),
-    )
-  }
-
-  fun stubSyncTapOccurrenceError(
-    authorisationId: UUID,
-    status: Int = 500,
-    error: ErrorResponse = ErrorResponse(status = status),
-  ) {
-    dpsTapsServer.stubFor(
-      put("/sync/temporary-absence-authorisations/$authorisationId/occurrences")
-        .willReturn(
-          aResponse()
-            .withStatus(status)
-            .withHeader("Content-Type", "application/json")
-            .withBody(jsonMapper.writeValueAsString(error)),
-        ),
-    )
-  }
-
-  fun stubDeleteTapOccurrence(occurrenceId: UUID) {
-    dpsTapsServer.stubFor(
-      delete("/sync/temporary-absence-occurrences/$occurrenceId")
-        .willReturn(
-          aResponse()
-            .withStatus(204),
-        ),
-    )
-  }
-
-  fun stubDeleteTapOccurrenceError(
-    occurrenceId: UUID,
-    status: Int = 500,
-    error: ErrorResponse = ErrorResponse(status = status),
-  ) {
-    dpsTapsServer.stubFor(
-      delete("/sync/temporary-absence-occurrences/$occurrenceId")
-        .willReturn(
-          aResponse()
-            .withStatus(status)
-            .withHeader("Content-Type", "application/json")
-            .withBody(jsonMapper.writeValueAsString(error)),
-        ),
     )
   }
 

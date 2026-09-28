@@ -16,8 +16,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ProfileDetailsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
-private const val TELEMETRY_PREFIX = "coreperson-profiledetails-synchronisation"
-
 @Service
 class CorePersonSynchronisationProfileDetailsService(
   override val telemetryClient: TelemetryClient,
@@ -27,6 +25,7 @@ class CorePersonSynchronisationProfileDetailsService(
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
     val eventProfileTypes = listOf("NAT", "NATIO", "SEXO", "DISABILITY", "IMM")
+    const val TELEMETRY_PREFIX = "coreperson-profiledetails-synchronisation"
   }
   suspend fun offenderProfileDetailsChanged(event: OffenderProfileDetailsEvent) {
     val (offenderIdDisplay, bookingId, profileType) = event

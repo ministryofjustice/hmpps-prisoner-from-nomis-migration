@@ -11,3 +11,4 @@
 **/api/*
 !**/NOMISSyncApi.kt
 !**/HoldsApi.kt
+!**/AdvancesApi.kt

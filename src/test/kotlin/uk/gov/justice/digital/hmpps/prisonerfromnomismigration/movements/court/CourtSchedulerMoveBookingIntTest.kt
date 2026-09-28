@@ -151,6 +151,88 @@ class CourtSchedulerMoveBookingIntTest(
   }
 
   @Nested
+  inner class IgnoreCourtRelatedSchedules {
+    private val eventId1 = 123L
+    private val dpsScheduleId1 = UUID.randomUUID()
+    private val eventId2 = 456L
+    private val dpsScheduleId2 = UUID.randomUUID()
+    private val courtCaseId = 5555L
+
+    private val moveBookingMappings = CourtSchedulerMoveBookingMappingDto(
+      scheduleIds = listOf(
+        CourtScheduleIdMapping(eventId1, dpsScheduleId1),
+        CourtScheduleIdMapping(eventId2, dpsScheduleId2),
+      ),
+      movementIds = listOf(),
+    )
+
+    private val nomisData = BookingCourtMovements(
+      bookingId = 12345L,
+      activeBooking = true,
+      latestBooking = true,
+      courtSchedules = listOf(
+        bookingCourtSchedule(courtCaseId = courtCaseId, eventId = eventId1, movementOutSeq = null, movementInSeq = null),
+        bookingCourtSchedule(courtCaseId = null, eventId = eventId2, movementOutSeq = null, movementInSeq = null),
+      ),
+      unscheduledCourtMovementOuts = listOf(),
+      unscheduledCourtMovementIns = listOf(),
+    )
+
+    @BeforeEach
+    fun setUp() = runTest {
+      courtSchedulerNomisApi.stubGetBookingCourtMovements(12345L, nomisData)
+      mappingApi.stubGetMoveBookingMappings(12345L, moveBookingMappings)
+      dpsApi.stubMoveBooking()
+      mappingApi.stubMoveBookingMappings(bookingId = 12345L, fromOffenderNo = "A1000KT", toOffenderNo = "A1234KT")
+
+      // Also need stubs for the calls to resync the prisoner. This bypasses the resync process because stubbing all of the various API calls makes the test data setup even more unreadable.
+      doNothing().whenever(courtSchedulerMigrationService).resyncPrisonerCourtMovements(any())
+
+      sendMessage(
+        bookingMovedDomainEvent(
+          bookingId = 12345,
+          movedToNomsNumber = "A1234KT",
+          movedFromNomsNumber = "A1000KT",
+        ),
+      )
+        .also { waitForAnyProcessingToComplete() }
+    }
+
+    @Test
+    fun `should only move DPS schedule not related to a court case`() {
+      getRequestBody<MoveCourtEventRequest>(
+        putRequestedFor(urlEqualTo("/move/court-appearances")),
+      ).apply {
+        assertThat(fromPersonIdentifier).isEqualTo("A1000KT")
+        assertThat(toPersonIdentifier).isEqualTo("A1234KT")
+        assertThat(scheduleIds).containsExactlyInAnyOrder(dpsScheduleId2)
+      }
+    }
+
+    @Test
+    fun `should move mappings to the new offender no`() {
+      mappingApi.verify(putRequestedFor(urlEqualTo("/mapping/court-scheduler/move-booking/12345/from/A1000KT/to/A1234KT")))
+    }
+
+    @Test
+    fun `should publish telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("court-scheduler-move-booking-success"),
+        check {
+          assertThat(it["bookingId"]).isEqualTo("12345")
+          assertThat(it["fromOffenderNo"]).isEqualTo("A1000KT")
+          assertThat(it["toOffenderNo"]).isEqualTo("A1234KT")
+          assertThat(it["nomisEventIds"]).doesNotContain("$eventId1")
+          assertThat(it["nomisEventIds"]).contains("$eventId2")
+          assertThat(it["dpsCourtAppearanceIds"]).doesNotContain("$dpsScheduleId1")
+          assertThat(it["dpsCourtAppearanceIds"]).contains("$dpsScheduleId2")
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
   inner class PrisonerNotFound {
     @BeforeEach
     fun setUp() = runTest {

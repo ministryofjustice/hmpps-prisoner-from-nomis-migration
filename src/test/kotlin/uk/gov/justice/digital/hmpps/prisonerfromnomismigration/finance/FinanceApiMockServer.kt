@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.Gen
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.HoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerAccountPointInTimeBalance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleaseHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleasedHoldResponse
@@ -28,6 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getReque
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.math.BigDecimal
 import java.time.LocalDateTime
+import java.time.Month
 import java.util.UUID
 
 class FinanceApiExtension :
@@ -127,6 +129,20 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
     fun releaseHoldDto() = SyncReleaseHoldRequest(
       releaseDateTime = LocalDateTime.parse("2025-06-04T05:06:07"),
+    )
+    fun addAdvanceDto(prisonNumber: String = "A0001BC") = SyncCreateAdvanceRecordRequest(
+      legacyPaymentProfileId = 12345L,
+      legacyInformationNumber = "9876-1",
+      prisonNumber = prisonNumber,
+      prisonID = "LEI",
+      amount = BigDecimal.valueOf(2.10),
+      repaymentAmount = BigDecimal.valueOf(0.5),
+      repaymentStartDate = LocalDateTime.of(2024, Month.JUNE, 18, 0, 0, 0),
+      reference = "description of the advance",
+      // comment = "This is a comment",
+      createdBy = "JD12345",
+      createdOn = LocalDateTime.of(2024, Month.JUNE, 18, 12, 10),
+      status = SyncCreateAdvanceRecordRequest.Status.ACTIVE,
     )
   }
 
@@ -254,6 +270,22 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     stubFor(
       post("/sync/holds/$holdNumber/release")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubSyncPrisonerAdvance(
+    response: SyncCreateAdvanceResponse = SyncCreateAdvanceResponse(
+      id = UUID.randomUUID(),
+    ),
+  ) {
+    stubFor(
+      post("/sync/advances")
         .willReturn(
           aResponse()
             .withStatus(200)

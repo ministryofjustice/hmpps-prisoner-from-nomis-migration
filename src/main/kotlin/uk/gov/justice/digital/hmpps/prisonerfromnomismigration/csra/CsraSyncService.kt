@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -131,6 +132,19 @@ class CsraSyncService(
       return
     }
     TODO()
+  }
+
+  suspend fun handlePrisonerMerged(event: PrisonerMergeDomainEvent) {
+    val telemetryName = "$TELEMETRY_PREFIX-prisoner-merged"
+    val (nomsNumber, removedNomsNumber, bookingId) = event.additionalInformation
+    val telemetry = telemetryOf(
+      "bookingId" to bookingId.toString(),
+      "nomsNumber" to nomsNumber,
+      "removedNomsNumber" to removedNomsNumber,
+    )
+    track(telemetryName, telemetry) {
+      csraMappingApiService.updateMappingsByNomisId(removedNomsNumber, nomsNumber)
+    }
   }
 
   suspend fun handleBookingMoved(prisonerMergeEvent: PrisonerBookingMovedDomainEvent) {

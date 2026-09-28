@@ -18,6 +18,10 @@ class CsraMappingApiService(
     .getCsraMappingByNomisId(bookingId = bookingId, sequence = sequence)
     .awaitSingle()
 
+  suspend fun updateMappingsByNomisId(removedNomsNumber: String, nomsNumber: String) = api
+    .updateCsraMappingsByNomisId(removedNomsNumber, nomsNumber)
+    .awaitSingle()
+
   suspend fun updateMappingsByBookingId(bookingId: Long, movedFromNomsNumber: String, movedToNomsNumber: String) = api
     .updateCsraMappingsByBookingId(bookingId, oldOffenderNo = movedFromNomsNumber, newOffenderNo = movedToNomsNumber)
     .awaitSingle()

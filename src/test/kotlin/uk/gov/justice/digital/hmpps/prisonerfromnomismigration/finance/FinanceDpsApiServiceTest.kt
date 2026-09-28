@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.addAdvanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.addHoldDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.prisonBalanceMigrationDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.prisonerBalanceMigrationDto
@@ -199,6 +200,55 @@ class FinanceDpsApiServiceTest {
 
       financeApi.verify(
         postRequestedFor(urlPathEqualTo("/sync/holds/12345/release")),
+      )
+    }
+  }
+
+  @Nested
+  inner class SyncPrisonerAdvance {
+    @Test
+    internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
+      financeApi.stubSyncPrisonerAdvance()
+
+      apiService.syncPrisonerAdvance(addAdvanceDto())
+
+      financeApi.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will sync request data to sync advance endpoint`() = runTest {
+      financeApi.stubSyncPrisonerAdvance()
+
+      apiService.syncPrisonerAdvance(addAdvanceDto())
+      financeApi.verify(
+        postRequestedFor(anyUrl())
+          .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo("12345"))
+          .withRequestBodyJsonPath("legacyInformationNumber", equalTo("9876-1"))
+          .withRequestBodyJsonPath("prisonNumber", equalTo("A0001BC"))
+          .withRequestBodyJsonPath("prisonID", equalTo("LEI"))
+          .withRequestBodyJsonPath("amount", equalTo("2.1"))
+          .withRequestBodyJsonPath("repaymentAmount", equalTo("0.5"))
+          .withRequestBodyJsonPath("repaymentStartDate", equalTo("2024-06-18T00:00:00"))
+          // TODO add in when set in api call
+          // .withRequestBodyJsonPath("comment", equalTo("comment"))
+          .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
+          .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
+          .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:10:00"))
+          .withRequestBodyJsonPath("status", equalTo("ACTIVE")),
+      )
+    }
+
+    @Test
+    fun `will call the sync prisoner advance endpoint`() = runTest {
+      financeApi.stubSyncPrisonerAdvance()
+
+      apiService.syncPrisonerAdvance(addAdvanceDto())
+
+      financeApi.verify(
+        postRequestedFor(urlPathEqualTo("/sync/advances")),
       )
     }
   }

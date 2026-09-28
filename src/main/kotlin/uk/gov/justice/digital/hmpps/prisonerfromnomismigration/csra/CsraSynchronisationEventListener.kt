@@ -40,7 +40,7 @@ class CsraSynchronisationEventListener(
               "ASSESSMENT-UPDATED" -> csraSyncService.update(sqsMessage.Message.fromJson())
               "ASSESSMENT-DELETED" -> csraSyncService.delete(sqsMessage.Message.fromJson())
 
-              "prison-offender-events.prisoner.merged" -> null // csraSyncService.synchronisePrisonerMerged(sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.merged" -> csraSyncService.handlePrisonerMerged(sqsMessage.Message.fromJson())
               "prison-offender-events.prisoner.booking.moved" -> csraSyncService.handleBookingMoved(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a csra message I wasn't expecting {}", eventType)

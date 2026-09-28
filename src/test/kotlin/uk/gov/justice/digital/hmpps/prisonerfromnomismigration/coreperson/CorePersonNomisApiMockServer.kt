@@ -1,7 +1,10 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
+import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
@@ -12,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CreateOffenderEmailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
@@ -165,9 +169,83 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubCreateOffenderEmail(
+    offenderId: Long = 12345,
+    response: CreateOffenderEmailResponse = CreateOffenderEmailResponse(emailAddressId = 45678),
+    status: HttpStatus = HttpStatus.CREATED,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      post(urlEqualTo("/core-person/$offenderId/email")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(
+            jsonMapper.writeValueAsString(if (status == HttpStatus.CREATED) response else error),
+          ),
+      ),
+    )
+  }
+
+  fun stubGetOffenderEmail(
+    offenderId: Long = 12345,
+    emailAddressId: Long = 45678,
+    emailAddress: OffenderEmailAddress = offenderEmailAddress(emailAddressId),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$offenderId/email/$emailAddressId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(
+            jsonMapper.writeValueAsString(if (status == HttpStatus.OK) emailAddress else error),
+          ),
+      ),
+    )
+  }
+
+  fun stubUpdateOffenderEmail(
+    offenderId: Long = 12345,
+    emailAddressId: Long = 45678,
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    nomisApi.stubFor(
+      put(urlEqualTo("/core-person/$offenderId/email/$emailAddressId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value()),
+      ),
+    )
+  }
+
+  fun stubDeleteOffenderEmail(
+    offenderId: Long = 12345,
+    emailAddressId: Long = 45678,
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    nomisApi.stubFor(
+      delete(urlEqualTo("/core-person/$offenderId/email/$emailAddressId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value()),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
+
+fun offenderEmailAddress(emailAddressId: Long = 40000): OffenderEmailAddress = OffenderEmailAddress(
+  emailAddressId = emailAddressId,
+  email = "test@example.com",
+  createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
+  createdByUsername = "SYSTEM",
+  lastUpdatedDateTime = null,
+  lastUpdatedByUsername = null,
+)
 
 fun corePerson(prisonNumber: String = "A1234BC", aliasesAndIdentifiers: List<CoreOffender>? = null): CorePerson = CorePerson(
   prisonNumber = prisonNumber,

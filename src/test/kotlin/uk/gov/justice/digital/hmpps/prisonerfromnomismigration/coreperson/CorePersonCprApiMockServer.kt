@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
@@ -77,6 +78,12 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun migrateCorePersonReligionResponse(prisonNumber: String, nomisId: Long, cprId: String) = SysconReligionResponseBody(
       prisonNumber = prisonNumber,
       religionMappings = listOf(SysconReligionMapping(nomisId.toString(), cprId)),
+    )
+
+    fun syncCorePersonEmailResponse(nomisContactId: Long = 12345L, cprContactId: String = UUID.randomUUID().toString()) = SysconContactMapping(
+      nomisContactId = nomisContactId,
+      nomisContactType = SysconContactMapping.NomisContactType.EMAIL,
+      cprContactId = cprContactId,
     )
   }
 
@@ -168,6 +175,53 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     stubFor(
       put("/syscon-sync/person/$prisonNumber/religion/$cprId")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubSyncCreateEmail(
+    prisonNumber: String = "A1234BC",
+    status: HttpStatus = HttpStatus.CREATED,
+    response: SysconContactMapping = syncCorePersonEmailResponse(),
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    stubFor(
+      post("/syscon-sync/person/$prisonNumber/contact")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.CREATED) response else error)),
+        ),
+    )
+  }
+
+  fun stubSyncUpdateEmail(
+    prisonNumber: String = "A1234BC",
+    cprContactId: String = "cprContactId",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      put("/syscon-sync/person/$prisonNumber/contact/$cprContactId")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubSyncDeleteEmail(
+    prisonNumber: String = "A1234BC",
+    cprContactId: String = "cprContactId",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      delete("/syscon-sync/person/$prisonNumber/contact/$cprContactId")
         .willReturn(
           aResponse()
             .withStatus(status.value())

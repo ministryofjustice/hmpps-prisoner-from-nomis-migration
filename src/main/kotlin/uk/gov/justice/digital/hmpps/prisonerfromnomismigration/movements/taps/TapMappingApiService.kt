@@ -17,7 +17,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TapMovementResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TapPrisonerResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.TapScheduleResourceApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.FindTapScheduleMappingsForAddressResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingDto
@@ -49,29 +48,13 @@ class TapMappingApiService(@Qualifier("tapsMappingApiWebClient") webClient: WebC
 
   override fun createMappingUrl() = "$domainUrl/migrate"
 
-  suspend fun createTapApplicationMapping(mapping: TapApplicationMappingDto) = applicationApi.prepare(applicationApi.createTapApplicationMappingRequestConfig(mapping))
-    .retrieve()
-    .awaitSuccessOrDuplicate<TapApplicationMappingDto>()
-
   suspend fun getTapApplicationMappingOrNull(nomisApplicationId: Long): TapApplicationMappingDto? = applicationApi.prepare(applicationApi.getTapApplicationMappingByNomisIdRequestConfig(nomisApplicationId))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun deleteTapApplicationMapping(nomisApplicationId: Long): Unit = applicationApi.deleteTapApplicationByNomisId(nomisApplicationId).awaitSingle()
-
-  suspend fun createTapScheduleMapping(mapping: TapScheduleMappingDto) = scheduleApi.prepare(scheduleApi.createTapScheduleMappingRequestConfig((mapping)))
-    .retrieve()
-    .awaitSuccessOrDuplicate<TapScheduleMappingDto>()
-
-  suspend fun updateTapScheduleMapping(mapping: TapScheduleMappingDto) = scheduleApi.updateTapScheduleMapping(mapping)
-    .awaitSingle()
-
   suspend fun getTapScheduleMappingOrNull(nomisEventId: Long): TapScheduleMappingDto? = scheduleApi.prepare(scheduleApi.getTapScheduleMappingByNomisIdRequestConfig(nomisEventId))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
-
-  suspend fun deleteTapScheduleMapping(nomisEventId: Long): Unit = scheduleApi.deleteTapScheduleMappingByNomisId(nomisEventId)
-    .awaitSingle()
 
   suspend fun createTapMovementMapping(mapping: TapMovementMappingDto) = movementApi.prepare(movementApi.createTapMovementMappingRequestConfig(mapping))
     .retrieve()
@@ -85,9 +68,6 @@ class TapMappingApiService(@Qualifier("tapsMappingApiWebClient") webClient: WebC
     .awaitBodyOrNullWhenNotFound()
 
   suspend fun deleteTapMovementMapping(bookingId: Long, movementSeq: Int): Unit = movementApi.deleteTapMovementMappingByNomisId(bookingId, movementSeq)
-    .awaitSingle()
-
-  suspend fun findTapScheduleMappingsForAddress(nomisAddressId: Long): FindTapScheduleMappingsForAddressResponse = scheduleApi.findTapScheduleMappingsByNomisAddressId(nomisAddressId)
     .awaitSingle()
 
   suspend fun getTapMoveBookingMappings(bookingId: Long): TapMoveBookingMappingDto = prisonerApi.getPrisonerBookingMappings(bookingId).awaitSingle()

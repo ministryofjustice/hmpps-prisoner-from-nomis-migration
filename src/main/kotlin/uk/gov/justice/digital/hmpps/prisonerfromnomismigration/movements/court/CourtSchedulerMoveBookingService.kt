@@ -70,6 +70,7 @@ class CourtSchedulerMoveBookingService(
     mappings: List<CourtScheduleIdMapping>,
     telemetry: MutableMap<String, Any>,
   ) = courtSchedules
+    .filter { it.courtCaseId == null }
     .map { it.eventId }
     .also { telemetry["nomisEventIds"] = "$it" }
     .map { nomisEventId ->

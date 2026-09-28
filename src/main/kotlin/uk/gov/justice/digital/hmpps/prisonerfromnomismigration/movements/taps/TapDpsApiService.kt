@@ -12,10 +12,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.M
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MoveTemporaryAbsencesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapAuthorisation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapMovement
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.SyncWriteTapOccurrence
-import java.util.UUID
+import java.util.*
 
 @Service
 class TapDpsApiService(
@@ -25,18 +23,6 @@ class TapDpsApiService(
 
   private val syncApi = SyncApi(webClient)
   private val resyncApi = SyncApi(resyncWebClient)
-
-  suspend fun syncTapAuthorisation(personIdentifier: String, request: SyncWriteTapAuthorisation): SyncResponse = syncApi.prepare(syncApi.syncTemporaryAbsenceAuthorisationRequestConfig(personIdentifier, request))
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
-
-  suspend fun deleteTapAuthorisation(authorisationId: UUID) = syncApi.deleteTapAuthorisationById(authorisationId).awaitSingle()
-
-  suspend fun syncTapOccurrence(authorisationId: UUID, request: SyncWriteTapOccurrence): SyncResponse = syncApi.prepare(syncApi.syncTemporaryAbsenceOccurrenceRequestConfig(authorisationId, request))
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
-
-  suspend fun deleteTapOccurrence(occurrenceId: UUID) = syncApi.deleteTapOccurrenceById(occurrenceId).awaitSingle()
 
   suspend fun syncTapMovement(personIdentifier: String, request: SyncWriteTapMovement): SyncResponse = syncApi.prepare(syncApi.syncTemporaryAbsenceMovementRequestConfig(personIdentifier, request))
     .retrieve()

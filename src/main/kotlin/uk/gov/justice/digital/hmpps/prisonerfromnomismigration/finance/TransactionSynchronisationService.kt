@@ -161,8 +161,9 @@ class TransactionSynchronisationService(
         event.toTelemetryProperties(dpsTransactionId = dpsTransactionId),
       )
     } else if (nomisTransaction.isReleaseHoldTransaction()) {
+      // holdNumber is now present on all new release transactions, so we can safely use !! here
       financeService.syncReleaseHoldTransaction(
-        holdNumber = nomisTransaction.holdDetails!!.holdNumber,
+        holdNumber = nomisTransaction.holdDetails!!.holdNumber!!,
         request = nomisTransaction.toSyncReleaseHoldRequest(),
       )
       telemetryClient.trackEvent(

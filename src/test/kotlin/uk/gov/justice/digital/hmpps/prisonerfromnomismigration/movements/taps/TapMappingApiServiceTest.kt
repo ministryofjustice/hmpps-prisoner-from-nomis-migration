@@ -26,12 +26,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationIdMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapApplicationMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMoveBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementIdMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapPrisonerMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapScheduleMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import java.util.*
 
@@ -94,88 +92,6 @@ class TapMappingApiServiceTest {
   }
 
   @Nested
-  inner class CreateApplicationMappings {
-    @Test
-    internal fun `should pass oauth2 token to service`() = runTest {
-      mappingApi.stubCreateTapApplicationMapping()
-
-      apiService.createTapApplicationMapping(
-        tapApplicationMapping(),
-      )
-
-      mappingApi.verify(
-        postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `should pass data to service`() = runTest {
-      mappingApi.stubCreateTapApplicationMapping()
-
-      apiService.createTapApplicationMapping(
-        tapApplicationMapping(),
-      )
-
-      mappingApi.verify(
-        postRequestedFor(anyUrl())
-          .withRequestBody(matchingJsonPath("prisonerNumber", equalTo("A1234BC")))
-          .withRequestBody(matchingJsonPath("bookingId", equalTo("12345")))
-          .withRequestBody(matchingJsonPath("nomisApplicationId", equalTo("1")))
-          .withRequestBody(matchingJsonPath("dpsAuthorisationId", not(absent())))
-          .withRequestBody(matchingJsonPath("mappingType", equalTo("MIGRATED"))),
-      )
-    }
-
-    @Test
-    fun `should return error for 409 conflict`() = runTest {
-      val dpsAuthorisationId = UUID.randomUUID()
-      mappingApi.stubCreateTapApplicationMappingConflict(
-        error = DuplicateMappingErrorResponse(
-          moreInfo = DuplicateErrorContentObject(
-            existing = TapApplicationMappingDto(
-              prisonerNumber = "A1234BC",
-              bookingId = 12345L,
-              nomisApplicationId = 1L,
-              dpsAuthorisationId = dpsAuthorisationId,
-              mappingType = TapApplicationMappingDto.MappingType.NOMIS_CREATED,
-            ),
-            duplicate = TapApplicationMappingDto(
-              prisonerNumber = "A1234BC",
-              bookingId = 12345L,
-              nomisApplicationId = 2L,
-              dpsAuthorisationId = dpsAuthorisationId,
-              mappingType = TapApplicationMappingDto.MappingType.NOMIS_CREATED,
-            ),
-          ),
-          errorCode = 1409,
-          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
-          userMessage = "Duplicate mapping",
-        ),
-      )
-
-      apiService.createTapApplicationMapping(
-        tapApplicationMapping(),
-      )
-        .apply {
-          assertThat(isError).isTrue
-          assertThat(errorResponse!!.moreInfo.existing!!.nomisApplicationId).isEqualTo(1L)
-          assertThat(errorResponse.moreInfo.duplicate.nomisApplicationId).isEqualTo(2L)
-        }
-    }
-
-    @Test
-    fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubCreateTapApplicationMapping(status = INTERNAL_SERVER_ERROR)
-
-      assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.createTapApplicationMapping(
-          tapApplicationMapping(),
-        )
-      }
-    }
-  }
-
-  @Nested
   inner class GetApplicationMappings {
     @Test
     internal fun `should pass oauth2 token to service`() = runTest {
@@ -207,170 +123,6 @@ class TapMappingApiServiceTest {
   }
 
   @Nested
-  inner class DeleteApplicationMappings {
-    @Test
-    internal fun `should pass oauth2 token to service`() = runTest {
-      mappingApi.stubDeleteTapApplicationMapping()
-
-      apiService.deleteTapApplicationMapping(1L)
-
-      mappingApi.verify(
-        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubDeleteTapApplicationMapping(status = INTERNAL_SERVER_ERROR)
-
-      assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.deleteTapApplicationMapping(1L)
-      }
-    }
-  }
-
-  @Nested
-  inner class CreateScheduledMovementMappings {
-    @Test
-    internal fun `should pass oauth2 token to service`() = runTest {
-      mappingApi.stubCreateTapScheduleMapping()
-
-      apiService.createTapScheduleMapping(
-        tapScheduleMapping(),
-      )
-
-      mappingApi.verify(
-        postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `should pass data to service`() = runTest {
-      mappingApi.stubCreateTapScheduleMapping()
-
-      apiService.createTapScheduleMapping(
-        tapScheduleMapping(),
-      )
-
-      mappingApi.verify(
-        postRequestedFor(anyUrl())
-          .withRequestBody(matchingJsonPath("prisonerNumber", equalTo("A1234BC")))
-          .withRequestBody(matchingJsonPath("bookingId", equalTo("12345")))
-          .withRequestBody(matchingJsonPath("nomisEventId", equalTo("1")))
-          .withRequestBody(matchingJsonPath("dpsOccurrenceId", not(absent())))
-          .withRequestBody(matchingJsonPath("mappingType", equalTo("MIGRATED")))
-          .withRequestBody(matchingJsonPath("nomisAddressId", equalTo("321")))
-          .withRequestBody(matchingJsonPath("nomisAddressOwnerClass", equalTo("OFF")))
-          .withRequestBody(matchingJsonPath("dpsAddressText", equalTo("to full address"))),
-      )
-    }
-
-    @Test
-    fun `should return error for 409 conflict`() = runTest {
-      val dpsOccurrenceId = UUID.randomUUID()
-      mappingApi.stubCreateTapScheduleMappingConflict(
-        error = DuplicateMappingErrorResponse(
-          moreInfo = DuplicateErrorContentObject(
-            existing = TapScheduleMappingDto(
-              prisonerNumber = "A1234BC",
-              bookingId = 12345L,
-              nomisEventId = 1L,
-              dpsOccurrenceId = dpsOccurrenceId,
-              mappingType = TapScheduleMappingDto.MappingType.NOMIS_CREATED,
-              nomisAddressId = 0,
-              nomisAddressOwnerClass = "",
-              dpsAddressText = "",
-              eventTime = "",
-            ),
-            duplicate = TapScheduleMappingDto(
-              prisonerNumber = "A1234BC",
-              bookingId = 12345L,
-              nomisEventId = 2L,
-              dpsOccurrenceId = dpsOccurrenceId,
-              mappingType = TapScheduleMappingDto.MappingType.NOMIS_CREATED,
-              nomisAddressId = 0,
-              nomisAddressOwnerClass = "",
-              dpsAddressText = "",
-              eventTime = "",
-            ),
-          ),
-          errorCode = 1409,
-          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
-          userMessage = "Duplicate mapping",
-        ),
-      )
-
-      apiService.createTapScheduleMapping(
-        tapScheduleMapping(),
-      )
-        .apply {
-          assertThat(isError).isTrue
-          assertThat(errorResponse!!.moreInfo.existing!!.nomisEventId).isEqualTo(1L)
-          assertThat(errorResponse.moreInfo.duplicate.nomisEventId).isEqualTo(2L)
-        }
-    }
-
-    @Test
-    fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubCreateTapScheduleMapping(status = INTERNAL_SERVER_ERROR)
-
-      assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.createTapScheduleMapping(
-          tapScheduleMapping(),
-        )
-      }
-    }
-  }
-
-  @Nested
-  inner class UpdateScheduledMovementMappings {
-    @Test
-    internal fun `should pass oauth2 token to service`() = runTest {
-      mappingApi.stubUpdateTapScheduleMapping()
-
-      apiService.updateTapScheduleMapping(
-        tapScheduleMapping(),
-      )
-
-      mappingApi.verify(
-        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `should pass data to service`() = runTest {
-      mappingApi.stubUpdateTapScheduleMapping()
-
-      apiService.updateTapScheduleMapping(
-        tapScheduleMapping(),
-      )
-
-      mappingApi.verify(
-        putRequestedFor(anyUrl())
-          .withRequestBody(matchingJsonPath("prisonerNumber", equalTo("A1234BC")))
-          .withRequestBody(matchingJsonPath("bookingId", equalTo("12345")))
-          .withRequestBody(matchingJsonPath("nomisEventId", equalTo("1")))
-          .withRequestBody(matchingJsonPath("dpsOccurrenceId", not(absent())))
-          .withRequestBody(matchingJsonPath("mappingType", equalTo("MIGRATED")))
-          .withRequestBody(matchingJsonPath("nomisAddressId", equalTo("321")))
-          .withRequestBody(matchingJsonPath("nomisAddressOwnerClass", equalTo("OFF")))
-          .withRequestBody(matchingJsonPath("dpsAddressText", equalTo("to full address"))),
-      )
-    }
-
-    @Test
-    fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubUpdateTapScheduleMapping(status = INTERNAL_SERVER_ERROR)
-
-      assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.updateTapScheduleMapping(
-          tapScheduleMapping(),
-        )
-      }
-    }
-  }
-
-  @Nested
   inner class GetScheduledMovementMappings {
     @Test
     internal fun `should pass oauth2 token to service`() = runTest {
@@ -397,29 +149,6 @@ class TapMappingApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getTapScheduleMappingOrNull(1L)
-      }
-    }
-  }
-
-  @Nested
-  inner class DeleteScheduledMovementMappings {
-    @Test
-    internal fun `should pass oauth2 token to service`() = runTest {
-      mappingApi.stubDeleteTapScheduleMapping()
-
-      apiService.deleteTapScheduleMapping(1L)
-
-      mappingApi.verify(
-        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubDeleteTapScheduleMapping(status = INTERNAL_SERVER_ERROR)
-
-      assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.deleteTapScheduleMapping(1L)
       }
     }
   }
@@ -596,47 +325,6 @@ class TapMappingApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.deleteTapMovementMapping(12345L, 1)
-      }
-    }
-  }
-
-  @Nested
-  inner class FindTapScheduleMappingsForAddresses {
-    @Test
-    internal fun `should pass oauth2 token to service`() = runTest {
-      mappingApi.stubFindTapScheduleMappingsForAddressForPrisoners()
-
-      apiService.findTapScheduleMappingsForAddress(123L)
-
-      mappingApi.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `should return list of schedule mappings`() = runTest {
-      mappingApi.stubFindTapScheduleMappingsForAddressForPrisoners()
-
-      with(apiService.findTapScheduleMappingsForAddress(123L)) {
-        assertThat(scheduleMappings).extracting("prisonerNumber").containsExactlyInAnyOrder("A1234AA", "B1234BB")
-      }
-    }
-
-    @Test
-    fun `should handle empty list if none found`() = runTest {
-      mappingApi.stubFindTapScheduleMappingsForAddressForPrisoners(prisoners = listOf())
-
-      with(apiService.findTapScheduleMappingsForAddress(123L)) {
-        assertThat(scheduleMappings.size).isEqualTo(0)
-      }
-    }
-
-    @Test
-    fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubFindTapScheduleMappingsForAddressError(status = INTERNAL_SERVER_ERROR)
-
-      assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.findTapScheduleMappingsForAddress(123L)
       }
     }
   }
