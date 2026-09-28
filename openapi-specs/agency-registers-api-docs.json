@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version": "2026-09-23.534.3343488"
+    "version" : "2026-09-25.545.8f84408"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -40,13 +40,7 @@
           "schema" : {
             "type" : "string",
             "description" : "Department type",
-            "enum": [
-              "PRISON",
-              "SOCIAL_VISIT",
-              "VIDEOLINK_CONFERENCING_CENTRE",
-              "OFFENDER_MANAGEMENT_UNIT",
-              "OFFICIAL_VISIT"
-            ],
+            "enum" : [ "PRISON", "SOCIAL_VISIT", "VIDEOLINK_CONFERENCING_CENTRE", "OFFENDER_MANAGEMENT_UNIT", "OFFICIAL_VISIT" ],
             "example" : "SOCIAL_VISIT"
           },
           "example" : "SOCIAL_VISIT"
@@ -254,13 +248,7 @@
             "type" : "string",
             "default" : true,
             "description" : "Department type",
-            "enum": [
-              "PRISON",
-              "SOCIAL_VISIT",
-              "VIDEOLINK_CONFERENCING_CENTRE",
-              "OFFENDER_MANAGEMENT_UNIT",
-              "OFFICIAL_VISIT"
-            ],
+            "enum" : [ "PRISON", "SOCIAL_VISIT", "VIDEOLINK_CONFERENCING_CENTRE", "OFFENDER_MANAGEMENT_UNIT", "OFFICIAL_VISIT" ],
             "example" : "SOCIAL_VISIT"
           },
           "example" : "SOCIAL_VISIT"
@@ -3098,22 +3086,20 @@
         }
       }
     },
-    "/approved-premises/id/{approvedPremisesId}": {
+    "/approved-premises/id/{approvedPremisesId}" : {
       "get" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
-        "summary": "Get specified approved premises",
-        "description": "Information on a specific approved premises",
-        "operationId": "getApprovedPremisesFromId",
+        "tags" : [ "approved-premises-resource" ],
+        "summary" : "Get specified approved premises",
+        "description" : "Information on a specific approved premises",
+        "operationId" : "getApprovedPremisesFromId",
         "parameters" : [ {
-          "name": "approvedPremisesId",
+          "name" : "approvedPremisesId",
           "in" : "path",
-          "description": "Approved Premises ID",
+          "description" : "Approved Premises ID",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP",
             "maxLength" : 6,
             "minLength" : 2
@@ -3126,7 +3112,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref": "#/components/schemas/ApprovedPremisesDto"
+                  "$ref" : "#/components/schemas/ApprovedPremisesDto"
                 }
               }
             }
@@ -3134,20 +3120,18 @@
         }
       },
       "put" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
-        "summary": "Update specified approved premises details",
-        "description": "Updates approved premises information, excluding its addresses, email addresses and phone numbers. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
-        "operationId": "updateApprovedPremises",
+        "tags" : [ "approved-premises-resource" ],
+        "summary" : "Update specified approved premises details",
+        "description" : "Updates approved premises information, excluding its addresses, email addresses and phone numbers. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "updateApprovedPremises",
         "parameters" : [ {
-          "name": "approvedPremisesId",
+          "name" : "approvedPremisesId",
           "in" : "path",
-          "description": "Approved Premises ID",
+          "description" : "Approved Premises ID",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP",
             "maxLength" : 6,
             "minLength" : 2
@@ -3158,7 +3142,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref": "#/components/schemas/UpdateApprovedPremisesDto"
+                "$ref" : "#/components/schemas/UpdateApprovedPremisesDto"
               }
             }
           },
@@ -3166,17 +3150,17 @@
         },
         "responses" : {
           "200" : {
-            "description": "Approved Premises Information Updated",
+            "description" : "Approved Premises Information Updated",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref": "#/components/schemas/ApprovedPremisesDto"
+                  "$ref" : "#/components/schemas/ApprovedPremisesDto"
                 }
               }
             }
           },
           "400" : {
-            "description": "Bad information provided to update approved premises",
+            "description" : "Bad information provided to update approved premises",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3196,7 +3180,7 @@
             }
           },
           "403" : {
-            "description": "Incorrect permissions to make approved premises update",
+            "description" : "Incorrect permissions to make approved premises update",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3206,7 +3190,7 @@
             }
           },
           "404" : {
-            "description": "Approved Premises Id not found",
+            "description" : "Approved Premises Id not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3218,20 +3202,18 @@
         }
       },
       "delete" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
-        "summary": "Delete specified approved premises",
-        "description": "Deletes a approved premises, along with any addresses, email addresses and phone numbers associated with it. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
-        "operationId": "deleteApprovedPremises",
+        "tags" : [ "approved-premises-resource" ],
+        "summary" : "Delete specified approved premises",
+        "description" : "Deletes a approved premises, along with any addresses, email addresses and phone numbers associated with it. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "deleteApprovedPremises",
         "parameters" : [ {
-          "name": "approvedPremisesId",
+          "name" : "approvedPremisesId",
           "in" : "path",
-          "description": "Approved Premises ID",
+          "description" : "Approved Premises ID",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP",
             "maxLength" : 6,
             "minLength" : 2
@@ -3240,7 +3222,7 @@
         } ],
         "responses" : {
           "204" : {
-            "description": "Approved Premises Deleted"
+            "description" : "Approved Premises Deleted"
           },
           "401" : {
             "description" : "Unauthorized to access this endpoint",
@@ -3253,7 +3235,7 @@
             }
           },
           "403" : {
-            "description": "Incorrect permissions to delete a approved premises",
+            "description" : "Incorrect permissions to delete a approved premises",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3263,7 +3245,7 @@
             }
           },
           "404" : {
-            "description": "Approved Premises Id not found",
+            "description" : "Approved Premises Id not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3275,22 +3257,20 @@
         }
       }
     },
-    "/approved-premises/id/{approvedPremisesId}/phone-number/{phoneNumberId}": {
+    "/approved-premises/id/{approvedPremisesId}/phone-number/{phoneNumberId}" : {
       "put" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
-        "summary": "Update specified approved premises phone number",
-        "description": "Updates a single phone number for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
-        "operationId": "updateApprovedPremisesPhoneNumber",
+        "tags" : [ "approved-premises-resource" ],
+        "summary" : "Update specified approved premises phone number",
+        "description" : "Updates a single phone number for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "updateApprovedPremisesPhoneNumber",
         "parameters" : [ {
-          "name": "approvedPremisesId",
+          "name" : "approvedPremisesId",
           "in" : "path",
-          "description": "Approved Premises ID",
+          "description" : "Approved Premises ID",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP",
             "maxLength" : 6,
             "minLength" : 2
@@ -3321,7 +3301,7 @@
         },
         "responses" : {
           "200" : {
-            "description": "Approved Premises Phone Number Updated",
+            "description" : "Approved Premises Phone Number Updated",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3331,7 +3311,7 @@
             }
           },
           "400" : {
-            "description": "Bad information provided to update approved premises phone number",
+            "description" : "Bad information provided to update approved premises phone number",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3351,7 +3331,7 @@
             }
           },
           "403" : {
-            "description": "Incorrect permissions to make approved premises phone number update",
+            "description" : "Incorrect permissions to make approved premises phone number update",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3361,7 +3341,7 @@
             }
           },
           "404" : {
-            "description": "Approved Premises Id or Phone Number Id not found",
+            "description" : "Approved Premises Id or Phone Number Id not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3373,20 +3353,18 @@
         }
       },
       "delete" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
-        "summary": "Delete specified approved premises phone number",
-        "description": "Deletes a single phone number for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
-        "operationId": "deleteApprovedPremisesPhoneNumber",
+        "tags" : [ "approved-premises-resource" ],
+        "summary" : "Delete specified approved premises phone number",
+        "description" : "Deletes a single phone number for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "deleteApprovedPremisesPhoneNumber",
         "parameters" : [ {
-          "name": "approvedPremisesId",
+          "name" : "approvedPremisesId",
           "in" : "path",
-          "description": "Approved Premises ID",
+          "description" : "Approved Premises ID",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP",
             "maxLength" : 6,
             "minLength" : 2
@@ -3407,7 +3385,7 @@
         } ],
         "responses" : {
           "204" : {
-            "description": "Approved Premises Phone Number Deleted"
+            "description" : "Approved Premises Phone Number Deleted"
           },
           "401" : {
             "description" : "Unauthorized to access this endpoint",
@@ -3420,7 +3398,7 @@
             }
           },
           "403" : {
-            "description": "Incorrect permissions to delete a approved premises phone number",
+            "description" : "Incorrect permissions to delete a approved premises phone number",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3430,7 +3408,7 @@
             }
           },
           "404" : {
-            "description": "Approved Premises Id or Phone Number Id not found",
+            "description" : "Approved Premises Id or Phone Number Id not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3442,22 +3420,20 @@
         }
       }
     },
-    "/approved-premises/id/{approvedPremisesId}/email-address/{emailAddressId}": {
+    "/approved-premises/id/{approvedPremisesId}/email-address/{emailAddressId}" : {
       "put" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
-        "summary": "Update specified approved premises email address",
-        "description": "Updates a single email address for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
-        "operationId": "updateApprovedPremisesEmailAddress",
+        "tags" : [ "approved-premises-resource" ],
+        "summary" : "Update specified approved premises email address",
+        "description" : "Updates a single email address for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "updateApprovedPremisesEmailAddress",
         "parameters" : [ {
-          "name": "approvedPremisesId",
+          "name" : "approvedPremisesId",
           "in" : "path",
-          "description": "Approved Premises ID",
+          "description" : "Approved Premises ID",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP",
             "maxLength" : 6,
             "minLength" : 2
@@ -3488,7 +3464,7 @@
         },
         "responses" : {
           "200" : {
-            "description": "Approved Premises Email Address Updated",
+            "description" : "Approved Premises Email Address Updated",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3498,7 +3474,7 @@
             }
           },
           "400" : {
-            "description": "Bad information provided to update approved premises email address",
+            "description" : "Bad information provided to update approved premises email address",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3518,7 +3494,7 @@
             }
           },
           "403" : {
-            "description": "Incorrect permissions to make approved premises email address update",
+            "description" : "Incorrect permissions to make approved premises email address update",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3528,7 +3504,7 @@
             }
           },
           "404" : {
-            "description": "Approved Premises Id or Email Address Id not found",
+            "description" : "Approved Premises Id or Email Address Id not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3540,20 +3516,18 @@
         }
       },
       "delete" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
-        "summary": "Delete specified approved premises email address",
-        "description": "Deletes a single email address for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
-        "operationId": "deleteApprovedPremisesEmailAddress",
+        "tags" : [ "approved-premises-resource" ],
+        "summary" : "Delete specified approved premises email address",
+        "description" : "Deletes a single email address for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "deleteApprovedPremisesEmailAddress",
         "parameters" : [ {
-          "name": "approvedPremisesId",
+          "name" : "approvedPremisesId",
           "in" : "path",
-          "description": "Approved Premises ID",
+          "description" : "Approved Premises ID",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP",
             "maxLength" : 6,
             "minLength" : 2
@@ -3574,7 +3548,7 @@
         } ],
         "responses" : {
           "204" : {
-            "description": "Approved Premises Email Address Deleted"
+            "description" : "Approved Premises Email Address Deleted"
           },
           "401" : {
             "description" : "Unauthorized to access this endpoint",
@@ -3587,7 +3561,7 @@
             }
           },
           "403" : {
-            "description": "Incorrect permissions to delete a approved premises email address",
+            "description" : "Incorrect permissions to delete a approved premises email address",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3597,7 +3571,7 @@
             }
           },
           "404" : {
-            "description": "Approved Premises Id or Email Address Id not found",
+            "description" : "Approved Premises Id or Email Address Id not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3609,22 +3583,20 @@
         }
       }
     },
-    "/approved-premises/id/{approvedPremisesId}/address/{addressId}": {
+    "/approved-premises/id/{approvedPremisesId}/address/{addressId}" : {
       "put" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
-        "summary": "Update specified approved premises address",
-        "description": "Updates a single address for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
-        "operationId": "updateApprovedPremisesAddress",
+        "tags" : [ "approved-premises-resource" ],
+        "summary" : "Update specified approved premises address",
+        "description" : "Updates a single address for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "updateApprovedPremisesAddress",
         "parameters" : [ {
-          "name": "approvedPremisesId",
+          "name" : "approvedPremisesId",
           "in" : "path",
-          "description": "Approved Premises ID",
+          "description" : "Approved Premises ID",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP",
             "maxLength" : 6,
             "minLength" : 2
@@ -3655,7 +3627,7 @@
         },
         "responses" : {
           "200" : {
-            "description": "Approved Premises Address Updated",
+            "description" : "Approved Premises Address Updated",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3665,7 +3637,7 @@
             }
           },
           "400" : {
-            "description": "Bad information provided to update approved premises address",
+            "description" : "Bad information provided to update approved premises address",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3685,7 +3657,7 @@
             }
           },
           "403" : {
-            "description": "Incorrect permissions to make approved premises address update",
+            "description" : "Incorrect permissions to make approved premises address update",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3695,7 +3667,7 @@
             }
           },
           "404" : {
-            "description": "Approved Premises Id or Address Id not found",
+            "description" : "Approved Premises Id or Address Id not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3707,20 +3679,18 @@
         }
       },
       "delete" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
-        "summary": "Delete specified approved premises address",
-        "description": "Deletes a single address for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
-        "operationId": "deleteApprovedPremisesAddress",
+        "tags" : [ "approved-premises-resource" ],
+        "summary" : "Delete specified approved premises address",
+        "description" : "Deletes a single address for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "deleteApprovedPremisesAddress",
         "parameters" : [ {
-          "name": "approvedPremisesId",
+          "name" : "approvedPremisesId",
           "in" : "path",
-          "description": "Approved Premises ID",
+          "description" : "Approved Premises ID",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP",
             "maxLength" : 6,
             "minLength" : 2
@@ -3741,7 +3711,7 @@
         } ],
         "responses" : {
           "204" : {
-            "description": "Approved Premises Address Deleted"
+            "description" : "Approved Premises Address Deleted"
           },
           "401" : {
             "description" : "Unauthorized to access this endpoint",
@@ -3754,7 +3724,7 @@
             }
           },
           "403" : {
-            "description": "Incorrect permissions to delete a approved premises address",
+            "description" : "Incorrect permissions to delete a approved premises address",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -3764,7 +3734,7 @@
             }
           },
           "404" : {
-            "description": "Approved Premises Id or Address Id not found",
+            "description" : "Approved Premises Id or Address Id not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -5742,53 +5712,38 @@
         "summary" : "Get all courts",
         "description" : "Information on all courts",
         "operationId" : "getCourts",
-        "parameters": [
-          {
-            "name": "active",
-            "in": "query",
-            "description": "Active",
-            "required": false,
-            "schema": {
-              "type": "boolean"
-            },
-            "example": true
+        "parameters" : [ {
+          "name" : "active",
+          "in" : "query",
+          "description" : "Active",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
           },
-          {
-            "name": "textSearch",
-            "in": "query",
-            "description": "Text search",
-            "required": false,
-            "schema": {
-              "type": "string"
-            },
-            "example": "Sheffield"
+          "example" : true
+        }, {
+          "name" : "textSearch",
+          "in" : "query",
+          "description" : "Text search",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
           },
-          {
-            "name": "courtTypeCodes",
-            "in": "query",
-            "description": "Court type codes to filter by",
-            "required": false,
-            "schema": {
-              "type": "array",
-              "items": {
-                "type": "string",
-                "enum": [
-                  "CACD",
-                  "CB",
-                  "CC",
-                  "CO",
-                  "DCM",
-                  "GCM",
-                  "IMM",
-                  "MC",
-                  "OTHER",
-                  "YC"
-                ]
-              }
-            },
-            "example": "CACD, CB"
-          }
-        ],
+          "example" : "Sheffield"
+        }, {
+          "name" : "courtTypeCodes",
+          "in" : "query",
+          "description" : "Court type codes to filter by",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "CACD", "CB", "CC", "CO", "DCM", "GCM", "IMM", "MC", "OTHER", "YC" ]
+            }
+          },
+          "example" : "CACD, CB"
+        } ],
         "responses" : {
           "200" : {
             "description" : "Successful Operation",
@@ -6138,9 +6093,7 @@
     },
     "/approved-premises" : {
       "get" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
+        "tags" : [ "approved-premises-resource" ],
         "summary" : "Get all approved premises",
         "description" : "Information on all approved premises",
         "operationId" : "getApprovedPremises",
@@ -6152,7 +6105,7 @@
                 "schema" : {
                   "type" : "array",
                   "items" : {
-                    "$ref": "#/components/schemas/ApprovedPremisesDto"
+                    "$ref" : "#/components/schemas/ApprovedPremisesDto"
                   }
                 }
               }
@@ -6161,17 +6114,15 @@
         }
       },
       "post" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
-        "summary": "Create a new approved premises",
-        "description": "Creates a approved premises, along with any addresses, email addresses and phone numbers supplied. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
-        "operationId": "createApprovedPremises",
+        "tags" : [ "approved-premises-resource" ],
+        "summary" : "Create a new approved premises",
+        "description" : "Creates a approved premises, along with any addresses, email addresses and phone numbers supplied. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "createApprovedPremises",
         "requestBody" : {
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref": "#/components/schemas/CreateApprovedPremisesDto"
+                "$ref" : "#/components/schemas/CreateApprovedPremisesDto"
               }
             }
           },
@@ -6179,11 +6130,11 @@
         },
         "responses" : {
           "201" : {
-            "description": "Approved Premises Created",
+            "description" : "Approved Premises Created",
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref": "#/components/schemas/ApprovedPremisesDto"
+                  "$ref" : "#/components/schemas/ApprovedPremisesDto"
                 }
               }
             }
@@ -6209,7 +6160,7 @@
             }
           },
           "403" : {
-            "description": "Incorrect permissions to create a approved premises",
+            "description" : "Incorrect permissions to create a approved premises",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -6221,22 +6172,20 @@
         }
       }
     },
-    "/approved-premises/id/{approvedPremisesId}/phone-number": {
+    "/approved-premises/id/{approvedPremisesId}/phone-number" : {
       "post" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
-        "summary": "Create a approved premises phone number",
-        "description": "Creates a new phone number for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
-        "operationId": "createApprovedPremisesPhoneNumber",
+        "tags" : [ "approved-premises-resource" ],
+        "summary" : "Create a approved premises phone number",
+        "description" : "Creates a new phone number for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "createApprovedPremisesPhoneNumber",
         "parameters" : [ {
-          "name": "approvedPremisesId",
+          "name" : "approvedPremisesId",
           "in" : "path",
-          "description": "Approved Premises ID",
+          "description" : "Approved Premises ID",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP",
             "maxLength" : 6,
             "minLength" : 2
@@ -6255,7 +6204,7 @@
         },
         "responses" : {
           "201" : {
-            "description": "Approved Premises Phone Number Created",
+            "description" : "Approved Premises Phone Number Created",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -6265,7 +6214,7 @@
             }
           },
           "400" : {
-            "description": "Bad information provided to create approved premises phone number",
+            "description" : "Bad information provided to create approved premises phone number",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -6285,7 +6234,7 @@
             }
           },
           "403" : {
-            "description": "Incorrect permissions to create a approved premises phone number",
+            "description" : "Incorrect permissions to create a approved premises phone number",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -6295,7 +6244,7 @@
             }
           },
           "404" : {
-            "description": "Approved Premises Id not found",
+            "description" : "Approved Premises Id not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -6317,22 +6266,20 @@
         }
       }
     },
-    "/approved-premises/id/{approvedPremisesId}/email-address": {
+    "/approved-premises/id/{approvedPremisesId}/email-address" : {
       "post" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
-        "summary": "Create a approved premises email address",
-        "description": "Creates a new email address for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
-        "operationId": "createApprovedPremisesEmailAddress",
+        "tags" : [ "approved-premises-resource" ],
+        "summary" : "Create a approved premises email address",
+        "description" : "Creates a new email address for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "createApprovedPremisesEmailAddress",
         "parameters" : [ {
-          "name": "approvedPremisesId",
+          "name" : "approvedPremisesId",
           "in" : "path",
-          "description": "Approved Premises ID",
+          "description" : "Approved Premises ID",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP",
             "maxLength" : 6,
             "minLength" : 2
@@ -6351,7 +6298,7 @@
         },
         "responses" : {
           "201" : {
-            "description": "Approved Premises Email Address Created",
+            "description" : "Approved Premises Email Address Created",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -6361,7 +6308,7 @@
             }
           },
           "400" : {
-            "description": "Bad information provided to create approved premises email address",
+            "description" : "Bad information provided to create approved premises email address",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -6381,7 +6328,7 @@
             }
           },
           "403" : {
-            "description": "Incorrect permissions to create a approved premises email address",
+            "description" : "Incorrect permissions to create a approved premises email address",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -6391,7 +6338,7 @@
             }
           },
           "404" : {
-            "description": "Approved Premises Id not found",
+            "description" : "Approved Premises Id not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -6413,22 +6360,20 @@
         }
       }
     },
-    "/approved-premises/id/{approvedPremisesId}/address": {
+    "/approved-premises/id/{approvedPremisesId}/address" : {
       "post" : {
-        "tags": [
-          "approved-premises-resource"
-        ],
-        "summary": "Create a approved premises address",
-        "description": "Creates a new address for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
-        "operationId": "createApprovedPremisesAddress",
+        "tags" : [ "approved-premises-resource" ],
+        "summary" : "Create a approved premises address",
+        "description" : "Creates a new address for a approved premises. Requires role HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "operationId" : "createApprovedPremisesAddress",
         "parameters" : [ {
-          "name": "approvedPremisesId",
+          "name" : "approvedPremisesId",
           "in" : "path",
-          "description": "Approved Premises ID",
+          "description" : "Approved Premises ID",
           "required" : true,
           "schema" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP",
             "maxLength" : 6,
             "minLength" : 2
@@ -6447,7 +6392,7 @@
         },
         "responses" : {
           "201" : {
-            "description": "Approved Premises Address Created",
+            "description" : "Approved Premises Address Created",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -6457,7 +6402,7 @@
             }
           },
           "400" : {
-            "description": "Bad information provided to create approved premises address",
+            "description" : "Bad information provided to create approved premises address",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -6477,7 +6422,7 @@
             }
           },
           "403" : {
-            "description": "Incorrect permissions to create a approved premises address",
+            "description" : "Incorrect permissions to create a approved premises address",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -6487,7 +6432,7 @@
             }
           },
           "404" : {
-            "description": "Approved Premises Id not found",
+            "description" : "Approved Premises Id not found",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -7078,7 +7023,7 @@
       "get" : {
         "tags" : [ "legacy-sync-resource" ],
         "summary" : "Returns details of an agency of any type for reconciliation",
-        "description": "Returns the details of any agency (court, hospital, probation office, approved premises, police custody suite, or generic agency) as a LegacyAgencyDto. Role required is ROLE_HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
+        "description" : "Returns the details of any agency (court, hospital, probation office, approved premises, police custody suite, or generic agency) as a LegacyAgencyDto. Role required is ROLE_HMPPS_REGISTERS_API__SYNCHRONISATION__RW",
         "operationId" : "getAgencyDetails",
         "parameters" : [ {
           "name" : "agencyId",
@@ -7178,6 +7123,29 @@
         }
       }
     },
+    "/api" : {
+      "get" : {
+        "tags" : [ "public-api-resource" ],
+        "summary" : "Get all agencies",
+        "description" : "Summary information on all agencies, including prisons, probation offices, police custody suites, courts, hospitals and other agencies ordered by agency ID ascending",
+        "operationId" : "getAgencies",
+        "responses" : {
+          "200" : {
+            "description" : "Successful Operation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AgencySummaryDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/legacy/admin/sync/agency/all" : {
       "delete" : {
         "tags" : [ "legacy-sync-resource" ],
@@ -7221,14 +7189,8 @@
           "type" : {
             "type" : "string",
             "description" : "Department Type",
-            "enum": [
-              "PRISON",
-              "SOCIAL_VISIT",
-              "VIDEOLINK_CONFERENCING_CENTRE",
-              "OFFENDER_MANAGEMENT_UNIT",
-              "OFFICIAL_VISIT"
-            ],
-            "example": "SOCIAL_VISIT, OFFICIAL_VISIT or PRISON"
+            "enum" : [ "PRISON", "SOCIAL_VISIT", "VIDEOLINK_CONFERENCING_CENTRE", "OFFENDER_MANAGEMENT_UNIT", "OFFICIAL_VISIT" ],
+            "example" : "SOCIAL_VISIT, OFFICIAL_VISIT or PRISON"
           },
           "emailAddress" : {
             "type" : [ "string", "null" ],
@@ -8438,21 +8400,21 @@
         },
         "required" : [ "active", "addresses", "courtId", "courtName", "emailAddresses", "phoneNumbers" ]
       },
-      "UpdateApprovedPremisesDto": {
+      "UpdateApprovedPremisesDto" : {
         "type" : "object",
-        "description": "Approved Premises Update Record",
+        "description" : "Approved Premises Update Record",
         "properties" : {
-          "approvedPremisesName": {
+          "approvedPremisesName" : {
             "type" : "string",
             "description" : "Name",
-            "example": "Sheffield Approved Premises",
+            "example" : "Sheffield Approved Premises",
             "maxLength" : 40,
             "minLength" : 0
           },
           "description" : {
             "type" : [ "string", "null" ],
             "description" : "Description",
-            "example": "Sheffield City Centre Approved Premises",
+            "example" : "Sheffield City Centre Approved Premises",
             "maxLength" : 3000,
             "minLength" : 0
           },
@@ -8518,29 +8480,26 @@
             "example" : "NEY"
           }
         },
-        "required": [
-          "active",
-          "approvedPremisesName"
-        ]
+        "required" : [ "active", "approvedPremisesName" ]
       },
-      "ApprovedPremisesDto": {
+      "ApprovedPremisesDto" : {
         "type" : "object",
-        "description": "Approved Premises Information",
+        "description" : "Approved Premises Information",
         "properties" : {
-          "approvedPremisesId": {
+          "approvedPremisesId" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP"
           },
-          "approvedPremisesName": {
+          "approvedPremisesName" : {
             "type" : "string",
             "description" : "Name",
-            "example": "Sheffield Approved Premises"
+            "example" : "Sheffield Approved Premises"
           },
           "description" : {
             "type" : [ "string", "null" ],
             "description" : "Description",
-            "example": "Sheffield City Centre Approved Premises"
+            "example" : "Sheffield City Centre Approved Premises"
           },
           "contact" : {
             "type" : [ "string", "null" ],
@@ -8629,14 +8588,7 @@
             }
           }
         },
-        "required": [
-          "active",
-          "addresses",
-          "approvedPremisesId",
-          "approvedPremisesName",
-          "emailAddresses",
-          "phoneNumbers"
-        ]
+        "required" : [ "active", "addresses", "approvedPremisesId", "approvedPremisesName", "emailAddresses", "phoneNumbers" ]
       },
       "UpdateAgencyDto" : {
         "type" : "object",
@@ -9292,26 +9244,7 @@
       },
       "LegacyAgencyType" : {
         "type" : "string",
-        "enum": [
-          "PRISON",
-          "COURT",
-          "HOSPITAL",
-          "SECURE_HOSPITAL",
-          "PROBATION_OFFICE",
-          "POLICE_CUSTODY_SUITE",
-          "APPROVED_PREMISES",
-          "AIRPORT",
-          "PROBATION_CRC",
-          "FOREIGN_NATIONAL_PRISON",
-          "VOLUNTARY_HOSTEL",
-          "IMMIGRATION_DETENTION_CENTRE",
-          "OUTSIDE",
-          "PECS",
-          "PSYCHIATRIC_CARE",
-          "CHILDREN_SECURE_HOME",
-          "SECURE_TRAINING_CENTRE",
-          "YOT"
-        ]
+        "enum" : [ "PRISON", "COURT", "HOSPITAL", "SECURE_HOSPITAL", "PROBATION_OFFICE", "POLICE_CUSTODY_SUITE", "APPROVED_PREMISES", "AIRPORT", "PROBATION_CRC", "FOREIGN_NATIONAL_PRISON", "VOLUNTARY_HOSTEL", "IMMIGRATION_DETENTION_CENTRE", "OUTSIDE", "PECS", "PSYCHIATRIC_CARE", "CHILDREN_SECURE_HOME", "SECURE_TRAINING_CENTRE", "YOT" ]
       },
       "LegacyAgencyResponse" : {
         "type" : "object",
@@ -9526,28 +9459,28 @@
         },
         "required" : [ "active", "addresses", "courtId", "courtName", "courtTypeCode", "emailAddresses", "phoneNumbers" ]
       },
-      "CreateApprovedPremisesDto": {
+      "CreateApprovedPremisesDto" : {
         "type" : "object",
-        "description": "Approved Premises Create Record",
+        "description" : "Approved Premises Create Record",
         "properties" : {
-          "approvedPremisesId": {
+          "approvedPremisesId" : {
             "type" : "string",
-            "description": "Approved Premises ID",
+            "description" : "Approved Premises ID",
             "example" : "SHEFAP",
             "maxLength" : 6,
             "minLength" : 2
           },
-          "approvedPremisesName": {
+          "approvedPremisesName" : {
             "type" : "string",
             "description" : "Name",
-            "example": "Sheffield Approved Premises",
+            "example" : "Sheffield Approved Premises",
             "maxLength" : 40,
             "minLength" : 0
           },
           "description" : {
             "type" : [ "string", "null" ],
             "description" : "Description",
-            "example": "Sheffield City Centre Approved Premises",
+            "example" : "Sheffield City Centre Approved Premises",
             "maxLength" : 3000,
             "minLength" : 0
           },
@@ -9634,14 +9567,7 @@
             }
           }
         },
-        "required": [
-          "active",
-          "addresses",
-          "approvedPremisesId",
-          "approvedPremisesName",
-          "emailAddresses",
-          "phoneNumbers"
-        ]
+        "required" : [ "active", "addresses", "approvedPremisesId", "approvedPremisesName", "emailAddresses", "phoneNumbers" ]
       },
       "CreateAgencyDto" : {
         "type" : "object",
@@ -9794,6 +9720,33 @@
           }
         },
         "required" : [ "agencyIds" ]
+      },
+      "AgencySummaryDto" : {
+        "type" : "object",
+        "description" : "Summary information about an agency",
+        "properties" : {
+          "agencyId" : {
+            "type" : "string",
+            "description" : "Agency ID",
+            "example" : "SHEFCC"
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "description" : "Description",
+            "example" : "Sheffield Central Court"
+          },
+          "agencyType" : {
+            "type" : "string",
+            "description" : "Agency type",
+            "enum" : [ "PRISON", "COURT", "HOSPITAL", "SECURE_HOSPITAL", "PROBATION_OFFICE", "POLICE_CUSTODY_SUITE", "APPROVED_PREMISES", "AIRPORT", "PROBATION_CRC", "FOREIGN_NATIONAL_PRISON", "VOLUNTARY_HOSTEL", "IMMIGRATION_DETENTION_CENTRE", "OUTSIDE", "PECS", "PSYCHIATRIC_CARE", "CHILDREN_SECURE_HOME", "SECURE_TRAINING_CENTRE", "YOT" ],
+            "example" : "COURT"
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether still active"
+          }
+        },
+        "required" : [ "active", "agencyId", "agencyType" ]
       }
     }
   }
