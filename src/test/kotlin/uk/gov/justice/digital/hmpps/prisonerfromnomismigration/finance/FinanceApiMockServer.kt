@@ -22,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.Pri
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleaseHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleasedHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
@@ -232,20 +233,9 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubAddHold(
-    response: HoldResponse = HoldResponse(
-      id = UUID.randomUUID(),
-      prisonNumber = "A1234BC",
-      legacyHoldNumber = 12345,
-      subAccountRef = HoldResponse.SubAccountRef.CASH,
-      createdAt = LocalDateTime.parse("2025-06-01T01:02:03"),
-      createdBy = "testUser",
-      holdFromDate = LocalDateTime.parse("2025-06-01T01:02:03"),
-      isReleased = false,
-      holdType = HoldResponse.HoldType.HOA,
-      amount = 125,
-      holdLocation = "Some location",
-      holdUntilDate = LocalDateTime.parse("2025-06-03T04:05:06"),
-      description = "This is a hold",
+    response: SyncCreateHoldResponse = SyncCreateHoldResponse(
+      holdUuid = UUID.randomUUID(),
+      holdNumber = 12345,
     ),
   ) {
     stubFor(
