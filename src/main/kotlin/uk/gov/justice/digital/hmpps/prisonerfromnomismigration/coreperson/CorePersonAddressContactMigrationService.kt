@@ -218,7 +218,7 @@ private fun OffenderPhoneNumber.toPrisonPhoneNumberRequest(): PrisonContact = Pr
   modifyUserId = lastUpdatedByUsername,
 )
 
-private fun OffenderEmailAddress.toPrisonEmailAddressRequest(): PrisonContact = PrisonContact(
+internal fun OffenderEmailAddress.toPrisonEmailAddressRequest(): PrisonContact = PrisonContact(
   type = PrisonContact.Type.EMAIL,
   createDateTime = createdDateTime,
   createUserId = createdByUsername,

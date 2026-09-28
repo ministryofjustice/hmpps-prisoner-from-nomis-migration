@@ -6,7 +6,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CORE_PERSON_RELIGION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_EMAIL_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_RELIGION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.CorePersonSynchronisationBeliefsService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
@@ -63,13 +64,15 @@ class CorePersonEventListener(
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
   private suspend fun retryMapping(mappingName: String, message: String) {
     when (CorePersonSynchronisationMessageType.valueOf(mappingName)) {
-      RETRY_SYNCHRONISATION_CORE_PERSON_RELIGION_MAPPING -> beliefsService.retryCreateMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_RELIGION_MAPPING -> beliefsService.retryCreateMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_EMAIL_MAPPING -> addressContactService.retryCreateEmailMapping(message.fromJson())
     }
   }
 }
 
 enum class CorePersonSynchronisationMessageType {
-  RETRY_SYNCHRONISATION_CORE_PERSON_RELIGION_MAPPING,
+  RETRY_SYNCHRONISATION_RELIGION_MAPPING,
+  RETRY_SYNCHRONISATION_EMAIL_MAPPING,
 }
 
 data class OffenderBeliefEvent(

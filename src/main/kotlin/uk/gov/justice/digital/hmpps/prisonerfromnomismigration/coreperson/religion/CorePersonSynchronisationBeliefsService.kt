@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonNomisApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_CORE_PERSON_RELIGION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_RELIGION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.OffenderBeliefEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
@@ -195,7 +195,7 @@ class CorePersonSynchronisationBeliefsService(
     } catch (e: Exception) {
       log.error("Failed to create mapping for core person ${mapping.nomisPrisonNumber} religion id ${mapping.nomisId},${mapping.cprId}", e)
       queueService.sendMessage(
-        messageType = RETRY_SYNCHRONISATION_CORE_PERSON_RELIGION_MAPPING.name,
+        messageType = RETRY_SYNCHRONISATION_RELIGION_MAPPING.name,
         synchronisationType = SynchronisationType.CORE_PERSON,
         message = mapping,
         telemetryAttributes = telemetry.valuesAsStrings(),
