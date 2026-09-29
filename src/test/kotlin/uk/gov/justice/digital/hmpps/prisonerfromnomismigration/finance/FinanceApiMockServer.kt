@@ -231,6 +231,23 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubMigrateHold(
+    response: SyncCreateHoldResponse = SyncCreateHoldResponse(
+      holdUuid = UUID.randomUUID(),
+      holdNumber = 12345,
+    ),
+  ) {
+    stubFor(
+      post("/migrate/holds")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
   fun stubAddHold(
     response: SyncCreateHoldResponse = SyncCreateHoldResponse(
       holdUuid = UUID.randomUUID(),
@@ -268,7 +285,23 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSyncPrisonerAdvance(
+  fun stubMigrateAdvance(
+    response: SyncCreateAdvanceResponse = SyncCreateAdvanceResponse(
+      id = UUID.randomUUID(),
+    ),
+  ) {
+    stubFor(
+      post("/migrate/advances")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubSyncAdvance(
     response: SyncCreateAdvanceResponse = SyncCreateAdvanceResponse(
       id = UUID.randomUUID(),
     ),

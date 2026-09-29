@@ -38,11 +38,21 @@ class FinanceDpsApiService(@Qualifier("financeApiWebClient") private val webClie
       .awaitOrLogAndRethrowBadRequest()
   }
 
+  suspend fun migrateHold(request: SyncCreateHoldRequest): SyncCreateHoldResponse = holdsApi.migrateHolds(request)
+    .awaitOrLogAndRethrowBadRequest()
+
   suspend fun syncAddHoldTransaction(request: SyncCreateHoldRequest): SyncCreateHoldResponse = holdsApi.postHolds(request)
     .awaitOrLogAndRethrowBadRequest()
 
   suspend fun syncReleaseHoldTransaction(holdNumber: Long, request: SyncReleaseHoldRequest): SyncReleasedHoldResponse = holdsApi.releaseHold(holdNumber, request)
     .awaitOrLogAndRethrowBadRequest()
+
+  // TODO use openapi docs call for syncPrisonerAdvance when the API is updated
+  suspend fun migrateAdvance(request: SyncCreateAdvanceRecordRequest): SyncCreateAdvanceResponse = webClient.post()
+    .uri("/migrate/advances")
+    .bodyValue(request)
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
 
   // TODO use openapi docs call for syncPrisonerAdvance when the API is updated
   suspend fun syncPrisonerAdvance(request: SyncCreateAdvanceRecordRequest): SyncCreateAdvanceResponse = webClient.post()
