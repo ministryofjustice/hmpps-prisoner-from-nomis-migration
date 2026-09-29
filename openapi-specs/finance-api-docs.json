@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-28.1130.17e9150"
+    "version" : "2026-09-28.1135.9f70e8a"
   },
   "servers" : [ {
     "url" : "https://prisoner-finance-sync-api-dev.hmpps.service.justice.gov.uk/",
@@ -373,7 +373,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/HoldResponse"
+                  "$ref" : "#/components/schemas/SyncCreateAdvanceRecordResponse"
                 }
               }
             }
@@ -1599,9 +1599,14 @@
             "example" : 0.5
           },
           "reference" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "description" : "The reference from the payment profile ",
             "example" : "FNC"
+          },
+          "comment" : {
+            "type" : [ "string", "null" ],
+            "description" : "The comment from the payment profile ",
+            "example" : "Repayment"
           },
           "createdBy" : {
             "type" : "string",
@@ -1615,68 +1620,21 @@
             "example" : "AdvanceStatus.ACTIVE"
           }
         },
-        "required" : [ "amount", "createdBy", "createdOn", "legacyInformationNumber", "legacyPaymentProfileId", "prisonID", "prisonNumber", "reference", "repaymentAmount", "repaymentStartDate", "status" ]
+        "required" : [ "amount", "createdBy", "createdOn", "legacyInformationNumber", "legacyPaymentProfileId", "prisonID", "prisonNumber", "repaymentAmount", "repaymentStartDate", "status" ]
       },
-      "HoldResponse" : {
+      "SyncCreateAdvanceRecordResponse" : {
         "type" : "object",
         "properties" : {
-          "id" : {
-            "type" : "string",
-            "format" : "uuid"
-          },
-          "prisonNumber" : {
-            "type" : "string"
-          },
-          "legacyHoldNumber" : {
+          "paymentProfileId" : {
             "type" : "integer",
             "format" : "int64"
           },
-          "subAccountRef" : {
+          "advanceUuid" : {
             "type" : "string",
-            "enum" : [ "CASH", "SPENDS", "SAVINGS" ]
-          },
-          "createdAt" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "createdBy" : {
-            "type" : "string"
-          },
-          "holdFromDate" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "isReleased" : {
-            "type" : "boolean"
-          },
-          "holdType" : {
-            "type" : "string",
-            "enum" : [ "HOA", "WHF" ]
-          },
-          "amount" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "holdLocation" : {
-            "type" : "string"
-          },
-          "holdUntilDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date-time"
-          },
-          "description" : {
-            "type" : [ "string", "null" ]
-          },
-          "holdTransactionId" : {
-            "type" : [ "string", "null" ],
-            "format" : "uuid"
-          },
-          "releasedTransactionId" : {
-            "type" : [ "string", "null" ],
             "format" : "uuid"
           }
         },
-        "required" : [ "amount", "createdAt", "createdBy", "holdFromDate", "holdLocation", "holdType", "id", "isReleased", "legacyHoldNumber", "prisonNumber", "subAccountRef" ]
+        "required" : [ "advanceUuid", "paymentProfileId" ]
       },
       "PrisonerAccountPointInTimeBalance" : {
         "type" : "object",
@@ -1897,19 +1855,19 @@
             "type" : "string",
             "format" : "date-time"
           },
-          "caseloadId" : {
-            "type" : [ "string", "null" ]
-          },
-          "transactionTimestamp" : {
-            "type" : [ "string", "null" ],
-            "format" : "date-time"
-          },
           "requestId" : {
             "type" : "string",
             "format" : "uuid"
           },
           "transactionType" : {
             "type" : [ "string", "null" ]
+          },
+          "caseloadId" : {
+            "type" : [ "string", "null" ]
+          },
+          "transactionTimestamp" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
           },
           "legacyTransactionId" : {
             "type" : [ "integer", "null" ],
