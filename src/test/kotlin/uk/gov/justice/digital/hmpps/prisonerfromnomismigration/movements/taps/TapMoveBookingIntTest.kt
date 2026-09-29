@@ -99,7 +99,7 @@ class TapMoveBookingIntTest(
       mappingApi.stubMoveBookingMappings(bookingId = 1234567L, fromOffenderNo = "A1000KT", toOffenderNo = "A1234KT")
 
       // Also need stubs for the calls to resync the prisoner. This bypasses the resync process because stubbing all of the various API calls makes the test data setup even more unreadable.
-      doNothing().whenever(externalMovementsMigrationService).resyncPrisonerTaps(any())
+      doNothing().whenever(tapRepairService).resyncPrisonerTaps(any())
 
       sendMessage(
         bookingMovedDomainEvent(
@@ -140,8 +140,8 @@ class TapMoveBookingIntTest(
 
     @Test
     fun `should resync each offender`() = runTest {
-      verify(externalMovementsMigrationService).resyncPrisonerTaps("A1000KT")
-      verify(externalMovementsMigrationService).resyncPrisonerTaps("A1234KT")
+      verify(tapRepairService).resyncPrisonerTaps("A1000KT")
+      verify(tapRepairService).resyncPrisonerTaps("A1234KT")
     }
 
     @Test
@@ -495,7 +495,7 @@ class TapMoveBookingIntTest(
       mappingApi.stubMoveBookingMappingsFailureFollowedBySuccess(1234567L, "A1000KT", "A1234KT")
 
       // Also need stubs for the calls to resync the prisoner. This bypasses the resync process because stubbing all of the various API calls makes the test data setup even more unreadable.
-      doNothing().whenever(externalMovementsMigrationService).resyncPrisonerTaps(any())
+      doNothing().whenever(tapRepairService).resyncPrisonerTaps(any())
 
       sendMessage(
         bookingMovedDomainEvent(
@@ -556,8 +556,8 @@ class TapMoveBookingIntTest(
 
     @Test
     fun `should resync each offender`() = runTest {
-      verify(externalMovementsMigrationService).resyncPrisonerTaps("A1000KT")
-      verify(externalMovementsMigrationService).resyncPrisonerTaps("A1234KT")
+      verify(tapRepairService).resyncPrisonerTaps("A1000KT")
+      verify(tapRepairService).resyncPrisonerTaps("A1234KT")
     }
   }
 

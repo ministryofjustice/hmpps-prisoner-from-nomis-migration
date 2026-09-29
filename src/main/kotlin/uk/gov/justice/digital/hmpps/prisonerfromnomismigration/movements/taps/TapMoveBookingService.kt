@@ -25,7 +25,7 @@ class TapMoveBookingService(
   private val nomisApi: TapsNomisApiService,
   private val mappingApi: TapMappingApiService,
   private val queueService: SynchronisationQueueService,
-  private val migrationService: TapMigrationService,
+  private val repairService: TapRepairService,
   override val telemetryClient: TelemetryClient,
 ) : TelemetryEnabled {
   companion object {
@@ -120,8 +120,8 @@ class TapMoveBookingService(
 
   suspend fun moveMappingsAndResync(bookingId: Long, fromOffenderNo: String, toOffenderNo: String) {
     mappingApi.moveTapBookingMappings(bookingId, fromOffenderNo, toOffenderNo)
-    migrationService.resyncPrisonerTaps(fromOffenderNo)
-    migrationService.resyncPrisonerTaps(toOffenderNo)
+    repairService.resyncPrisonerTaps(fromOffenderNo)
+    repairService.resyncPrisonerTaps(toOffenderNo)
   }
 
   private fun BookingTaps.isEmpty() = this.tapApplications.isEmpty() &&
