@@ -124,7 +124,7 @@ class PrisonerBalanceDataRepairResourceIntTest(
 
       @Test
       fun `will not send prisonerBalance to DPS`() {
-        financeApi.verify(0, getRequestedFor(anyUrl()))
+        financeApi.verify(0, postRequestedFor(anyUrl()))
       }
 
       @Test
@@ -282,7 +282,7 @@ class PrisonerBalanceDataRepairResourceIntTest(
 
       @Test
       fun `will not send prisonerBalance to DPS`() {
-        financeApi.verify(0, getRequestedFor(anyUrl()))
+        financeApi.verify(0, postRequestedFor(anyUrl()))
       }
 
       @Test
