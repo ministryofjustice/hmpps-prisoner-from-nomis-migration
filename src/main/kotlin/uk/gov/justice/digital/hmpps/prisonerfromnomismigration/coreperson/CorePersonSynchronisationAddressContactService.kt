@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -26,6 +27,15 @@ class CorePersonSynchronisationAddressContactService(
 
   private companion object {
     private val log: Logger = LoggerFactory.getLogger(this::class.java)
+  }
+
+  suspend fun resynchroniseAddressesAndContacts(prisonNumber: String) {
+    val addressesAndContacts = corePersonNomisApiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = prisonNumber)
+    val mapping = corePersonCprApiService.migrateCorePersonAddressesAndContacts(
+      prisonNumber,
+      addressesAndContacts.toMigrateAddressesAndContactsRequest(),
+    ).toCorePersonMappingsDto(migrationType = CorePersonMappingsDto.MappingType.NOMIS_CREATED)
+    corePersonMappingService.replaceMappings(mapping)
   }
 
   suspend fun offenderEmailAdded(event: OffenderEmailEvent) {

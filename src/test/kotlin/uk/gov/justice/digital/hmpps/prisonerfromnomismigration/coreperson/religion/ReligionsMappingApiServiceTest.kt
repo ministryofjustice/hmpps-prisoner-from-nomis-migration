@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion
 
-import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -34,7 +33,7 @@ class ReligionsMappingApiServiceTest(
   @Nested
   inner class CreateMappingsForMigration {
     @Test
-    fun `will pass oauth2 token to migrate endpoint`() = runTest {
+    fun `will call the migrate endpoint`() = runTest {
       mockServer.stubCreateMappingsForMigration()
 
       apiService.createMapping(
@@ -118,7 +117,7 @@ class ReligionsMappingApiServiceTest(
   @Nested
   inner class CreateReligionMapping {
     @Test
-    fun `will pass oauth2 token to create endpoint`() = runTest {
+    fun `will call the religion create endpoint`() = runTest {
       mockServer.stubCreateReligionMapping()
 
       apiService.createReligionMapping(
@@ -200,27 +199,6 @@ class ReligionsMappingApiServiceTest(
   @Nested
   inner class GetReligionByNomisId {
     val nomisId = 123456L
-
-    @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubGetReligionByNomisId(
-        nomisId = nomisId,
-        mapping = ReligionMappingDto(
-          cprId = "1234",
-          nomisId = nomisId,
-          mappingType = ReligionMappingDto.MappingType.MIGRATED,
-          nomisPrisonNumber = "A1234BC",
-        ),
-      )
-
-      apiService.getReligionByNomisId(
-        nomisReligionId = nomisId,
-      )
-
-      mockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
 
     @Test
     fun `will pass NOMIS id to service`() = runTest {

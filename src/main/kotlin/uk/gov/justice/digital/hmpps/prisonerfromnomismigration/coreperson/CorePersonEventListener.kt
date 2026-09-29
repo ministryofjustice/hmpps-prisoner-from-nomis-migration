@@ -19,7 +19,6 @@ import java.util.concurrent.CompletableFuture
 @Service
 class CorePersonEventListener(
   private val service: CorePersonSynchronisationService,
-  private val profileDetailsService: CorePersonSynchronisationProfileDetailsService,
   private val beliefsService: CorePersonSynchronisationBeliefsService,
   private val addressContactService: CorePersonSynchronisationAddressContactService,
   private val jsonMapper: JsonMapper,
@@ -43,8 +42,6 @@ class CorePersonEventListener(
               "OFFENDER_BELIEFS-INSERTED" -> beliefsService.offenderBeliefCreated(sqsMessage.Message.fromJson())
               "OFFENDER_BELIEFS-UPDATED" -> beliefsService.offenderBeliefUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_BELIEFS-DELETED" -> beliefsService.offenderBeliefDeleted(sqsMessage.Message.fromJson())
-
-              "OFFENDER_PHYSICAL_DETAILS-CHANGED" -> profileDetailsService.offenderProfileDetailsChanged(sqsMessage.Message.fromJson())
 
               "OFFENDER_EMAIL-INSERTED" -> addressContactService.offenderEmailAdded(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-UPDATED" -> addressContactService.offenderEmailUpdated(sqsMessage.Message.fromJson())
@@ -81,12 +78,6 @@ data class OffenderBeliefEvent(
   val offenderBeliefId: Long,
   override val auditModuleName: String,
 ) : EventAudited
-
-data class OffenderProfileDetailsEvent(
-  val offenderIdDisplay: String,
-  val bookingId: Long,
-  val profileType: String,
-)
 
 data class OffenderEmailEvent(
   val offenderIdDisplay: String,
