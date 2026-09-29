@@ -8,7 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.Ta
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapPrisonerMappingIdsDto
 import java.time.LocalDate
 
-class TapMigrationTest {
+class TapRepairTest {
 
   private val someMappingIds = TapPrisonerMappingIdsDto("any", listOf(), listOf(), listOf())
 

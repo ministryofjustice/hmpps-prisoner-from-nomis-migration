@@ -1,12 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
-import org.springframework.beans.factory.annotation.Value
+import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.core.ParameterizedTypeReference
-import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
-import tools.jackson.databind.json.JsonMapper
-import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
@@ -30,86 +26,39 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTapMovementOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingTapScheduleOut
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTapsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByPageNumberMigrationService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import java.util.*
 
 @Service
-class TapMigrationService(
-  val migrationMappingService: TapMappingApiService,
-  val nomisIdsApiService: NomisApiService,
-  val nomisApiService: TapsNomisApiService,
-  val dpsApiService: TapDpsApiService,
-  jsonMapper: JsonMapper,
-  @Value($$"${externalmovements.page.size:1000}") pageSize: Long,
-  @Value($$"${externalmovements.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
-  @Value($$"${externalmovements.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
-  @Value($$"${externalmovements.complete-check.count}") completeCheckCount: Int,
-  @Value($$"${complete-check.scheduled-retry-seconds:10}") completeCheckScheduledRetrySeconds: Int,
-) : ByPageNumberMigrationService<TapMigrationFilter, PrisonerId, TapPrisonerMappingsDto>(
-  mappingService = migrationMappingService,
-  migrationType = MigrationType.EXTERNAL_MOVEMENTS,
-  pageSize = pageSize,
-  completeCheckDelaySeconds = completeCheckDelaySeconds,
-  completeCheckCount = completeCheckCount,
-  completeCheckRetrySeconds = completeCheckRetrySeconds,
-  completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
-  jsonMapper = jsonMapper,
+class TapRepairService(
+  private val migrationMappingService: TapMappingApiService,
+  private val nomisApiService: TapsNomisApiService,
+  private val dpsApiService: TapDpsApiService,
+  private val queueService: MigrationQueueService,
+  private val telemetryClient: TelemetryClient,
 ) {
-  suspend fun getIds(
-    migrationFilter: TapMigrationFilter,
-    pageSize: Long,
-    pageNumber: Long,
-  ): PageImpl<PrisonerId> = if (migrationFilter.prisonerNumber.isNullOrEmpty()) {
-    nomisIdsApiService.getPrisonerIds(
-      pageNumber = pageNumber,
-      pageSize = pageSize,
-    )
-  } else {
-    // If a single prisoner migration is requested, then we'll trust the input as we're probably testing. Pretend that we called nomis-prisoner-api which found a single prisoner.
-    PageImpl(mutableListOf(PrisonerId(migrationFilter.prisonerNumber)), Pageable.ofSize(1), 1)
-  }
-
-  override suspend fun getPageOfIds(
-    migrationFilter: TapMigrationFilter,
-    pageSize: Long,
-    pageNumber: Long,
-  ): List<PrisonerId> = getIds(migrationFilter, pageSize, pageNumber).content
-
-  override suspend fun getTotalNumberOfIds(migrationFilter: TapMigrationFilter): Long = getIds(migrationFilter, 1, 0).totalElements
-
-  suspend fun resyncPrisonerTaps(prisonerNumber: String) = migrateNomisEntity(
+  suspend fun resyncPrisonerTaps(prisonerNumber: String) = resyncPrisonerTaps(
     MigrationContext(
       MigrationType.EXTERNAL_MOVEMENTS,
       generateBatchId(),
       1,
-      PrisonerId(prisonerNumber),
-      mutableMapOf("ignoreMissingTaps" to false),
+      prisonerNumber,
     ),
   )
 
-  override suspend fun migrateNomisEntity(context: MigrationContext<PrisonerId>) {
-    val offenderNo = context.body.offenderNo
+  private suspend fun resyncPrisonerTaps(context: MigrationContext<String>) {
+    val offenderNo = context.body
     val migrationId = context.migrationId
     val telemetry = mutableMapOf(
       "offenderNo" to offenderNo,
       "migrationId" to migrationId,
     )
-    val ignoreMissingTaps = context.properties["ignoreMissingTaps"] as Boolean? ?: true
 
     runCatching {
       val offenderTaps = nomisApiService.getAllOffenderTapsOrNull(offenderNo)
         // carry on even if there is no offender in NOMIS - this could be for a merged prisoner and we still need to update the mappings etc.
         ?: OffenderTapsResponse(bookings = emptyList())
-      if (ignoreMissingTaps && offenderTaps.bookings.isEmpty()) {
-        publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no TAPs" })
-        return
-      }
       val oldMappingIds = migrationMappingService.getTapPrisonerMappingIds(offenderNo)
       // Note that we're not expecting to perform a clean migration again so we're calling the DPS /resync endpoint which performs "patch migrations"
       val dpsResponse = dpsApiService.resyncPrisonerTaps(offenderNo, offenderTaps.toDpsRequest(oldMappingIds))
@@ -126,7 +75,7 @@ class TapMigrationService(
       }
   }
 
-  override suspend fun retryCreateMapping(context: MigrationContext<TapPrisonerMappingsDto>) {
+  suspend fun retryCreateMapping(context: MigrationContext<TapPrisonerMappingsDto>) {
     createMappingOrOnFailureDo(context.body) {
       throw it
     }
@@ -253,14 +202,6 @@ class TapMigrationService(
   }
 
   private fun String.parseNomisMovementId() = split("_").let { it[0].toLong() to it[1].toInt() }
-
-  override fun parseContextFilter(json: String): MigrationMessage<*, TapMigrationFilter> = jsonMapper.readValue(json)
-
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<TapMigrationFilter, ByPageNumber>> = jsonMapper.readValue(json)
-
-  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonerId> = jsonMapper.readValue(json)
-
-  override fun parseContextMapping(json: String): MigrationMessage<*, TapPrisonerMappingsDto> = jsonMapper.readValue(json)
 }
 
 fun OffenderTapsResponse.toDpsRequest(oldMappingIds: TapPrisonerMappingIdsDto) = MigrateTapRequest(

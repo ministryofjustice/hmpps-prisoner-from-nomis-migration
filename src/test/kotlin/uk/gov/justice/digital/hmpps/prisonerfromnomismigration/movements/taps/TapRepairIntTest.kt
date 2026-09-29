@@ -1,9 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
-import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -17,7 +15,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
-import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -27,8 +24,6 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.test.web.reactive.server.returnResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.model.MigrateTapResponse
@@ -40,10 +35,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.Ta
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapPrisonerMappingIdsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TapPrisonerMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTapsResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.Duration
 import java.time.LocalDate
@@ -52,13 +45,13 @@ import java.time.LocalTime
 import java.util.*
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class TapMigrationIntTest(
+class TapRepairIntTest(
   @Autowired private val externalMovementsNomisApi: TapNomisApiMockServer,
   @Autowired private val mappingApi: TapMappingApiMockServer,
-  @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
 ) : TapIntegrationTestBase() {
 
   private val dpsApi = dpsTapsServer
+  private val prisonerNumber = "A0001KT"
 
   private lateinit var migrationId: String
   private val now = LocalDateTime.now()
@@ -75,8 +68,6 @@ class TapMigrationIntTest(
   override fun resetTelemetryClient() {}
 
   internal fun setupMigrationTest() = runBlocking {
-    migrationHistoryRepository.deleteAll()
-
     NomisApiExtension.resetAndDisableResetBeforeEach()
     MappingApiExtension.resetAndDisableResetBeforeEach()
     TapDpsApiExtension.resetAndDisableResetBeforeEach()
@@ -87,58 +78,22 @@ class TapMigrationIntTest(
   @AfterAll
   fun tearDownTelemetryClient() = reset(telemetryClient)
 
-  @Nested
-  inner class Security {
-    @Test
-    fun `access forbidden when no role`() {
-      webTestClient.post().uri("/migrate/taps")
-        .headers(setAuthorisation(roles = listOf()))
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(TapMigrationFilter())
-        .exchange()
-        .expectStatus().isForbidden
-    }
-
-    @Test
-    fun `access forbidden with wrong role`() {
-      webTestClient.post().uri("/migrate/taps")
-        .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(TapMigrationFilter())
-        .exchange()
-        .expectStatus().isForbidden
-    }
-
-    @Test
-    fun `access unauthorised with no auth token`() {
-      webTestClient.post().uri("/migrate/taps")
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(TapMigrationFilter())
-        .exchange()
-        .expectStatus().isUnauthorized
-    }
-  }
-
-  private fun stubMigrationDependencies(entities: Int = 2) {
-    nomisApi.stubGetPrisonerIds(totalElements = entities.toLong(), pageSize = 10, firstOffenderNo = "A0001KT")
+  private fun stubMigrationDependencies() {
+    val prisonerNumber = "A0001KT"
     mappingApi.stubCreateTapPrisonerMappings()
-    (1..entities)
-      .map { index -> "A%04dKT".format(index) }
-      .forEach { prisonerNumber ->
-        mappingApi.stubGetTapPrisonerMappingIds(prisonerNumber, 12345L, 1, dpsAuthorisationId, 1, dpsOccurrenceId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
-        externalMovementsNomisApi.stubGetAllOffenderTaps(prisonerNumber)
-        dpsApi.stubResyncPrisonerTaps(
-          personIdentifier = prisonerNumber,
-          response = migrateResponse(
-            dpsAuthorisationId,
-            dpsOccurrenceId,
-            dpsScheduledMovementOutId,
-            dpsScheduledMovementInId,
-            dpsUnscheduledMovementOutId,
-            dpsUnscheduledMovementInId,
-          ),
-        )
-      }
+    mappingApi.stubGetTapPrisonerMappingIds(prisonerNumber, 12345L, 1, dpsAuthorisationId, 1, dpsOccurrenceId, 3, dpsScheduledMovementOutId, 4, dpsScheduledMovementInId, 1, dpsUnscheduledMovementOutId, 2, dpsUnscheduledMovementInId)
+    externalMovementsNomisApi.stubGetAllOffenderTaps(prisonerNumber)
+    dpsApi.stubResyncPrisonerTaps(
+      personIdentifier = prisonerNumber,
+      response = migrateResponse(
+        dpsAuthorisationId,
+        dpsOccurrenceId,
+        dpsScheduledMovementOutId,
+        dpsScheduledMovementInId,
+        dpsUnscheduledMovementOutId,
+        dpsUnscheduledMovementInId,
+      ),
+    )
   }
 
   @Nested
@@ -149,18 +104,12 @@ class TapMigrationIntTest(
       setupMigrationTest()
 
       stubMigrationDependencies()
-      migrationId = performMigration()
+      migrationId = performRepair()
     }
 
     @Test
-    fun `will request all prisoner ids`() {
-      nomisApi.verify(getRequestedFor(urlPathEqualTo("/prisoners/ids/all")))
-    }
-
-    @Test
-    fun `will request temporary absences for each prisoner`() {
+    fun `will request temporary absences for the prisoner`() {
       externalMovementsNomisApi.verifyGetAllOffenderTaps(offenderNo = "A0001KT")
-      externalMovementsNomisApi.verifyGetAllOffenderTaps(offenderNo = "A0002KT")
     }
 
     @Test
@@ -170,20 +119,12 @@ class TapMigrationIntTest(
           .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
           .withRequestBodyJsonPath("migrationId", migrationId),
       )
-      mappingApi.verify(
-        putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
-          .withRequestBodyJsonPath("prisonerNumber", "A0002KT")
-          .withRequestBodyJsonPath("migrationId", migrationId),
-      )
     }
 
     @Test
-    fun `will call DPS for each offender`() {
+    fun `will call DPS for the prisoner`() {
       dpsApi.verify(
         putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
-      )
-      dpsApi.verify(
-        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0002KT")),
       )
     }
 
@@ -417,17 +358,16 @@ class TapMigrationIntTest(
     @Test
     fun `will publish telemetry`() {
       verify(telemetryClient).trackEvent(
-        eq("temporary-absences-migration-entity-migrated"),
+        eq("temporary-absences-migration-entity-repair-requested"),
         check {
-          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          assertThat(it["migrationId"]).isEqualTo(migrationId)
+          assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
         },
         isNull(),
       )
       verify(telemetryClient).trackEvent(
         eq("temporary-absences-migration-entity-migrated"),
         check {
-          assertThat(it["offenderNo"]).isEqualTo("A0002KT")
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
           assertThat(it["migrationId"]).isEqualTo(migrationId)
         },
         isNull(),
@@ -445,11 +385,6 @@ class TapMigrationIntTest(
     fun setUp() = runTest {
       setupMigrationTest()
 
-      nomisApi.stubGetPrisonerIds(
-        totalElements = 1,
-        pageSize = 10,
-        firstOffenderNo = prisonerNumber,
-      )
       mappingApi.stubCreateTapPrisonerMappings()
       mappingApi.stubGetTapPrisonerMappingIds(
         prisonerNumber,
@@ -472,7 +407,7 @@ class TapMigrationIntTest(
         ),
       )
 
-      migrationId = performMigration()
+      migrationId = performRepair(prisonerNumber)
     }
 
     @Test
@@ -507,11 +442,6 @@ class TapMigrationIntTest(
     fun setUp() = runTest {
       setupMigrationTest()
 
-      nomisApi.stubGetPrisonerIds(
-        totalElements = 1,
-        pageSize = 10,
-        firstOffenderNo = prisonerNumber,
-      )
       mappingApi.stubCreateTapPrisonerMappings()
       mappingApi.stubGetTapPrisonerMappingIds(
         prisonerNumber,
@@ -543,7 +473,7 @@ class TapMigrationIntTest(
         ),
       )
 
-      migrationId = performMigration()
+      migrationId = performRepair(prisonerNumber)
     }
 
     @Test
@@ -560,41 +490,14 @@ class TapMigrationIntTest(
 
   @Nested
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  inner class MigrateEntityFailure {
-    @BeforeAll
-    fun setUp() = runTest {
-      setupMigrationTest()
-
-      stubMigrationDependencies(entities = 1)
-      dpsApi.stubResyncPrisonerTapsError("A0001KT", 400)
-      migrationId = performMigration()
-    }
-
-    @Test
-    fun `will publish error telemetry`() {
-      verify(telemetryClient).trackEvent(
-        eq("temporary-absences-migration-entity-failed"),
-        check {
-          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          assertThat(it["migrationId"]).isEqualTo(migrationId)
-          assertThat(it["reason"])
-            .isEqualTo("400 Bad Request from PUT http://localhost:8103/resync/temporary-absences/A0001KT")
-        },
-        isNull(),
-      )
-    }
-  }
-
-  @Nested
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class MappingErrorRecovery {
     @BeforeAll
     fun setUp() = runTest {
       setupMigrationTest()
 
-      stubMigrationDependencies(1)
+      stubMigrationDependencies()
       mappingApi.stubCreateTapPrisonerMappingsFailureFollowedBySuccess()
-      migrationId = performMigration()
+      migrationId = performRepair()
     }
 
     @Test
@@ -604,67 +507,64 @@ class TapMigrationIntTest(
 
     @Test
     fun `will create mappings twice before succeeding`() {
-      mappingApi.verify(
-        2,
-        putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
-          .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
-          .withRequestBodyJsonPath("migrationId", migrationId),
-      )
+      await atMost Duration.ofSeconds(10) untilAsserted {
+        mappingApi.verify(
+          2,
+          putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
+            .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
+            .withRequestBodyJsonPath("migrationId", migrationId),
+        )
+      }
     }
 
     @Test
     fun `will publish telemetry once`() {
-      verify(telemetryClient, times(1)).trackEvent(
-        eq("temporary-absences-migration-entity-migrated"),
-        check {
-          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          assertThat(it["migrationId"]).isEqualTo(migrationId)
-        },
-        isNull(),
-      )
+      await atMost Duration.ofSeconds(10) untilAsserted {
+        verify(telemetryClient, times(1)).trackEvent(
+          eq("temporary-absences-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+            assertThat(it["migrationId"]).isEqualTo(migrationId)
+          },
+          isNull(),
+        )
+      }
     }
   }
 
   @Nested
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-  inner class IgnoreOffendersWithNoMovements {
-    @BeforeAll
+  inner class DontIgnoreOffendersWithNoMovements {
+    @BeforeEach
     fun setUp() = runTest {
-      setupMigrationTest()
-
-      nomisApi.stubGetPrisonerIds(
-        totalElements = 1,
-        pageSize = 10,
-        firstOffenderNo = "A0001KT",
-      )
-      mappingApi.stubGetTapPrisonerMappingIds(
-        "A0001KT",
-        idMappings = TapPrisonerMappingIdsDto("A0001KT", listOf(), listOf(), listOf()),
-      )
+      stubMigrationDependencies()
+      reset(telemetryClient)
       externalMovementsNomisApi.stubGetAllOffenderTaps(
         "A0001KT",
         response = OffenderTapsResponse(bookings = listOf()),
       )
+      dpsApi.stubResyncPrisonerTaps("A0001KT", response = MigrateTapResponse(listOf(), listOf()))
 
-      migrationId = performMigration()
+      repairPrisonerOk(prisonerNumber)
     }
 
     @Test
-    fun `will not migrate to DPS`() {
-      dpsApi.verify(
-        0,
-        putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")),
-      )
+    fun `will migrate to DPS`() {
+      dpsApi.verify(putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")))
     }
 
     @Test
-    fun `will publish ignore telemetry`() {
+    fun `will publish telemetry`() {
       verify(telemetryClient).trackEvent(
-        eq("temporary-absences-migration-entity-ignored"),
+        eq("temporary-absences-migration-entity-repair-requested"),
         check {
           assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          assertThat(it["migrationId"]).isEqualTo(migrationId)
-          assertThat(it["reason"]).isEqualTo("The offender has no TAPs")
+        },
+        isNull(),
+      )
+      verify(telemetryClient).trackEvent(
+        eq("temporary-absences-migration-entity-migrated"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
         },
         isNull(),
       )
@@ -672,212 +572,113 @@ class TapMigrationIntTest(
   }
 
   @Nested
-  inner class RepairEndpoint {
-    private val prisonerNumber = "A0001KT"
-
+  inner class DontIgnoreOffendersNotInNomis {
     @BeforeEach
     fun setUp() = runTest {
-      stubMigrationDependencies(entities = 1)
+      stubMigrationDependencies()
       reset(telemetryClient)
+      externalMovementsNomisApi.stubGetAllOffenderTaps(status = HttpStatus.NOT_FOUND)
+      dpsApi.stubResyncPrisonerTapsError("A0001KT", status = 404)
+
+      repairPrisonerOk(prisonerNumber)
     }
 
-    @Nested
-    inner class HappyPath {
-      @BeforeEach
-      fun setUp() = runTest {
-        repairPrisonerOk(prisonerNumber)
-      }
-
-      @Test
-      fun `will request temporary absences from NOMIS`() {
-        externalMovementsNomisApi.verifyGetAllOffenderTaps(offenderNo = "A0001KT")
-      }
-
-      @Test
-      fun `will create mappings`() {
-        mappingApi.verify(
-          putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
-            .withRequestBodyJsonPath("prisonerNumber", "A0001KT"),
-        )
-      }
-
-      @Test
-      fun `will migrate to DPS`() {
-        dpsApi.verify(putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")))
-      }
-
-      @Test
-      fun `will publish telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("temporary-absences-migration-entity-repair-requested"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          },
-          isNull(),
-        )
-        verify(telemetryClient).trackEvent(
-          eq("temporary-absences-migration-entity-migrated"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          },
-          isNull(),
-        )
-      }
+    @Test
+    fun `will migrate to DPS`() {
+      dpsApi.verify(putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")))
     }
 
-    @Nested
-    inner class DontIgnoreOffendersWithNoMovements {
-      @BeforeEach
-      fun setUp() = runTest {
-        externalMovementsNomisApi.stubGetAllOffenderTaps(
-          "A0001KT",
-          response = OffenderTapsResponse(bookings = listOf()),
-        )
-        dpsApi.stubResyncPrisonerTaps("A0001KT", response = MigrateTapResponse(listOf(), listOf()))
-
-        repairPrisonerOk(prisonerNumber)
-      }
-
-      @Test
-      fun `will migrate to DPS`() {
-        dpsApi.verify(putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")))
-      }
-
-      @Test
-      fun `will publish telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("temporary-absences-migration-entity-repair-requested"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          },
-          isNull(),
-        )
-        verify(telemetryClient).trackEvent(
-          eq("temporary-absences-migration-entity-migrated"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          },
-          isNull(),
-        )
-      }
+    @Test
+    fun `will update mappings`() {
+      mappingApi.verify(
+        putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
+          .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
+          .withRequestBodyJsonPath("bookings.length()", 0),
+      )
     }
 
-    @Nested
-    inner class DontIgnoreOffendersNotInNomis {
-      @BeforeEach
-      fun setUp() = runTest {
-        externalMovementsNomisApi.stubGetAllOffenderTaps(status = HttpStatus.NOT_FOUND)
-        dpsApi.stubResyncPrisonerTapsError("A0001KT", status = 404)
-
-        repairPrisonerOk(prisonerNumber)
-      }
-
-      @Test
-      fun `will migrate to DPS`() {
-        dpsApi.verify(putRequestedFor(urlEqualTo("/resync/temporary-absences/A0001KT")))
-      }
-
-      @Test
-      fun `will update mappings`() {
-        mappingApi.verify(
-          putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
-            .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
-            .withRequestBodyJsonPath("bookings.length()", 0),
-        )
-      }
-
-      @Test
-      fun `will publish telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("temporary-absences-migration-entity-repair-requested"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          },
-          isNull(),
-        )
-        verify(telemetryClient).trackEvent(
-          eq("temporary-absences-migration-entity-migrated"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-          },
-          isNull(),
-        )
-      }
+    @Test
+    fun `will publish telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("temporary-absences-migration-entity-repair-requested"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+        },
+        isNull(),
+      )
+      verify(telemetryClient).trackEvent(
+        eq("temporary-absences-migration-entity-migrated"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+        },
+        isNull(),
+      )
     }
-
-    @Nested
-    inner class Security {
-
-      @Test
-      fun `access forbidden when no role`() {
-        webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
-          .headers(setAuthorisation(roles = listOf()))
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(TapMigrationFilter())
-          .exchange()
-          .expectStatus().isForbidden
-      }
-
-      @Test
-      fun `access forbidden with wrong role`() {
-        webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
-          .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(TapMigrationFilter())
-          .exchange()
-          .expectStatus().isForbidden
-      }
-
-      @Test
-      fun `access unauthorised with no auth token`() {
-        webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(TapMigrationFilter())
-          .exchange()
-          .expectStatus().isUnauthorized
-      }
-
-      @Test
-      fun `access allowed with temporary role`() {
-        webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
-          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__REPAIR_MOVEMENTS__RW")))
-          .contentType(MediaType.APPLICATION_JSON)
-          .bodyValue(TapMigrationFilter())
-          .exchange()
-          .expectStatus().isOk
-      }
-    }
-
-    private fun repairPrisoner(prisonerNumber: String) = webTestClient.put()
-      .uri {
-        it.path("/migrate/taps/repair/$prisonerNumber")
-          .build(prisonerNumber)
-      }
-      .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
-      .contentType(MediaType.APPLICATION_JSON)
-      .exchange()
-
-    private fun repairPrisonerOk(prisonerNumber: String) = repairPrisoner(prisonerNumber).expectStatus().isOk
   }
 
-  private fun performMigration(prisonerNumber: String? = null): String = webTestClient.post()
-    .uri("/migrate/taps")
-    .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
-    .contentType(MediaType.APPLICATION_JSON)
-    .apply { prisonerNumber?.let { bodyValue("""{"prisonerNumber":"$prisonerNumber"}""") } ?: bodyValue("{}") }
-    .exchange()
-    .expectStatus().isAccepted
-    .returnResult<MigrationResult>().responseBody.blockFirst()!!
-    .migrationId
-    .also {
-      waitUntilCompleted()
+  @Nested
+  inner class Security {
+    @BeforeEach
+    fun setUp() {
+      stubMigrationDependencies()
     }
 
-  private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
-    verify(telemetryClient).trackEvent(
-      eq("temporary-absences-migration-completed"),
-      any(),
-      isNull(),
-    )
+    @Test
+    fun `access forbidden when no role`() {
+      webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
+        .headers(setAuthorisation(roles = listOf()))
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `access forbidden with wrong role`() {
+      webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
+        .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `access unauthorised with no auth token`() {
+      webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isUnauthorized
+    }
+
+    @Test
+    fun `access allowed with temporary role`() {
+      webTestClient.put().uri("/migrate/taps/repair/$prisonerNumber")
+        .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__REPAIR_MOVEMENTS__RW")))
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus().isOk
+    }
+  }
+
+  private fun repairPrisoner(prisonerNumber: String) = webTestClient.put()
+    .uri {
+      it.path("/migrate/taps/repair/$prisonerNumber")
+        .build(prisonerNumber)
+    }
+    .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+    .contentType(MediaType.APPLICATION_JSON)
+    .exchange()
+
+  private fun repairPrisonerOk(prisonerNumber: String) = repairPrisoner(prisonerNumber).expectStatus().isOk
+
+  private fun performRepair(prisonerNumber: String = "A0001KT"): String {
+    webTestClient.put()
+      .uri("/migrate/taps/repair/$prisonerNumber")
+      .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+      .exchange()
+      .expectStatus().isOk
+
+    return TapMappingApiMockServer.getRequestBody<TapPrisonerMappingsDto>(
+      putRequestedFor(urlEqualTo("/mapping/taps/migrate")),
+    ).migrationId
   }
 }

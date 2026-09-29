@@ -113,13 +113,6 @@ visitbalance:
     count: 1
   page:
     size: 10
-externalmovements:
-  complete-check:
-    delay-seconds: 0
-    retry-seconds: 0
-    count: 1
-  page:
-    size: 10
 courtmovements:
   complete-check:
     delay-seconds: 0

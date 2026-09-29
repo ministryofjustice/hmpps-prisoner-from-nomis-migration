@@ -10,7 +10,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraMappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.PropertyMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMappingService
@@ -28,7 +27,6 @@ class GeneralMappingService(
   private val prisonerBalanceMappingApiService: PrisonerBalanceMappingApiService,
   private val propertyMappingService: PropertyMappingService,
   private val staffMappingApiService: StaffMappingApiService,
-  private val tapMappingApiService: TapMappingApiService,
   private val courtSchedulerMappingService: CourtSchedulerMappingApiService,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long = when (migrationType) {
@@ -41,7 +39,7 @@ class GeneralMappingService(
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
     MigrationType.CSRA -> csraMappingApiService.getMigrationCount(migrationId)
     MigrationType.DRUG_TESTING -> -1 // No implementation necessary
-    MigrationType.EXTERNAL_MOVEMENTS -> tapMappingApiService.getMigrationCount(migrationId)
+    MigrationType.EXTERNAL_MOVEMENTS -> 0
     MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.PROPERTY -> propertyMappingService.getMigrationCount(migrationId)
