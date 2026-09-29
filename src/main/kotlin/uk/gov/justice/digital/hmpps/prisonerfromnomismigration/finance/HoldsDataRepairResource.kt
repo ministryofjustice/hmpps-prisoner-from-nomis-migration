@@ -33,7 +33,7 @@ class HoldsDataRepairResource(
        Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW
        """,
   )
-  suspend fun repairPrisonerTransaction(@PathVariable transactionId: Long) {
+  suspend fun repairHold(@PathVariable transactionId: Long) {
     try {
       service.resynchroniseHold(transactionId)
       telemetryClient.trackEvent("hold-resynchronisation-repair", mapOf("transactionId" to transactionId))
