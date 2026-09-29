@@ -9,6 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CreateOffenderEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CreateOffenderEmailResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderEmailAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.UpdateOffenderEmailRequest
 
@@ -22,6 +23,10 @@ class CorePersonNomisApiService(@Qualifier("nomisApiWebClient") private val webC
 
   suspend fun getCorePersonAddressesAndContacts(nomisPrisonNumber: String): CorePersonAddressContact = api
     .getOffenderAddressesAndContactsByPrisonNumber(prisonNumber = nomisPrisonNumber)
+    .awaitSingle()
+
+  suspend fun getOffenderAddress(offenderId: Long, addressId: Long): OffenderAddress = api
+    .getOffenderAddress(offenderId, addressId)
     .awaitSingle()
 
   suspend fun getOffenderReligions(nomisPrisonNumber: String) = api.getOffenderReligionsByPrisonNumber(nomisPrisonNumber)

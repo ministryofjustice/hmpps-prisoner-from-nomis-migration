@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_EMAIL_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_RELIGION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.CorePersonSynchronisationBeliefsService
@@ -43,6 +44,10 @@ class CorePersonEventListener(
               "OFFENDER_BELIEFS-UPDATED" -> beliefsService.offenderBeliefUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_BELIEFS-DELETED" -> beliefsService.offenderBeliefDeleted(sqsMessage.Message.fromJson())
 
+              "ADDRESSES_OFFENDER-INSERTED" -> addressContactService.offenderAddressAdded(sqsMessage.Message.fromJson())
+              "ADDRESSES_OFFENDER-UPDATED" -> addressContactService.offenderAddressUpdated(sqsMessage.Message.fromJson())
+              "ADDRESSES_OFFENDER-DELETED" -> addressContactService.offenderAddressDeleted(sqsMessage.Message.fromJson())
+
               "OFFENDER_EMAIL-INSERTED" -> addressContactService.offenderEmailAdded(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-UPDATED" -> addressContactService.offenderEmailUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-DELETED" -> addressContactService.offenderEmailDeleted(sqsMessage.Message.fromJson())
@@ -63,6 +68,7 @@ class CorePersonEventListener(
     when (CorePersonSynchronisationMessageType.valueOf(mappingName)) {
       RETRY_SYNCHRONISATION_RELIGION_MAPPING -> beliefsService.retryCreateMapping(message.fromJson())
       RETRY_SYNCHRONISATION_EMAIL_MAPPING -> addressContactService.retryCreateEmailMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_ADDRESS_MAPPING -> addressContactService.retryCreateAddressMapping(message.fromJson())
     }
   }
 }
@@ -70,12 +76,20 @@ class CorePersonEventListener(
 enum class CorePersonSynchronisationMessageType {
   RETRY_SYNCHRONISATION_RELIGION_MAPPING,
   RETRY_SYNCHRONISATION_EMAIL_MAPPING,
+  RETRY_SYNCHRONISATION_ADDRESS_MAPPING,
 }
 
 data class OffenderBeliefEvent(
   val offenderIdDisplay: String,
   val rootOffenderId: Long,
   val offenderBeliefId: Long,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class OffenderAddressEvent(
+  val offenderIdDisplay: String,
+  val ownerId: Long,
+  val addressId: Long,
   override val auditModuleName: String,
 ) : EventAudited
 

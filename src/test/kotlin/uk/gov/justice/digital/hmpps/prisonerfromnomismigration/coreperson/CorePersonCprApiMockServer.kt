@@ -85,6 +85,13 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
       nomisContactType = SysconContactMapping.NomisContactType.EMAIL,
       cprContactId = cprContactId,
     )
+
+    fun syncCorePersonAddressResponse(nomisAddressId: Long, cprAddressId: String) = SysconAddressMapping(
+      nomisAddressId = nomisAddressId,
+      cprAddressId = cprAddressId,
+      addressUsageMappings = emptyList(),
+      contactMappings = emptyList(),
+    )
   }
 
   fun stubMigrateAliasesAndIdentifiers(
@@ -227,6 +234,45 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(status.value())
             .withHeader("Content-Type", "application/json"),
         ),
+    )
+  }
+
+  fun stubSyncCreateAddress(
+    prisonNumber: String = "A1234BC",
+    addressId: Long = 3456,
+    cprAddressId: String = "cpr-address-id",
+    status: HttpStatus = HttpStatus.CREATED,
+  ) {
+    stubFor(
+      post("/syscon-sync/person/$prisonNumber/address")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(syncCorePersonAddressResponse(addressId, cprAddressId))),
+        ),
+    )
+  }
+
+  fun stubSyncUpdateAddress(
+    prisonNumber: String = "A1234BC",
+    cprAddressId: String = "cpr-address-id",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      put("/syscon-sync/person/$prisonNumber/address/$cprAddressId")
+        .willReturn(aResponse().withStatus(status.value())),
+    )
+  }
+
+  fun stubSyncDeleteAddress(
+    prisonNumber: String = "A1234BC",
+    cprAddressId: String = "cpr-address-id",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      delete("/syscon-sync/person/$prisonNumber/address/$cprAddressId")
+        .willReturn(aResponse().withStatus(status.value())),
     )
   }
 

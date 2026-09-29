@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.SysconSyncApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
@@ -12,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionSaveResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
@@ -51,6 +53,19 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
 
   suspend fun syncDeleteEmail(prisonNumber: String, cprContactId: String): Unit = api
     .deletePrisonerContact(prisonNumber, cprContactId)
+    .awaitSingle()
+
+  suspend fun syncCreateAddress(prisonNumber: String, address: PrisonAddress): SysconAddressMapping = api
+    .prepare(api.createPrisonerAddressRequestConfig(prisonNumber, address))
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun syncUpdateAddress(prisonNumber: String, cprAddressId: String, address: PrisonAddress): Unit = api
+    .updatePrisonerAddress(prisonNumber, cprAddressId, address)
+    .awaitSingle()
+
+  suspend fun syncDeleteAddress(prisonNumber: String, cprAddressId: String): Unit = api
+    .deletePrisonerAddress(prisonNumber, cprAddressId)
     .awaitSingle()
 
   suspend fun processPrisonMerge(prisonNumber: String, prisonMerge: PrisonMerge): Unit = api
