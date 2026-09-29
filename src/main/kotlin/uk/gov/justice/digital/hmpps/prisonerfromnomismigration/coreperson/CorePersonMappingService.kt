@@ -1,11 +1,17 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
+import kotlinx.coroutines.reactive.awaitFirstOrDefault
 import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBody
+import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonMappingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
@@ -37,9 +43,12 @@ class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     api.deleteCorePersonAddressMappingByNomisId(nomisAddressId).awaitSingle()
   }
 
-  suspend fun createAddressMapping(mapping: CorePersonAddressMappingDto) {
-    api.createCorePersonAddressMapping(mapping).awaitSingle()
-  }
+  suspend fun createAddressMapping(mapping: CorePersonAddressMappingDto): CreateMappingResult<CorePersonAddressMappingDto> = api.createCorePersonAddressMapping(mapping)
+    .map { CreateMappingResult<CorePersonAddressMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CorePersonAddressMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
 
   suspend fun getByNomisEmailIdOrNull(nomisInternetAddressId: Long): CorePersonEmailAddressMappingDto? = api
     .prepare(api.getCorePersonEmailMappingByNomisIdRequestConfig(nomisInternetAddressId))
@@ -55,9 +64,12 @@ class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     api.deleteCorePersonEmailMappingByNomisId(nomisInternetAddressId).awaitSingle()
   }
 
-  suspend fun createEmailMapping(mapping: CorePersonEmailAddressMappingDto) {
-    api.createCorePersonEmailMapping(mapping).awaitSingle()
-  }
+  suspend fun createEmailMapping(mapping: CorePersonEmailAddressMappingDto): CreateMappingResult<CorePersonEmailAddressMappingDto> = api.createCorePersonEmailMapping(mapping)
+    .map { CreateMappingResult<CorePersonEmailAddressMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CorePersonEmailAddressMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
 
   suspend fun getByNomisPhoneIdOrNull(nomisPhoneId: Long): CorePersonPhoneMappingDto? = api
     .prepare(api.getCorePersonPhoneMappingByNomisIdRequestConfig(nomisPhoneId))
@@ -73,9 +85,12 @@ class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     api.deleteCorePersonPhoneMappingByNomisId(nomisPhoneId).awaitSingle()
   }
 
-  suspend fun createPhoneMapping(mapping: CorePersonPhoneMappingDto) {
-    api.createCorePersonPhoneMapping(mapping).awaitSingle()
-  }
+  suspend fun createPhoneMapping(mapping: CorePersonPhoneMappingDto): CreateMappingResult<CorePersonPhoneMappingDto> = api.createCorePersonPhoneMapping(mapping)
+    .map { CreateMappingResult<CorePersonPhoneMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CorePersonPhoneMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
 
   suspend fun replaceMappings(mappings: CorePersonMappingsDto) {
     api.replaceCorePersonMappings(mappings).awaitSingle()

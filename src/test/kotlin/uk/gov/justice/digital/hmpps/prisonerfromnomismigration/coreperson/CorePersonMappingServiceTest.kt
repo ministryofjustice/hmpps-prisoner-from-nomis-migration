@@ -15,8 +15,11 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 
 @ExtendWith(MappingApiExtension::class)
@@ -132,6 +135,41 @@ class CorePersonMappingServiceTest(
 
       mockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/core-person/address")))
     }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val nomisId = 1234567890L
+      val cprId = "cpr-address-id"
+      val existingCprId = "existing-cpr-address-id"
+
+      mockServer.stubCreateAddressMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = CorePersonAddressMappingDto(
+              cprId = cprId,
+              nomisId = nomisId,
+              nomisPrisonNumber = "A1234BC",
+              mappingType = NOMIS_CREATED,
+            ),
+            existing = CorePersonAddressMappingDto(
+              cprId = existingCprId,
+              nomisId = nomisId,
+              nomisPrisonNumber = "A1234BC",
+              mappingType = NOMIS_CREATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createAddressMapping(addressMapping())
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.cprId).isEqualTo(cprId)
+      assertThat(result.errorResponse.moreInfo.existing.cprId).isEqualTo(existingCprId)
+    }
   }
 
   @Nested
@@ -219,6 +257,41 @@ class CorePersonMappingServiceTest(
 
       mockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/core-person/email")))
     }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val nomisId = 1234567890L
+      val cprId = "cpr-email-id"
+      val existingCprId = "existing-cpr-email-id"
+
+      mockServer.stubCreateEmailMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = CorePersonEmailAddressMappingDto(
+              cprId = cprId,
+              nomisId = nomisId,
+              nomisPrisonNumber = "A1234BC",
+              mappingType = CorePersonEmailAddressMappingDto.MappingType.NOMIS_CREATED,
+            ),
+            existing = CorePersonEmailAddressMappingDto(
+              cprId = existingCprId,
+              nomisId = nomisId,
+              nomisPrisonNumber = "A1234BC",
+              mappingType = CorePersonEmailAddressMappingDto.MappingType.NOMIS_CREATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createEmailMapping(emailMapping())
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.cprId).isEqualTo(cprId)
+      assertThat(result.errorResponse.moreInfo.existing.cprId).isEqualTo(existingCprId)
+    }
   }
 
   @Nested
@@ -305,6 +378,41 @@ class CorePersonMappingServiceTest(
       apiService.createPhoneMapping(phoneMapping())
 
       mockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/core-person/phone")))
+    }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val nomisId = 1234567890L
+      val cprId = "cpr-phone-id"
+      val existingCprId = "existing-cpr-phone-id"
+
+      mockServer.stubCreatePhoneMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = CorePersonPhoneMappingDto(
+              cprId = cprId,
+              nomisId = nomisId,
+              nomisPrisonNumber = "A1234BC",
+              mappingType = CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+            ),
+            existing = CorePersonPhoneMappingDto(
+              cprId = existingCprId,
+              nomisId = nomisId,
+              nomisPrisonNumber = "A1234BC",
+              mappingType = CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createPhoneMapping(phoneMapping())
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.cprId).isEqualTo(cprId)
+      assertThat(result.errorResponse.moreInfo.existing.cprId).isEqualTo(existingCprId)
     }
   }
 }

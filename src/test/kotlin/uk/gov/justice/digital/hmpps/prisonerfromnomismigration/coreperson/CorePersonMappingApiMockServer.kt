@@ -134,14 +134,33 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateAddressMapping() = stubCreate("/mapping/core-person/address")
 
+  fun stubCreateAddressMapping(error: DuplicateMappingErrorResponse) = stubCreate("/mapping/core-person/address", error)
+
   fun stubCreateEmailMapping() = stubCreate("/mapping/core-person/email")
 
+  fun stubCreateEmailMapping(error: DuplicateMappingErrorResponse) = stubCreate("/mapping/core-person/email", error)
+
+  fun stubCreateEmailMappingFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person/email")
+
   fun stubCreatePhoneMapping() = stubCreate("/mapping/core-person/phone")
+
+  fun stubCreatePhoneMapping(error: DuplicateMappingErrorResponse) = stubCreate("/mapping/core-person/phone", error)
 
   private fun stubCreate(path: String) {
     mappingApi.stubFor(
       post(urlEqualTo(path)).willReturn(
         aResponse().withStatus(HttpStatus.CREATED.value()),
+      ),
+    )
+  }
+
+  private fun stubCreate(path: String, error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post(urlEqualTo(path)).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.CONFLICT.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
