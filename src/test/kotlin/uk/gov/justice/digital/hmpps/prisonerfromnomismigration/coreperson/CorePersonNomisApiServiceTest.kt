@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
-import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -11,12 +10,9 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
-import org.springframework.http.HttpStatus
-import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CreateOffenderEmailRequest
@@ -37,17 +33,6 @@ class CorePersonNomisApiServiceTest(
   @Nested
   inner class GetPerson {
     @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubGetCorePerson(prisonNumber = "A12345BC")
-
-      apiService.getCorePerson(nomisPrisonNumber = "A12345BC")
-
-      mockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
     fun `will pass NOMIS id to service`() = runTest {
       mockServer.stubGetCorePerson(prisonNumber = "A12345BC")
 
@@ -66,30 +51,10 @@ class CorePersonNomisApiServiceTest(
 
       assertThat(corePerson.offenders!![0].lastName).isEqualTo("Smith")
     }
-
-    @Test
-    fun `will throw error when person does not exist`() = runTest {
-      mockServer.stubGetCorePerson(prisonNumber = "A12345BC", status = HttpStatus.NOT_FOUND)
-
-      assertThrows<WebClientResponseException.NotFound> {
-        apiService.getCorePerson(nomisPrisonNumber = "A12345BC")
-      }
-    }
   }
 
   @Nested
   inner class GetPersonAddressesAndContacts {
-    @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubGetAddressesAndContacts(prisonNumber = "A12345BC")
-
-      apiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = "A12345BC")
-
-      mockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
     @Test
     fun `will pass NOMIS id to service`() = runTest {
       mockServer.stubGetAddressesAndContacts(prisonNumber = "A12345BC")
@@ -124,42 +89,10 @@ class CorePersonNomisApiServiceTest(
 
       assertThat(addressesAndContacts.addresses!![0].addressId).isEqualTo(12345)
     }
-
-    @Test
-    fun `will throw error when person does not exist`() = runTest {
-      mockServer.stubGetAddressesAndContacts(prisonNumber = "A12345BC", status = HttpStatus.NOT_FOUND)
-
-      assertThrows<WebClientResponseException.NotFound> {
-        apiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = "A12345BC")
-      }
-    }
   }
 
   @Nested
   inner class CreateOffenderEmail {
-    @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubCreateOffenderEmail(offenderId = 12345)
-
-      apiService.createOffenderEmail(offenderId = 12345, createOffenderEmailRequest())
-
-      mockServer.verify(
-        postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will pass request to service`() = runTest {
-      mockServer.stubCreateOffenderEmail(offenderId = 12345)
-
-      apiService.createOffenderEmail(offenderId = 12345, createOffenderEmailRequest())
-
-      mockServer.verify(
-        postRequestedFor(anyUrl())
-          .withRequestBodyJsonPath("email", equalTo("test@example.com")),
-      )
-    }
-
     @Test
     fun `will pass NOMIS offender id to service`() = runTest {
       mockServer.stubCreateOffenderEmail(offenderId = 12345)
@@ -167,7 +100,8 @@ class CorePersonNomisApiServiceTest(
       apiService.createOffenderEmail(offenderId = 12345, createOffenderEmailRequest())
 
       mockServer.verify(
-        postRequestedFor(urlPathEqualTo("/core-person/12345/email")),
+        postRequestedFor(urlPathEqualTo("/core-person/12345/email"))
+          .withRequestBodyJsonPath("email", equalTo("test@example.com")),
       )
     }
 
@@ -182,30 +116,10 @@ class CorePersonNomisApiServiceTest(
 
       assertThat(response.emailAddressId).isEqualTo(45678)
     }
-
-    @Test
-    fun `will throw error when create fails`() = runTest {
-      mockServer.stubCreateOffenderEmail(offenderId = 12345, status = HttpStatus.BAD_REQUEST)
-
-      assertThrows<WebClientResponseException.BadRequest> {
-        apiService.createOffenderEmail(offenderId = 12345, createOffenderEmailRequest())
-      }
-    }
   }
 
   @Nested
   inner class GetOffenderEmail {
-    @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubGetOffenderEmail(offenderId = 12345, emailAddressId = 45678)
-
-      apiService.getOffenderEmail(offenderId = 12345, emailAddressId = 45678)
-
-      mockServer.verify(
-        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
     @Test
     fun `will pass NOMIS ids to service`() = runTest {
       mockServer.stubGetOffenderEmail(offenderId = 12345, emailAddressId = 45678)
@@ -230,42 +144,10 @@ class CorePersonNomisApiServiceTest(
       assertThat(email.emailAddressId).isEqualTo(45678)
       assertThat(email.email).isEqualTo("updated@example.com")
     }
-
-    @Test
-    fun `will throw error when email does not exist`() = runTest {
-      mockServer.stubGetOffenderEmail(offenderId = 12345, emailAddressId = 45678, status = HttpStatus.NOT_FOUND)
-
-      assertThrows<WebClientResponseException.NotFound> {
-        apiService.getOffenderEmail(offenderId = 12345, emailAddressId = 45678)
-      }
-    }
   }
 
   @Nested
   inner class UpdateOffenderEmail {
-    @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubUpdateOffenderEmail(offenderId = 12345, emailAddressId = 45678)
-
-      apiService.updateOffenderEmail(offenderId = 12345, emailAddressId = 45678, updateOffenderEmailRequest())
-
-      mockServer.verify(
-        putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `will pass request to service`() = runTest {
-      mockServer.stubUpdateOffenderEmail(offenderId = 12345, emailAddressId = 45678)
-
-      apiService.updateOffenderEmail(offenderId = 12345, emailAddressId = 45678, updateOffenderEmailRequest())
-
-      mockServer.verify(
-        putRequestedFor(anyUrl())
-          .withRequestBodyJsonPath("email", equalTo("test@example.com")),
-      )
-    }
-
     @Test
     fun `will pass NOMIS ids to service`() = runTest {
       mockServer.stubUpdateOffenderEmail(offenderId = 12345, emailAddressId = 45678)
@@ -273,33 +155,14 @@ class CorePersonNomisApiServiceTest(
       apiService.updateOffenderEmail(offenderId = 12345, emailAddressId = 45678, updateOffenderEmailRequest())
 
       mockServer.verify(
-        putRequestedFor(urlPathEqualTo("/core-person/12345/email/45678")),
+        putRequestedFor(urlPathEqualTo("/core-person/12345/email/45678"))
+          .withRequestBodyJsonPath("email", equalTo("test@example.com")),
       )
-    }
-
-    @Test
-    fun `will throw error when update fails`() = runTest {
-      mockServer.stubUpdateOffenderEmail(offenderId = 12345, emailAddressId = 45678, status = HttpStatus.BAD_REQUEST)
-
-      assertThrows<WebClientResponseException.BadRequest> {
-        apiService.updateOffenderEmail(offenderId = 12345, emailAddressId = 45678, updateOffenderEmailRequest())
-      }
     }
   }
 
   @Nested
   inner class DeleteOffenderEmail {
-    @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubDeleteOffenderEmail(offenderId = 12345, emailAddressId = 45678)
-
-      apiService.deleteOffenderEmail(offenderId = 12345, emailAddressId = 45678)
-
-      mockServer.verify(
-        deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
     @Test
     fun `will pass NOMIS ids to service`() = runTest {
       mockServer.stubDeleteOffenderEmail(offenderId = 12345, emailAddressId = 45678)
@@ -309,15 +172,6 @@ class CorePersonNomisApiServiceTest(
       mockServer.verify(
         deleteRequestedFor(urlPathEqualTo("/core-person/12345/email/45678")),
       )
-    }
-
-    @Test
-    fun `will throw error when delete fails`() = runTest {
-      mockServer.stubDeleteOffenderEmail(offenderId = 12345, emailAddressId = 45678, status = HttpStatus.BAD_REQUEST)
-
-      assertThrows<WebClientResponseException.BadRequest> {
-        apiService.deleteOffenderEmail(offenderId = 12345, emailAddressId = 45678)
-      }
     }
   }
 

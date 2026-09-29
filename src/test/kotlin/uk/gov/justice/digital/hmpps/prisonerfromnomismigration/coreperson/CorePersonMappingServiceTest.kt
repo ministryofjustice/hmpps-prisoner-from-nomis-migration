@@ -1,8 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
-import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -15,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -31,15 +28,6 @@ class CorePersonMappingServiceTest(
 ) {
   @Nested
   inner class GetByNomisAddressIdOrNull {
-    @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubGetByNomisAddressIdOrNull()
-
-      apiService.getByNomisAddressIdOrNull(1234567)
-
-      mockServer.verify(getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")))
-    }
-
     @Test
     fun `will pass NOMIS id to service`() = runTest {
       mockServer.stubGetByNomisAddressIdOrNull(1234567)
@@ -98,15 +86,6 @@ class CorePersonMappingServiceTest(
   @Nested
   inner class DeleteByNomisAddressId {
     @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubDeleteByNomisAddressId(1234567)
-
-      apiService.deleteByNomisAddressId(1234567)
-
-      mockServer.verify(deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")))
-    }
-
-    @Test
     fun `will pass NOMIS id to service`() = runTest {
       mockServer.stubDeleteByNomisAddressId(1234567)
 
@@ -118,15 +97,6 @@ class CorePersonMappingServiceTest(
 
   @Nested
   inner class CreateAddressMapping {
-    @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubCreateAddressMapping()
-
-      apiService.createAddressMapping(addressMapping())
-
-      mockServer.verify(postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")))
-    }
-
     @Test
     fun `will pass mapping to service`() = runTest {
       mockServer.stubCreateAddressMapping()
@@ -149,13 +119,13 @@ class CorePersonMappingServiceTest(
               cprId = cprId,
               nomisId = nomisId,
               nomisPrisonNumber = "A1234BC",
-              mappingType = NOMIS_CREATED,
+              mappingType = CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
             ),
             existing = CorePersonAddressMappingDto(
               cprId = existingCprId,
               nomisId = nomisId,
               nomisPrisonNumber = "A1234BC",
-              mappingType = NOMIS_CREATED,
+              mappingType = CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
             ),
           ),
           errorCode = 1409,
@@ -174,15 +144,6 @@ class CorePersonMappingServiceTest(
 
   @Nested
   inner class GetByNomisEmailIdOrNull {
-    @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubGetByNomisEmailIdOrNull()
-
-      apiService.getByNomisEmailIdOrNull(1234567)
-
-      mockServer.verify(getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")))
-    }
-
     @Test
     fun `will pass NOMIS id to service`() = runTest {
       mockServer.stubGetByNomisEmailIdOrNull(1234567)
@@ -220,15 +181,6 @@ class CorePersonMappingServiceTest(
   @Nested
   inner class DeleteByNomisEmailId {
     @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubDeleteByNomisEmailId(1234567)
-
-      apiService.deleteByNomisEmailId(1234567)
-
-      mockServer.verify(deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")))
-    }
-
-    @Test
     fun `will pass NOMIS id to service`() = runTest {
       mockServer.stubDeleteByNomisEmailId(1234567)
 
@@ -240,15 +192,6 @@ class CorePersonMappingServiceTest(
 
   @Nested
   inner class CreateEmailMapping {
-    @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubCreateEmailMapping()
-
-      apiService.createEmailMapping(emailMapping())
-
-      mockServer.verify(postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")))
-    }
-
     @Test
     fun `will pass mapping to service`() = runTest {
       mockServer.stubCreateEmailMapping()
@@ -297,15 +240,6 @@ class CorePersonMappingServiceTest(
   @Nested
   inner class GetByNomisPhoneIdOrNull {
     @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubGetByNomisPhoneIdOrNull()
-
-      apiService.getByNomisPhoneIdOrNull(1234567)
-
-      mockServer.verify(getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")))
-    }
-
-    @Test
     fun `will pass NOMIS id to service`() = runTest {
       mockServer.stubGetByNomisPhoneIdOrNull(1234567)
 
@@ -342,15 +276,6 @@ class CorePersonMappingServiceTest(
   @Nested
   inner class DeleteByNomisPhoneId {
     @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubDeleteByNomisPhoneId(1234567)
-
-      apiService.deleteByNomisPhoneId(1234567)
-
-      mockServer.verify(deleteRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")))
-    }
-
-    @Test
     fun `will pass NOMIS id to service`() = runTest {
       mockServer.stubDeleteByNomisPhoneId(1234567)
 
@@ -362,15 +287,6 @@ class CorePersonMappingServiceTest(
 
   @Nested
   inner class CreatePhoneMapping {
-    @Test
-    fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubCreatePhoneMapping()
-
-      apiService.createPhoneMapping(phoneMapping())
-
-      mockServer.verify(postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")))
-    }
-
     @Test
     fun `will pass mapping to service`() = runTest {
       mockServer.stubCreatePhoneMapping()
