@@ -38,6 +38,23 @@ class FinanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetPrisonerTransactionNotFound(
+    transactionId: Long = 1001,
+    status: HttpStatus = HttpStatus.NOT_FOUND,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/transactions/$transactionId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(
+            jsonMapper.writeValueAsString(error),
+          ),
+      ),
+    )
+  }
+
   fun stubGetPrisonBalanceIds(totalElements: Long = 20, pageSize: Long = 20, firstPrisonBalanceId: String = "MDI") {
     val content: List<String> = (1..min(pageSize, totalElements)).map {
       "$firstPrisonBalanceId$it"
