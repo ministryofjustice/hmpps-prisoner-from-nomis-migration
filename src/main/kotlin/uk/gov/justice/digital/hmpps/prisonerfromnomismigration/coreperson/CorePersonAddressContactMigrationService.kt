@@ -166,7 +166,7 @@ internal fun CorePersonAddressContact.toMigrateAddressesAndContactsRequest(): Pr
   contacts = (phoneNumbers?.map { it.toPrisonPhoneNumberRequest() } ?: emptyList()) + (emailAddresses?.map { it.toPrisonEmailAddressRequest() } ?: emptyList()),
 )
 
-private fun OffenderAddress.toPrisonAddressRequest(): PrisonAddress = PrisonAddress(
+internal fun OffenderAddress.toPrisonAddressRequest(): PrisonAddress = PrisonAddress(
   nomisAddressId = addressId,
   subBuildingName = flat,
   buildingNumber = premise,

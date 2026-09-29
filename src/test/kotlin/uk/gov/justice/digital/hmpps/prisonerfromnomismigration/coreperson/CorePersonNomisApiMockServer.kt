@@ -206,6 +206,31 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetOffenderAddress(
+    offenderId: Long = 123456,
+    addressId: Long = 3456,
+    address: OffenderAddress = OffenderAddress(
+      addressId = addressId,
+      primaryAddress = true,
+      mailAddress = true,
+      createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
+      createdByUsername = "SYSTEM",
+      lastUpdatedDateTime = null,
+      lastUpdatedByUsername = null,
+    ),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$offenderId/address/$addressId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) address else error)),
+      ),
+    )
+  }
+
   fun stubUpdateOffenderEmail(
     offenderId: Long = 12345,
     emailAddressId: Long = 45678,

@@ -18,11 +18,14 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiMockServer.Companion.syncCorePersonEmailResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
@@ -34,6 +37,444 @@ class CorePersonSynchronisationAddressContactIntTest(
 ) : CorePersonIntegrationTestBase() {
 
   @Nested
+  @DisplayName("ADDRESSES_OFFENDER-INSERTED")
+  inner class OffenderAddressAdded {
+    private val ownerId = 1234L
+    private val addressId = 3456L
+    private val cprAddressId = "cpr-address-id"
+    private val prisonNumber = "A1234BC"
+
+    @Nested
+    inner class WhenCreatedInCpr {
+      @BeforeEach
+      fun setUp() {
+        sendAddressEvent("ADDRESSES_OFFENDER-INSERTED", auditModuleName = "DPS_SYNCHRONISATION")
+          .also { waitForAnyProcessingToComplete("coreperson-address-synchronisation-created-skipped") }
+      }
+
+      @Test
+      fun `will not create the address in CPR`() {
+        corePersonCprApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/address")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("coreperson-address-synchronisation-created-skipped"),
+          check {
+            assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+            assertThat(it["nomisOffenderId"]).isEqualTo(ownerId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(addressId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenCreatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressIdOrNull(addressId, null)
+        nomisApiMock.stubGetOffenderAddress(ownerId, addressId)
+        corePersonCprApiMockServer.stubSyncCreateAddress(
+          prisonNumber = prisonNumber,
+          addressId = addressId,
+          cprAddressId = cprAddressId,
+        )
+        mappingApiMock.stubCreateAddressMapping()
+        sendAddressEvent("ADDRESSES_OFFENDER-INSERTED")
+          .also { waitForAnyProcessingToComplete("coreperson-address-synchronisation-created-success") }
+      }
+
+      @Test
+      fun `will check if mapping already exists`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/address/nomis-address-id/$addressId")))
+      }
+
+      @Test
+      fun `will retrieve the address from NOMIS`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/core-person/$ownerId/address/$addressId")))
+      }
+
+      @Test
+      fun `will create the address in CPR`() {
+        val addressRequestPattern = postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/address"))
+        corePersonCprApiMockServer.verify(addressRequestPattern)
+        val request: PrisonAddress = getRequestBody(addressRequestPattern)
+        assertThat(request.nomisAddressId).isEqualTo(addressId)
+      }
+
+      @Test
+      fun `will create the address mapping`() {
+        mappingApi.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/core-person/address"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("cprId", cprAddressId)
+            .withRequestBodyJsonPath("nomisId", "$addressId")
+            .withRequestBodyJsonPath("nomisPrisonNumber", prisonNumber),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("coreperson-address-synchronisation-created-success"),
+          check {
+            assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+            assertThat(it["nomisOffenderId"]).isEqualTo(ownerId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(addressId.toString())
+            assertThat(it["cprAddressId"]).isEqualTo(cprAddressId)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressIdOrNull(
+          addressId,
+          CorePersonAddressMappingDto(
+            cprId = cprAddressId,
+            nomisId = addressId,
+            nomisPrisonNumber = prisonNumber,
+            mappingType = CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        sendAddressEvent("ADDRESSES_OFFENDER-INSERTED")
+          .also { waitForAnyProcessingToComplete("coreperson-address-synchronisation-created-ignored") }
+      }
+
+      @Test
+      fun `will not create the address in CPR`() {
+        corePersonCprApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/address")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("coreperson-address-synchronisation-created-ignored"),
+          check {
+            assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+            assertThat(it["nomisOffenderId"]).isEqualTo(ownerId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(addressId.toString())
+            assertThat(it["cprAddressId"]).isEqualTo(cprAddressId)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressIdOrNull(addressId, null)
+        nomisApiMock.stubGetOffenderAddress(ownerId, addressId)
+        corePersonCprApiMockServer.stubSyncCreateAddress(
+          prisonNumber = prisonNumber,
+          addressId = addressId,
+          cprAddressId = cprAddressId,
+        )
+        mappingApiMock.stubCreateAddressMapping(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = CorePersonAddressMappingDto(
+                cprId = cprAddressId,
+                nomisId = addressId,
+                nomisPrisonNumber = prisonNumber,
+                mappingType = CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
+              ),
+              existing = CorePersonAddressMappingDto(
+                cprId = "existing-cpr-address-id",
+                nomisId = addressId,
+                nomisPrisonNumber = prisonNumber,
+                mappingType = CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+        sendAddressEvent("ADDRESSES_OFFENDER-INSERTED")
+          .also { waitForAnyProcessingToComplete("coreperson-address-mapping-synchronisation-duplicate") }
+      }
+
+      @Test
+      fun `will create the address in CPR once`() {
+        corePersonCprApiMockServer.verify(1, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/address")))
+      }
+
+      @Test
+      fun `will attempt to create the mapping once`() {
+        mappingApi.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/core-person/address"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("cprId", cprAddressId)
+            .withRequestBodyJsonPath("nomisId", "$addressId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for both overall success and duplicate mapping`() {
+        verify(telemetryClient).trackEvent(
+          eq("coreperson-address-synchronisation-created-success"),
+          check {
+            assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+            assertThat(it["nomisOffenderId"]).isEqualTo(ownerId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(addressId.toString())
+            assertThat(it["cprAddressId"]).isEqualTo(cprAddressId)
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("coreperson-address-mapping-synchronisation-duplicate"),
+          check {
+            assertThat(it["nomisPrisonNumber"]).isEqualTo(prisonNumber)
+            assertThat(it["existingNomisAddressId"]).isEqualTo(addressId.toString())
+            assertThat(it["existingCprAddressId"]).isEqualTo("existing-cpr-address-id")
+            assertThat(it["duplicateNomisAddressId"]).isEqualTo(addressId.toString())
+            assertThat(it["duplicateCprAddressId"]).isEqualTo(cprAddressId)
+            assertThat(it["type"]).isEqualTo("ADDRESS")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class MappingCreateFails {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressIdOrNull(addressId, null)
+        nomisApiMock.stubGetOffenderAddress(ownerId, addressId)
+        corePersonCprApiMockServer.stubSyncCreateAddress(
+          prisonNumber = prisonNumber,
+          addressId = addressId,
+          cprAddressId = cprAddressId,
+        )
+        mappingApiMock.stubCreateAddressMappingFollowedBySuccess()
+        sendAddressEvent("ADDRESSES_OFFENDER-INSERTED")
+          .also { waitForAnyProcessingToComplete("coreperson-address-mapping-synchronisation-created") }
+      }
+
+      @Test
+      fun `will create the address in CPR once`() {
+        corePersonCprApiMockServer.verify(1, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/address")))
+      }
+
+      @Test
+      fun `will create the mapping between the CPR and NOMIS records twice`() {
+        mappingApi.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/core-person/address"))
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+            .withRequestBodyJsonPath("cprId", cprAddressId)
+            .withRequestBodyJsonPath("nomisId", "$addressId"),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("coreperson-address-mapping-synchronisation-created"),
+          check {
+            assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+            assertThat(it["nomisOffenderId"]).isEqualTo(ownerId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(addressId.toString())
+            assertThat(it["cprAddressId"]).isEqualTo(cprAddressId)
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("ADDRESSES_OFFENDER-UPDATED")
+  inner class OffenderAddressUpdated {
+    private val ownerId = 1234L
+    private val addressId = 3456L
+    private val prisonNumber = "A1234BC"
+    private val cprAddressId = "cpr-address-id"
+
+    @Nested
+    inner class WhenUpdatedInCpr {
+      @BeforeEach
+      fun setUp() {
+        sendAddressEvent("ADDRESSES_OFFENDER-UPDATED", ownerId, addressId, auditModuleName = "DPS_SYNCHRONISATION")
+          .also { waitForAnyProcessingToComplete("coreperson-address-synchronisation-updated-skipped") }
+      }
+
+      @Test
+      fun `will not update the address in CPR`() {
+        corePersonCprApiMockServer.verify(
+          0,
+          putRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/address/$cprAddressId")),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("coreperson-address-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+            assertThat(it["nomisOffenderId"]).isEqualTo(ownerId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(addressId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressIdOrNull(
+          addressId,
+          CorePersonAddressMappingDto(
+            cprId = cprAddressId,
+            nomisId = addressId,
+            nomisPrisonNumber = prisonNumber,
+            mappingType = CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        nomisApiMock.stubGetOffenderAddress(
+          offenderId = ownerId,
+          addressId = addressId,
+          address = nomisAddress(addressId).copy(
+            lastUpdatedByUsername = "T.SWIFT",
+            lastUpdatedDateTime = LocalDateTime.parse("2024-10-01T13:31"),
+          ),
+        )
+        corePersonCprApiMockServer.stubSyncUpdateAddress(prisonNumber, cprAddressId)
+        sendAddressEvent("ADDRESSES_OFFENDER-UPDATED", ownerId, addressId)
+          .also { waitForAnyProcessingToComplete("coreperson-address-synchronisation-updated-success") }
+      }
+
+      @Test
+      fun `will retrieve the address from NOMIS and update CPR`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/core-person/$ownerId/address/$addressId")))
+        val updateRequestPattern = putRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/address/$cprAddressId"))
+        corePersonCprApiMockServer.verify(updateRequestPattern)
+        val request: PrisonAddress = getRequestBody(updateRequestPattern)
+        assertThat(request.nomisAddressId).isEqualTo(addressId)
+        assertThat(request.modifyUserId).isEqualTo("T.SWIFT")
+        assertThat(request.modifyDateTime).isEqualTo(LocalDateTime.parse("2024-10-01T13:31"))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("coreperson-address-synchronisation-updated-success"),
+          check {
+            assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+            assertThat(it["nomisOffenderId"]).isEqualTo(ownerId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(addressId.toString())
+            assertThat(it["cprAddressId"]).isEqualTo(cprAddressId)
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("ADDRESSES_OFFENDER-DELETED")
+  inner class OffenderAddressDeleted {
+    private val ownerId = 1234L
+    private val addressId = 3456L
+    private val prisonNumber = "A1234BC"
+    private val cprAddressId = "cpr-address-id"
+
+    @Nested
+    inner class WhenMappingExists {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressIdOrNull(
+          addressId,
+          CorePersonAddressMappingDto(
+            cprId = cprAddressId,
+            nomisId = addressId,
+            nomisPrisonNumber = prisonNumber,
+            mappingType = CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        mappingApiMock.stubDeleteByNomisAddressId(addressId)
+        corePersonCprApiMockServer.stubSyncDeleteAddress(prisonNumber, cprAddressId)
+        sendAddressEvent("ADDRESSES_OFFENDER-DELETED", ownerId, addressId)
+          .also { waitForAnyProcessingToComplete("coreperson-address-synchronisation-deleted-success") }
+      }
+
+      @Test
+      fun `will delete the address in CPR`() {
+        corePersonCprApiMockServer.verify(
+          deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/address/$cprAddressId")),
+        )
+      }
+
+      @Test
+      fun `will delete the address mapping`() {
+        mappingApi.verify(
+          deleteRequestedFor(urlPathEqualTo("/mapping/core-person/address/nomis-address-id/$addressId")),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("coreperson-address-synchronisation-deleted-success"),
+          check {
+            assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+            assertThat(it["nomisOffenderId"]).isEqualTo(ownerId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(addressId.toString())
+            assertThat(it["cprAddressId"]).isEqualTo(cprAddressId)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAddressIdOrNull(addressId, null)
+        sendAddressEvent("ADDRESSES_OFFENDER-DELETED", ownerId, addressId)
+          .also { waitForAnyProcessingToComplete("coreperson-address-synchronisation-deleted-ignored") }
+      }
+
+      @Test
+      fun `will not delete the address in CPR`() {
+        corePersonCprApiMockServer.verify(
+          0,
+          deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/address/$cprAddressId")),
+        )
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("coreperson-address-synchronisation-deleted-ignored"),
+          check {
+            assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+            assertThat(it["nomisOffenderId"]).isEqualTo(ownerId.toString())
+            assertThat(it["nomisAddressId"]).isEqualTo(addressId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
   @DisplayName("OFFENDER_EMAIL-INSERTED")
   inner class PersonEmailAdded {
     private val nomisInternetAddressId = 3456L
@@ -41,7 +482,7 @@ class CorePersonSynchronisationAddressContactIntTest(
     private val cprContactEmailId = "cpr-email-id"
 
     @Nested
-    inner class WhenCreatedInDps {
+    inner class WhenCreatedInCpr {
       @BeforeEach
       fun setUp() {
         sendEmailEvent("OFFENDER_EMAIL-INSERTED", auditModuleName = "DPS_SYNCHRONISATION")
@@ -301,7 +742,7 @@ class CorePersonSynchronisationAddressContactIntTest(
     private val cprContactEmailId = "cpr-email-id"
 
     @Nested
-    inner class WhenUpdatedInDps {
+    inner class WhenUpdatedInCpr {
       @BeforeEach
       fun setUp() {
         sendEmailEvent("OFFENDER_EMAIL-UPDATED", auditModuleName = "DPS_SYNCHRONISATION")
@@ -471,6 +912,16 @@ class CorePersonSynchronisationAddressContactIntTest(
       offenderEmailEvent(eventType, nomisOffenderId, nomisInternetAddressId, auditModuleName),
     )
   }
+
+  private fun sendAddressEvent(
+    eventType: String,
+    ownerId: Long = 1234L,
+    addressId: Long = 3456L,
+    auditModuleName: String = "NOMIS",
+  ) = awsSqsCorePersonOffenderEventsClient.sendMessage(
+    corePersonQueueOffenderEventsUrl,
+    offenderAddressEvent(eventType, "A1234BC", ownerId, addressId, auditModuleName),
+  )
 }
 
 private fun offenderEmailEvent(
@@ -488,3 +939,30 @@ private fun offenderEmailEvent(
     }
   }
 """.trimIndent()
+
+private fun offenderAddressEvent(
+  eventType: String,
+  offenderIdDisplay: String,
+  ownerId: Long,
+  addressId: Long,
+  auditModuleName: String,
+) = """
+  {
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd",
+    "Type": "Notification",
+    "Message": "{\"eventType\":\"$eventType\",\"offenderIdDisplay\":\"$offenderIdDisplay\",\"ownerId\":$ownerId,\"addressId\":$addressId,\"auditModuleName\":\"$auditModuleName\"}",
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}
+    }
+  }
+""".trimIndent()
+
+private fun nomisAddress(addressId: Long) = OffenderAddress(
+  addressId = addressId,
+  primaryAddress = true,
+  mailAddress = true,
+  createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
+  createdByUsername = "SYSTEM",
+  lastUpdatedDateTime = null,
+  lastUpdatedByUsername = null,
+)

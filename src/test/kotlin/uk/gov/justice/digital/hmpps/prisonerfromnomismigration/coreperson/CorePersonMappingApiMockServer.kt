@@ -136,6 +136,8 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateAddressMapping(error: DuplicateMappingErrorResponse) = stubCreate("/mapping/core-person/address", error)
 
+  fun stubCreateAddressMappingFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person/address")
+
   fun stubCreateEmailMapping() = stubCreate("/mapping/core-person/email")
 
   fun stubCreateEmailMapping(error: DuplicateMappingErrorResponse) = stubCreate("/mapping/core-person/email", error)

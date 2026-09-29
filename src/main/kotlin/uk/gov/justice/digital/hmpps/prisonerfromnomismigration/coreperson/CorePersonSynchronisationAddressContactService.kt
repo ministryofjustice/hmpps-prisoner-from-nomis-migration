@@ -10,9 +10,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
@@ -23,6 +25,7 @@ class CorePersonSynchronisationAddressContactService(
   private val corePersonNomisApiService: CorePersonNomisApiService,
   private val corePersonMappingService: CorePersonMappingService,
   private val queueService: SynchronisationQueueService,
+  private val nomisApiService: NomisApiService,
 ) : TelemetryEnabled {
 
   private companion object {
@@ -159,6 +162,125 @@ class CorePersonSynchronisationAddressContactService(
             "duplicateNomisInternetAddressId" to duplicate.nomisId,
             "duplicateCprContactId" to duplicate.cprId,
             "type" to "EMAIL",
+          ),
+        )
+      }
+    }
+  }
+
+  suspend fun offenderAddressAdded(event: OffenderAddressEvent) {
+    val telemetry = telemetryOf(
+      "prisonNumber" to event.offenderIdDisplay,
+      "nomisOffenderId" to event.ownerId,
+      "nomisAddressId" to event.addressId,
+    )
+
+    if (event.originatesInDps) {
+      telemetryClient.trackEvent("coreperson-address-synchronisation-created-skipped", telemetry)
+    } else {
+      corePersonMappingService.getByNomisAddressIdOrNull(nomisAddressId = event.addressId)?.also {
+        telemetryClient.trackEvent(
+          "coreperson-address-synchronisation-created-ignored",
+          telemetry + ("cprAddressId" to it.cprId),
+        )
+      } ?: run {
+        track("coreperson-address-synchronisation-created", telemetry) {
+          val prisonNumber = event.offenderIdDisplay
+          val nomisAddress = corePersonNomisApiService.getOffenderAddress(event.ownerId, event.addressId)
+          val cprAddress = corePersonCprApiService.syncCreateAddress(
+            prisonNumber = prisonNumber,
+            address = nomisAddress.toPrisonAddressRequest(),
+          ).also {
+            telemetry["cprAddressId"] = it.cprAddressId
+          }
+          val mapping = CorePersonAddressMappingDto(
+            nomisId = event.addressId,
+            cprId = cprAddress.cprAddressId,
+            nomisPrisonNumber = prisonNumber,
+            mappingType = CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
+          )
+          tryToCreateAddressMapping(mapping, telemetry)
+        }
+      }
+    }
+  }
+
+  suspend fun offenderAddressUpdated(event: OffenderAddressEvent) {
+    val telemetry = telemetryOf(
+      "prisonNumber" to event.offenderIdDisplay,
+      "nomisOffenderId" to event.ownerId,
+      "nomisAddressId" to event.addressId,
+    )
+
+    if (event.originatesInDps) {
+      telemetryClient.trackEvent("coreperson-address-synchronisation-updated-skipped", telemetry)
+    } else {
+      track("coreperson-address-synchronisation-updated", telemetry) {
+        val mapping = corePersonMappingService.getByNomisAddressId(event.addressId)
+        telemetry["cprAddressId"] = mapping.cprId
+        val nomisAddress = corePersonNomisApiService.getOffenderAddress(event.ownerId, event.addressId)
+        corePersonCprApiService.syncUpdateAddress(
+          prisonNumber = mapping.nomisPrisonNumber,
+          cprAddressId = mapping.cprId,
+          address = nomisAddress.toPrisonAddressRequest(),
+        )
+      }
+    }
+  }
+
+  suspend fun offenderAddressDeleted(event: OffenderAddressEvent) {
+    val telemetry = telemetryOf(
+      "prisonNumber" to event.offenderIdDisplay,
+      "nomisOffenderId" to event.ownerId,
+      "nomisAddressId" to event.addressId,
+    )
+    corePersonMappingService.getByNomisAddressIdOrNull(event.addressId)?.also { mapping ->
+      track("coreperson-address-synchronisation-deleted", telemetry) {
+        telemetry["cprAddressId"] = mapping.cprId
+        corePersonCprApiService.syncDeleteAddress(mapping.nomisPrisonNumber, mapping.cprId)
+        corePersonMappingService.deleteByNomisAddressId(event.addressId)
+      }
+    } ?: run {
+      telemetryClient.trackEvent("coreperson-address-synchronisation-deleted-ignored", telemetry)
+    }
+  }
+
+  private suspend fun tryToCreateAddressMapping(
+    mapping: CorePersonAddressMappingDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      createAddressMapping(mapping)
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for address id $mapping", e)
+      queueService.sendMessage(
+        messageType = CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING.name,
+        synchronisationType = SynchronisationType.CORE_PERSON,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+
+  suspend fun retryCreateAddressMapping(retryMessage: InternalMessage<CorePersonAddressMappingDto>) {
+    createAddressMapping(retryMessage.body)
+      .also {
+        telemetryClient.trackEvent("coreperson-address-mapping-synchronisation-created", retryMessage.telemetryAttributes)
+      }
+  }
+
+  private suspend fun createAddressMapping(mapping: CorePersonAddressMappingDto) {
+    corePersonMappingService.createAddressMapping(mapping).takeIf { it.isError }?.also {
+      with(it.errorResponse!!.moreInfo) {
+        telemetryClient.trackEvent(
+          "coreperson-address-mapping-synchronisation-duplicate",
+          mapOf(
+            "nomisPrisonNumber" to existing.nomisPrisonNumber,
+            "existingNomisAddressId" to existing.nomisId,
+            "existingCprAddressId" to existing.cprId,
+            "duplicateNomisAddressId" to duplicate.nomisId,
+            "duplicateCprAddressId" to duplicate.cprId,
+            "type" to "ADDRESS",
           ),
         )
       }

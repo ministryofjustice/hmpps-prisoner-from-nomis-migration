@@ -6,6 +6,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -157,6 +158,61 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
   }
 
   @Nested
+  inner class SyncCreateAddress {
+    @Test
+    fun `will call the sync endpoint and return the address mapping`() = runTest {
+      cprCorePersonServer.stubSyncCreateAddress("A1234BC", addressId = 12345, cprAddressId = "cprAddressId")
+
+      val response = apiService.syncCreateAddress("A1234BC", prisonAddress())
+
+      assertThat(response.nomisAddressId).isEqualTo(12345)
+      assertThat(response.cprAddressId).isEqualTo("cprAddressId")
+      cprCorePersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address"))
+          .withRequestBodyJsonPath("nomisAddressId", equalTo("12345")),
+      )
+    }
+
+    @Test
+    fun `should throw if bad request`() = runTest {
+      cprCorePersonServer.stubSyncCreateAddress("A1234BC", status = BAD_REQUEST)
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.syncCreateAddress("A1234BC", prisonAddress())
+      }
+    }
+  }
+
+  @Nested
+  inner class SyncUpdateAddress {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncUpdateAddress("A1234BC", "cprAddressId")
+
+      apiService.syncUpdateAddress("A1234BC", "cprAddressId", prisonAddress())
+
+      cprCorePersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId"))
+          .withRequestBodyJsonPath("nomisAddressId", equalTo("12345")),
+      )
+    }
+  }
+
+  @Nested
+  inner class SyncDeleteAddress {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncDeleteAddress("A1234BC", "cprAddressId")
+
+      apiService.syncDeleteAddress("A1234BC", "cprAddressId")
+
+      cprCorePersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId")),
+      )
+    }
+  }
+
+  @Nested
   inner class ProcessPrisonMerge {
     @Test
     fun `will call the sync endpoint`() = runTest {
@@ -187,16 +243,18 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
 
   fun prisonAddressesRequest() = PrisonAddressesAndContactsRequest(
     addresses = listOf(
-      PrisonAddress(
-        nomisAddressId = 12345,
-        isPrimary = true,
-        addressUsage = emptyList(),
-        contacts = emptyList(),
-        postcode = "MK15 2ST",
-        createDateTime = LocalDateTime.parse("2019-11-01T04:05:00"),
-        createUserId = "joebiggs",
-      ),
+      prisonAddress(),
     ),
+  )
+
+  fun prisonAddress() = PrisonAddress(
+    nomisAddressId = 12345,
+    isPrimary = true,
+    addressUsage = emptyList(),
+    contacts = emptyList(),
+    postcode = "MK15 2ST",
+    createDateTime = LocalDateTime.parse("2019-11-01T04:05:00"),
+    createUserId = "joebiggs",
   )
 
   fun prisonReligionUpdateRequest() = PrisonReligionUpdateRequest(
