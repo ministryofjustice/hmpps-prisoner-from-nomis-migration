@@ -71,4 +71,17 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
   suspend fun processPrisonMerge(prisonNumber: String, prisonMerge: PrisonMerge): Unit = api
     .processPrisonMerge(prisonNumber, prisonMerge)
     .awaitSingle()
+
+  suspend fun syncCreateAddressContact(prisonNumber: String, cprAddressId: String, contact: PrisonContact): SysconContactMapping = api
+    .prepare(api.createPrisonerAddressContactRequestConfig(prisonNumber, cprAddressId, contact))
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun syncUpdateAddressContact(prisonNumber: String, cprAddressId: String, cprContactId: String, contact: PrisonContact): Unit = api
+    .updatePrisonerAddressContact(prisonNumber, cprAddressId, cprContactId, contact)
+    .awaitSingle()
+
+  suspend fun syncDeleteAddressContact(prisonNumber: String, cprAddressId: String, cprContactId: String): Unit = api
+    .deletePrisonerAddressContact(prisonNumber, cprAddressId, cprContactId)
+    .awaitSingle()
 }

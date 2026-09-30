@@ -207,6 +207,24 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubSyncCreateAddressContact(
+    prisonNumber: String = "A1234BC",
+    cprAddressId: String = "cpr-address-id",
+    status: HttpStatus = HttpStatus.CREATED,
+    response: SysconContactMapping = syncCorePersonEmailResponse(),
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    stubFor(
+      post("/syscon-sync/person/$prisonNumber/address/$cprAddressId/contact")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.CREATED) response else error)),
+        ),
+    )
+  }
+
   fun stubSyncUpdateEmail(
     prisonNumber: String = "A1234BC",
     cprContactId: String = "cprContactId",
@@ -222,6 +240,22 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubSyncUpdateAddressContact(
+    prisonNumber: String = "A1234BC",
+    cprAddressId: String = "cpr-address-id",
+    cprContactId: String = "cprContactId",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      put("/syscon-sync/person/$prisonNumber/address/$cprAddressId/contact/$cprContactId")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
   fun stubSyncDeleteEmail(
     prisonNumber: String = "A1234BC",
     cprContactId: String = "cprContactId",
@@ -229,6 +263,22 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     stubFor(
       delete("/syscon-sync/person/$prisonNumber/contact/$cprContactId")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubSyncDeleteAddressContact(
+    prisonNumber: String = "A1234BC",
+    cprAddressId: String = "cpr-address-id",
+    cprContactId: String = "cprContactId",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      delete("/syscon-sync/person/$prisonNumber/address/$cprAddressId/contact/$cprContactId")
         .willReturn(
           aResponse()
             .withStatus(status.value())
