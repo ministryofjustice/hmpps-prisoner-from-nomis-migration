@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-28.559.613e31f"
+    "version" : "2026-09-29.574.f0820e0"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -4412,6 +4412,25 @@
         "summary" : "Get all probation offices",
         "description" : "Information on all probation offices",
         "operationId" : "getProbationOffices",
+        "parameters" : [ {
+          "name" : "active",
+          "in" : "query",
+          "description" : "Active",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          },
+          "example" : true
+        }, {
+          "name" : "textSearch",
+          "in" : "query",
+          "description" : "Text search",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "Sheffield"
+        } ],
         "responses" : {
           "200" : {
             "description" : "Successful Operation",
@@ -4952,6 +4971,25 @@
         "summary" : "Get all police custody suites",
         "description" : "Information on all police custody suites",
         "operationId" : "getPoliceCustodySuites",
+        "parameters" : [ {
+          "name" : "active",
+          "in" : "query",
+          "description" : "Active",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          },
+          "example" : true
+        }, {
+          "name" : "textSearch",
+          "in" : "query",
+          "description" : "Text search",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "Sheffield"
+        } ],
         "responses" : {
           "200" : {
             "description" : "Successful Operation",
@@ -5838,6 +5876,34 @@
         "summary" : "Get all hospitals",
         "description" : "Information on all hospitals",
         "operationId" : "getHospitals",
+        "parameters" : [ {
+          "name" : "active",
+          "in" : "query",
+          "description" : "Active",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          },
+          "example" : true
+        }, {
+          "name" : "textSearch",
+          "in" : "query",
+          "description" : "Text search",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "Sheffield"
+        }, {
+          "name" : "highSecurity",
+          "in" : "query",
+          "description" : "High security",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          },
+          "example" : true
+        } ],
         "responses" : {
           "200" : {
             "description" : "Successful Operation",
@@ -6482,6 +6548,25 @@
         "summary" : "Get all approved premises",
         "description" : "Information on all approved premises",
         "operationId" : "getApprovedPremises",
+        "parameters" : [ {
+          "name" : "active",
+          "in" : "query",
+          "description" : "Active",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          },
+          "example" : true
+        }, {
+          "name" : "textSearch",
+          "in" : "query",
+          "description" : "Text search",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "Sheffield"
+        } ],
         "responses" : {
           "200" : {
             "description" : "Successful Operation",
@@ -7211,6 +7296,111 @@
           },
           "404" : {
             "description" : "Agency not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agencies/type/{type}" : {
+      "get" : {
+        "tags" : [ "public-api-resource" ],
+        "summary" : "Get all agencies of a type",
+        "description" : "Details of all agencies of the specified type (for example: court, hospital, secure hospital, police custody suite, probation office, approved premises, prison)",
+        "operationId" : "getAgenciesByType",
+        "parameters" : [ {
+          "name" : "type",
+          "in" : "path",
+          "description" : "Agency type",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Agency type",
+            "enum" : [ "PRISON", "COURT", "HOSPITAL", "SECURE_HOSPITAL", "PROBATION_OFFICE", "POLICE_CUSTODY_SUITE", "APPROVED_PREMISES", "AIRPORT", "PROBATION_CRC", "FOREIGN_NATIONAL_PRISON", "VOLUNTARY_HOSTEL", "IMMIGRATION_DETENTION_CENTRE", "OUTSIDE", "PECS", "PSYCHIATRIC_CARE", "CHILDREN_SECURE_HOME", "SECURE_TRAINING_CENTRE", "YOT" ],
+            "example" : "COURT"
+          },
+          "example" : "COURT"
+        }, {
+          "name" : "activeOnly",
+          "in" : "query",
+          "description" : "When true (the default) only active agencies are returned",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : true,
+            "description" : "When true (the default) only active agencies are returned",
+            "example" : true
+          },
+          "example" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Successful Operation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AgencyDetailsDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/agencies/legacy-type/{type}" : {
+      "get" : {
+        "tags" : [ "public-api-resource" ],
+        "summary" : "Get all agencies using the NOMIS type",
+        "description" : "Details of all agencies of the specified legacy (NOMIS) agency type code, e.g. INST, CRT, HOSPITAL, HSHOSP, COMM, CRC, POLICE, POLSTN, APPR, AIRPORT, HOST, IMDC, OUT, PECS, PSY, SCH, STC, YOT, FNP",
+        "operationId" : "getAgenciesByLegacyType",
+        "parameters" : [ {
+          "name" : "type",
+          "in" : "path",
+          "description" : "Legacy agency type",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "Legacy agency type",
+            "example" : "CRT"
+          },
+          "example" : "CRT"
+        }, {
+          "name" : "activeOnly",
+          "in" : "query",
+          "description" : "When true (the default) only active agencies are returned",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : true,
+            "description" : "When true (the default) only active agencies are returned",
+            "example" : true
+          },
+          "example" : true
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Successful Operation",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/AgencyDetailsDto"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Legacy agency type not recognised",
             "content" : {
               "application/json" : {
                 "schema" : {
