@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-28.5084.9fb32a6"
+    "version" : "2026-09-29.5113.91ed54d"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -3434,6 +3434,9 @@
           },
           "balance" : {
             "type" : "number"
+          },
+          "holdBalance" : {
+            "type" : [ "number", "null" ]
           }
         },
         "required" : [ "accountCode", "balance" ]
