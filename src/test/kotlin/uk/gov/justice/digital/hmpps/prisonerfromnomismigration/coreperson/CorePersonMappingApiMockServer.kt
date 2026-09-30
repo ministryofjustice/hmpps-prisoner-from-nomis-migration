@@ -148,6 +148,8 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreatePhoneMapping(error: DuplicateMappingErrorResponse) = stubCreate("/mapping/core-person/phone", error)
 
+  fun stubCreatePhoneMappingFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person/phone")
+
   private fun stubCreate(path: String) {
     mappingApi.stubFor(
       post(urlEqualTo(path)).willReturn(

@@ -42,16 +42,16 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .updatePrisonReligion(prisonNumber, cprReligionId, religion)
     .awaitSingle()
 
-  suspend fun syncCreateEmail(prisonNumber: String, email: PrisonContact): SysconContactMapping = api
-    .prepare(api.createPrisonerContactRequestConfig(prisonNumber, email))
+  suspend fun syncCreateContact(prisonNumber: String, contact: PrisonContact): SysconContactMapping = api
+    .prepare(api.createPrisonerContactRequestConfig(prisonNumber, contact))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncUpdateEmail(prisonNumber: String, cprContactId: String, email: PrisonContact): Unit = api
-    .updatePrisonerContact(prisonNumber, cprContactId, email)
+  suspend fun syncUpdateContact(prisonNumber: String, cprContactId: String, contact: PrisonContact): Unit = api
+    .updatePrisonerContact(prisonNumber, cprContactId, contact)
     .awaitSingle()
 
-  suspend fun syncDeleteEmail(prisonNumber: String, cprContactId: String): Unit = api
+  suspend fun syncDeleteContact(prisonNumber: String, cprContactId: String): Unit = api
     .deletePrisonerContact(prisonNumber, cprContactId)
     .awaitSingle()
 

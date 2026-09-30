@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
@@ -913,6 +914,653 @@ class CorePersonSynchronisationAddressContactIntTest(
     )
   }
 
+  @Nested
+  @DisplayName("OFFENDER_PHONE")
+  inner class OffenderPhone {
+    private val offenderId = 123456L
+    private val phoneId = 7890L
+    private val prisonNumber = "A1234BC"
+    private val cprPhoneId = "cpr-phone-id"
+
+    @Nested
+    @DisplayName("OFFENDER_PHONE-INSERTED")
+    inner class OffenderPhoneAdded {
+      @Nested
+      inner class WhenCreatedInDps {
+        @BeforeEach
+        fun setUp() {
+          sendPhoneEvent("OFFENDER_PHONE-INSERTED", auditModuleName = "DPS_SYNCHRONISATION")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-created-skipped") }
+        }
+
+        @Test
+        fun `will not create a contact in CPR`() {
+          corePersonCprApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact")))
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verifyPhoneTelemetry("coreperson-phone-synchronisation-created-skipped")
+        }
+      }
+
+      @Nested
+      inner class WhenCreatedInNomis {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, null)
+          nomisApiMock.stubGetOffenderPhone(offenderId, phoneId)
+          corePersonCprApiMockServer.stubSyncCreateEmail(
+            prisonNumber = prisonNumber,
+            response = syncCorePersonEmailResponse(phoneId, cprPhoneId),
+          )
+          mappingApiMock.stubCreatePhoneMapping()
+          sendPhoneEvent("OFFENDER_PHONE-INSERTED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-created-success") }
+        }
+
+        @Test
+        fun `will check if the phone mapping already exists`() {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/phone/nomis-phone-id/$phoneId")))
+        }
+
+        @Test
+        fun `will retrieve the phone from NOMIS and create a CPR contact`() {
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/core-person/$offenderId/phone/$phoneId")))
+          val requestPattern = postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact"))
+          corePersonCprApiMockServer.verify(requestPattern)
+          val request: PrisonContact = getRequestBody(requestPattern)
+          assertThat(request.nomisContactId).isEqualTo(phoneId)
+          assertThat(request.type).isEqualTo(PrisonContact.Type.HOME)
+          assertThat(request.value).isEqualTo("0114 123 4567")
+          assertThat(request.extension).isEqualTo("123")
+          assertThat(request.createUserId).isEqualTo("SYSTEM")
+          assertThat(request.createDateTime).isEqualTo(LocalDateTime.parse("2001-03-03T00:00"))
+        }
+
+        @Test
+        fun `will create the phone mapping`() {
+          mappingApi.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/core-person/phone"))
+              .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+              .withRequestBodyJsonPath("cprId", cprPhoneId)
+              .withRequestBodyJsonPath("nomisId", "$phoneId")
+              .withRequestBodyJsonPath("nomisPrisonNumber", prisonNumber),
+          )
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("coreperson-phone-synchronisation-created-success"),
+            check {
+              assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+              assertThat(it["nomisOffenderId"]).isEqualTo(offenderId.toString())
+              assertThat(it["nomisPhoneId"]).isEqualTo(phoneId.toString())
+              assertThat(it["cprPhoneId"]).isEqualTo(cprPhoneId)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenAlreadyCreated {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, phoneMapping())
+          sendPhoneEvent("OFFENDER_PHONE-INSERTED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-created-ignored") }
+        }
+
+        @Test
+        fun `will not create a contact in CPR`() {
+          corePersonCprApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact")))
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("coreperson-phone-synchronisation-created-ignored"),
+            check {
+              assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+              assertThat(it["nomisOffenderId"]).isEqualTo(offenderId.toString())
+              assertThat(it["nomisPhoneId"]).isEqualTo(phoneId.toString())
+              assertThat(it["cprPhoneId"]).isEqualTo(cprPhoneId)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenDuplicateMapping {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, null)
+          nomisApiMock.stubGetOffenderPhone(offenderId, phoneId)
+          corePersonCprApiMockServer.stubSyncCreateEmail(
+            prisonNumber = prisonNumber,
+            response = syncCorePersonEmailResponse(phoneId, cprPhoneId),
+          )
+          mappingApiMock.stubCreatePhoneMapping(
+            error = DuplicateMappingErrorResponse(
+              moreInfo = DuplicateErrorContentObject(
+                duplicate = phoneMapping(cprId = cprPhoneId),
+                existing = phoneMapping(cprId = "existing-cpr-phone-id"),
+              ),
+              errorCode = 1409,
+              status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+              userMessage = "Duplicate mapping",
+            ),
+          )
+          sendPhoneEvent("OFFENDER_PHONE-INSERTED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-mapping-synchronisation-duplicate") }
+        }
+
+        @Test
+        fun `will create the contact and attempt to create the mapping once`() {
+          corePersonCprApiMockServer.verify(1, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact")))
+          mappingApi.verify(1, postRequestedFor(urlPathEqualTo("/mapping/core-person/phone")))
+        }
+
+        @Test
+        fun `will track overall success and duplicate mapping`() {
+          verifyPhoneTelemetry("coreperson-phone-synchronisation-created-success", cprPhoneId)
+          verify(telemetryClient).trackEvent(
+            eq("coreperson-phone-mapping-synchronisation-duplicate"),
+            check {
+              assertThat(it["nomisPrisonNumber"]).isEqualTo(prisonNumber)
+              assertThat(it["existingNomisPhoneId"]).isEqualTo(phoneId.toString())
+              assertThat(it["existingCprPhoneId"]).isEqualTo("existing-cpr-phone-id")
+              assertThat(it["duplicateNomisPhoneId"]).isEqualTo(phoneId.toString())
+              assertThat(it["duplicateCprPhoneId"]).isEqualTo(cprPhoneId)
+              assertThat(it["type"]).isEqualTo("PHONE")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class MappingCreateFails {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, null)
+          nomisApiMock.stubGetOffenderPhone(offenderId, phoneId)
+          corePersonCprApiMockServer.stubSyncCreateEmail(
+            prisonNumber = prisonNumber,
+            response = syncCorePersonEmailResponse(phoneId, cprPhoneId),
+          )
+          mappingApiMock.stubCreatePhoneMappingFollowedBySuccess()
+          sendPhoneEvent("OFFENDER_PHONE-INSERTED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-mapping-synchronisation-created") }
+        }
+
+        @Test
+        fun `will create the contact once and retry creating the phone mapping`() {
+          corePersonCprApiMockServer.verify(1, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact")))
+          mappingApi.verify(2, postRequestedFor(urlPathEqualTo("/mapping/core-person/phone")))
+        }
+
+        @Test
+        fun `will track successful mapping retry`() {
+          verifyPhoneTelemetry("coreperson-phone-mapping-synchronisation-created", cprPhoneId)
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("OFFENDER_PHONE-UPDATED")
+    inner class OffenderPhoneUpdated {
+      @Nested
+      inner class WhenUpdatedInDps {
+        @BeforeEach
+        fun setUp() {
+          sendPhoneEvent("OFFENDER_PHONE-UPDATED", auditModuleName = "DPS_SYNCHRONISATION")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-updated-skipped") }
+        }
+
+        @Test
+        fun `will not update the contact in CPR`() {
+          corePersonCprApiMockServer.verify(0, putRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact/$cprPhoneId")))
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verifyPhoneTelemetry("coreperson-phone-synchronisation-updated-skipped")
+        }
+      }
+
+      @Nested
+      inner class WhenUpdatedInNomis {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, phoneMapping())
+          nomisApiMock.stubGetOffenderPhone(
+            offenderId,
+            phoneId,
+            phone = offenderPhoneNumber(phoneId).copy(
+              number = "07700 900123",
+              lastUpdatedByUsername = "T.SMITH",
+              lastUpdatedDateTime = LocalDateTime.parse("2024-10-01T13:31"),
+            ),
+          )
+          corePersonCprApiMockServer.stubSyncUpdateEmail(prisonNumber, cprPhoneId)
+          sendPhoneEvent("OFFENDER_PHONE-UPDATED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-updated-success") }
+        }
+
+        @Test
+        fun `will retrieve the phone from NOMIS and update the CPR contact`() {
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/core-person/$offenderId/phone/$phoneId")))
+          val requestPattern = putRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact/$cprPhoneId"))
+          corePersonCprApiMockServer.verify(requestPattern)
+          val request: PrisonContact = getRequestBody(requestPattern)
+          assertThat(request.nomisContactId).isEqualTo(phoneId)
+          assertThat(request.type).isEqualTo(PrisonContact.Type.HOME)
+          assertThat(request.value).isEqualTo("07700 900123")
+          assertThat(request.modifyUserId).isEqualTo("T.SMITH")
+          assertThat(request.modifyDateTime).isEqualTo(LocalDateTime.parse("2024-10-01T13:31"))
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verifyPhoneTelemetry("coreperson-phone-synchronisation-updated-success", cprPhoneId)
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("OFFENDER_PHONE-DELETED")
+    inner class OffenderPhoneDeleted {
+      @Nested
+      inner class WhenMappingExists {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(
+            phoneId,
+            CorePersonPhoneMappingDto(
+              cprId = cprPhoneId,
+              nomisId = phoneId,
+              nomisPrisonNumber = prisonNumber,
+              mappingType = CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+            ),
+          )
+          corePersonCprApiMockServer.stubSyncDeleteEmail(prisonNumber, cprPhoneId)
+          mappingApiMock.stubDeleteByNomisPhoneId(phoneId)
+          sendPhoneEvent("OFFENDER_PHONE-DELETED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-deleted-success") }
+        }
+
+        @Test
+        fun `will delete the CPR contact and phone mapping`() {
+          corePersonCprApiMockServer.verify(deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact/$cprPhoneId")))
+          mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/core-person/phone/nomis-phone-id/$phoneId")))
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verifyPhoneTelemetry("coreperson-phone-synchronisation-deleted-success", cprPhoneId)
+        }
+      }
+
+      @Nested
+      inner class WhenMappingDoesNotExist {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, null)
+          sendPhoneEvent("OFFENDER_PHONE-DELETED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-deleted-ignored") }
+        }
+
+        @Test
+        fun `will not delete a contact in CPR`() {
+          corePersonCprApiMockServer.verify(0, deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact/$cprPhoneId")))
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verifyPhoneTelemetry("coreperson-phone-synchronisation-deleted-ignored")
+        }
+      }
+    }
+
+    private fun phoneMapping(cprId: String = cprPhoneId) = CorePersonPhoneMappingDto(
+      cprId = cprId,
+      nomisId = phoneId,
+      nomisPrisonNumber = prisonNumber,
+      mappingType = CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+    )
+
+    private fun verifyPhoneTelemetry(eventName: String, mappedPhoneId: String? = null) {
+      verify(telemetryClient).trackEvent(
+        eq(eventName),
+        check {
+          assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+          assertThat(it["nomisOffenderId"]).isEqualTo(offenderId.toString())
+          assertThat(it["nomisPhoneId"]).isEqualTo(phoneId.toString())
+          mappedPhoneId?.let { cprId -> assertThat(it["cprPhoneId"]).isEqualTo(cprId) }
+        },
+        isNull(),
+      )
+    }
+
+    private fun sendPhoneEvent(eventType: String, auditModuleName: String = "NOMIS") = awsSqsCorePersonOffenderEventsClient.sendMessage(
+      corePersonQueueOffenderEventsUrl,
+      offenderPhoneEvent(eventType, offenderId, phoneId, null, auditModuleName),
+    )
+  }
+
+  @Nested
+  @DisplayName("OFFENDER_ADDRESS_PHONE")
+  inner class OffenderAddressPhone {
+    private val offenderId = 123456L
+    private val phoneId = 7890L
+    private val addressId = 3456L
+    private val prisonNumber = "A1234BC"
+    private val cprPhoneId = "cpr-phone-id"
+
+    @Nested
+    @DisplayName("OFFENDER_ADDRESS_PHONE-INSERTED")
+    inner class OffenderAddressPhoneAdded {
+      @Nested
+      inner class WhenCreatedInDps {
+        @BeforeEach
+        fun setUp() {
+          sendPhoneEvent("OFFENDER_ADDRESS_PHONE-INSERTED", auditModuleName = "DPS_SYNCHRONISATION")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-created-skipped") }
+        }
+
+        @Test
+        fun `will not create a contact in CPR`() {
+          corePersonCprApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact")))
+        }
+
+        @Test
+        fun `will track telemetry including address id`() {
+          verifyAddressPhoneTelemetry("coreperson-phone-synchronisation-created-skipped")
+        }
+      }
+
+      @Nested
+      inner class WhenCreatedInNomis {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, null)
+          nomisApiMock.stubGetOffenderAddressPhone(offenderId, addressId, phoneId)
+          corePersonCprApiMockServer.stubSyncCreateEmail(
+            prisonNumber = prisonNumber,
+            response = syncCorePersonEmailResponse(phoneId, cprPhoneId),
+          )
+          mappingApiMock.stubCreatePhoneMapping()
+          sendPhoneEvent("OFFENDER_ADDRESS_PHONE-INSERTED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-created-success") }
+        }
+
+        @Test
+        fun `will check if mapping exists and retrieve the address phone from NOMIS`() {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/phone/nomis-phone-id/$phoneId")))
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/core-person/$offenderId/address/$addressId/phone/$phoneId")))
+        }
+
+        @Test
+        fun `will create the CPR contact and phone mapping`() {
+          val requestPattern = postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact"))
+          corePersonCprApiMockServer.verify(requestPattern)
+          val request: PrisonContact = getRequestBody(requestPattern)
+          assertThat(request.nomisContactId).isEqualTo(phoneId)
+          assertThat(request.type).isEqualTo(PrisonContact.Type.HOME)
+          assertThat(request.value).isEqualTo("0114 123 4567")
+          mappingApi.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/core-person/phone"))
+              .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED")
+              .withRequestBodyJsonPath("cprId", cprPhoneId)
+              .withRequestBodyJsonPath("nomisId", "$phoneId")
+              .withRequestBodyJsonPath("nomisPrisonNumber", prisonNumber),
+          )
+        }
+
+        @Test
+        fun `will track telemetry including address id`() {
+          verifyAddressPhoneTelemetry("coreperson-phone-synchronisation-created-success", cprPhoneId)
+        }
+      }
+
+      @Nested
+      inner class WhenAlreadyCreated {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, phoneMapping())
+          sendPhoneEvent("OFFENDER_ADDRESS_PHONE-INSERTED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-created-ignored") }
+        }
+
+        @Test
+        fun `will not create a contact in CPR`() {
+          corePersonCprApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact")))
+        }
+
+        @Test
+        fun `will track telemetry including address id`() {
+          verifyAddressPhoneTelemetry("coreperson-phone-synchronisation-created-ignored", cprPhoneId)
+        }
+      }
+
+      @Nested
+      inner class WhenDuplicateMapping {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, null)
+          nomisApiMock.stubGetOffenderAddressPhone(offenderId, addressId, phoneId)
+          corePersonCprApiMockServer.stubSyncCreateEmail(
+            prisonNumber = prisonNumber,
+            response = syncCorePersonEmailResponse(phoneId, cprPhoneId),
+          )
+          mappingApiMock.stubCreatePhoneMapping(
+            error = DuplicateMappingErrorResponse(
+              moreInfo = DuplicateErrorContentObject(
+                duplicate = phoneMapping(cprId = cprPhoneId),
+                existing = phoneMapping(cprId = "existing-cpr-phone-id"),
+              ),
+              errorCode = 1409,
+              status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+              userMessage = "Duplicate mapping",
+            ),
+          )
+          sendPhoneEvent("OFFENDER_ADDRESS_PHONE-INSERTED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-mapping-synchronisation-duplicate") }
+        }
+
+        @Test
+        fun `will create the CPR contact and attempt the mapping once`() {
+          corePersonCprApiMockServer.verify(1, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact")))
+          mappingApi.verify(1, postRequestedFor(urlPathEqualTo("/mapping/core-person/phone")))
+        }
+
+        @Test
+        fun `will track duplicate mapping and successful contact creation`() {
+          verifyAddressPhoneTelemetry("coreperson-phone-synchronisation-created-success", cprPhoneId)
+          verify(telemetryClient).trackEvent(
+            eq("coreperson-phone-mapping-synchronisation-duplicate"),
+            check {
+              assertThat(it["nomisPrisonNumber"]).isEqualTo(prisonNumber)
+              assertThat(it["existingNomisPhoneId"]).isEqualTo(phoneId.toString())
+              assertThat(it["existingCprPhoneId"]).isEqualTo("existing-cpr-phone-id")
+              assertThat(it["duplicateNomisPhoneId"]).isEqualTo(phoneId.toString())
+              assertThat(it["duplicateCprPhoneId"]).isEqualTo(cprPhoneId)
+              assertThat(it["type"]).isEqualTo("PHONE")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class MappingCreateFails {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, null)
+          nomisApiMock.stubGetOffenderAddressPhone(offenderId, addressId, phoneId)
+          corePersonCprApiMockServer.stubSyncCreateEmail(
+            prisonNumber = prisonNumber,
+            response = syncCorePersonEmailResponse(phoneId, cprPhoneId),
+          )
+          mappingApiMock.stubCreatePhoneMappingFollowedBySuccess()
+          sendPhoneEvent("OFFENDER_ADDRESS_PHONE-INSERTED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-mapping-synchronisation-created") }
+        }
+
+        @Test
+        fun `will create the CPR contact once and retry the phone mapping`() {
+          corePersonCprApiMockServer.verify(1, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact")))
+          mappingApi.verify(2, postRequestedFor(urlPathEqualTo("/mapping/core-person/phone")))
+        }
+
+        @Test
+        fun `will track the successful mapping retry including address id`() {
+          verifyAddressPhoneTelemetry("coreperson-phone-mapping-synchronisation-created", cprPhoneId)
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("OFFENDER_ADDRESS_PHONE-UPDATED")
+    inner class OffenderAddressPhoneUpdated {
+      @Nested
+      inner class WhenUpdatedInDps {
+        @BeforeEach
+        fun setUp() {
+          sendPhoneEvent("OFFENDER_ADDRESS_PHONE-UPDATED", auditModuleName = "DPS_SYNCHRONISATION")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-updated-skipped") }
+        }
+
+        @Test
+        fun `will not update the contact in CPR`() {
+          corePersonCprApiMockServer.verify(0, putRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact/$cprPhoneId")))
+        }
+
+        @Test
+        fun `will track telemetry including address id`() {
+          verifyAddressPhoneTelemetry("coreperson-phone-synchronisation-updated-skipped")
+        }
+      }
+
+      @Nested
+      inner class WhenUpdatedInNomis {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, phoneMapping())
+          nomisApiMock.stubGetOffenderAddressPhone(
+            offenderId,
+            addressId,
+            phoneId,
+            phone = offenderPhoneNumber(phoneId).copy(
+              number = "07700 900123",
+              lastUpdatedByUsername = "T.SMITH",
+              lastUpdatedDateTime = LocalDateTime.parse("2024-10-01T13:31"),
+            ),
+          )
+          corePersonCprApiMockServer.stubSyncUpdateEmail(prisonNumber, cprPhoneId)
+          sendPhoneEvent("OFFENDER_ADDRESS_PHONE-UPDATED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-updated-success") }
+        }
+
+        @Test
+        fun `will retrieve the address phone from NOMIS and update the CPR contact`() {
+          mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/phone/nomis-phone-id/$phoneId")))
+          nomisApi.verify(getRequestedFor(urlPathEqualTo("/core-person/$offenderId/address/$addressId/phone/$phoneId")))
+          val requestPattern = putRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact/$cprPhoneId"))
+          corePersonCprApiMockServer.verify(requestPattern)
+          val request: PrisonContact = getRequestBody(requestPattern)
+          assertThat(request.nomisContactId).isEqualTo(phoneId)
+          assertThat(request.type).isEqualTo(PrisonContact.Type.HOME)
+          assertThat(request.value).isEqualTo("07700 900123")
+          assertThat(request.modifyUserId).isEqualTo("T.SMITH")
+          assertThat(request.modifyDateTime).isEqualTo(LocalDateTime.parse("2024-10-01T13:31"))
+        }
+
+        @Test
+        fun `will track telemetry including address id`() {
+          verifyAddressPhoneTelemetry("coreperson-phone-synchronisation-updated-success", cprPhoneId)
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("OFFENDER_ADDRESS_PHONE-DELETED")
+    inner class OffenderAddressPhoneDeleted {
+      @Nested
+      inner class WhenMappingExists {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, phoneMapping())
+          corePersonCprApiMockServer.stubSyncDeleteEmail(prisonNumber, cprPhoneId)
+          mappingApiMock.stubDeleteByNomisPhoneId(phoneId)
+          sendPhoneEvent("OFFENDER_ADDRESS_PHONE-DELETED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-deleted-success") }
+        }
+
+        @Test
+        fun `will delete the CPR contact and phone mapping`() {
+          corePersonCprApiMockServer.verify(deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact/$cprPhoneId")))
+          mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/core-person/phone/nomis-phone-id/$phoneId")))
+        }
+
+        @Test
+        fun `will track telemetry including address id`() {
+          verifyAddressPhoneTelemetry("coreperson-phone-synchronisation-deleted-success", cprPhoneId)
+        }
+      }
+
+      @Nested
+      inner class WhenMappingDoesNotExist {
+        @BeforeEach
+        fun setUp() {
+          mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, null)
+          sendPhoneEvent("OFFENDER_ADDRESS_PHONE-DELETED")
+            .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-deleted-ignored") }
+        }
+
+        @Test
+        fun `will not delete a contact in CPR`() {
+          corePersonCprApiMockServer.verify(0, deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/contact/$cprPhoneId")))
+        }
+
+        @Test
+        fun `will track telemetry including address id`() {
+          verifyAddressPhoneTelemetry("coreperson-phone-synchronisation-deleted-ignored")
+        }
+      }
+    }
+
+    private fun phoneMapping(cprId: String = cprPhoneId) = CorePersonPhoneMappingDto(
+      cprId = cprId,
+      nomisId = phoneId,
+      nomisPrisonNumber = prisonNumber,
+      mappingType = CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+    )
+
+    private fun verifyAddressPhoneTelemetry(eventName: String, mappedPhoneId: String? = null) {
+      verify(telemetryClient).trackEvent(
+        eq(eventName),
+        check {
+          assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+          assertThat(it["nomisOffenderId"]).isEqualTo(offenderId.toString())
+          assertThat(it["nomisPhoneId"]).isEqualTo(phoneId.toString())
+          assertThat(it["nomisAddressId"]).isEqualTo(addressId.toString())
+          mappedPhoneId?.let { cprId -> assertThat(it["cprPhoneId"]).isEqualTo(cprId) }
+        },
+        isNull(),
+      )
+    }
+
+    private fun sendPhoneEvent(eventType: String, auditModuleName: String = "NOMIS") = awsSqsCorePersonOffenderEventsClient.sendMessage(
+      corePersonQueueOffenderEventsUrl,
+      offenderPhoneEvent(eventType, offenderId, phoneId, addressId, auditModuleName),
+    )
+  }
+
   private fun sendAddressEvent(
     eventType: String,
     ownerId: Long = 1234L,
@@ -934,6 +1582,23 @@ private fun offenderEmailEvent(
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd",
     "Type": "Notification",
     "Message": "{\"eventType\":\"$eventType\",\"offenderIdDisplay\":\"A1234BC\",\"offenderId\":$offenderId,\"internetAddressId\":$internetAddressId,\"auditModuleName\":\"$auditModuleName\"}",
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}
+    }
+  }
+""".trimIndent()
+
+private fun offenderPhoneEvent(
+  eventType: String,
+  offenderId: Long,
+  phoneId: Long,
+  addressId: Long?,
+  auditModuleName: String,
+) = """
+  {
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd",
+    "Type": "Notification",
+    "Message": "{\"eventType\":\"$eventType\",\"offenderIdDisplay\":\"A1234BC\",\"offenderId\":$offenderId,\"phoneId\":$phoneId,\"addressId\":${addressId ?: "null"},\"auditModuleName\":\"$auditModuleName\"}",
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}
     }

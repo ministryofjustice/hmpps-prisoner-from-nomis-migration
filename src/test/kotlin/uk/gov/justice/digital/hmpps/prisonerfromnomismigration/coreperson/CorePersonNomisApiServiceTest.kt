@@ -184,6 +184,63 @@ class CorePersonNomisApiServiceTest(
   }
 
   @Nested
+  inner class GetOffenderPhone {
+    @Test
+    fun `will pass NOMIS ids to service`() = runTest {
+      mockServer.stubGetOffenderPhone(offenderId = 12345, phoneId = 45678)
+
+      apiService.getOffenderPhone(offenderId = 12345, phoneId = 45678)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/core-person/12345/phone/45678")),
+      )
+    }
+
+    @Test
+    fun `will return the phone`() = runTest {
+      mockServer.stubGetOffenderPhone(
+        offenderId = 12345,
+        phoneId = 45678,
+        phone = offenderPhoneNumber(45678).copy(number = "07700 900123"),
+      )
+
+      val phone = apiService.getOffenderPhone(offenderId = 12345, phoneId = 45678)
+
+      assertThat(phone.phoneId).isEqualTo(45678)
+      assertThat(phone.number).isEqualTo("07700 900123")
+    }
+  }
+
+  @Nested
+  inner class GetOffenderAddressPhone {
+    @Test
+    fun `will pass NOMIS ids to service`() = runTest {
+      mockServer.stubGetOffenderAddressPhone(offenderId = 12345, addressId = 23456, phoneId = 45678)
+
+      apiService.getOffenderAddressPhone(offenderId = 12345, addressId = 23456, phoneId = 45678)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/core-person/12345/address/23456/phone/45678")),
+      )
+    }
+
+    @Test
+    fun `will return the phone`() = runTest {
+      mockServer.stubGetOffenderAddressPhone(
+        offenderId = 12345,
+        addressId = 23456,
+        phoneId = 45678,
+        phone = offenderPhoneNumber(45678).copy(number = "07700 900123"),
+      )
+
+      val phone = apiService.getOffenderAddressPhone(offenderId = 12345, addressId = 23456, phoneId = 45678)
+
+      assertThat(phone.phoneId).isEqualTo(45678)
+      assertThat(phone.number).isEqualTo("07700 900123")
+    }
+  }
+
+  @Nested
   inner class UpdateOffenderEmail {
     @Test
     fun `will pass NOMIS ids to service`() = runTest {

@@ -231,6 +231,41 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetOffenderPhone(
+    offenderId: Long = 12345,
+    phoneId: Long = 45678,
+    phone: OffenderPhoneNumber = offenderPhoneNumber(phoneId),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$offenderId/phone/$phoneId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) phone else error)),
+      ),
+    )
+  }
+
+  fun stubGetOffenderAddressPhone(
+    offenderId: Long = 12345,
+    addressId: Long = 3456,
+    phoneId: Long = 45678,
+    phone: OffenderPhoneNumber = offenderPhoneNumber(phoneId),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$offenderId/address/$addressId/phone/$phoneId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) phone else error)),
+      ),
+    )
+  }
+
   fun stubUpdateOffenderEmail(
     offenderId: Long = 12345,
     emailAddressId: Long = 45678,
@@ -270,6 +305,17 @@ fun offenderEmailAddress(emailAddressId: Long = 40000): OffenderEmailAddress = O
   createdByUsername = "SYSTEM",
   lastUpdatedDateTime = null,
   lastUpdatedByUsername = null,
+)
+
+fun offenderPhoneNumber(phoneId: Long = 45678): OffenderPhoneNumber = OffenderPhoneNumber(
+  phoneId = phoneId,
+  number = "0114 123 4567",
+  type = CodeDescription("HOME", "Home"),
+  createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
+  createdByUsername = "SYSTEM",
+  lastUpdatedDateTime = null,
+  lastUpdatedByUsername = null,
+  extension = "123",
 )
 
 fun corePerson(prisonNumber: String = "A1234BC", aliasesAndIdentifiers: List<CoreOffender>? = null): CorePerson = CorePerson(
