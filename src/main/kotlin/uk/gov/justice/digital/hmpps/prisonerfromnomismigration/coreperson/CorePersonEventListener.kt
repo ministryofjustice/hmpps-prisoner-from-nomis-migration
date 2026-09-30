@@ -8,6 +8,7 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_EMAIL_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PHONE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_RELIGION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.CorePersonSynchronisationBeliefsService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
@@ -47,6 +48,12 @@ class CorePersonEventListener(
               "ADDRESSES_OFFENDER-INSERTED" -> addressContactService.offenderAddressAdded(sqsMessage.Message.fromJson())
               "ADDRESSES_OFFENDER-UPDATED" -> addressContactService.offenderAddressUpdated(sqsMessage.Message.fromJson())
               "ADDRESSES_OFFENDER-DELETED" -> addressContactService.offenderAddressDeleted(sqsMessage.Message.fromJson())
+              "OFFENDER_ADDRESS_PHONE-INSERTED" -> addressContactService.offenderPhoneAdded(sqsMessage.Message.fromJson())
+              "OFFENDER_ADDRESS_PHONE-UPDATED" -> addressContactService.offenderPhoneUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_ADDRESS_PHONE-DELETED" -> addressContactService.offenderPhoneDeleted(sqsMessage.Message.fromJson())
+              "OFFENDER_PHONE-INSERTED" -> addressContactService.offenderPhoneAdded(sqsMessage.Message.fromJson())
+              "OFFENDER_PHONE-UPDATED" -> addressContactService.offenderPhoneUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_PHONE-DELETED" -> addressContactService.offenderPhoneDeleted(sqsMessage.Message.fromJson())
 
               "OFFENDER_EMAIL-INSERTED" -> addressContactService.offenderEmailAdded(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-UPDATED" -> addressContactService.offenderEmailUpdated(sqsMessage.Message.fromJson())
@@ -69,6 +76,7 @@ class CorePersonEventListener(
       RETRY_SYNCHRONISATION_RELIGION_MAPPING -> beliefsService.retryCreateMapping(message.fromJson())
       RETRY_SYNCHRONISATION_EMAIL_MAPPING -> addressContactService.retryCreateEmailMapping(message.fromJson())
       RETRY_SYNCHRONISATION_ADDRESS_MAPPING -> addressContactService.retryCreateAddressMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_PHONE_MAPPING -> addressContactService.retryCreatePhoneMapping(message.fromJson())
     }
   }
 }
@@ -77,6 +85,7 @@ enum class CorePersonSynchronisationMessageType {
   RETRY_SYNCHRONISATION_RELIGION_MAPPING,
   RETRY_SYNCHRONISATION_EMAIL_MAPPING,
   RETRY_SYNCHRONISATION_ADDRESS_MAPPING,
+  RETRY_SYNCHRONISATION_PHONE_MAPPING,
 }
 
 data class OffenderBeliefEvent(
@@ -97,5 +106,13 @@ data class OffenderEmailEvent(
   val offenderIdDisplay: String,
   val offenderId: Long,
   val internetAddressId: Long,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class OffenderPhoneEvent(
+  val offenderIdDisplay: String,
+  val offenderId: Long,
+  val addressId: Long?,
+  val phoneId: Long,
   override val auditModuleName: String,
 ) : EventAudited

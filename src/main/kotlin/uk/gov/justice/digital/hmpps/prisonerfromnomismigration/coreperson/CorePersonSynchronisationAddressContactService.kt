@@ -13,8 +13,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 
@@ -25,7 +25,6 @@ class CorePersonSynchronisationAddressContactService(
   private val corePersonNomisApiService: CorePersonNomisApiService,
   private val corePersonMappingService: CorePersonMappingService,
   private val queueService: SynchronisationQueueService,
-  private val nomisApiService: NomisApiService,
 ) : TelemetryEnabled {
 
   private companion object {
@@ -64,9 +63,9 @@ class CorePersonSynchronisationAddressContactService(
             offenderId = event.offenderId,
           ).also { nomisAddress ->
             val cprEmail =
-              corePersonCprApiService.syncCreateEmail(
+              corePersonCprApiService.syncCreateContact(
                 prisonNumber = event.offenderIdDisplay,
-                email = nomisAddress.toPrisonEmailAddressRequest(),
+                contact = nomisAddress.toPrisonEmailAddressRequest(),
               )
                 .also {
                   telemetry["cprContactEmailId"] = it.cprContactId
@@ -98,7 +97,7 @@ class CorePersonSynchronisationAddressContactService(
             telemetry["cprContactEmailId"] = it
           }
         val nomisAddress = corePersonNomisApiService.getOffenderEmail(offenderId = event.offenderId, emailAddressId = event.internetAddressId)
-        corePersonCprApiService.syncUpdateEmail(
+        corePersonCprApiService.syncUpdateContact(
           event.offenderIdDisplay,
           cprContactEmailId,
           nomisAddress.toPrisonEmailAddressRequest(),
@@ -114,7 +113,7 @@ class CorePersonSynchronisationAddressContactService(
     corePersonMappingService.getByNomisEmailIdOrNull(nomisInternetAddressId = event.internetAddressId)?.also {
       track("coreperson-email-synchronisation-deleted", telemetry) {
         telemetry["cprContactEmailId"] = it.cprId
-        corePersonCprApiService.syncDeleteEmail(prisonNumber = event.offenderIdDisplay, cprContactId = it.cprId)
+        corePersonCprApiService.syncDeleteContact(prisonNumber = event.offenderIdDisplay, cprContactId = it.cprId)
         corePersonMappingService.deleteByNomisEmailId(event.internetAddressId)
       }
     } ?: run {
@@ -281,6 +280,129 @@ class CorePersonSynchronisationAddressContactService(
             "duplicateNomisAddressId" to duplicate.nomisId,
             "duplicateCprAddressId" to duplicate.cprId,
             "type" to "ADDRESS",
+          ),
+        )
+      }
+    }
+  }
+
+  suspend fun offenderPhoneAdded(event: OffenderPhoneEvent) {
+    val telemetry = phoneTelemetry(event)
+
+    if (event.originatesInDps) {
+      telemetryClient.trackEvent("coreperson-phone-synchronisation-created-skipped", telemetry)
+    } else {
+      corePersonMappingService.getByNomisPhoneIdOrNull(event.phoneId)?.also {
+        telemetryClient.trackEvent(
+          "coreperson-phone-synchronisation-created-ignored",
+          telemetry + ("cprPhoneId" to it.cprId),
+        )
+      } ?: run {
+        track("coreperson-phone-synchronisation-created", telemetry) {
+          val nomisPhone = getOffenderPhone(event)
+          val cprPhone = corePersonCprApiService.syncCreateContact(
+            prisonNumber = event.offenderIdDisplay,
+            contact = nomisPhone.toPrisonPhoneNumberRequest(),
+          ).also {
+            telemetry["cprPhoneId"] = it.cprContactId
+          }
+          tryToCreatePhoneMapping(
+            CorePersonPhoneMappingDto(
+              nomisId = event.phoneId,
+              cprId = cprPhone.cprContactId,
+              nomisPrisonNumber = event.offenderIdDisplay,
+              mappingType = CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+            ),
+            telemetry,
+          )
+        }
+      }
+    }
+  }
+
+  suspend fun offenderPhoneUpdated(event: OffenderPhoneEvent) {
+    val telemetry = phoneTelemetry(event)
+
+    if (event.originatesInDps) {
+      telemetryClient.trackEvent("coreperson-phone-synchronisation-updated-skipped", telemetry)
+    } else {
+      track("coreperson-phone-synchronisation-updated", telemetry) {
+        val mapping = corePersonMappingService.getByNomisPhoneId(event.phoneId)
+        telemetry["cprPhoneId"] = mapping.cprId
+        val nomisPhone = getOffenderPhone(event)
+        corePersonCprApiService.syncUpdateContact(
+          prisonNumber = mapping.nomisPrisonNumber,
+          cprContactId = mapping.cprId,
+          contact = nomisPhone.toPrisonPhoneNumberRequest(),
+        )
+      }
+    }
+  }
+
+  suspend fun offenderPhoneDeleted(event: OffenderPhoneEvent) {
+    val telemetry = phoneTelemetry(event)
+
+    corePersonMappingService.getByNomisPhoneIdOrNull(event.phoneId)?.also { mapping ->
+      track("coreperson-phone-synchronisation-deleted", telemetry) {
+        telemetry["cprPhoneId"] = mapping.cprId
+        corePersonCprApiService.syncDeleteContact(mapping.nomisPrisonNumber, mapping.cprId)
+        corePersonMappingService.deleteByNomisPhoneId(event.phoneId)
+      }
+    } ?: run {
+      telemetryClient.trackEvent("coreperson-phone-synchronisation-deleted-ignored", telemetry)
+    }
+  }
+
+  private suspend fun getOffenderPhone(event: OffenderPhoneEvent) = if (event.addressId == null) {
+    corePersonNomisApiService.getOffenderPhone(event.offenderId, event.phoneId)
+  } else {
+    corePersonNomisApiService.getOffenderAddressPhone(event.offenderId, event.addressId, event.phoneId)
+  }
+
+  private fun phoneTelemetry(event: OffenderPhoneEvent) = telemetryOf(
+    "prisonNumber" to event.offenderIdDisplay,
+    "nomisOffenderId" to event.offenderId,
+    "nomisPhoneId" to event.phoneId,
+  ).also {
+    event.addressId?.let { addressId -> it["nomisAddressId"] = addressId }
+  }
+
+  private suspend fun tryToCreatePhoneMapping(
+    mapping: CorePersonPhoneMappingDto,
+    telemetry: Map<String, Any>,
+  ) {
+    try {
+      createPhoneMapping(mapping)
+    } catch (e: Exception) {
+      log.error("Failed to create mapping for phone id $mapping", e)
+      queueService.sendMessage(
+        messageType = CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PHONE_MAPPING.name,
+        synchronisationType = SynchronisationType.CORE_PERSON,
+        message = mapping,
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+
+  suspend fun retryCreatePhoneMapping(retryMessage: InternalMessage<CorePersonPhoneMappingDto>) {
+    createPhoneMapping(retryMessage.body)
+      .also {
+        telemetryClient.trackEvent("coreperson-phone-mapping-synchronisation-created", retryMessage.telemetryAttributes)
+      }
+  }
+
+  private suspend fun createPhoneMapping(mapping: CorePersonPhoneMappingDto) {
+    corePersonMappingService.createPhoneMapping(mapping).takeIf { it.isError }?.also {
+      with(it.errorResponse!!.moreInfo) {
+        telemetryClient.trackEvent(
+          "coreperson-phone-mapping-synchronisation-duplicate",
+          mapOf(
+            "nomisPrisonNumber" to existing.nomisPrisonNumber,
+            "existingNomisPhoneId" to existing.nomisId,
+            "existingCprPhoneId" to existing.cprId,
+            "duplicateNomisPhoneId" to duplicate.nomisId,
+            "duplicateCprPhoneId" to duplicate.cprId,
+            "type" to "PHONE",
           ),
         )
       }

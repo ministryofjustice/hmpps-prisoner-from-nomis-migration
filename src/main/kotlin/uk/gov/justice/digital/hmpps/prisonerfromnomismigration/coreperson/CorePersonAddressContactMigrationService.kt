@@ -207,7 +207,7 @@ private fun OffenderAddressUsage.toPrisonAddressUsageRequest(): PrisonAddressUsa
   modifyUserId = lastUpdatedByUsername,
 )
 
-private fun OffenderPhoneNumber.toPrisonPhoneNumberRequest(): PrisonContact = PrisonContact(
+internal fun OffenderPhoneNumber.toPrisonPhoneNumberRequest(): PrisonContact = PrisonContact(
   type = if (type.code == "MOB") PrisonContact.Type.MOBILE else PrisonContact.Type.valueOf(type.code),
   createDateTime = createdDateTime,
   createUserId = createdByUsername,
