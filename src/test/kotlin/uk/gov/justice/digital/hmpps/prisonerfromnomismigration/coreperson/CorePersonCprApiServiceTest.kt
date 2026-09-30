@@ -165,6 +165,71 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
   }
 
   @Nested
+  inner class SyncCreateAddressContact {
+    @Test
+    fun `will call the sync endpoint and return the contact mapping`() = runTest {
+      cprCorePersonServer.stubSyncCreateAddressContact(
+        prisonNumber = "A1234BC",
+        cprAddressId = "cprAddressId",
+        response = CorePersonCprApiMockServer.syncCorePersonEmailResponse(nomisContactId = 12345, cprContactId = "cprContactId"),
+      )
+
+      val response = apiService.syncCreateAddressContact("A1234BC", "cprAddressId", prisonPhoneRequest())
+
+      assertThat(response.nomisContactId).isEqualTo(12345)
+      assertThat(response.cprContactId).isEqualTo("cprContactId")
+      cprCorePersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId/contact"))
+          .withRequestBodyJsonPath("nomisContactId", equalTo("12345"))
+          .withRequestBodyJsonPath("type", equalTo("MOBILE")),
+      )
+    }
+
+    @Test
+    fun `should throw if bad request`() = runTest {
+      cprCorePersonServer.stubSyncCreateAddressContact(
+        prisonNumber = "A1234BC",
+        cprAddressId = "cprAddressId",
+        status = BAD_REQUEST,
+      )
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.syncCreateAddressContact("A1234BC", "cprAddressId", prisonPhoneRequest())
+      }
+    }
+  }
+
+  @Nested
+  inner class SyncUpdateAddressContact {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncUpdateAddressContact("A1234BC", "cprAddressId", "cprContactId")
+
+      apiService.syncUpdateAddressContact("A1234BC", "cprAddressId", "cprContactId", prisonPhoneRequest())
+
+      cprCorePersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId/contact/cprContactId"))
+          .withRequestBodyJsonPath("nomisContactId", equalTo("12345"))
+          .withRequestBodyJsonPath("type", equalTo("MOBILE")),
+      )
+    }
+  }
+
+  @Nested
+  inner class SyncDeleteAddressContact {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncDeleteAddressContact("A1234BC", "cprAddressId", "cprContactId")
+
+      apiService.syncDeleteAddressContact("A1234BC", "cprAddressId", "cprContactId")
+
+      cprCorePersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId/contact/cprContactId")),
+      )
+    }
+  }
+
+  @Nested
   inner class SyncCreateAddress {
     @Test
     fun `will call the sync endpoint and return the address mapping`() = runTest {

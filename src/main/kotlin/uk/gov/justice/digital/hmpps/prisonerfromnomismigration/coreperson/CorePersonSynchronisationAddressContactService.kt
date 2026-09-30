@@ -5,6 +5,7 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -299,11 +300,24 @@ class CorePersonSynchronisationAddressContactService(
         )
       } ?: run {
         track("coreperson-phone-synchronisation-created", telemetry) {
+          val addressMapping = event.addressId?.let {
+            corePersonMappingService.getByNomisAddressIdOrNull(it)
+              ?: throw ParentEntityNotFoundRetry("Received OFFENDER_ADDRESS_PHONE-INSERTED for address ${event.addressId} that has never been created")
+          }
           val nomisPhone = getOffenderPhone(event)
-          val cprPhone = corePersonCprApiService.syncCreateContact(
-            prisonNumber = event.offenderIdDisplay,
-            contact = nomisPhone.toPrisonPhoneNumberRequest(),
-          ).also {
+          val contact = nomisPhone.toPrisonPhoneNumberRequest()
+          val cprPhone = if (addressMapping != null) {
+            corePersonCprApiService.syncCreateAddressContact(
+              prisonNumber = event.offenderIdDisplay,
+              cprAddressId = addressMapping.cprId,
+              contact = contact,
+            )
+          } else {
+            corePersonCprApiService.syncCreateContact(
+              prisonNumber = event.offenderIdDisplay,
+              contact = contact,
+            )
+          }.also {
             telemetry["cprPhoneId"] = it.cprContactId
           }
           tryToCreatePhoneMapping(
@@ -329,12 +343,26 @@ class CorePersonSynchronisationAddressContactService(
       track("coreperson-phone-synchronisation-updated", telemetry) {
         val mapping = corePersonMappingService.getByNomisPhoneId(event.phoneId)
         telemetry["cprPhoneId"] = mapping.cprId
+        val addressMapping = event.addressId?.let {
+          corePersonMappingService.getByNomisAddressIdOrNull(it)
+            ?: throw ParentEntityNotFoundRetry("Received OFFENDER_ADDRESS_PHONE-UPDATED for address ${event.addressId} that has never been created")
+        }
         val nomisPhone = getOffenderPhone(event)
-        corePersonCprApiService.syncUpdateContact(
-          prisonNumber = mapping.nomisPrisonNumber,
-          cprContactId = mapping.cprId,
-          contact = nomisPhone.toPrisonPhoneNumberRequest(),
-        )
+        val contact = nomisPhone.toPrisonPhoneNumberRequest()
+        if (addressMapping != null) {
+          corePersonCprApiService.syncUpdateAddressContact(
+            prisonNumber = mapping.nomisPrisonNumber,
+            cprAddressId = addressMapping.cprId,
+            cprContactId = mapping.cprId,
+            contact = contact,
+          )
+        } else {
+          corePersonCprApiService.syncUpdateContact(
+            prisonNumber = mapping.nomisPrisonNumber,
+            cprContactId = mapping.cprId,
+            contact = contact,
+          )
+        }
       }
     }
   }
@@ -345,7 +373,15 @@ class CorePersonSynchronisationAddressContactService(
     corePersonMappingService.getByNomisPhoneIdOrNull(event.phoneId)?.also { mapping ->
       track("coreperson-phone-synchronisation-deleted", telemetry) {
         telemetry["cprPhoneId"] = mapping.cprId
-        corePersonCprApiService.syncDeleteContact(mapping.nomisPrisonNumber, mapping.cprId)
+        val addressMapping = event.addressId?.let {
+          corePersonMappingService.getByNomisAddressIdOrNull(it)
+            ?: throw ParentEntityNotFoundRetry("Received OFFENDER_ADDRESS_PHONE-DELETED for address ${event.addressId} that has never been created")
+        }
+        if (addressMapping != null) {
+          corePersonCprApiService.syncDeleteAddressContact(mapping.nomisPrisonNumber, addressMapping.cprId, mapping.cprId)
+        } else {
+          corePersonCprApiService.syncDeleteContact(mapping.nomisPrisonNumber, mapping.cprId)
+        }
         corePersonMappingService.deleteByNomisPhoneId(event.phoneId)
       }
     } ?: run {
