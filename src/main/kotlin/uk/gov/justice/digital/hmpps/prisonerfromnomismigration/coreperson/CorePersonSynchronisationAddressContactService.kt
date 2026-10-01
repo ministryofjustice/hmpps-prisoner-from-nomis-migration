@@ -378,7 +378,7 @@ class CorePersonSynchronisationAddressContactService(
             ?: throw ParentEntityNotFoundRetry("Received OFFENDER_ADDRESS_PHONE-DELETED for address ${event.addressId} that has never been created")
         }
         if (addressMapping != null) {
-          corePersonCprApiService.syncDeleteAddressContact(mapping.nomisPrisonNumber, addressMapping.cprId, mapping.cprId)
+          corePersonCprApiService.syncDeleteAddressContact(mapping.nomisPrisonNumber, mapping.cprId)
         } else {
           corePersonCprApiService.syncDeleteContact(mapping.nomisPrisonNumber, mapping.cprId)
         }

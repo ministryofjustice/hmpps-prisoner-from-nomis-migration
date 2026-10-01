@@ -81,7 +81,7 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .updatePrisonerAddressContact(prisonNumber, cprAddressId, cprContactId, contact)
     .awaitSingle()
 
-  suspend fun syncDeleteAddressContact(prisonNumber: String, cprAddressId: String, cprContactId: String): Unit = api
-    .deletePrisonerAddressContact(prisonNumber, cprAddressId, cprContactId)
+  suspend fun syncDeleteAddressContact(prisonNumber: String, cprContactId: String): Unit = api
+    .deletePrisonerAddressContact(prisonNumber, cprContactId)
     .awaitSingle()
 }

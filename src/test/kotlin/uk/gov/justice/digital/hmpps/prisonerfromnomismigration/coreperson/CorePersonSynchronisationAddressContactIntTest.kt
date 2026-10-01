@@ -1573,7 +1573,7 @@ class CorePersonSynchronisationAddressContactIntTest(
         fun setUp() {
           mappingApiMock.stubGetByNomisPhoneIdOrNull(phoneId, phoneMapping())
           mappingApiMock.stubGetByNomisAddressIdOrNull(addressId, addressMapping())
-          corePersonCprApiMockServer.stubSyncDeleteAddressContact(prisonNumber, "cpr-address-id", cprPhoneId)
+          corePersonCprApiMockServer.stubSyncDeleteAddressContact(prisonNumber, cprPhoneId)
           mappingApiMock.stubDeleteByNomisPhoneId(phoneId)
           sendPhoneEvent("OFFENDER_ADDRESS_PHONE-DELETED")
             .also { waitForAnyProcessingToComplete("coreperson-phone-synchronisation-deleted-success") }
@@ -1582,7 +1582,7 @@ class CorePersonSynchronisationAddressContactIntTest(
         @Test
         fun `will delete the CPR contact and phone mapping`() {
           mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/address/nomis-address-id/$addressId")))
-          corePersonCprApiMockServer.verify(deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/address/cpr-address-id/contact/$cprPhoneId")))
+          corePersonCprApiMockServer.verify(deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/$prisonNumber/address/contact/$cprPhoneId")))
           mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/core-person/phone/nomis-phone-id/$phoneId")))
         }
 
