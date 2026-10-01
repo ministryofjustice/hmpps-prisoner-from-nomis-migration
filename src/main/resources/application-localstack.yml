@@ -7,6 +7,9 @@ hmpps.sqs:
     migrationactivities:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    migrationadvances:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     migrationallocations:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

@@ -9,6 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.C
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances.AdvancesMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.PropertyMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffMappingApiService
@@ -16,21 +17,23 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMappi
 
 @Service
 class GeneralMappingService(
-  private val appointmentsMappingService: AppointmentsMappingService,
-  private val visitMappingService: VisitMappingService,
   private val activityMappingService: ActivitiesMappingService,
+  private val advancesMappingService: AdvancesMappingService,
   private val allocationsMappingService: AllocationsMappingService,
+  private val appointmentsMappingService: AppointmentsMappingService,
   private val corePersonMappingService: CorePersonMappingService,
-  private val csraMappingApiService: CsraMappingApiService,
+  private val courtSchedulerMappingService: CourtSchedulerMappingApiService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
+  private val csraMappingApiService: CsraMappingApiService,
   private val prisonBalanceMappingApiService: PrisonBalanceMappingApiService,
   private val prisonerBalanceMappingApiService: PrisonerBalanceMappingApiService,
   private val propertyMappingService: PropertyMappingService,
   private val staffMappingApiService: StaffMappingApiService,
-  private val courtSchedulerMappingService: CourtSchedulerMappingApiService,
+  private val visitMappingService: VisitMappingService,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long = when (migrationType) {
     MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
+    MigrationType.ADVANCES -> advancesMappingService.getPagedModelMigrationCount(migrationId)
     MigrationType.AGENCY_REGISTERS -> 0
     MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
