@@ -317,6 +317,7 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
     addresses = listOf(
       prisonAddress(),
     ),
+    contacts = emptyList(),
   )
 
   fun prisonAddress() = PrisonAddress(

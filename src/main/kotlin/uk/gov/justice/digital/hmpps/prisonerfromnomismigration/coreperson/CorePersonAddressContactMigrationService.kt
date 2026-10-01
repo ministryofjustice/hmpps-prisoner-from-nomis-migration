@@ -162,7 +162,7 @@ class CorePersonAddressContactMigrationService(
 }
 
 internal fun CorePersonAddressContact.toMigrateAddressesAndContactsRequest(): PrisonAddressesAndContactsRequest = PrisonAddressesAndContactsRequest(
-  addresses = addresses?.map { it.toPrisonAddressRequest() },
+  addresses = addresses?.map { it.toPrisonAddressRequest() } ?: emptyList(),
   contacts = (phoneNumbers?.map { it.toPrisonPhoneNumberRequest() } ?: emptyList()) + (emailAddresses?.map { it.toPrisonEmailAddressRequest() } ?: emptyList()),
 )
 
