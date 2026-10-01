@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-29.574.f0820e0"
+    "version" : "2026-09-30.579.8d8d990"
   },
   "servers" : [ {
     "url" : "https://prison-register-dev.hmpps.service.justice.gov.uk",
@@ -7246,6 +7246,19 @@
         "summary" : "Get all agencies",
         "description" : "Summary information on all agencies, including prisons, probation offices, police custody suites, courts, hospitals and other agencies ordered by agency ID ascending",
         "operationId" : "getAgencies",
+        "parameters" : [ {
+          "name" : "activeOnly",
+          "in" : "query",
+          "description" : "When true (the default) only active agencies are returned",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : true,
+            "description" : "When true (the default) only active agencies are returned",
+            "example" : true
+          },
+          "example" : true
+        } ],
         "responses" : {
           "200" : {
             "description" : "Successful Operation",
