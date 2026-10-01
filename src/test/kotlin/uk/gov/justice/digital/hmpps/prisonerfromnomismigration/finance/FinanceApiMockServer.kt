@@ -286,9 +286,8 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubMigrateAdvance(
-    response: SyncCreateAdvanceResponse = SyncCreateAdvanceResponse(
-      id = UUID.randomUUID(),
-    ),
+    id: UUID = UUID.randomUUID(),
+    response: SyncCreateAdvanceResponse = SyncCreateAdvanceResponse(id),
   ) {
     stubFor(
       post("/migrate/advances")
