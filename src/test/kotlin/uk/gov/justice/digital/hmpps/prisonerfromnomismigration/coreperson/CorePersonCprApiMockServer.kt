@@ -273,12 +273,11 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubSyncDeleteAddressContact(
     prisonNumber: String = "A1234BC",
-    cprAddressId: String = "cpr-address-id",
     cprContactId: String = "cprContactId",
     status: HttpStatus = HttpStatus.NO_CONTENT,
   ) {
     stubFor(
-      delete("/syscon-sync/person/$prisonNumber/address/$cprAddressId/contact/$cprContactId")
+      delete("/syscon-sync/person/$prisonNumber/address/contact/$cprContactId")
         .willReturn(
           aResponse()
             .withStatus(status.value())

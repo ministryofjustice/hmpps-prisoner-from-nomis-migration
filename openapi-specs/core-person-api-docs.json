@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-09-30.5529.a13c618"
+    "version" : "2026-10-01.5571.e69fcf3"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -362,42 +362,6 @@
           },
           "required" : true
         },
-        "responses" : {
-          "204" : {
-            "description" : "No Content",
-            "content" : { }
-          }
-        },
-        "security" : [ {
-          "api-role" : [ ]
-        } ]
-      },
-      "delete" : {
-        "tags" : [ "Syscon Sync" ],
-        "description" : "Delete prisoner address contact record by Prison Number, address uuid and contact uuid. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
-        "operationId" : "deletePrisonerAddressContact",
-        "parameters" : [ {
-          "name" : "prisonNumber",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "cprAddressId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        }, {
-          "name" : "cprContactId",
-          "in" : "path",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
         "responses" : {
           "204" : {
             "description" : "No Content",
@@ -1321,6 +1285,37 @@
             }
           }
         }
+      }
+    },
+    "/syscon-sync/person/{prisonNumber}/address/contact/{cprContactId}" : {
+      "delete" : {
+        "tags" : [ "Syscon Sync" ],
+        "description" : "Delete prisoner address contact record by Prison Number and contact uuid. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
+        "operationId" : "deletePrisonerAddressContact",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "cprContactId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content",
+            "content" : { }
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
       }
     }
   },

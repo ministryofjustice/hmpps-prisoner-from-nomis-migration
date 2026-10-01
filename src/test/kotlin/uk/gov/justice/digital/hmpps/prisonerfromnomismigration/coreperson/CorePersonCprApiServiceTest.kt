@@ -219,12 +219,12 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
   inner class SyncDeleteAddressContact {
     @Test
     fun `will call the sync endpoint`() = runTest {
-      cprCorePersonServer.stubSyncDeleteAddressContact("A1234BC", "cprAddressId", "cprContactId")
+      cprCorePersonServer.stubSyncDeleteAddressContact("A1234BC", "cprContactId")
 
-      apiService.syncDeleteAddressContact("A1234BC", "cprAddressId", "cprContactId")
+      apiService.syncDeleteAddressContact("A1234BC", "cprContactId")
 
       cprCorePersonServer.verify(
-        deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId/contact/cprContactId")),
+        deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/contact/cprContactId")),
       )
     }
   }
