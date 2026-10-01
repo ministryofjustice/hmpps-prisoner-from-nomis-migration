@@ -105,7 +105,7 @@ generic-service:
     sqs-migration-activities-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONACTIVITIES_DLQ_NAME: "sqs_name"
     sqs-migration-advances-queue:
-      HMPPS_SQS_QUEUES_MIGRATIONDADVANCES_QUEUE_NAME: "sqs_name"
+      HMPPS_SQS_QUEUES_MIGRATIONADVANCES_QUEUE_NAME: "sqs_name"
     sqs-migration-advances-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONADVANCES_DLQ_NAME: "sqs_name"
     sqs-migration-allocations-queue:
