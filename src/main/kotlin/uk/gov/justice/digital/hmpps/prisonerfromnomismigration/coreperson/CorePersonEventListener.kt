@@ -98,14 +98,14 @@ data class OffenderBeliefEvent(
   val offenderIdDisplay: String,
   val rootOffenderId: Long,
   val offenderBeliefId: Long,
-  override val auditModuleName: String,
+  override val auditModuleName: String?,
 ) : EventAudited
 
 data class OffenderAddressEvent(
   val offenderIdDisplay: String,
   val ownerId: Long,
   val addressId: Long,
-  override val auditModuleName: String,
+  override val auditModuleName: String?,
 ) : EventAudited
 
 data class OffenderAddressUsageEvent(
@@ -113,14 +113,14 @@ data class OffenderAddressUsageEvent(
   val offenderId: Long,
   val addressId: Long,
   val addressUsage: String,
-  override val auditModuleName: String,
+  override val auditModuleName: String?,
 ) : EventAudited
 
 data class OffenderEmailEvent(
   val offenderIdDisplay: String,
   val offenderId: Long,
   val internetAddressId: Long,
-  override val auditModuleName: String,
+  override val auditModuleName: String?,
 ) : EventAudited
 
 data class OffenderPhoneEvent(
@@ -128,5 +128,5 @@ data class OffenderPhoneEvent(
   val offenderId: Long,
   val addressId: Long?,
   val phoneId: Long,
-  override val auditModuleName: String,
+  override val auditModuleName: String?,
 ) : EventAudited

@@ -50,37 +50,37 @@ class CorePersonSynchronisationAddressContactService(
         "nomisInternetAddressId" to event.internetAddressId,
       )
 
-    if (event.originatesInDps) {
+    if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("coreperson-email-synchronisation-created-skipped", telemetry)
-    } else {
-      corePersonMappingService.getByNomisEmailIdOrNull(nomisInternetAddressId = event.internetAddressId)?.also {
-        telemetryClient.trackEvent(
-          "coreperson-email-synchronisation-created-ignored",
-          telemetry + ("cprContactEmailId" to it.cprId),
-        )
-      } ?: run {
-        track("coreperson-email-synchronisation-created", telemetry) {
-          corePersonNomisApiService.getOffenderEmail(
-            emailAddressId = event.internetAddressId,
-            offenderId = event.offenderId,
-          ).also { nomisAddress ->
-            val cprEmail =
-              corePersonCprApiService.syncCreateContact(
-                prisonNumber = event.offenderIdDisplay,
-                contact = nomisAddress.toPrisonEmailAddressRequest(),
-              )
-                .also {
-                  telemetry["cprContactEmailId"] = it.cprContactId
-                }
-            val mapping = CorePersonEmailAddressMappingDto(
-              nomisId = event.internetAddressId,
-              cprId = cprEmail.cprContactId,
-              mappingType = CorePersonEmailAddressMappingDto.MappingType.NOMIS_CREATED,
-              nomisPrisonNumber = event.offenderIdDisplay,
+      return
+    }
+    corePersonMappingService.getByNomisEmailIdOrNull(nomisInternetAddressId = event.internetAddressId)?.also {
+      telemetryClient.trackEvent(
+        "coreperson-email-synchronisation-created-ignored",
+        telemetry + ("cprContactEmailId" to it.cprId),
+      )
+    } ?: run {
+      track("coreperson-email-synchronisation-created", telemetry) {
+        corePersonNomisApiService.getOffenderEmail(
+          emailAddressId = event.internetAddressId,
+          offenderId = event.offenderId,
+        ).also { nomisAddress ->
+          val cprEmail =
+            corePersonCprApiService.syncCreateContact(
+              prisonNumber = event.offenderIdDisplay,
+              contact = nomisAddress.toPrisonEmailAddressRequest(),
             )
+              .also {
+                telemetry["cprContactEmailId"] = it.cprContactId
+              }
+          val mapping = CorePersonEmailAddressMappingDto(
+            nomisId = event.internetAddressId,
+            cprId = cprEmail.cprContactId,
+            mappingType = CorePersonEmailAddressMappingDto.MappingType.NOMIS_CREATED,
+            nomisPrisonNumber = event.offenderIdDisplay,
+          )
 
-            tryToCreateMapping(mapping, telemetry)
-          }
+          tryToCreateMapping(mapping, telemetry)
         }
       }
     }
@@ -90,21 +90,21 @@ class CorePersonSynchronisationAddressContactService(
     val telemetry =
       telemetryOf("nomisOffenderId" to event.offenderId, "cprContactId" to event.offenderId, "nomisInternetAddressId" to event.internetAddressId)
 
-    if (event.originatesInDps) {
+    if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("coreperson-email-synchronisation-updated-skipped", telemetry)
-    } else {
-      track("coreperson-email-synchronisation-updated", telemetry) {
-        val cprContactEmailId =
-          corePersonMappingService.getByNomisEmailId(nomisInternetAddressId = event.internetAddressId).cprId.also {
-            telemetry["cprContactEmailId"] = it
-          }
-        val nomisAddress = corePersonNomisApiService.getOffenderEmail(offenderId = event.offenderId, emailAddressId = event.internetAddressId)
-        corePersonCprApiService.syncUpdateContact(
-          event.offenderIdDisplay,
-          cprContactEmailId,
-          nomisAddress.toPrisonEmailAddressRequest(),
-        )
-      }
+      return
+    }
+    track("coreperson-email-synchronisation-updated", telemetry) {
+      val cprContactEmailId =
+        corePersonMappingService.getByNomisEmailId(nomisInternetAddressId = event.internetAddressId).cprId.also {
+          telemetry["cprContactEmailId"] = it
+        }
+      val nomisAddress = corePersonNomisApiService.getOffenderEmail(offenderId = event.offenderId, emailAddressId = event.internetAddressId)
+      corePersonCprApiService.syncUpdateContact(
+        event.offenderIdDisplay,
+        cprContactEmailId,
+        nomisAddress.toPrisonEmailAddressRequest(),
+      )
     }
   }
 
@@ -112,7 +112,7 @@ class CorePersonSynchronisationAddressContactService(
     val telemetry =
       telemetryOf("nomisOffenderId" to event.offenderId, "cprContactId" to event.offenderId, "nomisInternetAddressId" to event.internetAddressId)
 
-    corePersonMappingService.getByNomisEmailIdOrNull(nomisInternetAddressId = event.internetAddressId)?.also {
+    corePersonMappingService.getByNomisEmailIdOrNull(nomisInternetAddressId = event.internetAddressId)?.let {
       track("coreperson-email-synchronisation-deleted", telemetry) {
         telemetry["cprContactEmailId"] = it.cprId
         corePersonCprApiService.syncDeleteContact(prisonNumber = event.offenderIdDisplay, cprContactId = it.cprId)
@@ -176,32 +176,32 @@ class CorePersonSynchronisationAddressContactService(
       "nomisAddressId" to event.addressId,
     )
 
-    if (event.originatesInDps) {
+    if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("coreperson-address-synchronisation-created-skipped", telemetry)
-    } else {
-      corePersonMappingService.getByNomisAddressIdOrNull(nomisAddressId = event.addressId)?.also {
-        telemetryClient.trackEvent(
-          "coreperson-address-synchronisation-created-ignored",
-          telemetry + ("cprAddressId" to it.cprId),
-        )
-      } ?: run {
-        track("coreperson-address-synchronisation-created", telemetry) {
-          val prisonNumber = event.offenderIdDisplay
-          val nomisAddress = corePersonNomisApiService.getOffenderAddress(event.ownerId, event.addressId)
-          val cprAddress = corePersonCprApiService.syncCreateAddress(
-            prisonNumber = prisonNumber,
-            address = nomisAddress.toPrisonAddressRequest(),
-          ).also {
-            telemetry["cprAddressId"] = it.cprAddressId
-          }
-          val mapping = CorePersonAddressMappingDto(
-            nomisId = event.addressId,
-            cprId = cprAddress.cprAddressId,
-            nomisPrisonNumber = prisonNumber,
-            mappingType = CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
-          )
-          tryToCreateAddressMapping(mapping, telemetry)
+      return
+    }
+    corePersonMappingService.getByNomisAddressIdOrNull(nomisAddressId = event.addressId)?.also {
+      telemetryClient.trackEvent(
+        "coreperson-address-synchronisation-created-ignored",
+        telemetry + ("cprAddressId" to it.cprId),
+      )
+    } ?: run {
+      track("coreperson-address-synchronisation-created", telemetry) {
+        val prisonNumber = event.offenderIdDisplay
+        val nomisAddress = corePersonNomisApiService.getOffenderAddress(event.ownerId, event.addressId)
+        val cprAddress = corePersonCprApiService.syncCreateAddress(
+          prisonNumber = prisonNumber,
+          address = nomisAddress.toPrisonAddressRequest(),
+        ).also {
+          telemetry["cprAddressId"] = it.cprAddressId
         }
+        val mapping = CorePersonAddressMappingDto(
+          nomisId = event.addressId,
+          cprId = cprAddress.cprAddressId,
+          nomisPrisonNumber = prisonNumber,
+          mappingType = CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
+        )
+        tryToCreateAddressMapping(mapping, telemetry)
       }
     }
   }
@@ -213,19 +213,19 @@ class CorePersonSynchronisationAddressContactService(
       "nomisAddressId" to event.addressId,
     )
 
-    if (event.originatesInDps) {
+    if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("coreperson-address-synchronisation-updated-skipped", telemetry)
-    } else {
-      track("coreperson-address-synchronisation-updated", telemetry) {
-        val mapping = corePersonMappingService.getByNomisAddressId(event.addressId)
-        telemetry["cprAddressId"] = mapping.cprId
-        val nomisAddress = corePersonNomisApiService.getOffenderAddress(event.ownerId, event.addressId)
-        corePersonCprApiService.syncUpdateAddress(
-          prisonNumber = mapping.nomisPrisonNumber,
-          cprAddressId = mapping.cprId,
-          address = nomisAddress.toPrisonAddressRequest(),
-        )
-      }
+      return
+    }
+    track("coreperson-address-synchronisation-updated", telemetry) {
+      val mapping = corePersonMappingService.getByNomisAddressId(event.addressId)
+      telemetry["cprAddressId"] = mapping.cprId
+      val nomisAddress = corePersonNomisApiService.getOffenderAddress(event.ownerId, event.addressId)
+      corePersonCprApiService.syncUpdateAddress(
+        prisonNumber = mapping.nomisPrisonNumber,
+        cprAddressId = mapping.cprId,
+        address = nomisAddress.toPrisonAddressRequest(),
+      )
     }
   }
 
@@ -291,46 +291,46 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun offenderPhoneAdded(event: OffenderPhoneEvent) {
     val telemetry = phoneTelemetry(event)
 
-    if (event.originatesInDps) {
+    if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("coreperson-phone-synchronisation-created-skipped", telemetry)
-    } else {
-      corePersonMappingService.getByNomisPhoneIdOrNull(event.phoneId)?.also {
-        telemetryClient.trackEvent(
-          "coreperson-phone-synchronisation-created-ignored",
-          telemetry + ("cprPhoneId" to it.cprId),
-        )
-      } ?: run {
-        track("coreperson-phone-synchronisation-created", telemetry) {
-          val addressMapping = event.addressId?.let {
-            corePersonMappingService.getByNomisAddressIdOrNull(it)
-              ?: throw ParentEntityNotFoundRetry("Received OFFENDER_ADDRESS_PHONE-INSERTED for address ${event.addressId} that has never been created")
-          }
-          val nomisPhone = getOffenderPhone(event)
-          val contact = nomisPhone.toPrisonPhoneNumberRequest()
-          val cprPhone = if (addressMapping != null) {
-            corePersonCprApiService.syncCreateAddressContact(
-              prisonNumber = event.offenderIdDisplay,
-              cprAddressId = addressMapping.cprId,
-              contact = contact,
-            )
-          } else {
-            corePersonCprApiService.syncCreateContact(
-              prisonNumber = event.offenderIdDisplay,
-              contact = contact,
-            )
-          }.also {
-            telemetry["cprPhoneId"] = it.cprContactId
-          }
-          tryToCreatePhoneMapping(
-            CorePersonPhoneMappingDto(
-              nomisId = event.phoneId,
-              cprId = cprPhone.cprContactId,
-              nomisPrisonNumber = event.offenderIdDisplay,
-              mappingType = CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
-            ),
-            telemetry,
-          )
+      return
+    }
+    corePersonMappingService.getByNomisPhoneIdOrNull(event.phoneId)?.also {
+      telemetryClient.trackEvent(
+        "coreperson-phone-synchronisation-created-ignored",
+        telemetry + ("cprPhoneId" to it.cprId),
+      )
+    } ?: run {
+      track("coreperson-phone-synchronisation-created", telemetry) {
+        val addressMapping = event.addressId?.let {
+          corePersonMappingService.getByNomisAddressIdOrNull(it)
+            ?: throw ParentEntityNotFoundRetry("Received OFFENDER_ADDRESS_PHONE-INSERTED for address ${event.addressId} that has never been created")
         }
+        val nomisPhone = getOffenderPhone(event)
+        val contact = nomisPhone.toPrisonPhoneNumberRequest()
+        val cprPhone = if (addressMapping != null) {
+          corePersonCprApiService.syncCreateAddressContact(
+            prisonNumber = event.offenderIdDisplay,
+            cprAddressId = addressMapping.cprId,
+            contact = contact,
+          )
+        } else {
+          corePersonCprApiService.syncCreateContact(
+            prisonNumber = event.offenderIdDisplay,
+            contact = contact,
+          )
+        }.also {
+          telemetry["cprPhoneId"] = it.cprContactId
+        }
+        tryToCreatePhoneMapping(
+          CorePersonPhoneMappingDto(
+            nomisId = event.phoneId,
+            cprId = cprPhone.cprContactId,
+            nomisPrisonNumber = event.offenderIdDisplay,
+            mappingType = CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+          ),
+          telemetry,
+        )
       }
     }
   }
@@ -338,32 +338,32 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun offenderPhoneUpdated(event: OffenderPhoneEvent) {
     val telemetry = phoneTelemetry(event)
 
-    if (event.originatesInDps) {
+    if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("coreperson-phone-synchronisation-updated-skipped", telemetry)
-    } else {
-      track("coreperson-phone-synchronisation-updated", telemetry) {
-        val mapping = corePersonMappingService.getByNomisPhoneId(event.phoneId)
-        telemetry["cprPhoneId"] = mapping.cprId
-        val addressMapping = event.addressId?.let {
-          corePersonMappingService.getByNomisAddressIdOrNull(it)
-            ?: throw ParentEntityNotFoundRetry("Received OFFENDER_ADDRESS_PHONE-UPDATED for address ${event.addressId} that has never been created")
-        }
-        val nomisPhone = getOffenderPhone(event)
-        val contact = nomisPhone.toPrisonPhoneNumberRequest()
-        if (addressMapping != null) {
-          corePersonCprApiService.syncUpdateAddressContact(
-            prisonNumber = mapping.nomisPrisonNumber,
-            cprAddressId = addressMapping.cprId,
-            cprContactId = mapping.cprId,
-            contact = contact,
-          )
-        } else {
-          corePersonCprApiService.syncUpdateContact(
-            prisonNumber = mapping.nomisPrisonNumber,
-            cprContactId = mapping.cprId,
-            contact = contact,
-          )
-        }
+      return
+    }
+    track("coreperson-phone-synchronisation-updated", telemetry) {
+      val mapping = corePersonMappingService.getByNomisPhoneId(event.phoneId)
+      telemetry["cprPhoneId"] = mapping.cprId
+      val addressMapping = event.addressId?.let {
+        corePersonMappingService.getByNomisAddressIdOrNull(it)
+          ?: throw ParentEntityNotFoundRetry("Received OFFENDER_ADDRESS_PHONE-UPDATED for address ${event.addressId} that has never been created")
+      }
+      val nomisPhone = getOffenderPhone(event)
+      val contact = nomisPhone.toPrisonPhoneNumberRequest()
+      if (addressMapping != null) {
+        corePersonCprApiService.syncUpdateAddressContact(
+          prisonNumber = mapping.nomisPrisonNumber,
+          cprAddressId = addressMapping.cprId,
+          cprContactId = mapping.cprId,
+          contact = contact,
+        )
+      } else {
+        corePersonCprApiService.syncUpdateContact(
+          prisonNumber = mapping.nomisPrisonNumber,
+          cprContactId = mapping.cprId,
+          contact = contact,
+        )
       }
     }
   }
@@ -447,72 +447,72 @@ class CorePersonSynchronisationAddressContactService(
   }
 
   suspend fun offenderAddressUsageAdded(event: OffenderAddressUsageEvent) {
-    val telemetry = addressUsageTelemetry(event)
+    val telemetry = event.toAddressUsageTelemetry()
 
-    if (event.originatesInDps) {
+    if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("coreperson-address-usage-synchronisation-created-skipped", telemetry)
-    } else {
-      corePersonMappingService.getByNomisAddressUsageIdOrNull(event.addressId, event.addressUsage)?.also {
-        telemetryClient.trackEvent(
-          "coreperson-address-usage-synchronisation-created-ignored",
-          telemetry + ("cprAddressUsageId" to it.cprId),
-        )
-      } ?: run {
-        track("coreperson-address-usage-synchronisation-created", telemetry) {
-          val addressMapping = getParentAddressMapping(event, "ADDRESSES_USAGE-INSERTED")
-          telemetry["cprAddressId"] = addressMapping.cprId
-          val nomisAddressUsage = corePersonNomisApiService.getOffenderAddressUsage(event.offenderId, event.addressId, event.addressUsage)
-          val cprAddressUsage = corePersonCprApiService.syncCreateAddressUsage(
-            prisonNumber = event.offenderIdDisplay,
-            cprAddressId = addressMapping.cprId,
-            addressUsage = nomisAddressUsage.toPrisonAddressUsageRequest(),
-          ).also {
-            telemetry["cprAddressUsageId"] = it.cprAddressUsageId
-          }
-          tryToCreateAddressUsageMapping(
-            CorePersonAddressUsageMappingDto(
-              nomisId = event.addressId,
-              addressUsageCode = event.addressUsage,
-              cprId = cprAddressUsage.cprAddressUsageId,
-              nomisPrisonNumber = event.offenderIdDisplay,
-              mappingType = CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED,
-            ),
-            telemetry,
-          )
+      return
+    }
+    corePersonMappingService.getByNomisAddressUsageIdOrNull(event.addressId, event.addressUsage)?.also {
+      telemetryClient.trackEvent(
+        "coreperson-address-usage-synchronisation-created-ignored",
+        telemetry + ("cprAddressUsageId" to it.cprId),
+      )
+    } ?: run {
+      track("coreperson-address-usage-synchronisation-created", telemetry) {
+        val addressMapping = getParentAddressMappingOrThrow(event, "ADDRESSES_USAGE-INSERTED")
+        telemetry["cprAddressId"] = addressMapping.cprId
+        val nomisAddressUsage = corePersonNomisApiService.getOffenderAddressUsage(event.offenderId, event.addressId, event.addressUsage)
+        val cprAddressUsage = corePersonCprApiService.syncCreateAddressUsage(
+          prisonNumber = event.offenderIdDisplay,
+          cprAddressId = addressMapping.cprId,
+          addressUsage = nomisAddressUsage.toPrisonAddressUsageRequest(),
+        ).also {
+          telemetry["cprAddressUsageId"] = it.cprAddressUsageId
         }
+        tryToCreateAddressUsageMapping(
+          CorePersonAddressUsageMappingDto(
+            nomisId = event.addressId,
+            addressUsageCode = event.addressUsage,
+            cprId = cprAddressUsage.cprAddressUsageId,
+            nomisPrisonNumber = event.offenderIdDisplay,
+            mappingType = CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED,
+          ),
+          telemetry,
+        )
       }
     }
   }
 
   suspend fun offenderAddressUsageUpdated(event: OffenderAddressUsageEvent) {
-    val telemetry = addressUsageTelemetry(event)
+    val telemetry = event.toAddressUsageTelemetry()
 
-    if (event.originatesInDps) {
+    if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("coreperson-address-usage-synchronisation-updated-skipped", telemetry)
-    } else {
-      track("coreperson-address-usage-synchronisation-updated", telemetry) {
-        val mapping = corePersonMappingService.getByNomisAddressUsageId(event.addressId, event.addressUsage)
-        telemetry["cprAddressUsageId"] = mapping.cprId
-        val addressMapping = getParentAddressMapping(event, "ADDRESSES_USAGE-UPDATED")
-        telemetry["cprAddressId"] = addressMapping.cprId
-        val nomisAddressUsage = corePersonNomisApiService.getOffenderAddressUsage(event.offenderId, event.addressId, event.addressUsage)
-        corePersonCprApiService.syncUpdateAddressUsage(
-          prisonNumber = mapping.nomisPrisonNumber,
-          cprAddressId = addressMapping.cprId,
-          cprAddressUsageId = mapping.cprId,
-          addressUsage = nomisAddressUsage.toPrisonAddressUsageRequest(),
-        )
-      }
+      return
+    }
+    track("coreperson-address-usage-synchronisation-updated", telemetry) {
+      val mapping = corePersonMappingService.getByNomisAddressUsageId(event.addressId, event.addressUsage)
+      telemetry["cprAddressUsageId"] = mapping.cprId
+      val addressMapping = getParentAddressMappingOrThrow(event, "ADDRESSES_USAGE-UPDATED")
+      telemetry["cprAddressId"] = addressMapping.cprId
+      val nomisAddressUsage = corePersonNomisApiService.getOffenderAddressUsage(event.offenderId, event.addressId, event.addressUsage)
+      corePersonCprApiService.syncUpdateAddressUsage(
+        prisonNumber = mapping.nomisPrisonNumber,
+        cprAddressId = addressMapping.cprId,
+        cprAddressUsageId = mapping.cprId,
+        addressUsage = nomisAddressUsage.toPrisonAddressUsageRequest(),
+      )
     }
   }
 
   suspend fun offenderAddressUsageDeleted(event: OffenderAddressUsageEvent) {
-    val telemetry = addressUsageTelemetry(event)
+    val telemetry = event.toAddressUsageTelemetry()
 
     corePersonMappingService.getByNomisAddressUsageIdOrNull(event.addressId, event.addressUsage)?.also { mapping ->
       track("coreperson-address-usage-synchronisation-deleted", telemetry) {
         telemetry["cprAddressUsageId"] = mapping.cprId
-        val addressMapping = getParentAddressMapping(event, "ADDRESSES_USAGE-DELETED")
+        val addressMapping = getParentAddressMappingOrThrow(event, "ADDRESSES_USAGE-DELETED")
         telemetry["cprAddressId"] = addressMapping.cprId
         corePersonCprApiService.syncDeleteAddressUsage(mapping.nomisPrisonNumber, addressMapping.cprId, mapping.cprId)
         corePersonMappingService.deleteByNomisAddressUsageId(event.addressId, event.addressUsage)
@@ -522,14 +522,14 @@ class CorePersonSynchronisationAddressContactService(
     }
   }
 
-  private suspend fun getParentAddressMapping(event: OffenderAddressUsageEvent, eventType: String) = corePersonMappingService.getByNomisAddressIdOrNull(event.addressId)
+  private suspend fun getParentAddressMappingOrThrow(event: OffenderAddressUsageEvent, eventType: String) = corePersonMappingService.getByNomisAddressIdOrNull(event.addressId)
     ?: throw ParentEntityNotFoundRetry("Received $eventType for address ${event.addressId} that has never been created")
 
-  private fun addressUsageTelemetry(event: OffenderAddressUsageEvent) = telemetryOf(
-    "prisonNumber" to event.offenderIdDisplay,
-    "nomisOffenderId" to event.offenderId,
-    "nomisAddressId" to event.addressId,
-    "nomisAddressUsageCode" to event.addressUsage,
+  private fun OffenderAddressUsageEvent.toAddressUsageTelemetry() = telemetryOf(
+    "prisonNumber" to this.offenderIdDisplay,
+    "nomisOffenderId" to this.offenderId,
+    "nomisAddressId" to this.addressId,
+    "nomisAddressUsageCode" to this.addressUsage,
   )
 
   private suspend fun tryToCreateAddressUsageMapping(

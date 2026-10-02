@@ -49,17 +49,13 @@ class CorePersonSynchronisationBeliefsService(
     )
     if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-created-skipped", telemetry)
+      return
+    }
+    if (religionsMappingService.existsReligionMappingByNomisPrisonNumber(event.offenderIdDisplay)) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-created-ignored", telemetry)
     } else {
-      val mappingExists = religionsMappingService.existsReligionMappingByNomisPrisonNumber(event.offenderIdDisplay)
-      if (mappingExists) {
-        telemetryClient.trackEvent(
-          "$TELEMETRY_PREFIX-created-ignored",
-          telemetry,
-        )
-      } else {
-        // There is no mapping so we cannot ignore this as there will be no update because no beliefs exist yet.
-        createBelief(telemetry, getNomisOffenderBelief(event), offenderIdDisplay, event.offenderBeliefId)
-      }
+      // There is no mapping so we cannot ignore this as there will be no update because no beliefs exist yet.
+      createBelief(telemetry, getNomisOffenderBelief(event), offenderIdDisplay, event.offenderBeliefId)
     }
   }
 
@@ -71,30 +67,29 @@ class CorePersonSynchronisationBeliefsService(
     )
     if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-updated-created-skipped", telemetry)
-    } else {
-      val allBeliefs = corePersonNomisApiService.getOffenderReligions(event.offenderIdDisplay)
-      val currentBelief = allBeliefs.first()
-      val currentBeliefMapping = religionsMappingService.getReligionByNomisIdOrNull(currentBelief.beliefId)
-      if (currentBeliefMapping != null) {
-        // This event can only be a simple update of the comments field.
-        track("$TELEMETRY_PREFIX-updated", telemetry) {
-          religionsMappingService.getReligionByNomisId(nomisReligionId = event.offenderBeliefId)
-            .also { mapping ->
-              telemetry["cprId"] = mapping.cprId
-              allBeliefs.toPrisonReligionUpdateRequest(event.offenderBeliefId).apply {
-                corePersonCprApiService.syncUpdateOffenderBelief(
-                  offenderIdDisplay,
-                  mapping.cprId,
-                  this,
-                )
-              }
+      return
+    }
+    val allBeliefs = corePersonNomisApiService.getOffenderReligions(event.offenderIdDisplay)
+    val currentBelief = allBeliefs.first()
+    religionsMappingService.getReligionByNomisIdOrNull(currentBelief.beliefId)?.let {
+      // This event can only be a simple update of the comments field.
+      track("$TELEMETRY_PREFIX-updated", telemetry) {
+        religionsMappingService.getReligionByNomisId(nomisReligionId = event.offenderBeliefId)
+          .also { mapping ->
+            telemetry["cprId"] = mapping.cprId
+            allBeliefs.toPrisonReligionUpdateRequest(event.offenderBeliefId).apply {
+              corePersonCprApiService.syncUpdateOffenderBelief(
+                offenderIdDisplay,
+                mapping.cprId,
+                this,
+              )
             }
-        }
-      } else {
-        // This event indicates a new active belief has been created.
-        telemetry += ("nomisId" to currentBelief.beliefId)
-        createBelief(telemetry, currentBelief.toPrisonReligionHistory(true), offenderIdDisplay, currentBelief.beliefId)
+          }
       }
+    } ?: run {
+      // This event indicates a new active belief has been created.
+      telemetry += ("nomisId" to currentBelief.beliefId)
+      createBelief(telemetry, currentBelief.toPrisonReligionHistory(true), offenderIdDisplay, currentBelief.beliefId)
     }
   }
 
