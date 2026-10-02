@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_USAGE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_EMAIL_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PHONE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_RELIGION_MAPPING
@@ -48,6 +49,9 @@ class CorePersonEventListener(
               "ADDRESSES_OFFENDER-INSERTED" -> addressContactService.offenderAddressAdded(sqsMessage.Message.fromJson())
               "ADDRESSES_OFFENDER-UPDATED" -> addressContactService.offenderAddressUpdated(sqsMessage.Message.fromJson())
               "ADDRESSES_OFFENDER-DELETED" -> addressContactService.offenderAddressDeleted(sqsMessage.Message.fromJson())
+              "ADDRESSES_USAGE-INSERTED" -> addressContactService.offenderAddressUsageAdded(sqsMessage.Message.fromJson())
+              "ADDRESSES_USAGE-UPDATED" -> addressContactService.offenderAddressUsageUpdated(sqsMessage.Message.fromJson())
+              "ADDRESSES_USAGE-DELETED" -> addressContactService.offenderAddressUsageDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_ADDRESS_PHONE-INSERTED" -> addressContactService.offenderPhoneAdded(sqsMessage.Message.fromJson())
               "OFFENDER_ADDRESS_PHONE-UPDATED" -> addressContactService.offenderPhoneUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_ADDRESS_PHONE-DELETED" -> addressContactService.offenderPhoneDeleted(sqsMessage.Message.fromJson())
@@ -77,6 +81,7 @@ class CorePersonEventListener(
       RETRY_SYNCHRONISATION_EMAIL_MAPPING -> addressContactService.retryCreateEmailMapping(message.fromJson())
       RETRY_SYNCHRONISATION_ADDRESS_MAPPING -> addressContactService.retryCreateAddressMapping(message.fromJson())
       RETRY_SYNCHRONISATION_PHONE_MAPPING -> addressContactService.retryCreatePhoneMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_ADDRESS_USAGE_MAPPING -> addressContactService.retryCreateAddressUsageMapping(message.fromJson())
     }
   }
 }
@@ -86,6 +91,7 @@ enum class CorePersonSynchronisationMessageType {
   RETRY_SYNCHRONISATION_EMAIL_MAPPING,
   RETRY_SYNCHRONISATION_ADDRESS_MAPPING,
   RETRY_SYNCHRONISATION_PHONE_MAPPING,
+  RETRY_SYNCHRONISATION_ADDRESS_USAGE_MAPPING,
 }
 
 data class OffenderBeliefEvent(
@@ -99,6 +105,14 @@ data class OffenderAddressEvent(
   val offenderIdDisplay: String,
   val ownerId: Long,
   val addressId: Long,
+  override val auditModuleName: String,
+) : EventAudited
+
+data class OffenderAddressUsageEvent(
+  val offenderIdDisplay: String,
+  val offenderId: Long,
+  val addressId: Long,
+  val addressUsage: String,
   override val auditModuleName: String,
 ) : EventAudited
 

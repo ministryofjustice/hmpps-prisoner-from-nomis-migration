@@ -197,7 +197,7 @@ private fun CodeDescription?.mapCountryCode(): PrisonAddress.CountryCode? = when
   else -> PrisonAddress.CountryCode.valueOf(this.code)
 }
 
-private fun OffenderAddressUsage.toPrisonAddressUsageRequest(): PrisonAddressUsage = PrisonAddressUsage(
+internal fun OffenderAddressUsage.toPrisonAddressUsageRequest(): PrisonAddressUsage = PrisonAddressUsage(
   nomisAddressUsageId = addressId,
   addressUsageCode = if (usage.code == "DISC") AddressUsageCode.RELEASE else AddressUsageCode.valueOf(usage.code),
   isActive = active,

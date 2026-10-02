@@ -17,11 +17,13 @@ import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.cprCorePersonServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
@@ -285,6 +287,72 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
   }
 
   @Nested
+  inner class SyncCreateAddressUsage {
+    @Test
+    fun `will call the sync endpoint and return the address usage mapping`() = runTest {
+      cprCorePersonServer.stubSyncCreateAddressUsage(
+        prisonNumber = "A1234BC",
+        cprAddressId = "cprAddressId",
+        response = CorePersonCprApiMockServer.syncCorePersonAddressUsageResponse(
+          nomisAddressId = 12345,
+          addressUsageCode = SysconAddressUsageMapping.NomisAddressUsageCode.CURFEW,
+          cprAddressUsageId = "cprAddressUsageId",
+        ),
+      )
+
+      val response = apiService.syncCreateAddressUsage("A1234BC", "cprAddressId", prisonAddressUsage())
+
+      assertThat(response.nomisAddressUsageId).isEqualTo(12345)
+      assertThat(response.nomisAddressUsageCode).isEqualTo(SysconAddressUsageMapping.NomisAddressUsageCode.CURFEW)
+      assertThat(response.cprAddressUsageId).isEqualTo("cprAddressUsageId")
+      cprCorePersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId/usage"))
+          .withRequestBodyJsonPath("nomisAddressUsageId", equalTo("12345"))
+          .withRequestBodyJsonPath("addressUsageCode", equalTo("CURFEW")),
+      )
+    }
+
+    @Test
+    fun `should throw if bad request`() = runTest {
+      cprCorePersonServer.stubSyncCreateAddressUsage("A1234BC", "cprAddressId", status = BAD_REQUEST)
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.syncCreateAddressUsage("A1234BC", "cprAddressId", prisonAddressUsage())
+      }
+    }
+  }
+
+  @Nested
+  inner class SyncUpdateAddressUsage {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncUpdateAddressUsage("A1234BC", "cprAddressId", "cprAddressUsageId")
+
+      apiService.syncUpdateAddressUsage("A1234BC", "cprAddressId", "cprAddressUsageId", prisonAddressUsage())
+
+      cprCorePersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId/usage/cprAddressUsageId"))
+          .withRequestBodyJsonPath("nomisAddressUsageId", equalTo("12345"))
+          .withRequestBodyJsonPath("addressUsageCode", equalTo("CURFEW")),
+      )
+    }
+  }
+
+  @Nested
+  inner class SyncDeleteAddressUsage {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncDeleteAddressUsage("A1234BC", "cprAddressId", "cprAddressUsageId")
+
+      apiService.syncDeleteAddressUsage("A1234BC", "cprAddressId", "cprAddressUsageId")
+
+      cprCorePersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId/usage/cprAddressUsageId")),
+      )
+    }
+  }
+
+  @Nested
   inner class ProcessPrisonMerge {
     @Test
     fun `will call the sync endpoint`() = runTest {
@@ -347,3 +415,11 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
     modifyUserId = "FRED_ADM",
   )
 }
+
+private fun prisonAddressUsage() = PrisonAddressUsage(
+  nomisAddressUsageId = 12345,
+  addressUsageCode = PrisonAddressUsage.AddressUsageCode.CURFEW,
+  isActive = true,
+  createDateTime = LocalDateTime.parse("2024-01-01T10:00:00"),
+  createUserId = "SYSTEM",
+)

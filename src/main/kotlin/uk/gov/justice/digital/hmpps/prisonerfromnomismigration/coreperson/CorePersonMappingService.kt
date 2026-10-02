@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonMappingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
@@ -47,6 +48,27 @@ class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     .map { CreateMappingResult<CorePersonAddressMappingDto>() }
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
       Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CorePersonAddressMappingDto>>() {})))
+    }
+    .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun getByNomisAddressUsageIdOrNull(nomisAddressId: Long, addressUsageCode: String): CorePersonAddressUsageMappingDto? = api
+    .prepare(api.getCorePersonAddressUsageMappingByNomisIdRequestConfig(nomisAddressId, addressUsageCode))
+    .retrieve()
+    .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getByNomisAddressUsageId(nomisAddressId: Long, addressUsageCode: String): CorePersonAddressUsageMappingDto = api
+    .prepare(api.getCorePersonAddressUsageMappingByNomisIdRequestConfig(nomisAddressId, addressUsageCode))
+    .retrieve()
+    .awaitBody()
+
+  suspend fun deleteByNomisAddressUsageId(nomisAddressId: Long, addressUsageCode: String) {
+    api.deleteCorePersonAddressUsageMappingByNomisId(nomisAddressId, addressUsageCode).awaitSingle()
+  }
+
+  suspend fun createAddressUsageMapping(mapping: CorePersonAddressUsageMappingDto): CreateMappingResult<CorePersonAddressUsageMappingDto> = api.createCorePersonAddressUsageMapping(mapping)
+    .map { CreateMappingResult<CorePersonAddressUsageMappingDto>() }
+    .onErrorResume(WebClientResponseException.Conflict::class.java) {
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CorePersonAddressUsageMappingDto>>() {})))
     }
     .awaitFirstOrDefault(CreateMappingResult())
 

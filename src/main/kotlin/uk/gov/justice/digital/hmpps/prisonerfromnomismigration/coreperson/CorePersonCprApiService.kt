@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.SysconSyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
@@ -14,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionSaveResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
@@ -83,5 +85,18 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
 
   suspend fun syncDeleteAddressContact(prisonNumber: String, cprContactId: String): Unit = api
     .deletePrisonerAddressContact(prisonNumber, cprContactId)
+    .awaitSingle()
+
+  suspend fun syncCreateAddressUsage(prisonNumber: String, cprAddressId: String, addressUsage: PrisonAddressUsage): SysconAddressUsageMapping = api
+    .prepare(api.createPrisonerAddressUsageRequestConfig(prisonNumber, cprAddressId, addressUsage))
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun syncUpdateAddressUsage(prisonNumber: String, cprAddressId: String, cprAddressUsageId: String, addressUsage: PrisonAddressUsage): Unit = api
+    .updatePrisonerAddressUsage(prisonNumber, cprAddressId, cprAddressUsageId, addressUsage)
+    .awaitSingle()
+
+  suspend fun syncDeleteAddressUsage(prisonNumber: String, cprAddressId: String, cprAddressUsageId: String): Unit = api
+    .deletePrisonerAddressUsage(prisonNumber, cprAddressId, cprAddressUsageId)
     .awaitSingle()
 }
