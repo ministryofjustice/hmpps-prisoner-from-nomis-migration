@@ -18,10 +18,10 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceMappingApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceMigrationFilter
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceNomisApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonerBalance
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonerbalances.PrisonerBalanceMappingApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonerbalances.PrisonerBalanceMigrationFilter
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonerbalances.PrisonerBalanceNomisApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonerbalances.prisonerBalance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAccountDto

@@ -7,9 +7,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.Appo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonBalanceMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances.AdvancesMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonbalances.PrisonBalanceMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonerbalances.PrisonerBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.PropertyMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffMappingApiService
