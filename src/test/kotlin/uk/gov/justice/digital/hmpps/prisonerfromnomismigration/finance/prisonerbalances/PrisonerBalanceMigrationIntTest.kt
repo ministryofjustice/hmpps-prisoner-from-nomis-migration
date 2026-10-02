@@ -1,0 +1,930 @@
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonerbalances
+
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
+import kotlinx.coroutines.runBlocking
+import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.atMost
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Nested
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
+import org.mockito.kotlin.any
+import org.mockito.kotlin.check
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.reset
+import org.mockito.kotlin.verify
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.test.web.reactive.server.returnResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerBalanceMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerBalanceMappingDto.MappingType.MIGRATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAccountDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBalanceDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import java.math.BigDecimal
+import java.time.Duration
+import java.time.LocalDateTime
+
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+class PrisonerBalanceMigrationIntTest(
+  @Autowired private val nomisPrisonerBalanceApiMock: PrisonerBalanceNomisApiMockServer,
+  @Autowired private val mappingApiMock: PrisonerBalanceMappingApiMockServer,
+  @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
+) : FinanceIntegrationTestBase() {
+
+  override fun resetTelemetryClient() {}
+
+  internal fun setupMigrationTest() = runBlocking {
+    migrationHistoryRepository.deleteAll()
+
+    NomisApiExtension.resetAndDisableResetBeforeEach()
+    MappingApiExtension.resetAndDisableResetBeforeEach()
+    FinanceApiExtension.resetAndDisableResetBeforeEach()
+
+    tearDownTelemetryClient()
+  }
+
+  @AfterAll
+  fun tearDownTelemetryClient() = reset(telemetryClient)
+
+  @Nested
+  @DisplayName("POST /migrate/prisoner-balance")
+  inner class MigratePrisonerBalance {
+    @Nested
+    inner class Security {
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.post().uri("/migrate/prisoner-balance")
+          .headers(setAuthorisation(roles = listOf()))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(PrisonerBalanceMigrationFilter())
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.post().uri("/migrate/prisoner-balance")
+          .headers(setAuthorisation(roles = listOf("BANANAS")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(PrisonerBalanceMigrationFilter())
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.post().uri("/migrate/prisoner-balance")
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(PrisonerBalanceMigrationFilter())
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class EverythingAlreadyMigrated {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 2,
+          pageSize = 1,
+          firstRootOffenderId = 1,
+        )
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 2)
+
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+          nomisRootOffenderId = 1,
+          mapping = PrisonerBalanceMappingDto(
+            dpsId = "A0001BC",
+            nomisRootOffenderId = 1,
+            mappingType = MIGRATED,
+            label = "2020-01-01T00:00:00",
+          ),
+        )
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+          nomisRootOffenderId = 2,
+          mapping = PrisonerBalanceMappingDto(
+            dpsId = "A0002BC",
+            nomisRootOffenderId = 2,
+            mappingType = MIGRATED,
+            label = "2020-01-01T00:00:00",
+          ),
+        )
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will not bother retrieving any prisoner balance details`() {
+        nomisPrisonerBalanceApiMock.verify(0, getRequestedFor(urlPathEqualTo("/prisoner-balance/A0001BC")))
+        nomisPrisonerBalanceApiMock.verify(0, getRequestedFor(urlPathEqualTo("/prisoner-balance/B0002BC")))
+      }
+
+      @Test
+      fun `will mark migration as complete`() {
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPath {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 2,
+          pageSize = 10,
+          firstRootOffenderId = 0L,
+        )
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 2)
+
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+          nomisRootOffenderId = 1,
+          dpsId = "A0001BC",
+          mapping = null,
+        )
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+          nomisRootOffenderId = 2,
+          dpsId = "A0002BC",
+          mapping = null,
+        )
+
+        nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
+          rootOffenderId = 1,
+          prisonerBalance = prisonerBalance(prisonNumber = "A0001BC").copy(
+            accounts = listOf(
+              PrisonerAccountDto(
+                prisonId = "ASI",
+                lastTransactionId = 175,
+                accountCode = 2102,
+                balance = BigDecimal.valueOf(24.50),
+                holdBalance = BigDecimal.valueOf(2.25),
+                transactionDate = LocalDateTime.parse("2025-06-02T02:02:03"),
+              ),
+            ),
+          ),
+        )
+        nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
+          rootOffenderId = 2,
+          prisonerBalance = prisonerBalance(prisonNumber = "A0002BC").copy(
+            accounts = listOf(
+              PrisonerAccountDto(
+                prisonId = "ASI",
+                lastTransactionId = 176,
+                accountCode = 2103,
+                balance = BigDecimal.valueOf(25.50),
+                holdBalance = BigDecimal.valueOf(2.15),
+                transactionDate = LocalDateTime.parse("2025-07-02T01:02:05"),
+              ),
+            ),
+          ),
+        )
+        financeApi.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
+        financeApi.stubMigratePrisonerBalance(prisonNumber = "A0002BC")
+        mappingApiMock.stubCreateMappingsForMigration()
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 2)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will get the offenders to migrate`() {
+        nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/id-ranges")))
+      }
+
+      @Test
+      fun `will get the offenders to migrate ids in range`() {
+        nomisPrisonerBalanceApiMock.verify(
+          getRequestedFor(urlPathEqualTo("/finance/prisoners/ids-in-range"))
+            .withQueryParam("fromId", equalTo("0"))
+            .withQueryParam("toId", equalTo("1")),
+        )
+        nomisPrisonerBalanceApiMock.verify(
+          getRequestedFor(urlPathEqualTo("/finance/prisoners/ids-in-range"))
+            .withQueryParam("fromId", equalTo("1"))
+            .withQueryParam("toId", equalTo("2")),
+        )
+      }
+
+      @Test
+      fun `will get prisoner balance details for each offender`() {
+        nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/1/balance")))
+        nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/2/balance")))
+      }
+
+      @Test
+      fun `will create mapping for each prisoner`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/prisoner-balance"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("dpsId", "A0001BC")
+            .withRequestBodyJsonPath("nomisRootOffenderId", 1),
+        )
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/prisoner-balance"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("dpsId", "A0002BC")
+            .withRequestBodyJsonPath("nomisRootOffenderId", 2),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for each prisoner migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("prisonerbalance-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisRootOffenderId"]).isEqualTo("1")
+            assertThat(it["dpsPrisonerId"]).isEqualTo("A0001BC")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("prisonerbalance-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisRootOffenderId"]).isEqualTo("2")
+            assertThat(it["dpsPrisonerId"]).isEqualTo("A0002BC")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of prisoners migrated`() {
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("2")
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathWithFiltering {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        val prisonId = "ASI"
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 2,
+          pageSize = 10,
+          firstRootOffenderId = 0L,
+        )
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 2)
+
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+          nomisRootOffenderId = 1,
+          dpsId = "A0001BC",
+          mapping = null,
+        )
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+          nomisRootOffenderId = 2,
+          dpsId = "A0002BC",
+          mapping = null,
+        )
+
+        nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
+          rootOffenderId = 1,
+          prisonerBalance = prisonerBalance(prisonNumber = "A0001BC").copy(
+            accounts = listOf(
+              PrisonerAccountDto(
+                prisonId = prisonId,
+                lastTransactionId = 175,
+                accountCode = 2102,
+                balance = BigDecimal.valueOf(24.50),
+                holdBalance = BigDecimal.valueOf(2.25),
+                transactionDate = LocalDateTime.parse("2025-06-02T02:02:03"),
+              ),
+            ),
+          ),
+        )
+        nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
+          rootOffenderId = 2,
+          prisonerBalance = prisonerBalance(prisonNumber = "A0002BC").copy(
+            accounts = listOf(
+              PrisonerAccountDto(
+                prisonId = prisonId,
+                lastTransactionId = 176,
+                accountCode = 2103,
+                balance = BigDecimal.valueOf(25.50),
+                holdBalance = BigDecimal.valueOf(2.15),
+                transactionDate = LocalDateTime.parse("2025-07-02T01:02:05"),
+              ),
+            ),
+          ),
+        )
+        financeApi.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
+        financeApi.stubMigratePrisonerBalance(prisonNumber = "A0002BC")
+        mappingApiMock.stubCreateMappingsForMigration()
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 2)
+        migrationResult = performMigration(PrisonerBalanceMigrationFilter(prisonId = prisonId))
+      }
+
+      @Test
+      fun `will get the offenders to migrate, filtering by prisonId, page and size`() {
+        nomisPrisonerBalanceApiMock.verify(
+          getRequestedFor(urlPathEqualTo("/finance/prisoners/id-ranges"))
+            .withQueryParam("prisonId", equalTo("ASI"))
+            .withQueryParam("pageSize", equalTo("10")),
+        )
+      }
+
+      @Test
+      fun `will get the offenders to migrate ids in range`() {
+        nomisPrisonerBalanceApiMock.verify(
+          getRequestedFor(urlPathEqualTo("/finance/prisoners/ids-in-range"))
+            .withQueryParam("prisonId", equalTo("ASI"))
+            .withQueryParam("fromId", equalTo("0"))
+            .withQueryParam("toId", equalTo("1")),
+        )
+        nomisPrisonerBalanceApiMock.verify(
+          getRequestedFor(urlPathEqualTo("/finance/prisoners/ids-in-range"))
+            .withQueryParam("prisonId", equalTo("ASI"))
+            .withQueryParam("fromId", equalTo("1"))
+            .withQueryParam("toId", equalTo("2")),
+        )
+      }
+
+      @Test
+      fun `will get prisoner balance details for each offender`() {
+        nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/1/balance")))
+        nomisPrisonerBalanceApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/2/balance")))
+      }
+
+      @Test
+      fun `will create mapping for each prisoner`() {
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/prisoner-balance"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("dpsId", "A0001BC")
+            .withRequestBodyJsonPath("nomisRootOffenderId", 1),
+        )
+        mappingApiMock.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/prisoner-balance"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("dpsId", "A0002BC")
+            .withRequestBodyJsonPath("nomisRootOffenderId", 2),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for each prisoner migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("prisonerbalance-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisRootOffenderId"]).isEqualTo("1")
+            assertThat(it["dpsPrisonerId"]).isEqualTo("A0001BC")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("prisonerbalance-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisRootOffenderId"]).isEqualTo("2")
+            assertThat(it["dpsPrisonerId"]).isEqualTo("A0002BC")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of prisoners migrated`() {
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("2")
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathNomisToDPSMapping {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        stubMigratePrisonerBalances(
+          listOf(1, 2),
+          PrisonerBalanceDto(
+            rootOffenderId = 1,
+            prisonNumber = "A0001BC",
+            accounts = listOf(
+              PrisonerAccountDto(
+                prisonId = "ASI",
+                lastTransactionId = 175,
+                accountCode = 2102,
+                balance = BigDecimal.valueOf(20.50),
+                holdBalance = BigDecimal.valueOf(2.15),
+                transactionDate = LocalDateTime.parse("2025-06-02T02:02:03"),
+              ),
+            ),
+          ),
+          PrisonerBalanceDto(
+            rootOffenderId = 2,
+            prisonNumber = "A0002BC",
+            accounts = listOf(
+              PrisonerAccountDto(
+                prisonId = "ASI",
+                lastTransactionId = 176,
+                accountCode = 2103,
+                balance = BigDecimal.valueOf(25.50),
+                holdBalance = BigDecimal.valueOf(1.15),
+                transactionDate = LocalDateTime.parse("2025-07-02T01:02:05"),
+              ),
+            ),
+          ),
+        )
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will send prisoner balance data to Dps`() {
+        val dpsRequests: List<PrisonerBalancesSyncRequest> =
+          FinanceApiExtension.Companion.getRequestBodies(postRequestedFor(urlPathMatching("/migrate/prisoner-balances/A0001BC")))
+        val dpsRequests2: List<PrisonerBalancesSyncRequest> =
+          FinanceApiExtension.Companion.getRequestBodies(postRequestedFor(urlPathMatching("/migrate/prisoner-balances/A0002BC")))
+
+        with(
+          dpsRequests.find { it.accountBalances[0].accountCode == 2102 }
+            ?: throw AssertionError("Request not found"),
+        ) {
+          assertThat(accountBalances[0].balance).isEqualTo(BigDecimal.valueOf(20.50))
+          assertThat(accountBalances[0].holdBalance).isEqualTo(BigDecimal.valueOf(2.15))
+          assertThat(accountBalances[0].prisonId).isEqualTo("ASI")
+          assertThat(accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-06-02T02:02:03"))
+          assertThat(accountBalances[0].transactionId).isEqualTo(175)
+        }
+        with(
+          dpsRequests2.find { it.accountBalances[0].accountCode == 2103 }
+            ?: throw AssertionError("Request not found"),
+        ) {
+          assertThat(accountBalances[0].balance).isEqualTo(BigDecimal.valueOf(25.50))
+          assertThat(accountBalances[0].holdBalance).isEqualTo(BigDecimal.valueOf(1.15))
+          assertThat(accountBalances[0].prisonId).isEqualTo("ASI")
+          assertThat(accountBalances[0].asOfTimestamp).isEqualTo(LocalDateTime.parse("2025-07-02T01:02:05"))
+          assertThat(accountBalances[0].transactionId).isEqualTo(176)
+        }
+      }
+
+      @Test
+      fun `will create mappings for nomis rootOffender to dps prisoner balance`() {
+        val mappingRequests: List<PrisonerBalanceMappingDto> =
+          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/prisoner-balance")))
+
+        with(mappingRequests.find { it.nomisRootOffenderId == 1L } ?: throw AssertionError("Request not found")) {
+          assertThat(mappingType).isEqualTo(MIGRATED)
+          assertThat(label).isEqualTo(migrationResult.migrationId)
+          assertThat(nomisRootOffenderId).isEqualTo(1)
+          assertThat(dpsId).isEqualTo("A0001BC")
+        }
+        with(mappingRequests.find { it.nomisRootOffenderId == 2L } ?: throw AssertionError("Request not found")) {
+          assertThat(mappingType).isEqualTo(MIGRATED)
+          assertThat(label).isEqualTo(migrationResult.migrationId)
+          assertThat(nomisRootOffenderId).isEqualTo(2)
+          assertThat(dpsId).isEqualTo("A0002BC")
+        }
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class MappingErrorRecovery {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 1,
+          pageSize = 10,
+          firstRootOffenderId = 0,
+        )
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1)
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = 1, mapping = null)
+        nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
+          rootOffenderId = 1,
+          prisonNumber = "A0001BC",
+          prisonerBalance(prisonNumber = "A0001BC").copy(
+            accounts = listOf(
+              PrisonerAccountDto(
+                prisonId = "ASI",
+                lastTransactionId = 179,
+                accountCode = 2102,
+                balance = BigDecimal.valueOf(25.10),
+                holdBalance = BigDecimal.valueOf(2.15),
+                transactionDate = LocalDateTime.parse("2025-06-02T02:02:03"),
+              ),
+            ),
+          ),
+        )
+        financeApi.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
+        mappingApiMock.stubCreateMappingsForMigrationFailureFollowedBySuccess()
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 1)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will get details only once`() {
+        nomisPrisonerBalanceApiMock.verify(1, getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/1/balance")))
+      }
+
+      @Test
+      fun `will attempt create mapping twice before succeeding`() {
+        mappingApiMock.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/prisoner-balance"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("dpsId", "A0001BC")
+            .withRequestBodyJsonPath("nomisRootOffenderId", 1),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for each offender migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("prisonerbalance-migration-entity-migrated"),
+          check {
+            assertThat(it["nomisRootOffenderId"]).isEqualTo("1")
+            assertThat(it["dpsPrisonerId"]).isEqualTo("A0001BC")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of prisoner balance migrated`() {
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("1")
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class DuplicateMappingErrorHandling {
+      private lateinit var migrationResult: MigrationResult
+
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 1,
+          pageSize = 10,
+          firstRootOffenderId = 0,
+        )
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1)
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = 1, mapping = null)
+        nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(
+          rootOffenderId = 1,
+          prisonNumber = "A0001BC",
+          prisonerBalance(prisonNumber = "A0001BC").copy(
+            accounts = listOf(
+              PrisonerAccountDto(
+                prisonId = "ASI",
+                lastTransactionId = 180,
+                accountCode = 2102,
+                balance = BigDecimal.valueOf(25.70),
+                holdBalance = BigDecimal.valueOf(2.75),
+                transactionDate = LocalDateTime.parse("2025-07-02T01:02:05"),
+              ),
+            ),
+          ),
+        )
+
+        financeApi.stubMigratePrisonerBalance(prisonNumber = "A0001BC")
+        mappingApiMock.stubCreateMappingsForMigration(
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              duplicate = PrisonerBalanceMappingDto(
+                dpsId = "A0001BC",
+                nomisRootOffenderId = 1,
+                mappingType = MIGRATED,
+              ),
+              existing = PrisonerBalanceMappingDto(
+                dpsId = "A0001XX",
+                nomisRootOffenderId = 2,
+                mappingType = MIGRATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
+        migrationResult = performMigration()
+      }
+
+      @Test
+      fun `will get details for offender only once`() {
+        nomisPrisonerBalanceApiMock.verify(1, getRequestedFor(urlPathEqualTo("/finance/prisoners/rootOffenderId/1/balance")))
+      }
+
+      @Test
+      fun `will attempt create mapping once before failing`() {
+        mappingApiMock.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/mapping/prisoner-balance"))
+            .withRequestBodyJsonPath("mappingType", "MIGRATED")
+            .withRequestBodyJsonPath("label", migrationResult.migrationId)
+            .withRequestBodyJsonPath("dpsId", "A0001BC")
+            .withRequestBodyJsonPath("nomisRootOffenderId", 1),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for each offender migrated`() {
+        verify(telemetryClient).trackEvent(
+          eq("prisonerbalance-migration-duplicate"),
+          check {
+            assertThat(it["duplicateNomisRootOffenderId"]).isEqualTo("1")
+            assertThat(it["duplicateDpsPrisonerId"]).isEqualTo("A0001BC")
+            assertThat(it["existingNomisRootOffenderId"]).isEqualTo("2")
+            assertThat(it["existingDpsPrisonerId"]).isEqualTo("A0001XX")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will record the number of prisoner balances (offenders) migrated`() {
+        webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .header("Content-Type", "application/json")
+          .exchange()
+          .expectStatus().isOk
+          .expectBody()
+          .jsonPath("$.migrationId").isEqualTo(migrationResult.migrationId)
+          .jsonPath("$.status").isEqualTo("COMPLETED")
+          .jsonPath("$.recordsMigrated").isEqualTo("0")
+      }
+    }
+
+    @Nested
+    inner class PreventMultipleMigrations {
+      @BeforeEach
+      fun setup() = setupMigrationTest()
+
+      @Test
+      fun `will not run a new migration if existing is in progress`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.STARTED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.PRISONER_BALANCE,
+            ),
+          )
+        }
+        webTestClient.post().uri("/migrate/prisoner-balance")
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(PrisonerBalanceMigrationFilter())
+          .exchange()
+          .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+      }
+
+      @Test
+      fun `will not run a new migration if existing is being cancelled`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.CANCELLED_REQUESTED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.PRISONER_BALANCE,
+            ),
+          )
+        }
+        webTestClient.post().uri("/migrate/prisoner-balance")
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .bodyValue(PrisonerBalanceMigrationFilter())
+          .exchange()
+          .expectStatus().isEqualTo(HttpStatus.CONFLICT)
+      }
+
+      @Test
+      fun `will run a new migration if existing is completed`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.COMPLETED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.PRISONER_BALANCE,
+            ),
+          )
+        }
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 1,
+          pageSize = 10,
+          firstRootOffenderId = 0,
+        )
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1)
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+          nomisRootOffenderId = 1,
+          mapping = PrisonerBalanceMappingDto(
+            dpsId = "A0001BC",
+            nomisRootOffenderId = 1,
+            mappingType = MIGRATED,
+            label = "2020-01-01T00:00:00",
+          ),
+        )
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
+        performMigration()
+      }
+
+      @Test
+      fun `will run a new migration if existing is cancelled`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.CANCELLED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.PRISONER_BALANCE,
+            ),
+          )
+        }
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 1,
+          pageSize = 10,
+          firstRootOffenderId = 0,
+        )
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1)
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+          nomisRootOffenderId = 1,
+          mapping = PrisonerBalanceMappingDto(
+            dpsId = "A0001BC",
+            nomisRootOffenderId = 1,
+            mappingType = MIGRATED,
+            label = "2020-01-01T00:00:00",
+          ),
+        )
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
+        performMigration()
+      }
+
+      @Test
+      fun `will run a new migration if a different migration type has started`() {
+        runBlocking {
+          migrationHistoryRepository.save(
+            MigrationHistory(
+              migrationId = "2020-01-01T00:00:00",
+              whenStarted = LocalDateTime.parse("2020-01-01T00:00:00"),
+              whenEnded = LocalDateTime.parse("2020-01-01T01:00:00"),
+              status = MigrationStatus.STARTED,
+              estimatedRecordCount = 123_567,
+              filter = "",
+              recordsMigrated = 123_560,
+              recordsFailed = 7,
+              migrationType = MigrationType.ACTIVITIES,
+            ),
+          )
+        }
+        nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(
+          totalElements = 1,
+          pageSize = 10,
+          firstRootOffenderId = 0,
+        )
+        nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1)
+        mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(
+          nomisRootOffenderId = 1,
+          mapping = PrisonerBalanceMappingDto(
+            dpsId = "A0001BC",
+            nomisRootOffenderId = 1,
+            mappingType = MIGRATED,
+            label = "2020-01-01T00:00:00",
+          ),
+        )
+        mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 0)
+        performMigration()
+      }
+    }
+  }
+
+  private fun performMigration(body: PrisonerBalanceMigrationFilter = PrisonerBalanceMigrationFilter()): MigrationResult = webTestClient.post().uri("/migrate/prisoner-balance")
+    .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
+    .contentType(MediaType.APPLICATION_JSON)
+    .bodyValue(body)
+    .exchange()
+    .expectStatus().isAccepted.returnResult<MigrationResult>().responseBody.blockFirst()!!
+    .also {
+      waitUntilCompleted()
+    }
+
+  private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
+    verify(telemetryClient).trackEvent(
+      eq("prisonerbalance-migration-completed"),
+      any(),
+      isNull(),
+    )
+  }
+
+  private fun stubMigratePrisonerBalances(nomisRootOffenderIds: List<Long>, vararg prisonerAccounts: PrisonerBalanceDto) {
+    nomisApi.resetAll()
+    financeApi.resetAll()
+    mappingApiMock.resetAll()
+    nomisPrisonerBalanceApiMock.stubGetRootOffenderIdsToMigrate(totalElements = 2, pageSize = 10, firstRootOffenderId = nomisRootOffenderIds.first())
+    nomisPrisonerBalanceApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 2)
+    prisonerAccounts.forEachIndexed { index, nomisPrisonerBalance ->
+      nomisPrisonerBalanceApiMock.stubGetPrisonerBalance(rootOffenderId = nomisRootOffenderIds[index], prisonerBalance = nomisPrisonerBalance)
+      mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = nomisRootOffenderIds[index], mapping = null, dpsId = "A0001BC")
+      mappingApiMock.stubGetPrisonerBalanceByNomisIdOrNull(nomisRootOffenderId = nomisRootOffenderIds[index], mapping = null, dpsId = "A0002BC")
+      financeApi.stubMigratePrisonerBalance("A0001BC")
+      financeApi.stubMigratePrisonerBalance("A0002BC")
+    }
+    mappingApiMock.stubCreateMappingsForMigration()
+    mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = prisonerAccounts.size)
+  }
+}
