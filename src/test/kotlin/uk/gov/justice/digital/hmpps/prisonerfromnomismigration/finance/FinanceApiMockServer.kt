@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.Gen
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerAccountPointInTimeBalance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleaseHoldRequest
@@ -131,7 +132,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       releaseDateTime = LocalDateTime.parse("2025-06-04T05:06:07"),
     )
     fun addAdvanceDto(prisonNumber: String = "A0001BC") = SyncCreateAdvanceRecordRequest(
-      legacyPaymentProfileId = 12345L,
+      legacyPaymentProfileId = 12345,
       legacyInformationNumber = "9876-1",
       prisonNumber = prisonNumber,
       prisonID = "LEI",
@@ -139,10 +140,11 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       repaymentAmount = BigDecimal.valueOf(0.5),
       repaymentStartDate = LocalDateTime.of(2024, Month.JUNE, 18, 0, 0, 0),
       reference = "description of the advance",
-      // comment = "This is a comment",
+      comment = "This is a comment",
       createdBy = "JD12345",
       createdOn = LocalDateTime.of(2024, Month.JUNE, 18, 12, 10),
       status = SyncCreateAdvanceRecordRequest.Status.ACTIVE,
+      legacyTransactionId = 2345,
     )
   }
 
@@ -287,7 +289,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubMigrateAdvance(
     id: UUID = UUID.randomUUID(),
-    response: SyncCreateAdvanceResponse = SyncCreateAdvanceResponse(id),
+    response: SyncCreateAdvanceRecordResponse = SyncCreateAdvanceRecordResponse(1234, id),
   ) {
     stubFor(
       post("/migrate/advances")
@@ -301,9 +303,8 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubSyncAdvance(
-    response: SyncCreateAdvanceResponse = SyncCreateAdvanceResponse(
-      id = UUID.randomUUID(),
-    ),
+    id: UUID = UUID.randomUUID(),
+    response: SyncCreateAdvanceRecordResponse = SyncCreateAdvanceRecordResponse(1234, id),
   ) {
     stubFor(
       post("/sync/advances")
