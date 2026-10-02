@@ -5,19 +5,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceDp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.MoneySupport
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAdvanceDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 
 @Service
 class PrisonerAdvanceSynchronisationService(
   private val nomisApiService: AdvancesNomisApiService,
   private val dpsApiService: FinanceDpsApiService,
 ) {
-  /* TODO
   suspend fun resynchronisePrisonerAdvance(advanceId: Long) {
     val advance = nomisApiService.getAdvance(advanceId)
       ?: throw NotFoundException("advanceId $advanceId not found")
     dpsApiService.syncPrisonerAdvance(advance.toSyncAdvanceDto())
   }
-   */
 }
 
 fun PrisonerAdvanceDto.toSyncAdvanceDto() = SyncCreateAdvanceRecordRequest(
