@@ -19,3 +19,6 @@
 !**/SyncPrisonUserCaseload.kt
 !**/SyncPrisonUserEmail.kt
 !**/SyncPrisonUserRole.kt
+!**/SyncPrisonUserRoleAssignment.kt
+!**/SyncUserCaseloadMember.kt
+!**/SyncUserCaseloadAdministrator.kt
