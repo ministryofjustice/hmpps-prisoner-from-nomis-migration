@@ -241,6 +241,36 @@ class CorePersonNomisApiServiceTest(
   }
 
   @Nested
+  inner class GetOffenderAddressUsage {
+    @Test
+    fun `will pass NOMIS ids and usage code to service`() = runTest {
+      mockServer.stubGetOffenderAddressUsage(offenderId = 12345, addressId = 23456, usageCode = "CURFEW")
+
+      apiService.getOffenderAddressUsage(offenderId = 12345, addressId = 23456, usageCode = "CURFEW")
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/core-person/12345/address/23456/usage/CURFEW")),
+      )
+    }
+
+    @Test
+    fun `will return the address usage`() = runTest {
+      mockServer.stubGetOffenderAddressUsage(
+        offenderId = 12345,
+        addressId = 23456,
+        usageCode = "CURFEW",
+        addressUsage = offenderAddressUsage(23456, "CURFEW").copy(active = false),
+      )
+
+      val usage = apiService.getOffenderAddressUsage(offenderId = 12345, addressId = 23456, usageCode = "CURFEW")
+
+      assertThat(usage.addressId).isEqualTo(23456)
+      assertThat(usage.usage.code).isEqualTo("CURFEW")
+      assertThat(usage.active).isFalse()
+    }
+  }
+
+  @Nested
   inner class UpdateOffenderEmail {
     @Test
     fun `will pass NOMIS ids to service`() = runTest {

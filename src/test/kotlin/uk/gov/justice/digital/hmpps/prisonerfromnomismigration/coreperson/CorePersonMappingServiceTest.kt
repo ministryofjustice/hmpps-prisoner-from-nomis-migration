@@ -13,11 +13,13 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 
 @ExtendWith(MappingApiExtension::class)
 @SpringAPIServiceTest
@@ -57,6 +59,14 @@ class CorePersonMappingServiceTest(
     nomisId = 1234567,
     nomisPrisonNumber = "A1234BC",
     mappingType = CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
+  )
+
+  private fun addressUsageMapping() = CorePersonAddressUsageMappingDto(
+    cprId = "cpr-address-usage-id",
+    nomisId = 1234567,
+    addressUsageCode = "CURFEW",
+    nomisPrisonNumber = "A1234BC",
+    mappingType = CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED,
   )
 
   private fun emailMapping() = CorePersonEmailAddressMappingDto(
@@ -138,6 +148,135 @@ class CorePersonMappingServiceTest(
 
       assertThat(result.isError).isTrue()
       assertThat(result.errorResponse!!.moreInfo.duplicate.cprId).isEqualTo(cprId)
+      assertThat(result.errorResponse.moreInfo.existing.cprId).isEqualTo(existingCprId)
+    }
+  }
+
+  @Nested
+  inner class GetByNomisAddressUsageIdOrNull {
+    @Test
+    fun `will pass NOMIS address id and usage code to service`() = runTest {
+      mockServer.stubGetByNomisAddressUsageIdOrNull(1234567, "CURFEW")
+
+      apiService.getByNomisAddressUsageIdOrNull(1234567, "CURFEW")
+
+      mockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/address-usage/nomis-address-id/1234567/usage-code/CURFEW")))
+    }
+
+    @Test
+    fun `will return mapping when it exists`() = runTest {
+      mockServer.stubGetByNomisAddressUsageIdOrNull(1234567, "CURFEW")
+
+      val mapping = apiService.getByNomisAddressUsageIdOrNull(1234567, "CURFEW")!!
+
+      assertThat(mapping.nomisId).isEqualTo(1234567)
+      assertThat(mapping.addressUsageCode).isEqualTo("CURFEW")
+    }
+
+    @Test
+    fun `will return null if mapping does not exist`() = runTest {
+      mockServer.stubGetByNomisAddressUsageIdOrNull(1234567, "CURFEW", null)
+
+      assertThat(apiService.getByNomisAddressUsageIdOrNull(1234567, "CURFEW")).isNull()
+    }
+  }
+
+  @Nested
+  inner class GetByNomisAddressUsageId {
+    @Test
+    fun `will pass NOMIS address id and usage code to service`() = runTest {
+      mockServer.stubGetByNomisAddressUsageIdOrNull(1234567, "CURFEW")
+
+      apiService.getByNomisAddressUsageId(1234567, "CURFEW")
+
+      mockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/address-usage/nomis-address-id/1234567/usage-code/CURFEW")))
+    }
+
+    @Test
+    fun `will return mapping`() = runTest {
+      mockServer.stubGetByNomisAddressUsageIdOrNull(1234567, "CURFEW")
+
+      val mapping = apiService.getByNomisAddressUsageId(1234567, "CURFEW")
+
+      assertThat(mapping.nomisId).isEqualTo(1234567)
+      assertThat(mapping.addressUsageCode).isEqualTo("CURFEW")
+    }
+  }
+
+  @Nested
+  inner class DeleteByNomisAddressUsageId {
+    @Test
+    fun `will pass NOMIS address id and usage code to service`() = runTest {
+      mockServer.stubDeleteByNomisAddressUsageId(1234567, "CURFEW")
+
+      apiService.deleteByNomisAddressUsageId(1234567, "CURFEW")
+
+      mockServer.verify(deleteRequestedFor(urlPathEqualTo("/mapping/core-person/address-usage/nomis-address-id/1234567/usage-code/CURFEW")))
+    }
+  }
+
+  @Nested
+  inner class CreateAddressUsageMapping {
+    @Test
+    fun `will pass mapping to service`() = runTest {
+      mockServer.stubCreateAddressUsageMapping()
+
+      apiService.createAddressUsageMapping(addressUsageMapping())
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/core-person/address-usage"))
+          .withRequestBodyJsonPath("cprId", "cpr-address-usage-id")
+          .withRequestBodyJsonPath("nomisId", 1234567)
+          .withRequestBodyJsonPath("addressUsageCode", "CURFEW")
+          .withRequestBodyJsonPath("nomisPrisonNumber", "A1234BC")
+          .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+      )
+    }
+
+    @Test
+    fun `will return success result when created`() = runTest {
+      mockServer.stubCreateAddressUsageMapping()
+
+      val result = apiService.createAddressUsageMapping(addressUsageMapping())
+
+      assertThat(result.isError).isFalse()
+    }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val nomisId = 1234567890L
+      val cprId = "cpr-address-usage-id"
+      val existingCprId = "existing-cpr-address-usage-id"
+
+      mockServer.stubCreateAddressUsageMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = CorePersonAddressUsageMappingDto(
+              cprId = cprId,
+              nomisId = nomisId,
+              addressUsageCode = "CURFEW",
+              nomisPrisonNumber = "A1234BC",
+              mappingType = CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED,
+            ),
+            existing = CorePersonAddressUsageMappingDto(
+              cprId = existingCprId,
+              nomisId = nomisId,
+              addressUsageCode = "CURFEW",
+              nomisPrisonNumber = "A1234BC",
+              mappingType = CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createAddressUsageMapping(addressUsageMapping())
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.cprId).isEqualTo(cprId)
+      assertThat(result.errorResponse.moreInfo.duplicate.addressUsageCode).isEqualTo("CURFEW")
       assertThat(result.errorResponse.moreInfo.existing.cprId).isEqualTo(existingCprId)
     }
   }
