@@ -269,7 +269,7 @@ class FinanceDpsApiServiceTest {
     }
 
     @Test
-    internal fun `will sync request data to sync advance endpoint`() = runTest {
+    internal fun `will sync request data to migrate advance endpoint`() = runTest {
       financeApi.stubMigrateAdvance()
 
       apiService.migrateAdvance(addAdvanceDto())
@@ -282,17 +282,18 @@ class FinanceDpsApiServiceTest {
           .withRequestBodyJsonPath("amount", equalTo("2.1"))
           .withRequestBodyJsonPath("repaymentAmount", equalTo("0.5"))
           .withRequestBodyJsonPath("repaymentStartDate", equalTo("2024-06-18T00:00:00"))
-          // TODO add in when set in api call
-          // .withRequestBodyJsonPath("comment", equalTo("comment"))
+          .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
           .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
           .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
           .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:10:00"))
-          .withRequestBodyJsonPath("status", equalTo("ACTIVE")),
+          .withRequestBodyJsonPath("status", equalTo("ACTIVE"))
+          // TODO REMOVE - this will not be required once the migrate endpoint is added
+          .withRequestBodyJsonPath("legacyTransactionId", equalTo("2345")),
       )
     }
 
     @Test
-    fun `will call the sync prisoner advance endpoint`() = runTest {
+    fun `will call the migrate prisoner advance endpoint`() = runTest {
       financeApi.stubMigrateAdvance()
 
       apiService.migrateAdvance(addAdvanceDto())
@@ -325,14 +326,14 @@ class FinanceDpsApiServiceTest {
       financeApi.verify(
         postRequestedFor(anyUrl())
           .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo("12345"))
+          .withRequestBodyJsonPath("legacyTransactionId", equalTo("2345"))
           .withRequestBodyJsonPath("legacyInformationNumber", equalTo("9876-1"))
           .withRequestBodyJsonPath("prisonNumber", equalTo("A0001BC"))
           .withRequestBodyJsonPath("prisonID", equalTo("LEI"))
           .withRequestBodyJsonPath("amount", equalTo("2.1"))
           .withRequestBodyJsonPath("repaymentAmount", equalTo("0.5"))
           .withRequestBodyJsonPath("repaymentStartDate", equalTo("2024-06-18T00:00:00"))
-          // TODO add in when set in api call
-          // .withRequestBodyJsonPath("comment", equalTo("comment"))
+          .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
           .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
           .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
           .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:10:00"))

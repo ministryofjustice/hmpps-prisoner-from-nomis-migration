@@ -27,16 +27,14 @@ fun PrisonerAdvanceDto.toSyncAdvanceDto() = SyncCreateAdvanceRecordRequest(
   amount = MoneySupport.penceToPounds(advanceAmount),
   repaymentStartDate = startDate.atStartOfDay(),
   repaymentAmount = MoneySupport.penceToPounds(repaymentAmount),
-  // TODO remove the !!
-  reference = reference!!,
-  // TODO
-  // comment = comment,
-  // TODO
+  reference = reference,
+  comment = comment,
+  // TODO pull in from Nomis
   status = SyncCreateAdvanceRecordRequest.Status.ACTIVE,
-  // TODO - do we need this?
-  // advanceDate = LocalDate.now(),
   createdOn = createDatetime,
   createdBy = createdBy,
-  // TODO
+  // TODO pull in from Nomis
   legacyInformationNumber = "1234",
+  // TODO pull in from Nomis
+  legacyTransactionId = 123,
 )

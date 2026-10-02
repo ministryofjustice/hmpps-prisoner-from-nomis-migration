@@ -89,7 +89,7 @@ class AdvancesMigrationService(
         val response = dpsApiService.migrateAdvance(advance.toSyncAdvanceDto())
         val mapping = AdvanceMappingDto(
           nomisAdvanceId = advance.id,
-          dpsId = response.id.toString(),
+          dpsId = response.advanceUuid.toString(),
           mappingType = MIGRATED,
           label = context.migrationId,
         )
