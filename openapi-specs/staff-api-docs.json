@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-23.244.309aaff"
+    "version" : "2026-10-01.257.8e03f48"
   },
   "servers" : [ {
     "url" : "https://prison-users-api-dev.prison.service.justice.gov.uk",
@@ -638,9 +638,23 @@
             "items" : {
               "$ref" : "#/components/schemas/SyncPrisonUserAccount"
             }
+          },
+          "administrationCaseloads" : {
+            "type" : "array",
+            "description" : "The list of administration caseloads associated with the user",
+            "items" : {
+              "$ref" : "#/components/schemas/SyncUserCaseloadAdministrator"
+            }
+          },
+          "memberCaseloads" : {
+            "type" : "array",
+            "description" : "The list of member caseloads associated with the user",
+            "items" : {
+              "$ref" : "#/components/schemas/SyncUserCaseloadMember"
+            }
           }
         },
-        "required" : [ "accounts", "createdBy", "createdTimestamp", "emails", "firstName", "lastName", "status" ]
+        "required" : [ "accounts", "administrationCaseloads", "createdBy", "createdTimestamp", "emails", "firstName", "lastName", "memberCaseloads", "status" ]
       },
       "SyncPrisonUserAccount" : {
         "type" : "object",
@@ -790,6 +804,112 @@
           }
         },
         "required" : [ "createdBy", "createdTimestamp", "roleCode" ]
+      },
+      "SyncUserCaseloadAdministrator" : {
+        "type" : "object",
+        "description" : "Caseload assigned to a user account to administer",
+        "properties" : {
+          "username" : {
+            "type" : "string",
+            "description" : "Username for the user account",
+            "example" : "TEST_USER"
+          },
+          "caseloadId" : {
+            "type" : "string",
+            "description" : "Identifier for the caseload the user account can access",
+            "example" : "MRI"
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Indicates that the user is active",
+            "example" : true
+          },
+          "expiryDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Record expiry date",
+            "example" : "2022-01-01"
+          },
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Record creation timestamp",
+            "example" : "2022-01-01T12:00:00"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "Username of the record creator",
+            "example" : "TEST_USER"
+          },
+          "modifiedTimestamp" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "Record modification timestamp",
+            "example" : "2022-01-01T12:00:00"
+          },
+          "modifiedBy" : {
+            "type" : [ "string", "null" ],
+            "description" : "Username of the record modifier",
+            "example" : "TEST_USER"
+          }
+        },
+        "required" : [ "active", "caseloadId", "createdBy", "createdTimestamp", "username" ]
+      },
+      "SyncUserCaseloadMember" : {
+        "type" : "object",
+        "description" : "Caseload assigned to a user account",
+        "properties" : {
+          "username" : {
+            "type" : "string",
+            "description" : "Username for the user account",
+            "example" : "TEST_USER"
+          },
+          "caseloadId" : {
+            "type" : "string",
+            "description" : "Identifier for the caseload the user account can access",
+            "example" : "MRI"
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Indicates that the user is active",
+            "example" : true
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Record start date",
+            "example" : "2022-01-01"
+          },
+          "expiryDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "Record expiry date",
+            "example" : "2022-01-01"
+          },
+          "createdTimestamp" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Record creation timestamp",
+            "example" : "2022-01-01T12:00:00"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "Username of the record creator",
+            "example" : "TEST_USER"
+          },
+          "modifiedTimestamp" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "Record modification timestamp",
+            "example" : "2022-01-01T12:00:00"
+          },
+          "modifiedBy" : {
+            "type" : [ "string", "null" ],
+            "description" : "Username of the record modifier",
+            "example" : "TEST_USER"
+          }
+        },
+        "required" : [ "active", "caseloadId", "createdBy", "createdTimestamp", "startDate", "username" ]
       },
       "ErrorResponse" : {
         "type" : "object",
