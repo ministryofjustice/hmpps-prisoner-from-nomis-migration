@@ -35,16 +35,12 @@ class AdvancesDataRepairResource(
     @Schema(description = "Prisoner advance id (offender_profile_payments_id)", example = "123456", required = true)
     @PathVariable advanceId: Long,
   ) {
-    try {
-      service.resynchronisePrisonerAdvance(advanceId)
-      telemetryClient.trackEvent(
-        "prisoneradvance-resynchronisation-repair",
-        mapOf(
-          "advanceId" to advanceId,
-        ),
-      )
-    } catch (_: NotFound) {
-      throw NotFoundException("No prisoner advance for $advanceId was found")
-    }
+    service.resynchronisePrisonerAdvance(advanceId)
+    telemetryClient.trackEvent(
+      "prisoneradvance-resynchronisation-repair",
+      mapOf(
+        "advanceId" to advanceId,
+      ),
+    )
   }
 }
