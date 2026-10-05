@@ -31,6 +31,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceAp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceNomisApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.TransactionEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleasedHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt

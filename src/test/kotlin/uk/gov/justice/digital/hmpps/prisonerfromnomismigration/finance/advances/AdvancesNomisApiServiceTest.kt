@@ -30,7 +30,7 @@ class AdvancesNomisApiServiceTest {
   inner class GetAdvanceById {
     @Test
     fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubGetAdvanceById()
+      mockServer.stubGetAdvance()
 
       apiService.getAdvance(12345)
 
@@ -41,7 +41,7 @@ class AdvancesNomisApiServiceTest {
 
     @Test
     fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetAdvanceById()
+      mockServer.stubGetAdvance()
 
       apiService.getAdvance(12345)
 
@@ -52,7 +52,7 @@ class AdvancesNomisApiServiceTest {
 
     @Test
     fun `will return advance details`() = runTest {
-      mockServer.stubGetAdvanceById()
+      mockServer.stubGetAdvance()
 
       val advance = apiService.getAdvance(12345)!!
 

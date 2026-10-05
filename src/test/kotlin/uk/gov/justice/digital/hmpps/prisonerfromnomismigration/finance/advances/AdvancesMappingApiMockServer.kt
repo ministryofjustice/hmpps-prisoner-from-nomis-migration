@@ -21,7 +21,7 @@ import java.time.LocalDateTime
 @Component
 class AdvancesMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
-  fun stubCreateMappingsForMigration() {
+  fun stubCreateMapping() {
     mappingApi.stubFor(
       post("/mapping/advances").willReturn(
         aResponse()
@@ -31,9 +31,9 @@ class AdvancesMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/advances")
+  fun stubCreateMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/advances")
 
-  fun stubCreateMappingsForMigration(error: DuplicateMappingErrorResponse) {
+  fun stubCreateMapping(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
       post("/mapping/advances").willReturn(
         aResponse()

@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceDpsApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceNomisApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.GLTransactionEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.TransactionEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncOffenderTransactionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse

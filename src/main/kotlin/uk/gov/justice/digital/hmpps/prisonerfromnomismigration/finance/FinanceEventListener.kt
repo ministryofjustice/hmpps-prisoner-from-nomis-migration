@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance
 
 import io.awspring.cloud.sqs.annotation.SqsListener
 import org.slf4j.Logger
@@ -6,6 +6,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances.AdvancesSynchronisationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions.TransactionSynchronisationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
@@ -17,8 +19,9 @@ import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
 @Service
-class TransactionEventListener(
+class FinanceEventListener(
   private val transactionSynchronisationService: TransactionSynchronisationService,
+  private val advancesSynchronisationService: AdvancesSynchronisationService,
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -47,9 +50,7 @@ class TransactionEventListener(
                 sqsMessage.Message.fromJson(),
                 messageId,
               )
-              // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)
-              // "OFFENDER_TRANSACTIONS-DELETED"
-              // TODO Waiting for DPS to decide whether to intercept this event
+
               "GL_TRANSACTIONS-INSERTED" -> transactionSynchronisationService.glTransactionInserted(
                 sqsMessage.Message.fromJson(),
                 messageId,
@@ -58,9 +59,14 @@ class TransactionEventListener(
                 sqsMessage.Message.fromJson(),
                 messageId,
               )
-              // extremely rare (only happened once at 11-AUG-2021 10:39:26.470007000 according to oms_deleted_rows, 8 deleted)
-              // GL_TRANSACTIONS-DELETED"
+              "OFFENDER_ADVANCES-INSERTED" -> advancesSynchronisationService.advanceInserted(sqsMessage.Message.fromJson())
+
+              // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)
               // TODO Waiting for DPS to decide whether to intercept this event
+              // "OFFENDER_TRANSACTIONS-DELETED"
+              // extremely rare (only happened once at 11-AUG-2021 10:39:26.470007000 according to oms_deleted_rows, 8 deleted)
+              // TODO Waiting for DPS to decide whether to intercept this event
+              // GL_TRANSACTIONS-DELETED"
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
@@ -95,5 +101,11 @@ data class GLTransactionEvent(
   val caseload: String,
   val offenderIdDisplay: String? = null,
   val bookingId: Long? = null,
+  override val auditModuleName: String? = null,
+) : EventAudited
+
+data class AdvanceEvent(
+  val offenderAdvanceId: Long,
+  val offenderIdDisplay: String,
   override val auditModuleName: String? = null,
 ) : EventAudited

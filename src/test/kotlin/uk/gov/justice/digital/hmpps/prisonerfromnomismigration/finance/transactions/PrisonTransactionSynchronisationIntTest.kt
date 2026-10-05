@@ -27,6 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceAp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceNomisApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.GLTransactionEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.nomisTransactions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
