@@ -16,7 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 @Tag(name = "Finance Migration Resource")
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__UPDATE__RW')")
 class AdvancesDataRepairResource(
-  private val service: PrisonerAdvanceSynchronisationService,
+  private val service: AdvancesSynchronisationService,
   private val telemetryClient: TelemetryClient,
 ) {
 
@@ -33,7 +33,7 @@ class AdvancesDataRepairResource(
     @Schema(description = "Prisoner advance id (offender_profile_payments_id)", example = "123456", required = true)
     @PathVariable advanceId: Long,
   ) {
-    service.resynchronisePrisonerAdvance(advanceId)
+    service.resynchroniseAdvance(advanceId)
     telemetryClient.trackEvent(
       "prisoneradvance-resynchronisation-repair",
       mapOf(

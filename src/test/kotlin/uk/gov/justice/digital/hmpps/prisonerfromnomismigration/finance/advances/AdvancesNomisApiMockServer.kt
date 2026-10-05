@@ -19,7 +19,7 @@ import kotlin.String
 @Component
 class AdvancesNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
-  fun stubGetAdvanceById(
+  fun stubGetAdvance(
     advanceId: Long = 12345,
     prisonNumber: String = "A0001BC",
     prisonerAdvance: PrisonerAdvanceDto? = prisonerAdvance(prisonNumber = prisonNumber),
@@ -36,7 +36,7 @@ class AdvancesNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetAdvanceByIdNotFound(
+  fun stubGetAdvanceNotFound(
     advanceId: Long = 12345,
     status: HttpStatus = HttpStatus.NOT_FOUND,
     error: ErrorResponse = ErrorResponse(status = status.value()),

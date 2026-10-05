@@ -201,7 +201,7 @@ class AdvancesMappingApiServiceTest {
     inner class CreateMapping {
       @Test
       internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
-        mockServer.stubCreateMappingsForMigration()
+        mockServer.stubCreateMapping()
 
         apiService.createMapping(
           AdvanceMappingDto(
@@ -223,7 +223,7 @@ class AdvancesMappingApiServiceTest {
 
       @Test
       fun `will return success when OK response`() = runTest {
-        mockServer.stubCreateMappingsForMigration()
+        mockServer.stubCreateMapping()
 
         val result = apiService.createMapping(
           AdvanceMappingDto(
@@ -244,7 +244,7 @@ class AdvancesMappingApiServiceTest {
         val nomisId = 12345L
         val existingDpsId = "A4321BC"
 
-        mockServer.stubCreateMappingsForMigration(
+        mockServer.stubCreateMapping(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
               duplicate = AdvanceMappingDto(

@@ -50,7 +50,6 @@ class AdvancesMigrationIntTest(
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
 ) : FinanceIntegrationTestBase() {
   private val nomisApiMock = NomisApiExtension.nomisApi
-  private val dpsApiMock = financeApi
 
   override fun resetTelemetryClient() {}
 
@@ -114,10 +113,10 @@ class AdvancesMigrationIntTest(
         nomisApiMock.stubGetPrisonerIds(1, 1, "A0000BC")
         nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = "A0000BC")
         advancesNomisApiMock.stubGetPrisonerAdvances(rootOffenderId = 0, prisonerAdvances = prisonerAdvances)
-        dpsApiMock.stubMigrateAdvance(id = dpsAdvanceId)
+        financeApi.stubMigrateAdvance(id = dpsAdvanceId)
         mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = 12345, mapping = null)
         mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = 54321, mapping = null)
-        mappingApiMock.stubCreateMappingsForMigration()
+        mappingApiMock.stubCreateMapping()
         mappingApiMock.stubGetMigrationCount(migrationId = ".*", count = 2)
 
         migrationResult = performMigration()
@@ -238,7 +237,7 @@ class AdvancesMigrationIntTest(
 
       @Test
       fun `will not migrate advances to DPS`() {
-        dpsApiMock.verify(0, postRequestedFor(anyUrl()))
+        financeApi.verify(0, postRequestedFor(anyUrl()))
       }
 
       @Test
@@ -273,9 +272,9 @@ class AdvancesMigrationIntTest(
         nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = "A0000BC")
 
         advancesNomisApiMock.stubGetPrisonerAdvances(rootOffenderId = 0)
-        dpsApiMock.stubMigrateAdvance(id = dpsAdvanceId)
+        financeApi.stubMigrateAdvance(id = dpsAdvanceId)
         mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = 12345, mapping = null)
-        mappingApiMock.stubCreateMappingsForMigration(
+        mappingApiMock.stubCreateMapping(
           error = DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
               duplicate = AdvanceMappingDto(
