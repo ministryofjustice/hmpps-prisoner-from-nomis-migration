@@ -194,12 +194,12 @@ private fun CodeDescription?.mapCountryCode(): PrisonAddress.CountryCode? = when
   null -> null
   "IOM" -> PrisonAddress.CountryCode.IMN
   "ROM" -> PrisonAddress.CountryCode.ROU
-  else -> PrisonAddress.CountryCode.valueOf(this.code)
+  else -> PrisonAddress.CountryCode.valueOf(code)
 }
 
 internal fun OffenderAddressUsage.toPrisonAddressUsageRequest(): PrisonAddressUsage = PrisonAddressUsage(
   nomisAddressUsageId = addressId,
-  addressUsageCode = if (usage.code == "DISC") AddressUsageCode.RELEASE else AddressUsageCode.valueOf(usage.code),
+  addressUsageCode = AddressUsageCode.valueOf(usage),
   isActive = active,
   createDateTime = createdDateTime,
   createUserId = createdByUsername,

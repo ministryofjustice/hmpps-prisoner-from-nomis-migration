@@ -218,7 +218,7 @@ class CorePersonSynchronisationBeliefsService(
 }
 
 fun List<OffenderBelief>.toMigrateReligionsRequest(): PrisonReligionRequest = PrisonReligionRequest(
-  religions = this.mapIndexed { i, r ->
+  religions = mapIndexed { i, r ->
     PrisonReligionHistory(
       nomisReligionId = r.beliefId.toString(),
       current = i == 0,

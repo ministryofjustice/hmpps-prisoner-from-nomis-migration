@@ -265,7 +265,7 @@ class CorePersonNomisApiServiceTest(
       val usage = apiService.getOffenderAddressUsage(offenderId = 12345, addressId = 23456, usageCode = "CURFEW")
 
       assertThat(usage.addressId).isEqualTo(23456)
-      assertThat(usage.usage.code).isEqualTo("CURFEW")
+      assertThat(usage.usage).isEqualTo("CURFEW")
       assertThat(usage.active).isFalse()
     }
   }

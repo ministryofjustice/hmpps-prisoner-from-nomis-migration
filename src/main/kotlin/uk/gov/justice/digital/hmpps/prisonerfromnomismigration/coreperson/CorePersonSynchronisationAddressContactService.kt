@@ -526,10 +526,10 @@ class CorePersonSynchronisationAddressContactService(
     ?: throw ParentEntityNotFoundRetry("Received $eventType for address ${event.addressId} that has never been created")
 
   private fun OffenderAddressUsageEvent.toAddressUsageTelemetry() = telemetryOf(
-    "prisonNumber" to this.offenderIdDisplay,
-    "nomisOffenderId" to this.offenderId,
-    "nomisAddressId" to this.addressId,
-    "nomisAddressUsageCode" to this.addressUsage,
+    "prisonNumber" to offenderIdDisplay,
+    "nomisOffenderId" to offenderId,
+    "nomisAddressId" to addressId,
+    "nomisAddressUsageCode" to addressUsage,
   )
 
   private suspend fun tryToCreateAddressUsageMapping(

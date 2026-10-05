@@ -86,7 +86,7 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
           usages = listOf(
             OffenderAddressUsage(
               addressId = 10000,
-              usage = CodeDescription("HOME", "Home"),
+              usage = "HOME",
               active = true,
               createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
               createdByUsername = "SYSTEM",
@@ -327,7 +327,7 @@ fun offenderEmailAddress(emailAddressId: Long = 40000): OffenderEmailAddress = O
 
 fun offenderAddressUsage(addressId: Long = 3456, usageCode: String = "HOME"): OffenderAddressUsage = OffenderAddressUsage(
   addressId = addressId,
-  usage = CodeDescription(usageCode, usageCode),
+  usage = usageCode,
   active = true,
   createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
   createdByUsername = "SYSTEM",
