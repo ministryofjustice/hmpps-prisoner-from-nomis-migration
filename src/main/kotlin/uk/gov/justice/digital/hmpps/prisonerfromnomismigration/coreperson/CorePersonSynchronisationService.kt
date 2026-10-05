@@ -27,6 +27,6 @@ class CorePersonSynchronisationService(
   }
 }
 
-private fun MergeAdditionalInformationEvent.toPrisonMerge(): PrisonMerge = PrisonMerge(fromPrisonNumber = this.removedNomsNumber)
+private fun MergeAdditionalInformationEvent.toPrisonMerge(): PrisonMerge = PrisonMerge(fromPrisonNumber = removedNomsNumber)
 
 class BookingException(message: String) : IllegalArgumentException(message)

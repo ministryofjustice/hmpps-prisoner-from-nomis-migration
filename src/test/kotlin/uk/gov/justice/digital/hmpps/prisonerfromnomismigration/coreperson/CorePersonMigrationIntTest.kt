@@ -675,7 +675,7 @@ class CorePersonMigrationIntTest(
           usages = listOf(
             OffenderAddressUsage(
               addressId = offenderId,
-              usage = CodeDescription("HOME", "Home"),
+              usage = "HOME",
               active = true,
               createdDateTime = LocalDateTime.parse("2000-02-02T00:00:00"),
               createdByUsername = "SYSTEM",

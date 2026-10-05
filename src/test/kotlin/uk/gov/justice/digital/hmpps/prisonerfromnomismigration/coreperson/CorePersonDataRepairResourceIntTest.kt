@@ -105,7 +105,7 @@ class CorePersonDataRepairResourceIntTest(
             usages = listOf(
               OffenderAddressUsage(
                 addressId = 10000,
-                usage = CodeDescription("HOME", "Home"),
+                usage = "HOME",
                 active = true,
                 createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
                 createdByUsername = "SYSTEM",
