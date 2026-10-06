@@ -23,8 +23,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncPrisonUserCaseload
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncPrisonUserEmail
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncPrisonUserRole
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncUserCaseloadAdministrator
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncUserCaseloadMember
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -111,6 +114,30 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
               createdBy = "JIM_BEAM3",
             ),
           ),
+          administrationCaseloads = listOf(
+            SyncUserCaseloadAdministrator(
+              caseloadId = "MDI",
+              active = true,
+              expiryDate = LocalDate.parse("2028-12-04"),
+              createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
+              createdBy = "JIM_BEAM6",
+              modifiedTimestamp = LocalDateTime.parse("2020-12-05T10:42:43"),
+              modifiedBy = "FREDDY_SMITH",
+            ),
+          ),
+          memberCaseloads = listOf(
+            SyncUserCaseloadMember(
+              caseloadId = "MDI",
+              active = true,
+              startDate = LocalDate.parse("2020-12-04"),
+              expiryDate = LocalDate.parse("2028-12-04"),
+              createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
+              createdBy = "JIM_BEAM5",
+              modifiedTimestamp = LocalDateTime.parse("2020-12-05T10:42:43"),
+              modifiedBy = "FREDDY_SMITH",
+            ),
+          ),
+
           lastLoggedIn = LocalDateTime.parse("2026-03-17T12:30:00"),
 
           createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
@@ -119,15 +146,10 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           modifiedBy = "FRED_BROWN2",
         ),
       ),
-      // TODO add test data when pulled in from Nomis
-      memberCaseloads = listOf(),
-      // TODO add test data when pulled in from Nomis
-      administrationCaseloads = listOf(),
       createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
       createdBy = "JIM_BEAM",
       modifiedTimestamp = LocalDateTime.parse("2021-09-12T10:42:43"),
       modifiedBy = "FRED_BROWN",
-
     )
 
     fun verifyUserSyncRequest(staffId: Long = 1234) {
@@ -195,6 +217,7 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
             assertThat(createdBy).isEqualTo("KOFEADDY")
           }
+          // TODO test memberCaseloads and administrationCaseloads when pulled in from Nomis
         }
       }
     }
