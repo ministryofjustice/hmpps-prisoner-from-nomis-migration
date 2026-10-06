@@ -17,7 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomai
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import java.time.OffsetDateTime
 
-class CsraMergeIntTest2(
+class CsraMergeIntTest(
   @Autowired private val csraMappingApiMockServer: CsraMappingApiMockServer,
   @Autowired private val csraNomisApiMockServer: CsraNomisApiMockServer,
 ) : CsraIntegrationTestBase() {

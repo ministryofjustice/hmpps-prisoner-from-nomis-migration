@@ -7,14 +7,15 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraSyncRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerBookingMovedDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.originatesInDps
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CsraMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -147,6 +148,38 @@ class CsraSyncService(
     }
   }
 
+  suspend fun handleBookingMoved(prisonerMergeEvent: PrisonerBookingMovedDomainEvent) {
+    val (movedToNomsNumber, movedFromNomsNumber, bookingId) = prisonerMergeEvent.additionalInformation
+
+    val telemetry = telemetryOf(
+      "bookingId" to bookingId.toString(),
+      "movedToNomsNumber" to movedToNomsNumber,
+      "movedFromNomsNumber" to movedFromNomsNumber,
+    )
+    track("csras-booking-moved", telemetry) {
+      val csras = csraMappingApiService.updateMappingsByBookingId(bookingId, movedFromNomsNumber, movedToNomsNumber)
+      val idsToResynchronise = csras.map { UUID.fromString(it.dpsCsraId) }
+      telemetry["count"] = idsToResynchronise.size
+
+      queueService.sendMessage(
+        messageType = SynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_TARGET.name,
+        synchronisationType = SynchronisationType.CSRAS,
+        message = CsraMoveBookingMessage(
+          movedFromNomsNumber = movedFromNomsNumber,
+          movedToNomsNumber = movedToNomsNumber,
+          csraIds = idsToResynchronise,
+        ),
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
+    }
+  }
+
+  suspend fun moveCsras(message: InternalMessage<CsraMoveBookingMessage>) {
+    val (movedFromNomsNumber, movedToNomsNumber, csraIds) = message.body
+    csraDpsApiService.moveCsras(movedFromNomsNumber, movedToNomsNumber, csras = csraIds)
+    telemetryClient.trackEvent("csras-booking-moved-resynchronise-success", message.telemetryAttributes)
+  }
+
   enum class MappingResponse {
     MAPPING_CREATED,
     MAPPING_FAILED,
@@ -215,17 +248,8 @@ class CsraSyncService(
   }
 }
 
-private fun AssessmentEvent.toTelemetryProperties2(
-  dpsCsraId: String? = null,
-  mappingFailed: Boolean? = null,
-) = mapOf(
-  "bookingId" to this.bookingId.toString(),
-  "sequence" to this.assessmentSeq.toString(),
-  "offenderNo" to this.offenderIdDisplay,
-  "assessmentType" to this.assessmentType.toString(),
-) + (dpsCsraId?.let { mapOf("dpsCsraId" to it) } ?: emptyMap()) + (
-  if (mappingFailed == true) mapOf("mapping" to "initial-failure") else emptyMap()
-  )
-
-private fun AssessmentEvent.auditMissing() = auditModuleName == null
-private fun AssessmentEvent.isSourcedFromDPS() = auditModuleName.originatesInDps()
+data class CsraMoveBookingMessage(
+  val movedFromNomsNumber: String,
+  val movedToNomsNumber: String,
+  val csraIds: List<UUID>,
+)

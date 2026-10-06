@@ -9,6 +9,7 @@ import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_TARGET
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSRA_SYNC_QUEUE_ID
@@ -36,11 +37,12 @@ class CsraSynchronisationEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "csra")) {
             when (eventType) {
               "ASSESSMENT-INSERTED" -> csraSyncService.create(sqsMessage.Message.fromJson())
+              // TODO a CSRA can apparently be inserted and deleted at the same time, so we may need to ignore an insert if it doesn't exist in Nomis
               "ASSESSMENT-UPDATED" -> csraSyncService.update(sqsMessage.Message.fromJson())
               "ASSESSMENT-DELETED" -> csraSyncService.delete(sqsMessage.Message.fromJson())
 
               "prison-offender-events.prisoner.merged" -> csraSyncService.handlePrisonerMerged(sqsMessage.Message.fromJson())
-              "prison-offender-events.prisoner.booking.moved" -> null // csraSynchronisationService.synchronisePrisonerBookingMoved(sqsMessage.Message.fromJson())
+              "prison-offender-events.prisoner.booking.moved" -> csraSyncService.handleBookingMoved(sqsMessage.Message.fromJson())
 
               else -> log.info("Received a csra message I wasn't expecting {}", eventType)
             }
@@ -50,6 +52,7 @@ class CsraSynchronisationEventListener(
         }
 
         RETRY_SYNCHRONISATION_MAPPING.name -> csraSyncService.retryCreateMapping(sqsMessage.Message.fromJson())
+        RESYNCHRONISE_MOVE_BOOKING_TARGET.name -> csraSyncService.moveCsras(sqsMessage.Message.fromJson())
       }
     }
   }

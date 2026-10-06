@@ -9,6 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraMi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.NomisCsraReview
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.SyncResult
+import java.util.UUID
 
 @Service
 class CsraDpsApiService(
@@ -21,4 +22,8 @@ class CsraDpsApiService(
 
   suspend fun sync(prisonerNumber: String, csra: CsraSyncRequest): SyncResult = syncApi
     .sync(prisonerNumber, csra).awaitSingle()
+
+  suspend fun moveCsras(fromPrisonerNumber: String, toPrisonerNumber: String, csras: List<UUID>) {
+    syncApi.move(fromPrisonerNumber, toPrisonerNumber, csras).awaitSingle()
+  }
 }
