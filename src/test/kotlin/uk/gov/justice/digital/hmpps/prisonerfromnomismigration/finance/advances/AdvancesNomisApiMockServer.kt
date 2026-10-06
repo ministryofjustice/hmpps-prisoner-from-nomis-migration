@@ -85,6 +85,7 @@ fun prisonerAdvance(prisonNumber: String = "A0001BC"): PrisonerAdvanceDto = Pris
   startDate = LocalDate.of(2024, Month.JUNE, 18),
   reference = "description of the advance",
   comment = "This is a comment",
+  informationNumber = "info-123",
   status = "active",
   createdBy = "JD12345",
   createDatetime = LocalDateTime.of(2024, Month.JUNE, 18, 12, 30, 45),

@@ -61,8 +61,8 @@ fun PrisonerAdvanceDto.toSyncAdvanceDto() = SyncCreateAdvanceRecordRequest(
   status = SyncCreateAdvanceRecordRequest.Status.ACTIVE,
   createdOn = createDatetime,
   createdBy = createdBy,
-  // TODO pull in from Nomis
-  legacyInformationNumber = "info-123",
+  // TODO this should actually always be set - even though nullable in nomis prisoner api it is always set in db
+  legacyInformationNumber = informationNumber!!,
   // TODO pull in from Nomis
   legacyTransactionId = 123,
 )

@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-05.2158.54f3572"
+    "version" : "2026-10-06.2160.a2c4786"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -45513,6 +45513,11 @@
             "description" : "The comment for the advance",
             "example" : "Advance for personal expenses"
           },
+          "informationNumber" : {
+            "type" : [ "string", "null" ],
+            "description" : "The information number",
+            "example" : "12345678-1"
+          },
           "createdBy" : {
             "type" : "string",
             "description" : "The user who created the advance",
@@ -45574,9 +45579,17 @@
             "type" : [ "integer", "null" ],
             "format" : "int64"
           },
+          "txnEntrySeq" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "txnId" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "txnEntryDate" : {
+            "type" : "string",
+            "format" : "date-time"
           },
           "txnEntryDesc" : {
             "type" : [ "string", "null" ]
@@ -45586,14 +45599,6 @@
           },
           "txnEntryAmount" : {
             "type" : "number"
-          },
-          "txnEntryDate" : {
-            "type" : "string",
-            "format" : "date-time"
-          },
-          "txnEntrySeq" : {
-            "type" : "integer",
-            "format" : "int32"
           }
         },
         "required" : [ "txnEntryAmount", "txnEntryDate", "txnEntrySeq", "txnId" ]
