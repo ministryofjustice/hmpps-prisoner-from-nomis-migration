@@ -94,10 +94,6 @@ fun StaffDetails.toSyncStaffRequest() = PrisonUserSyncRequest(
   createdBy = audit.createUsername,
   modifiedTimestamp = audit.modifyDatetime,
   modifiedBy = audit.modifyUserId,
-  // TODO: pull in from Nomis
-  administrationCaseloads = listOf(),
-  // TODO: pull in from Nomis
-  memberCaseloads = listOf(),
 )
 
 private fun StaffEmail.toSyncUserEmail() = SyncPrisonUserEmail(
@@ -116,6 +112,10 @@ private fun StaffAccount.toSyncUserAccount() = SyncPrisonUserAccount(
   lastLoggedIn = lastLoggedIn,
   roles = this.caseloads.flatMap { caseload -> caseload.roles.map { it.toSyncPrisonUserRole() } },
   caseloads = caseloads.map { it.toSyncPrisonUserAccessibleCaseload() },
+  // TODO: pull in from Nomis
+  administrationCaseloads = listOf(),
+  // TODO: pull in from Nomis
+  memberCaseloads = listOf(),
   createdTimestamp = audit.createDatetime,
   createdBy = audit.createUsername,
   modifiedTimestamp = audit.modifyDatetime,

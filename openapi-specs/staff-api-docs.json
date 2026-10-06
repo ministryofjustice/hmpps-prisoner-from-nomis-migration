@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-02.260.f607fda"
+    "version" : "2026-10-06.264.992d0d0"
   },
   "servers" : [ {
     "url" : "https://prison-users-api-dev.prison.service.justice.gov.uk",
@@ -638,23 +638,9 @@
             "items" : {
               "$ref" : "#/components/schemas/SyncPrisonUserAccount"
             }
-          },
-          "administrationCaseloads" : {
-            "type" : "array",
-            "description" : "The list of administration caseloads associated with the user",
-            "items" : {
-              "$ref" : "#/components/schemas/SyncUserCaseloadAdministrator"
-            }
-          },
-          "memberCaseloads" : {
-            "type" : "array",
-            "description" : "The list of member caseloads associated with the user",
-            "items" : {
-              "$ref" : "#/components/schemas/SyncUserCaseloadMember"
-            }
           }
         },
-        "required" : [ "accounts", "administrationCaseloads", "createdBy", "createdTimestamp", "emails", "firstName", "lastName", "memberCaseloads", "status" ]
+        "required" : [ "accounts", "createdBy", "createdTimestamp", "emails", "firstName", "lastName", "status" ]
       },
       "SyncPrisonUserAccount" : {
         "type" : "object",
@@ -700,6 +686,20 @@
             "description" : "Identifier for the active caseload for the account",
             "example" : "MRI"
           },
+          "administrationCaseloads" : {
+            "type" : "array",
+            "description" : "The list of administration caseloads assigned to this user account",
+            "items" : {
+              "$ref" : "#/components/schemas/SyncUserCaseloadAdministrator"
+            }
+          },
+          "memberCaseloads" : {
+            "type" : "array",
+            "description" : "The list of member caseloads assigned to this user account",
+            "items" : {
+              "$ref" : "#/components/schemas/SyncUserCaseloadMember"
+            }
+          },
           "createdTimestamp" : {
             "type" : "string",
             "format" : "date-time",
@@ -723,7 +723,7 @@
             "example" : "TEST_USER"
           }
         },
-        "required" : [ "accountStatus", "accountType", "caseloads", "createdBy", "createdTimestamp", "roles", "username" ]
+        "required" : [ "accountStatus", "accountType", "administrationCaseloads", "caseloads", "createdBy", "createdTimestamp", "memberCaseloads", "roles", "username" ]
       },
       "SyncPrisonUserCaseload" : {
         "type" : "object",
@@ -809,11 +809,6 @@
         "type" : "object",
         "description" : "Caseload assigned to a user account to administer",
         "properties" : {
-          "username" : {
-            "type" : "string",
-            "description" : "Username for the user account",
-            "example" : "TEST_USER"
-          },
           "caseloadId" : {
             "type" : "string",
             "description" : "Identifier for the caseload the user account can access",
@@ -853,17 +848,12 @@
             "example" : "TEST_USER"
           }
         },
-        "required" : [ "active", "caseloadId", "createdBy", "createdTimestamp", "username" ]
+        "required" : [ "active", "caseloadId", "createdBy", "createdTimestamp" ]
       },
       "SyncUserCaseloadMember" : {
         "type" : "object",
         "description" : "Caseload assigned to a user account",
         "properties" : {
-          "username" : {
-            "type" : "string",
-            "description" : "Username for the user account",
-            "example" : "TEST_USER"
-          },
           "caseloadId" : {
             "type" : "string",
             "description" : "Identifier for the caseload the user account can access",
@@ -909,7 +899,7 @@
             "example" : "TEST_USER"
           }
         },
-        "required" : [ "active", "caseloadId", "createdBy", "createdTimestamp", "startDate", "username" ]
+        "required" : [ "active", "caseloadId", "createdBy", "createdTimestamp", "startDate" ]
       },
       "ErrorResponse" : {
         "type" : "object",
