@@ -14,8 +14,9 @@ import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType.EMAIL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType.PHONE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
@@ -69,18 +70,20 @@ class CorePersonMappingServiceTest(
     mappingType = CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED,
   )
 
-  private fun emailMapping() = CorePersonEmailAddressMappingDto(
+  private fun emailMapping() = CorePersonContactMappingDto(
     cprId = "cpr-email-id",
     nomisId = 1234567,
+    nomisContactType = EMAIL,
     nomisPrisonNumber = "A1234BC",
-    mappingType = CorePersonEmailAddressMappingDto.MappingType.NOMIS_CREATED,
+    mappingType = CorePersonContactMappingDto.MappingType.NOMIS_CREATED,
   )
 
-  private fun phoneMapping() = CorePersonPhoneMappingDto(
+  private fun phoneMapping() = CorePersonContactMappingDto(
     cprId = "cpr-phone-id",
     nomisId = 1234567,
+    nomisContactType = PHONE,
     nomisPrisonNumber = "A1234BC",
-    mappingType = CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+    mappingType = CorePersonContactMappingDto.MappingType.NOMIS_CREATED,
   )
 
   @Nested
@@ -285,23 +288,23 @@ class CorePersonMappingServiceTest(
   inner class GetByNomisEmailIdOrNull {
     @Test
     fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetByNomisEmailIdOrNull(1234567)
+      mockServer.stubGetByNomisContactIdOrNull(1234567, EMAIL)
 
       apiService.getByNomisEmailIdOrNull(1234567)
 
-      mockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/email/nomis-email-address-id/1234567")))
+      mockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/contact/nomis-contact-id/1234567/type/EMAIL")))
     }
 
     @Test
     fun `will return mapping when it exists`() = runTest {
-      mockServer.stubGetByNomisEmailIdOrNull(1234567)
+      mockServer.stubGetByNomisContactIdOrNull(1234567, EMAIL)
 
       assertThat(apiService.getByNomisEmailIdOrNull(1234567)!!.nomisId).isEqualTo(1234567)
     }
 
     @Test
     fun `will return null if mapping does not exist`() = runTest {
-      mockServer.stubGetByNomisEmailIdOrNull(1234567, null)
+      mockServer.stubGetByNomisContactIdOrNull(1234567, EMAIL, null)
 
       assertThat(apiService.getByNomisEmailIdOrNull(1234567)).isNull()
     }
@@ -311,7 +314,7 @@ class CorePersonMappingServiceTest(
   inner class GetByNomisEmailId {
     @Test
     fun `will return mapping`() = runTest {
-      mockServer.stubGetByNomisEmailIdOrNull(1234567)
+      mockServer.stubGetByNomisContactIdOrNull(1234567, EMAIL)
 
       assertThat(apiService.getByNomisEmailId(1234567).nomisId).isEqualTo(1234567)
     }
@@ -321,11 +324,11 @@ class CorePersonMappingServiceTest(
   inner class DeleteByNomisEmailId {
     @Test
     fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubDeleteByNomisEmailId(1234567)
+      mockServer.stubDeleteByNomisContactId(1234567, EMAIL)
 
       apiService.deleteByNomisEmailId(1234567)
 
-      mockServer.verify(deleteRequestedFor(urlPathEqualTo("/mapping/core-person/email/nomis-email-address-id/1234567")))
+      mockServer.verify(deleteRequestedFor(urlPathEqualTo("/mapping/core-person/contact/nomis-contact-id/1234567/type/EMAIL")))
     }
   }
 
@@ -333,11 +336,18 @@ class CorePersonMappingServiceTest(
   inner class CreateEmailMapping {
     @Test
     fun `will pass mapping to service`() = runTest {
-      mockServer.stubCreateEmailMapping()
+      mockServer.stubCreateContactMapping()
 
       apiService.createEmailMapping(emailMapping())
 
-      mockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/core-person/email")))
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/core-person/contact"))
+          .withRequestBodyJsonPath("cprId", "cpr-email-id")
+          .withRequestBodyJsonPath("nomisId", 1234567)
+          .withRequestBodyJsonPath("nomisContactType", "EMAIL")
+          .withRequestBodyJsonPath("nomisPrisonNumber", "A1234BC")
+          .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+      )
     }
 
     @Test
@@ -346,20 +356,22 @@ class CorePersonMappingServiceTest(
       val cprId = "cpr-email-id"
       val existingCprId = "existing-cpr-email-id"
 
-      mockServer.stubCreateEmailMapping(
+      mockServer.stubCreateContactMapping(
         error = DuplicateMappingErrorResponse(
           moreInfo = DuplicateErrorContentObject(
-            duplicate = CorePersonEmailAddressMappingDto(
+            duplicate = CorePersonContactMappingDto(
               cprId = cprId,
               nomisId = nomisId,
+              nomisContactType = EMAIL,
               nomisPrisonNumber = "A1234BC",
-              mappingType = CorePersonEmailAddressMappingDto.MappingType.NOMIS_CREATED,
+              mappingType = CorePersonContactMappingDto.MappingType.NOMIS_CREATED,
             ),
-            existing = CorePersonEmailAddressMappingDto(
+            existing = CorePersonContactMappingDto(
               cprId = existingCprId,
               nomisId = nomisId,
+              nomisContactType = EMAIL,
               nomisPrisonNumber = "A1234BC",
-              mappingType = CorePersonEmailAddressMappingDto.MappingType.NOMIS_CREATED,
+              mappingType = CorePersonContactMappingDto.MappingType.NOMIS_CREATED,
             ),
           ),
           errorCode = 1409,
@@ -380,23 +392,23 @@ class CorePersonMappingServiceTest(
   inner class GetByNomisPhoneIdOrNull {
     @Test
     fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetByNomisPhoneIdOrNull(1234567)
+      mockServer.stubGetByNomisContactIdOrNull(1234567, PHONE)
 
       apiService.getByNomisPhoneIdOrNull(1234567)
 
-      mockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/phone/nomis-phone-id/1234567")))
+      mockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/contact/nomis-contact-id/1234567/type/PHONE")))
     }
 
     @Test
     fun `will return mapping when it exists`() = runTest {
-      mockServer.stubGetByNomisPhoneIdOrNull(1234567)
+      mockServer.stubGetByNomisContactIdOrNull(1234567, PHONE)
 
       assertThat(apiService.getByNomisPhoneIdOrNull(1234567)!!.nomisId).isEqualTo(1234567)
     }
 
     @Test
     fun `will return null if mapping does not exist`() = runTest {
-      mockServer.stubGetByNomisPhoneIdOrNull(1234567, null)
+      mockServer.stubGetByNomisContactIdOrNull(1234567, PHONE, null)
 
       assertThat(apiService.getByNomisPhoneIdOrNull(1234567)).isNull()
     }
@@ -406,7 +418,7 @@ class CorePersonMappingServiceTest(
   inner class GetByNomisPhoneId {
     @Test
     fun `will return mapping`() = runTest {
-      mockServer.stubGetByNomisPhoneIdOrNull(1234567)
+      mockServer.stubGetByNomisContactIdOrNull(1234567, PHONE)
 
       assertThat(apiService.getByNomisPhoneId(1234567).nomisId).isEqualTo(1234567)
     }
@@ -416,11 +428,11 @@ class CorePersonMappingServiceTest(
   inner class DeleteByNomisPhoneId {
     @Test
     fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubDeleteByNomisPhoneId(1234567)
+      mockServer.stubDeleteByNomisContactId(1234567, PHONE)
 
       apiService.deleteByNomisPhoneId(1234567)
 
-      mockServer.verify(deleteRequestedFor(urlPathEqualTo("/mapping/core-person/phone/nomis-phone-id/1234567")))
+      mockServer.verify(deleteRequestedFor(urlPathEqualTo("/mapping/core-person/contact/nomis-contact-id/1234567/type/PHONE")))
     }
   }
 
@@ -428,11 +440,18 @@ class CorePersonMappingServiceTest(
   inner class CreatePhoneMapping {
     @Test
     fun `will pass mapping to service`() = runTest {
-      mockServer.stubCreatePhoneMapping()
+      mockServer.stubCreateContactMapping()
 
       apiService.createPhoneMapping(phoneMapping())
 
-      mockServer.verify(postRequestedFor(urlPathEqualTo("/mapping/core-person/phone")))
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/core-person/contact"))
+          .withRequestBodyJsonPath("cprId", "cpr-phone-id")
+          .withRequestBodyJsonPath("nomisId", 1234567)
+          .withRequestBodyJsonPath("nomisContactType", "PHONE")
+          .withRequestBodyJsonPath("nomisPrisonNumber", "A1234BC")
+          .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+      )
     }
 
     @Test
@@ -441,20 +460,22 @@ class CorePersonMappingServiceTest(
       val cprId = "cpr-phone-id"
       val existingCprId = "existing-cpr-phone-id"
 
-      mockServer.stubCreatePhoneMapping(
+      mockServer.stubCreateContactMapping(
         error = DuplicateMappingErrorResponse(
           moreInfo = DuplicateErrorContentObject(
-            duplicate = CorePersonPhoneMappingDto(
+            duplicate = CorePersonContactMappingDto(
               cprId = cprId,
               nomisId = nomisId,
+              nomisContactType = PHONE,
               nomisPrisonNumber = "A1234BC",
-              mappingType = CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+              mappingType = CorePersonContactMappingDto.MappingType.NOMIS_CREATED,
             ),
-            existing = CorePersonPhoneMappingDto(
+            existing = CorePersonContactMappingDto(
               cprId = existingCprId,
               nomisId = nomisId,
+              nomisContactType = PHONE,
               nomisPrisonNumber = "A1234BC",
-              mappingType = CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+              mappingType = CorePersonContactMappingDto.MappingType.NOMIS_CREATED,
             ),
           ),
           errorCode = 1409,

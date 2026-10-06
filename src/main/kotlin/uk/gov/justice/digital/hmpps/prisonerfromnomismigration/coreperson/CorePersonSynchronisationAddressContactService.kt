@@ -13,9 +13,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -73,10 +73,11 @@ class CorePersonSynchronisationAddressContactService(
               .also {
                 telemetry["cprContactEmailId"] = it.cprContactId
               }
-          val mapping = CorePersonEmailAddressMappingDto(
+          val mapping = CorePersonContactMappingDto(
             nomisId = event.internetAddressId,
+            nomisContactType = NomisContactType.EMAIL,
             cprId = cprEmail.cprContactId,
-            mappingType = CorePersonEmailAddressMappingDto.MappingType.NOMIS_CREATED,
+            mappingType = CorePersonContactMappingDto.MappingType.NOMIS_CREATED,
             nomisPrisonNumber = event.offenderIdDisplay,
           )
 
@@ -124,7 +125,7 @@ class CorePersonSynchronisationAddressContactService(
   }
 
   private suspend fun tryToCreateMapping(
-    mapping: CorePersonEmailAddressMappingDto,
+    mapping: CorePersonContactMappingDto,
     telemetry: Map<String, Any>,
   ) {
     try {
@@ -140,7 +141,7 @@ class CorePersonSynchronisationAddressContactService(
     }
   }
 
-  suspend fun retryCreateEmailMapping(retryMessage: InternalMessage<CorePersonEmailAddressMappingDto>) {
+  suspend fun retryCreateEmailMapping(retryMessage: InternalMessage<CorePersonContactMappingDto>) {
     createEmailMapping(retryMessage.body)
       .also {
         telemetryClient.trackEvent(
@@ -150,7 +151,7 @@ class CorePersonSynchronisationAddressContactService(
       }
   }
   private suspend fun createEmailMapping(
-    mapping: CorePersonEmailAddressMappingDto,
+    mapping: CorePersonContactMappingDto,
   ) {
     corePersonMappingService.createEmailMapping(mapping).takeIf { it.isError }?.also {
       with(it.errorResponse!!.moreInfo) {
@@ -323,11 +324,12 @@ class CorePersonSynchronisationAddressContactService(
           telemetry["cprPhoneId"] = it.cprContactId
         }
         tryToCreatePhoneMapping(
-          CorePersonPhoneMappingDto(
+          CorePersonContactMappingDto(
             nomisId = event.phoneId,
+            nomisContactType = NomisContactType.PHONE,
             cprId = cprPhone.cprContactId,
             nomisPrisonNumber = event.offenderIdDisplay,
-            mappingType = CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
+            mappingType = CorePersonContactMappingDto.MappingType.NOMIS_CREATED,
           ),
           telemetry,
         )
@@ -405,7 +407,7 @@ class CorePersonSynchronisationAddressContactService(
   }
 
   private suspend fun tryToCreatePhoneMapping(
-    mapping: CorePersonPhoneMappingDto,
+    mapping: CorePersonContactMappingDto,
     telemetry: Map<String, Any>,
   ) {
     try {
@@ -421,14 +423,14 @@ class CorePersonSynchronisationAddressContactService(
     }
   }
 
-  suspend fun retryCreatePhoneMapping(retryMessage: InternalMessage<CorePersonPhoneMappingDto>) {
+  suspend fun retryCreatePhoneMapping(retryMessage: InternalMessage<CorePersonContactMappingDto>) {
     createPhoneMapping(retryMessage.body)
       .also {
         telemetryClient.trackEvent("coreperson-phone-mapping-synchronisation-created", retryMessage.telemetryAttributes)
       }
   }
 
-  private suspend fun createPhoneMapping(mapping: CorePersonPhoneMappingDto) {
+  private suspend fun createPhoneMapping(mapping: CorePersonContactMappingDto) {
     corePersonMappingService.createPhoneMapping(mapping).takeIf { it.isError }?.also {
       with(it.errorResponse!!.moreInfo) {
         telemetryClient.trackEvent(

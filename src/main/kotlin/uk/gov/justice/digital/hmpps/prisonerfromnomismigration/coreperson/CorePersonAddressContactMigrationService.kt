@@ -20,10 +20,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
@@ -236,20 +236,17 @@ fun SysconAddressesAndContactsResponseBody.toCorePersonMappingsDto(
     CorePersonMappingsDto.MappingType.MIGRATED -> MigrationTypes(
       CorePersonAddressMappingDto.MappingType.MIGRATED,
       CorePersonAddressUsageMappingDto.MappingType.MIGRATED,
-      CorePersonPhoneMappingDto.MappingType.MIGRATED,
-      CorePersonEmailAddressMappingDto.MappingType.MIGRATED,
+      CorePersonContactMappingDto.MappingType.MIGRATED,
     )
     CorePersonMappingsDto.MappingType.CPR_CREATED -> MigrationTypes(
       CorePersonAddressMappingDto.MappingType.CPR_CREATED,
       CorePersonAddressUsageMappingDto.MappingType.CPR_CREATED,
-      CorePersonPhoneMappingDto.MappingType.CPR_CREATED,
-      CorePersonEmailAddressMappingDto.MappingType.CPR_CREATED,
+      CorePersonContactMappingDto.MappingType.CPR_CREATED,
     )
     CorePersonMappingsDto.MappingType.NOMIS_CREATED -> MigrationTypes(
       CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
       CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED,
-      CorePersonPhoneMappingDto.MappingType.NOMIS_CREATED,
-      CorePersonEmailAddressMappingDto.MappingType.NOMIS_CREATED,
+      CorePersonContactMappingDto.MappingType.NOMIS_CREATED,
     )
   }
   return CorePersonMappingsDto(
@@ -280,41 +277,33 @@ fun SysconAddressesAndContactsResponseBody.toCorePersonMappingsDto(
         )
       }
     },
-    phoneNumbers = addressesMappings.flatMap { a ->
+    contacts = addressesMappings.flatMap { a ->
       a.contactMappings.map {
-        CorePersonPhoneMappingDto(
+        CorePersonContactMappingDto(
           cprId = it.cprContactId,
           nomisId = it.nomisContactId,
+          nomisContactType = NomisContactType.PHONE,
           nomisPrisonNumber = prisonNumber,
-          mappingType = migrationTypes.phoneType,
+          mappingType = migrationTypes.contactType,
           label = migrationId,
         )
       }
     } +
-      contactMappings.filter { it.nomisContactType != SysconContactMapping.NomisContactType.EMAIL }.map {
-        CorePersonPhoneMappingDto(
+      contactMappings.map {
+        CorePersonContactMappingDto(
           cprId = it.cprContactId,
           nomisId = it.nomisContactId,
+          nomisContactType = if (it.nomisContactType == SysconContactMapping.NomisContactType.EMAIL) NomisContactType.EMAIL else NomisContactType.PHONE,
           nomisPrisonNumber = prisonNumber,
-          mappingType = migrationTypes.phoneType,
+          mappingType = migrationTypes.contactType,
           label = migrationId,
         )
       },
-    emailAddresses = contactMappings.filter { it.nomisContactType == SysconContactMapping.NomisContactType.EMAIL }.map {
-      CorePersonEmailAddressMappingDto(
-        cprId = it.cprContactId,
-        nomisId = it.nomisContactId,
-        nomisPrisonNumber = prisonNumber,
-        mappingType = migrationTypes.emailType,
-        label = migrationId,
-      )
-    },
   )
 }
 
 data class MigrationTypes(
   val addressType: CorePersonAddressMappingDto.MappingType,
   val addressUsageType: CorePersonAddressUsageMappingDto.MappingType,
-  val phoneType: CorePersonPhoneMappingDto.MappingType,
-  val emailType: CorePersonEmailAddressMappingDto.MappingType,
+  val contactType: CorePersonContactMappingDto.MappingType,
 )
