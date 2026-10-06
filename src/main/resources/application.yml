@@ -206,47 +206,10 @@ activities:
   complete-check:
     delay-seconds: 180
     count: 9
-allocations:
-  complete-check:
-    delay-seconds: 180
-    count: 9
 
-finance:
-  transactions.forwardingDelaySeconds: 20
-
-courtsentencing:
-  mapping-retry:
-    delay-milliseconds: 1000
-    count: 9
-
-personalrelationships:
-  complete-check:
-    delay-seconds: 180
-    count: 9
-
-courtmovements:
-  complete-check:
-    delay-seconds: 180
-    count: 9
-
-externalmovements:
-  complete-check:
-    delay-seconds: 180
-    count: 9
-
-transfermovements:
-  complete-check:
-    delay-seconds: 180
-    count: 9
-
-visitslots:
+advances:
   complete-check:
     delay-seconds: 10
-    count: 9
-
-officialvisits:
-  complete-check:
-    delay-seconds: 180
     count: 9
 
 agencyregisters:
@@ -254,9 +217,47 @@ agencyregisters:
     delay-seconds: 10
     count: 9
 
+allocations:
+  complete-check:
+    delay-seconds: 180
+    count: 9
+
 coreperson:
   complete-check:
     delay-seconds: 10
+    count: 9
+
+courtsentencing:
+  mapping-retry:
+    delay-milliseconds: 1000
+    count: 9
+
+courtmovements:
+  complete-check:
+    delay-seconds: 180
+    count: 9
+
+drugtesting:
+  complete-check:
+    delay-seconds: 10
+    count: 9
+
+finance:
+  transactions.forwardingDelaySeconds: 20
+
+transfermovements:
+  complete-check:
+    delay-seconds: 180
+    count: 9
+
+officialvisits:
+  complete-check:
+    delay-seconds: 180
+    count: 9
+
+personalrelationships:
+  complete-check:
+    delay-seconds: 180
     count: 9
 
 staff:
@@ -264,7 +265,7 @@ staff:
     delay-seconds: 10
     count: 9
 
-drugtesting:
+visitslots:
   complete-check:
     delay-seconds: 10
     count: 9
@@ -293,6 +294,9 @@ hmpps.sqs:
       errorVisibilityTimeout: 1, 1, 1, 1
       propagateTracing: false
     migrationactivities:
+      errorVisibilityTimeout: 1, 1, 1, 10
+      propagateTracing: false
+    migrationadvances:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationallocations:

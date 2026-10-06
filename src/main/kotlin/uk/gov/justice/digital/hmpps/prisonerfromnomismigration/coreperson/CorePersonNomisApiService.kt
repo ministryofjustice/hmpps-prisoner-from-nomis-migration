@@ -9,7 +9,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CreateOffenderEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CreateOffenderEmailResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderEmailAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPhoneNumber
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.UpdateOffenderEmailRequest
 
 @Service
@@ -22,6 +25,22 @@ class CorePersonNomisApiService(@Qualifier("nomisApiWebClient") private val webC
 
   suspend fun getCorePersonAddressesAndContacts(nomisPrisonNumber: String): CorePersonAddressContact = api
     .getOffenderAddressesAndContactsByPrisonNumber(prisonNumber = nomisPrisonNumber)
+    .awaitSingle()
+
+  suspend fun getOffenderAddress(offenderId: Long, addressId: Long): OffenderAddress = api
+    .getOffenderAddress(offenderId, addressId)
+    .awaitSingle()
+
+  suspend fun getOffenderAddressUsage(offenderId: Long, addressId: Long, usageCode: String): OffenderAddressUsage = api
+    .getOffenderAddressUsage(offenderId, addressId, usageCode)
+    .awaitSingle()
+
+  suspend fun getOffenderPhone(offenderId: Long, phoneId: Long): OffenderPhoneNumber = api
+    .getOffenderPhone(offenderId, phoneId)
+    .awaitSingle()
+
+  suspend fun getOffenderAddressPhone(offenderId: Long, addressId: Long, phoneId: Long): OffenderPhoneNumber = api
+    .getOffenderAddressPhone(offenderId, addressId, phoneId)
     .awaitSingle()
 
   suspend fun getOffenderReligions(nomisPrisonNumber: String) = api.getOffenderReligionsByPrisonNumber(nomisPrisonNumber)

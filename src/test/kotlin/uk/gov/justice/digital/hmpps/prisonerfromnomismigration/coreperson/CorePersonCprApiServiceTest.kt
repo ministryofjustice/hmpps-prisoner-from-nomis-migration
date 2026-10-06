@@ -1,12 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
-import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -17,11 +17,13 @@ import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.cprCorePersonServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
@@ -35,39 +37,14 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
   @Nested
   inner class MigrateCorePersonAddresses {
     @Test
-    internal fun `will pass oauth2 token to sync endpoint`() = runTest {
-      cprCorePersonServer.stubMigrateAddressesAndContacts("A1234BC")
-
-      apiService.migrateCorePersonAddressesAndContacts("A1234BC", prisonAddressesRequest())
-
-      cprCorePersonServer.verify(
-        postRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will post request data to the sync endpoint`() = runTest {
-      cprCorePersonServer.stubMigrateAddressesAndContacts()
-
-      apiService.migrateCorePersonAddressesAndContacts("A1234BC", prisonAddressesRequest())
-
-      cprCorePersonServer.verify(
-        postRequestedFor(anyUrl())
-          .withRequestBodyJsonPath("addresses[0].nomisAddressId", equalTo("12345"))
-          .withRequestBodyJsonPath("addresses[0].isPrimary", equalTo("true"))
-          .withRequestBodyJsonPath("addresses[0].postcode", equalTo("MK15 2ST")),
-      )
-    }
-
-    @Test
     fun `will call the sync endpoint`() = runTest {
       cprCorePersonServer.stubMigrateAddressesAndContacts("A1234BC")
 
       apiService.migrateCorePersonAddressesAndContacts("A1234BC", prisonAddressesRequest())
 
       cprCorePersonServer.verify(
-        postRequestedFor(urlPathEqualTo("/syscon-sync/addresses-contacts/A1234BC")),
+        postRequestedFor(urlPathEqualTo("/syscon-sync/addresses-contacts/A1234BC"))
+          .withRequestBodyJsonPath("addresses[0].nomisAddressId", equalTo("12345")),
       )
     }
 
@@ -84,47 +61,14 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
   @Nested
   inner class SyncCreateOffenderBelief {
     @Test
-    internal fun `will pass oauth2 token to sync endpoint`() = runTest {
-      cprCorePersonServer.stubSyncCreateOffenderBelief("A1234BC")
-
-      apiService.syncCreateOffenderBelief("A1234BC", prisonReligionRequest())
-
-      cprCorePersonServer.verify(
-        postRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will post request data to the sync endpoint`() = runTest {
-      cprCorePersonServer.stubSyncCreateOffenderBelief()
-
-      apiService.syncCreateOffenderBelief("A1234BC", prisonReligionRequest())
-
-      cprCorePersonServer.verify(
-        postRequestedFor(anyUrl())
-          .withRequestBodyJsonPath("nomisReligionId", equalTo("1"))
-          .withRequestBodyJsonPath("religionCode", equalTo("BAPT"))
-          .withRequestBodyJsonPath("current", equalTo("true"))
-          .withRequestBodyJsonPath("changeReasonKnown", equalTo("true"))
-          .withRequestBodyJsonPath("comments", equalTo("This is a comment"))
-          .withRequestBodyJsonPath("startDate", equalTo("2020-11-01"))
-          .withRequestBodyJsonPath("endDate", equalTo("2022-07-19"))
-          .withRequestBodyJsonPath("createDateTime", equalTo("2019-11-01T04:05:00"))
-          .withRequestBodyJsonPath("createUserId", equalTo("FRED_GEN"))
-          .withRequestBodyJsonPath("modifyDateTime", equalTo("2020-11-01T04:05:00"))
-          .withRequestBodyJsonPath("modifyUserId", equalTo("FRED_ADM")),
-      )
-    }
-
-    @Test
     fun `will call the sync endpoint`() = runTest {
       cprCorePersonServer.stubSyncCreateOffenderBelief("A1234BC")
 
       apiService.syncCreateOffenderBelief("A1234BC", prisonReligionRequest())
 
       cprCorePersonServer.verify(
-        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/religion")),
+        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/religion"))
+          .withRequestBodyJsonPath("nomisReligionId", equalTo("1")),
       )
     }
 
@@ -141,39 +85,14 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
   @Nested
   inner class SyncUpdateOffenderBelief {
     @Test
-    internal fun `will pass oauth2 token to sync endpoint`() = runTest {
-      cprCorePersonServer.stubSyncUpdateOffenderBelief("A1234BC")
-
-      apiService.syncUpdateOffenderBelief("A1234BC", "cprId", prisonReligionUpdateRequest())
-
-      cprCorePersonServer.verify(
-        putRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will post request data to the sync endpoint`() = runTest {
-      cprCorePersonServer.stubSyncUpdateOffenderBelief()
-
-      apiService.syncUpdateOffenderBelief("A1234BC", "cprId", prisonReligionUpdateRequest())
-
-      cprCorePersonServer.verify(
-        putRequestedFor(anyUrl())
-          .withRequestBodyJsonPath("comments", equalTo("This is a comment"))
-          .withRequestBodyJsonPath("modifyDateTime", equalTo("2020-11-01T04:05:00"))
-          .withRequestBodyJsonPath("modifyUserId", equalTo("FRED_ADM")),
-      )
-    }
-
-    @Test
     fun `will call the sync endpoint`() = runTest {
       cprCorePersonServer.stubSyncUpdateOffenderBelief("A1234BC")
 
       apiService.syncUpdateOffenderBelief("A1234BC", "cprId", prisonReligionUpdateRequest())
 
       cprCorePersonServer.verify(
-        putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/religion/cprId")),
+        putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/religion/cprId"))
+          .withRequestBodyJsonPath("comments", equalTo("This is a comment")),
       )
     }
 
@@ -188,45 +107,22 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
   }
 
   @Nested
-  inner class SyncCreateEmail {
+  inner class SyncCreateContact {
     @Test
-    internal fun `will pass oauth2 token to sync endpoint`() = runTest {
-      cprCorePersonServer.stubSyncCreateEmail("A1234BC")
-
-      apiService.syncCreateEmail("A1234BC", prisonEmailRequest())
-
-      cprCorePersonServer.verify(
-        postRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+    fun `will call the sync endpoint and return the contact mapping`() = runTest {
+      cprCorePersonServer.stubSyncCreateEmail(
+        prisonNumber = "A1234BC",
+        response = CorePersonCprApiMockServer.syncCorePersonEmailResponse(nomisContactId = 12345, cprContactId = "cprContactId"),
       )
-    }
 
-    @Test
-    internal fun `will post request data to the sync endpoint`() = runTest {
-      cprCorePersonServer.stubSyncCreateEmail()
+      val response = apiService.syncCreateContact("A1234BC", prisonPhoneRequest())
 
-      apiService.syncCreateEmail("A1234BC", prisonEmailRequest())
-
+      assertThat(response.nomisContactId).isEqualTo(12345)
+      assertThat(response.cprContactId).isEqualTo("cprContactId")
       cprCorePersonServer.verify(
-        postRequestedFor(anyUrl())
+        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/contact"))
           .withRequestBodyJsonPath("nomisContactId", equalTo("12345"))
-          .withRequestBodyJsonPath("type", equalTo("EMAIL"))
-          .withRequestBodyJsonPath("value", equalTo("test@example.com"))
-          .withRequestBodyJsonPath("createDateTime", equalTo("2019-11-01T04:05:00"))
-          .withRequestBodyJsonPath("createUserId", equalTo("FRED_GEN"))
-          .withRequestBodyJsonPath("modifyDateTime", equalTo("2020-11-01T04:05:00"))
-          .withRequestBodyJsonPath("modifyUserId", equalTo("FRED_ADM")),
-      )
-    }
-
-    @Test
-    fun `will call the sync endpoint`() = runTest {
-      cprCorePersonServer.stubSyncCreateEmail("A1234BC")
-
-      apiService.syncCreateEmail("A1234BC", prisonEmailRequest())
-
-      cprCorePersonServer.verify(
-        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/contact")),
+          .withRequestBodyJsonPath("type", equalTo("MOBILE")),
       )
     }
 
@@ -235,141 +131,239 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
       cprCorePersonServer.stubSyncCreateEmail("A1234BC", status = BAD_REQUEST)
 
       assertThrows<WebClientResponseException.BadRequest> {
-        apiService.syncCreateEmail("A1234BC", prisonEmailRequest())
+        apiService.syncCreateContact("A1234BC", prisonPhoneRequest())
       }
     }
   }
 
   @Nested
-  inner class SyncUpdateEmail {
+  inner class SyncUpdateContact {
     @Test
-    internal fun `will pass oauth2 token to sync endpoint`() = runTest {
-      cprCorePersonServer.stubSyncUpdateEmail("A1234BC")
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncUpdateEmail("A1234BC", "cprContactId")
 
-      apiService.syncUpdateEmail("A1234BC", "cprContactId", prisonEmailRequest())
+      apiService.syncUpdateContact("A1234BC", "cprContactId", prisonPhoneRequest())
 
       cprCorePersonServer.verify(
-        putRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will post request data to the sync endpoint`() = runTest {
-      cprCorePersonServer.stubSyncUpdateEmail()
-
-      apiService.syncUpdateEmail("A1234BC", "cprContactId", prisonEmailRequest())
-
-      cprCorePersonServer.verify(
-        putRequestedFor(anyUrl())
+        putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/contact/cprContactId"))
           .withRequestBodyJsonPath("nomisContactId", equalTo("12345"))
-          .withRequestBodyJsonPath("type", equalTo("EMAIL"))
-          .withRequestBodyJsonPath("value", equalTo("test@example.com"))
-          .withRequestBodyJsonPath("modifyDateTime", equalTo("2020-11-01T04:05:00"))
-          .withRequestBodyJsonPath("modifyUserId", equalTo("FRED_ADM")),
+          .withRequestBodyJsonPath("type", equalTo("MOBILE")),
       )
-    }
-
-    @Test
-    fun `will call the sync endpoint`() = runTest {
-      cprCorePersonServer.stubSyncUpdateEmail("A1234BC")
-
-      apiService.syncUpdateEmail("A1234BC", "cprContactId", prisonEmailRequest())
-
-      cprCorePersonServer.verify(
-        putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/contact/cprContactId")),
-      )
-    }
-
-    @Test
-    fun `should throw if bad request`() = runTest {
-      cprCorePersonServer.stubSyncUpdateEmail("A1234BC", status = BAD_REQUEST)
-
-      assertThrows<WebClientResponseException.BadRequest> {
-        apiService.syncUpdateEmail("A1234BC", "cprContactId", prisonEmailRequest())
-      }
     }
   }
 
   @Nested
-  inner class SyncDeleteEmail {
-    @Test
-    internal fun `will pass oauth2 token to sync endpoint`() = runTest {
-      cprCorePersonServer.stubSyncDeleteEmail("A1234BC")
-
-      apiService.syncDeleteEmail("A1234BC", "cprContactId")
-
-      cprCorePersonServer.verify(
-        deleteRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
+  inner class SyncDeleteContact {
     @Test
     fun `will call the sync endpoint`() = runTest {
-      cprCorePersonServer.stubSyncDeleteEmail("A1234BC")
+      cprCorePersonServer.stubSyncDeleteEmail("A1234BC", "cprContactId")
 
-      apiService.syncDeleteEmail("A1234BC", "cprContactId")
+      apiService.syncDeleteContact("A1234BC", "cprContactId")
 
       cprCorePersonServer.verify(
         deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/contact/cprContactId")),
       )
     }
+  }
+
+  @Nested
+  inner class SyncCreateAddressContact {
+    @Test
+    fun `will call the sync endpoint and return the contact mapping`() = runTest {
+      cprCorePersonServer.stubSyncCreateAddressContact(
+        prisonNumber = "A1234BC",
+        cprAddressId = "cprAddressId",
+        response = CorePersonCprApiMockServer.syncCorePersonEmailResponse(nomisContactId = 12345, cprContactId = "cprContactId"),
+      )
+
+      val response = apiService.syncCreateAddressContact("A1234BC", "cprAddressId", prisonPhoneRequest())
+
+      assertThat(response.nomisContactId).isEqualTo(12345)
+      assertThat(response.cprContactId).isEqualTo("cprContactId")
+      cprCorePersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId/contact"))
+          .withRequestBodyJsonPath("nomisContactId", equalTo("12345"))
+          .withRequestBodyJsonPath("type", equalTo("MOBILE")),
+      )
+    }
 
     @Test
     fun `should throw if bad request`() = runTest {
-      cprCorePersonServer.stubSyncDeleteEmail("A1234BC", status = BAD_REQUEST)
+      cprCorePersonServer.stubSyncCreateAddressContact(
+        prisonNumber = "A1234BC",
+        cprAddressId = "cprAddressId",
+        status = BAD_REQUEST,
+      )
 
       assertThrows<WebClientResponseException.BadRequest> {
-        apiService.syncDeleteEmail("A1234BC", "cprContactId")
+        apiService.syncCreateAddressContact("A1234BC", "cprAddressId", prisonPhoneRequest())
       }
+    }
+  }
+
+  @Nested
+  inner class SyncUpdateAddressContact {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncUpdateAddressContact("A1234BC", "cprAddressId", "cprContactId")
+
+      apiService.syncUpdateAddressContact("A1234BC", "cprAddressId", "cprContactId", prisonPhoneRequest())
+
+      cprCorePersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId/contact/cprContactId"))
+          .withRequestBodyJsonPath("nomisContactId", equalTo("12345"))
+          .withRequestBodyJsonPath("type", equalTo("MOBILE")),
+      )
+    }
+  }
+
+  @Nested
+  inner class SyncDeleteAddressContact {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncDeleteAddressContact("A1234BC", "cprContactId")
+
+      apiService.syncDeleteAddressContact("A1234BC", "cprContactId")
+
+      cprCorePersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/contact/cprContactId")),
+      )
+    }
+  }
+
+  @Nested
+  inner class SyncCreateAddress {
+    @Test
+    fun `will call the sync endpoint and return the address mapping`() = runTest {
+      cprCorePersonServer.stubSyncCreateAddress("A1234BC", addressId = 12345, cprAddressId = "cprAddressId")
+
+      val response = apiService.syncCreateAddress("A1234BC", prisonAddress())
+
+      assertThat(response.nomisAddressId).isEqualTo(12345)
+      assertThat(response.cprAddressId).isEqualTo("cprAddressId")
+      cprCorePersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address"))
+          .withRequestBodyJsonPath("nomisAddressId", equalTo("12345")),
+      )
+    }
+
+    @Test
+    fun `should throw if bad request`() = runTest {
+      cprCorePersonServer.stubSyncCreateAddress("A1234BC", status = BAD_REQUEST)
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.syncCreateAddress("A1234BC", prisonAddress())
+      }
+    }
+  }
+
+  @Nested
+  inner class SyncUpdateAddress {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncUpdateAddress("A1234BC", "cprAddressId")
+
+      apiService.syncUpdateAddress("A1234BC", "cprAddressId", prisonAddress())
+
+      cprCorePersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId"))
+          .withRequestBodyJsonPath("nomisAddressId", equalTo("12345")),
+      )
+    }
+  }
+
+  @Nested
+  inner class SyncDeleteAddress {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncDeleteAddress("A1234BC", "cprAddressId")
+
+      apiService.syncDeleteAddress("A1234BC", "cprAddressId")
+
+      cprCorePersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId")),
+      )
+    }
+  }
+
+  @Nested
+  inner class SyncCreateAddressUsage {
+    @Test
+    fun `will call the sync endpoint and return the address usage mapping`() = runTest {
+      cprCorePersonServer.stubSyncCreateAddressUsage(
+        prisonNumber = "A1234BC",
+        cprAddressId = "cprAddressId",
+        response = CorePersonCprApiMockServer.syncCorePersonAddressUsageResponse(
+          nomisAddressId = 12345,
+          addressUsageCode = SysconAddressUsageMapping.NomisAddressUsageCode.CURFEW,
+          cprAddressUsageId = "cprAddressUsageId",
+        ),
+      )
+
+      val response = apiService.syncCreateAddressUsage("A1234BC", "cprAddressId", prisonAddressUsage())
+
+      assertThat(response.nomisAddressUsageId).isEqualTo(12345)
+      assertThat(response.nomisAddressUsageCode).isEqualTo(SysconAddressUsageMapping.NomisAddressUsageCode.CURFEW)
+      assertThat(response.cprAddressUsageId).isEqualTo("cprAddressUsageId")
+      cprCorePersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId/usage"))
+          .withRequestBodyJsonPath("nomisAddressUsageId", equalTo("12345"))
+          .withRequestBodyJsonPath("addressUsageCode", equalTo("CURFEW")),
+      )
+    }
+
+    @Test
+    fun `should throw if bad request`() = runTest {
+      cprCorePersonServer.stubSyncCreateAddressUsage("A1234BC", "cprAddressId", status = BAD_REQUEST)
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.syncCreateAddressUsage("A1234BC", "cprAddressId", prisonAddressUsage())
+      }
+    }
+  }
+
+  @Nested
+  inner class SyncUpdateAddressUsage {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncUpdateAddressUsage("A1234BC", "cprAddressId", "cprAddressUsageId")
+
+      apiService.syncUpdateAddressUsage("A1234BC", "cprAddressId", "cprAddressUsageId", prisonAddressUsage())
+
+      cprCorePersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId/usage/cprAddressUsageId"))
+          .withRequestBodyJsonPath("nomisAddressUsageId", equalTo("12345"))
+          .withRequestBodyJsonPath("addressUsageCode", equalTo("CURFEW")),
+      )
+    }
+  }
+
+  @Nested
+  inner class SyncDeleteAddressUsage {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncDeleteAddressUsage("A1234BC", "cprAddressId", "cprAddressUsageId")
+
+      apiService.syncDeleteAddressUsage("A1234BC", "cprAddressId", "cprAddressUsageId")
+
+      cprCorePersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/address/cprAddressId/usage/cprAddressUsageId")),
+      )
     }
   }
 
   @Nested
   inner class ProcessPrisonMerge {
     @Test
-    internal fun `will pass oauth2 token to sync endpoint`() = runTest {
-      cprCorePersonServer.stubProcessPrisonMerge("A1234BC")
-
-      apiService.processPrisonMerge("A1234BC", PrisonMerge(fromPrisonNumber = "B2345CD"))
-
-      cprCorePersonServer.verify(
-        postRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    internal fun `will post request data to the sync endpoint`() = runTest {
-      cprCorePersonServer.stubProcessPrisonMerge()
-
-      apiService.processPrisonMerge("A1234BC", PrisonMerge(fromPrisonNumber = "B2345CD"))
-
-      cprCorePersonServer.verify(
-        postRequestedFor(anyUrl())
-          .withRequestBodyJsonPath("fromPrisonNumber", equalTo("B2345CD")),
-      )
-    }
-
-    @Test
     fun `will call the sync endpoint`() = runTest {
       cprCorePersonServer.stubProcessPrisonMerge("A1234BC")
 
       apiService.processPrisonMerge("A1234BC", PrisonMerge(fromPrisonNumber = "B2345CD"))
 
       cprCorePersonServer.verify(
-        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/merge")),
+        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/merge"))
+          .withRequestBodyJsonPath("fromPrisonNumber", equalTo("B2345CD")),
       )
-    }
-
-    @Test
-    fun `should throw if bad request`() = runTest {
-      cprCorePersonServer.stubProcessPrisonMerge("A1234BC", status = BAD_REQUEST)
-
-      assertThrows<WebClientResponseException.BadRequest> {
-        apiService.processPrisonMerge("A1234BC", PrisonMerge(fromPrisonNumber = "B2345CD"))
-      }
     }
   }
 
@@ -389,16 +383,19 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
 
   fun prisonAddressesRequest() = PrisonAddressesAndContactsRequest(
     addresses = listOf(
-      PrisonAddress(
-        nomisAddressId = 12345,
-        isPrimary = true,
-        addressUsage = emptyList(),
-        contacts = emptyList(),
-        postcode = "MK15 2ST",
-        createDateTime = LocalDateTime.parse("2019-11-01T04:05:00"),
-        createUserId = "joebiggs",
-      ),
+      prisonAddress(),
     ),
+    contacts = emptyList(),
+  )
+
+  fun prisonAddress() = PrisonAddress(
+    nomisAddressId = 12345,
+    isPrimary = true,
+    addressUsage = emptyList(),
+    contacts = emptyList(),
+    postcode = "MK15 2ST",
+    createDateTime = LocalDateTime.parse("2019-11-01T04:05:00"),
+    createUserId = "joebiggs",
   )
 
   fun prisonReligionUpdateRequest() = PrisonReligionUpdateRequest(
@@ -407,13 +404,22 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
     modifyUserId = "FRED_ADM",
   )
 
-  fun prisonEmailRequest() = PrisonContact(
+  fun prisonPhoneRequest() = PrisonContact(
     nomisContactId = 12345,
-    type = PrisonContact.Type.EMAIL,
-    value = "test@example.com",
+    type = PrisonContact.Type.MOBILE,
+    value = "07700 900123",
+    extension = "123",
     createDateTime = LocalDateTime.parse("2019-11-01T04:05:00"),
     createUserId = "FRED_GEN",
     modifyDateTime = LocalDateTime.parse("2020-11-01T04:05:00"),
     modifyUserId = "FRED_ADM",
   )
 }
+
+private fun prisonAddressUsage() = PrisonAddressUsage(
+  nomisAddressUsageId = 12345,
+  addressUsageCode = PrisonAddressUsage.AddressUsageCode.CURFEW,
+  isActive = true,
+  createDateTime = LocalDateTime.parse("2024-01-01T10:00:00"),
+  createUserId = "SYSTEM",
+)

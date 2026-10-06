@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-09-24.5279.e3139f1"
+    "version" : "2026-10-02.5608.cdb0f81"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -133,8 +133,7 @@
         },
         "responses" : {
           "204" : {
-            "description" : "No Content",
-            "content" : { }
+            "description" : "No Content"
           }
         },
         "security" : [ {
@@ -162,8 +161,7 @@
         } ],
         "responses" : {
           "204" : {
-            "description" : "No Content",
-            "content" : { }
+            "description" : "No Content"
           }
         },
         "security" : [ {
@@ -325,6 +323,54 @@
         } ]
       }
     },
+    "/syscon-sync/person/{prisonNumber}/address/{cprAddressId}/contact/{cprContactId}" : {
+      "put" : {
+        "tags" : [ "Syscon Sync" ],
+        "description" : "Update prisoner address contact record by Prison Number, address uuid and contact uuid. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
+        "operationId" : "updatePrisonerAddressContact",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "cprAddressId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "cprContactId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PrisonContact"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "204" : {
+            "description" : "No Content",
+            "content" : { }
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
+      }
+    },
     "/queue-admin/retry-dlq/{dlqName}" : {
       "put" : {
         "tags" : [ "hmpps-queue-resource" ],
@@ -431,15 +477,15 @@
         } ]
       }
     },
-    "/syscon-sync/sexual-orientation/{prisonNumber}" : {
-      "post" : {
-        "tags" : [ "Syscon Sync" ],
-        "description" : "Update the sexual orientation by prison number. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
-        "operationId" : "updateSexualOrientation",
+    "/person/prison/dps/{prisonNumber}/religion" : {
+      "put" : {
+        "tags" : [ "Prison" ],
+        "description" : "Update the prisoner's religion by Prison Number. Role required is **ROLE_CORE_PERSON_RECORD_API__PRISON_RW**. ",
+        "operationId" : "updateReligionHistoryByPrisonNumberDps",
         "parameters" : [ {
           "name" : "prisonNumber",
           "in" : "path",
-          "description" : "The identifier of the offender source system (NOMIS)",
+          "description" : "The prisoner number",
           "required" : true,
           "schema" : {
             "type" : "string"
@@ -449,24 +495,20 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/PrisonSexualOrientation"
+                "$ref" : "#/components/schemas/PrisonReligionInsertRequest"
               }
             }
           },
           "required" : true
         },
         "responses" : {
-          "200" : {
-            "description" : "Sexual Orientation updated in CPR",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            }
+          "204" : {
+            "description" : "No Content"
           }
-        }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
       }
     },
     "/syscon-sync/religion/{prisonNumber}" : {
@@ -751,120 +793,6 @@
         "security" : [ {
           "api-role" : [ ]
         } ]
-      }
-    },
-    "/syscon-sync/nationality/{prisonNumber}" : {
-      "post" : {
-        "tags" : [ "Syscon Sync" ],
-        "description" : "Upserts a nationality record on a matching prison number. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
-        "operationId" : "saveNationality",
-        "parameters" : [ {
-          "name" : "prisonNumber",
-          "in" : "path",
-          "description" : "The identifier of the offender source system (NOMIS)",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/PrisonNationality"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Nationality saved in CPR",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/syscon-sync/immigration-status/{prisonNumber}" : {
-      "post" : {
-        "tags" : [ "Syscon Sync" ],
-        "description" : "Update the immigration status by prison number. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
-        "operationId" : "updateImmigrationStatus",
-        "parameters" : [ {
-          "name" : "prisonNumber",
-          "in" : "path",
-          "description" : "The identifier of the offender source system (NOMIS)",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/PrisonImmigrationStatus"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Immigration status updated in CPR",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/syscon-sync/disability-status/{prisonNumber}" : {
-      "post" : {
-        "tags" : [ "Syscon Sync" ],
-        "description" : "Update the disability status by prison number. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
-        "operationId" : "updateDisabilityStatus",
-        "parameters" : [ {
-          "name" : "prisonNumber",
-          "in" : "path",
-          "description" : "The identifier of the offender source system (NOMIS)",
-          "required" : true,
-          "schema" : {
-            "type" : "string"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/PrisonDisabilityStatus"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "200" : {
-            "description" : "Disability status updated in CPR",
-            "content" : {
-              "*/*" : {
-                "schema" : {
-                  "type" : "string"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/syscon-sync/aliases-identifiers/{prisonNumber}" : {
@@ -1220,13 +1148,46 @@
         } ],
         "responses" : {
           "200" : {
-            "description" : "Prisoner religion history returned",
+            "description" : "OK",
             "content" : {
               "*/*" : {
                 "schema" : {
                   "type" : "array",
                   "items" : {
                     "$ref" : "#/components/schemas/PrisonReligion"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
+      }
+    },
+    "/person/prison/dps/religion-codes" : {
+      "get" : {
+        "tags" : [ "Prison" ],
+        "description" : "Retrieve list of prison religion codes. Role required is **ROLE_CORE_PERSON_RECORD_API__RO**. ",
+        "operationId" : "getReligionCodes",
+        "parameters" : [ {
+          "name" : "active",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/ReferenceDataResponse"
                   }
                 }
               }
@@ -1323,6 +1284,37 @@
           }
         }
       }
+    },
+    "/syscon-sync/person/{prisonNumber}/address/contact/{cprContactId}" : {
+      "delete" : {
+        "tags" : [ "Syscon Sync" ],
+        "description" : "Delete prisoner address contact record by Prison Number and contact uuid. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
+        "operationId" : "deletePrisonerAddressContact",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "cprContactId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content",
+            "content" : { }
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
+      }
     }
   },
   "components" : {
@@ -1347,7 +1339,7 @@
         "type" : "object",
         "properties" : {
           "nomisContactId" : {
-            "type" : [ "integer", "null" ],
+            "type" : "integer",
             "format" : "int64",
             "description" : "The nomis contact id",
             "example" : 1234
@@ -1391,7 +1383,7 @@
             "example" : "12345"
           }
         },
-        "required" : [ "createDateTime", "createUserId", "type" ]
+        "required" : [ "createDateTime", "createUserId", "nomisContactId", "type" ]
       },
       "PrisonAddress" : {
         "type" : "object",
@@ -1889,29 +1881,27 @@
           }
         }
       },
-      "PrisonSexualOrientation" : {
+      "PrisonReligionInsertRequest" : {
         "type" : "object",
+        "description" : "Insert to prisoner religion",
         "properties" : {
-          "sexualOrientationCode" : {
+          "religionCode" : {
+            "type" : "string",
+            "description" : "The religion code",
+            "enum" : [ "ADV", "AGNO", "APO", "ATHE", "BAHA", "BAPT", "BLAC", "BUDD", "CALV", "CCOG", "CE", "CHJCLDS", "CHRODX", "CHRST", "CHSC", "CINW", "COFE", "COFI", "COFN", "COFS", "CONG", "COPT", "CSW", "DRU", "EODX", "EORTH", "EPIS", "ETHO", "EVAN", "GOSP", "GROX", "HARE", "HIND", "HNDHAR", "HUM", "JAIN", "JEHV", "JEW", "LUTH", "METH", "MORM", "MOS", "MUSOTH", "NIL", "NONC", "NONP", "OORTH", "ORTH", "OTH", "PAG", "PAGDRU", "PENT", "PRES", "PROT", "QUAK", "RAST", "RC", "RUSS", "SALV", "SATN", "SCIE", "SDAY", "SHIA", "SHIN", "SHNTAO", "SIKH", "SPIR", "SUNI", "TAO", "TPRNTS", "UNIF", "UNIT", "UNKN", "UR", "WELS", "ZORO" ],
+            "example" : "ZORO"
+          },
+          "comment" : {
             "type" : [ "string", "null" ],
-            "description" : "The sexual orientation code",
-            "example" : "BIS"
+            "description" : "Reason for the religion change",
+            "example" : "Some information"
           },
-          "modifyDateTime" : {
+          "userId" : {
             "type" : "string",
-            "format" : "date-time",
-            "description" : "The sexual orientation modify date and time",
-            "example" : "2000-01-01 12:00:00",
-            "minLength" : 1
-          },
-          "modifyUserId" : {
-            "type" : "string",
-            "description" : "The sexual orientation modify user id",
-            "example" : "12345",
-            "minLength" : 1
+            "description" : "The user who made the change"
           }
         },
-        "required" : [ "modifyDateTime", "modifyUserId" ]
+        "required" : [ "religionCode", "userId" ]
       },
       "PrisonReligionHistory" : {
         "type" : "object",
@@ -2113,79 +2103,6 @@
         },
         "required" : [ "cprAddressUsageId", "nomisAddressUsageCode", "nomisAddressUsageId" ]
       },
-      "PrisonNationality" : {
-        "type" : "object",
-        "properties" : {
-          "nationalityCode" : {
-            "type" : [ "string", "null" ],
-            "description" : "The nationality code",
-            "example" : "BIS"
-          },
-          "modifyDateTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "The nationality modify date and time",
-            "example" : "2000-01-01 12:00:00"
-          },
-          "modifyUserId" : {
-            "type" : "string",
-            "description" : "The nationality modify user id",
-            "example" : "12345"
-          },
-          "notes" : {
-            "type" : [ "string", "null" ],
-            "description" : "The nationality notes",
-            "example" : "Foo bar"
-          }
-        },
-        "required" : [ "modifyDateTime", "modifyUserId" ]
-      },
-      "PrisonImmigrationStatus" : {
-        "type" : "object",
-        "properties" : {
-          "interestToImmigration" : {
-            "type" : "boolean",
-            "description" : "Flag indicating whether data is an interest to immigration",
-            "example" : true
-          },
-          "modifyDateTime" : {
-            "type" : [ "string", "null" ],
-            "format" : "date-time",
-            "description" : "The immigration status modify date and time",
-            "example" : "2000-01-01 12:00:00",
-            "minLength" : 1
-          },
-          "modifyUserId" : {
-            "type" : [ "string", "null" ],
-            "description" : "The immigration status modify user id",
-            "example" : "12345",
-            "minLength" : 1
-          }
-        },
-        "required" : [ "interestToImmigration", "modifyDateTime", "modifyUserId" ]
-      },
-      "PrisonDisabilityStatus" : {
-        "type" : "object",
-        "properties" : {
-          "disability" : {
-            "type" : "boolean",
-            "description" : "The disability flag",
-            "example" : false
-          },
-          "modifyDateTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "The disability modify date and time",
-            "example" : "2000-01-01 12:00:00"
-          },
-          "modifyUserId" : {
-            "type" : "string",
-            "description" : "The disability modify user id",
-            "example" : "12345"
-          }
-        },
-        "required" : [ "disability", "modifyDateTime", "modifyUserId" ]
-      },
       "NomisIdentifierId" : {
         "type" : "object",
         "properties" : {
@@ -2383,20 +2300,21 @@
         "type" : "object",
         "properties" : {
           "addresses" : {
-            "type" : [ "array", "null" ],
+            "type" : "array",
             "description" : "List of addresses",
             "items" : {
               "$ref" : "#/components/schemas/PrisonAddress"
             }
           },
           "contacts" : {
-            "type" : [ "array", "null" ],
+            "type" : "array",
             "description" : "List of address contacts",
             "items" : {
               "$ref" : "#/components/schemas/PrisonContact"
             }
           }
-        }
+        },
+        "required" : [ "addresses", "contacts" ]
       },
       "SysconAddressesAndContactsResponseBody" : {
         "type" : "object",
@@ -2573,44 +2491,62 @@
         "properties" : {
           "religionCode" : {
             "type" : "string",
-            "enum" : [ "ADV", "AGNO", "APO", "ATHE", "BAHA", "BAPT", "BLAC", "BUDD", "CALV", "CCOG", "CE", "CHJCLDS", "CHRODX", "CHRST", "CHSC", "CINW", "COFE", "COFI", "COFN", "COFS", "CONG", "COPT", "CSW", "DRU", "EODX", "EORTH", "EPIS", "ETHO", "EVAN", "GOSP", "GROX", "HARE", "HIND", "HNDHAR", "HUM", "JAIN", "JEHV", "JEW", "LUTH", "METH", "MORM", "MOS", "MUSOTH", "NIL", "NONC", "NONP", "OORTH", "ORTH", "OTH", "PAG", "PAGDRU", "PENT", "PRES", "PROT", "QUAK", "RAST", "RC", "RUSS", "SALV", "SATN", "SCIE", "SDAY", "SHIA", "SHIN", "SHNTAO", "SIKH", "SPIR", "SUNI", "TAO", "TPRNTS", "UNIF", "UNIT", "UNKN", "UR", "WELS", "ZORO" ]
+            "description" : "Religion code",
+            "enum" : [ "ADV", "AGNO", "APO", "ATHE", "BAHA", "BAPT", "BLAC", "BUDD", "CALV", "CCOG", "CE", "CHJCLDS", "CHRODX", "CHRST", "CHSC", "CINW", "COFE", "COFI", "COFN", "COFS", "CONG", "COPT", "CSW", "DRU", "EODX", "EORTH", "EPIS", "ETHO", "EVAN", "GOSP", "GROX", "HARE", "HIND", "HNDHAR", "HUM", "JAIN", "JEHV", "JEW", "LUTH", "METH", "MORM", "MOS", "MUSOTH", "NIL", "NONC", "NONP", "OORTH", "ORTH", "OTH", "PAG", "PAGDRU", "PENT", "PRES", "PROT", "QUAK", "RAST", "RC", "RUSS", "SALV", "SATN", "SCIE", "SDAY", "SHIA", "SHIN", "SHNTAO", "SIKH", "SPIR", "SUNI", "TAO", "TPRNTS", "UNIF", "UNIT", "UNKN", "UR", "WELS", "ZORO" ],
+            "example" : "SCIE"
           },
           "religionDescription" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "description" : "Description associated with the religion code",
+            "example" : "Scientologist"
           },
           "changeReasonKnown" : {
-            "type" : "boolean"
+            "type" : "boolean",
+            "description" : "Was a reason given for change of religion?"
           },
           "comments" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "description" : "Comments describing reason for change of religion"
           },
           "startDate" : {
             "type" : "string",
-            "format" : "date"
+            "format" : "date",
+            "description" : "Date the religion started",
+            "example" : "2024-01-01"
           },
           "endDate" : {
             "type" : [ "string", "null" ],
-            "format" : "date"
+            "format" : "date",
+            "description" : "Date the religion ended",
+            "example" : "2024-12-12"
           },
           "modifyDateTime" : {
             "type" : [ "string", "null" ],
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "Date religion was modified",
+            "example" : "2024-01-01T12:00:00"
           },
           "modifyUserId" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "description" : "Username of staff member that modified religion"
           },
           "current" : {
-            "type" : "boolean"
+            "type" : "boolean",
+            "description" : "Indicates if the religion is current"
           },
           "createDateTime" : {
             "type" : "string",
-            "format" : "date-time"
+            "format" : "date-time",
+            "description" : "Date religion was created",
+            "example" : "2023-01-01T12:00:00"
           },
           "createUserId" : {
-            "type" : "string"
+            "type" : "string",
+            "description" : "Username of staff member that added religion"
           },
           "cprReligionId" : {
-            "type" : [ "string", "null" ]
+            "type" : [ "string", "null" ],
+            "description" : "Unique identifier for the religion"
           }
         },
         "required" : [ "changeReasonKnown", "createDateTime", "createUserId", "current", "religionCode", "startDate" ]
@@ -3241,6 +3177,21 @@
           }
         },
         "required" : [ "addresses", "aliases", "ethnicity", "identifiers", "nationalities", "religion", "religionHistory", "sex", "sexualOrientation", "title" ]
+      },
+      "ReferenceDataResponse" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "active" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "active", "code", "description" ]
       },
       "MatchDetailsResponse" : {
         "type" : "object",

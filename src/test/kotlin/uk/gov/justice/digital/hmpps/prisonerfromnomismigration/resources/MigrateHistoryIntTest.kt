@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceMappingApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonerbalances.PrisonerBalanceMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository

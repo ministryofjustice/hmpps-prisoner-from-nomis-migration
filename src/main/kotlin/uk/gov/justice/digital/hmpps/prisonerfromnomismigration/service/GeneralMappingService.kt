@@ -7,32 +7,33 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.Appo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonBalanceMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerBalanceMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances.AdvancesMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonbalances.PrisonBalanceMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonerbalances.PrisonerBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.PropertyMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.visits.VisitMappingService
 
 @Service
 class GeneralMappingService(
-  private val appointmentsMappingService: AppointmentsMappingService,
-  private val visitMappingService: VisitMappingService,
   private val activityMappingService: ActivitiesMappingService,
+  private val advancesMappingService: AdvancesMappingService,
   private val allocationsMappingService: AllocationsMappingService,
+  private val appointmentsMappingService: AppointmentsMappingService,
   private val corePersonMappingService: CorePersonMappingService,
-  private val csraMappingApiService: CsraMappingApiService,
+  private val courtSchedulerMappingService: CourtSchedulerMappingApiService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
+  private val csraMappingApiService: CsraMappingApiService,
   private val prisonBalanceMappingApiService: PrisonBalanceMappingApiService,
   private val prisonerBalanceMappingApiService: PrisonerBalanceMappingApiService,
   private val propertyMappingService: PropertyMappingService,
   private val staffMappingApiService: StaffMappingApiService,
-  private val tapMappingApiService: TapMappingApiService,
-  private val courtSchedulerMappingService: CourtSchedulerMappingApiService,
+  private val visitMappingService: VisitMappingService,
 ) {
   suspend fun getMigrationCount(migrationId: String, migrationType: MigrationType): Long = when (migrationType) {
     MigrationType.ACTIVITIES -> activityMappingService.getMigrationCount(migrationId)
+    MigrationType.ADVANCES -> advancesMappingService.getPagedModelMigrationCount(migrationId)
     MigrationType.AGENCY_REGISTERS -> 0
     MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
@@ -41,7 +42,7 @@ class GeneralMappingService(
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
     MigrationType.CSRA -> csraMappingApiService.getMigrationCount(migrationId)
     MigrationType.DRUG_TESTING -> -1 // No implementation necessary
-    MigrationType.EXTERNAL_MOVEMENTS -> tapMappingApiService.getMigrationCount(migrationId)
+    MigrationType.EXTERNAL_MOVEMENTS -> 0
     MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.PROPERTY -> propertyMappingService.getMigrationCount(migrationId)

@@ -30,9 +30,9 @@ class AdvancesNomisApiServiceTest {
   inner class GetAdvanceById {
     @Test
     fun `will pass oauth2 token to service`() = runTest {
-      mockServer.stubGetAdvanceById()
+      mockServer.stubGetAdvance()
 
-      apiService.getPrisonerAdvanceById(12345)
+      apiService.getAdvance(12345)
 
       mockServer.verify(
         getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -41,9 +41,9 @@ class AdvancesNomisApiServiceTest {
 
     @Test
     fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetAdvanceById()
+      mockServer.stubGetAdvance()
 
-      apiService.getPrisonerAdvanceById(12345)
+      apiService.getAdvance(12345)
 
       mockServer.verify(
         getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/12345")),
@@ -52,9 +52,9 @@ class AdvancesNomisApiServiceTest {
 
     @Test
     fun `will return advance details`() = runTest {
-      mockServer.stubGetAdvanceById()
+      mockServer.stubGetAdvance()
 
-      val advance = apiService.getPrisonerAdvanceById(12345)!!
+      val advance = apiService.getAdvance(12345)!!
 
       with(advance) {
         assertThat(id).isEqualTo(12345)

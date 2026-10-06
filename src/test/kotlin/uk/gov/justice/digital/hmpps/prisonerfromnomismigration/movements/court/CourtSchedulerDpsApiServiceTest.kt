@@ -18,7 +18,6 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtscheduler.model.ResyncCourtEvents
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension.Companion.dpsCourtSchedulerServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.moveBookingRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.referenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.syncCourtEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiMockServer.Companion.syncCourtMovement
@@ -249,69 +248,6 @@ class CourtSchedulerDpsApiServiceTest {
       dpsCourtSchedulerServer.stubResyncPrisonerCourtAppearances(status = 404)
 
       assertThat(apiService.resyncPrisoner("A1234BC", request)).isNull()
-    }
-  }
-
-  @Nested
-  inner class MoveBooking {
-    val request = moveBookingRequest()
-
-    @Test
-    internal fun `should pass oauth2 token`() = runTest {
-      dpsCourtSchedulerServer.stubMoveBooking()
-
-      apiService.moveBooking(request)
-
-      dpsCourtSchedulerServer.verify(
-        putRequestedFor(anyUrl())
-          .withHeader("Authorization", equalTo("Bearer ABCDE")),
-      )
-    }
-
-    @Test
-    fun `should call the move endpoint`() = runTest {
-      dpsCourtSchedulerServer.stubMoveBooking()
-
-      apiService.moveBooking(request)
-
-      dpsCourtSchedulerServer.verify(
-        putRequestedFor(urlPathEqualTo("/move/court-appearances"))
-          .withRequestBody(
-            matchingJsonPath(
-              "fromPersonIdentifier",
-              equalTo(request.fromPersonIdentifier),
-            ),
-          )
-          .withRequestBody(
-            matchingJsonPath(
-              "toPersonIdentifier",
-              equalTo(request.toPersonIdentifier),
-            ),
-          )
-          .withRequestBody(matchingJsonPath("scheduleIds.size()", equalTo("1")))
-          .withRequestBody(
-            matchingJsonPath(
-              "scheduleIds[0]",
-              equalTo("${request.scheduleIds.first()}"),
-            ),
-          )
-          .withRequestBody(matchingJsonPath("unscheduledMovementIds.size()", equalTo("1")))
-          .withRequestBody(
-            matchingJsonPath(
-              "unscheduledMovementIds[0]",
-              equalTo("${request.unscheduledMovementIds.first()}"),
-            ),
-          ),
-      )
-    }
-
-    @Test
-    fun `should throw if error`() = runTest {
-      dpsCourtSchedulerServer.stubMoveBookingError()
-
-      assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.moveBooking(request)
-      }
     }
   }
 }

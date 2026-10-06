@@ -86,7 +86,7 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
           usages = listOf(
             OffenderAddressUsage(
               addressId = 10000,
-              usage = CodeDescription("HOME", "Home"),
+              usage = "HOME",
               active = true,
               createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
               createdByUsername = "SYSTEM",
@@ -206,6 +206,84 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetOffenderAddress(
+    offenderId: Long = 123456,
+    addressId: Long = 3456,
+    address: OffenderAddress = OffenderAddress(
+      addressId = addressId,
+      primaryAddress = true,
+      mailAddress = true,
+      createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
+      createdByUsername = "SYSTEM",
+      lastUpdatedDateTime = null,
+      lastUpdatedByUsername = null,
+    ),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$offenderId/address/$addressId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) address else error)),
+      ),
+    )
+  }
+
+  fun stubGetOffenderPhone(
+    offenderId: Long = 12345,
+    phoneId: Long = 45678,
+    phone: OffenderPhoneNumber = offenderPhoneNumber(phoneId),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$offenderId/phone/$phoneId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) phone else error)),
+      ),
+    )
+  }
+
+  fun stubGetOffenderAddressPhone(
+    offenderId: Long = 12345,
+    addressId: Long = 3456,
+    phoneId: Long = 45678,
+    phone: OffenderPhoneNumber = offenderPhoneNumber(phoneId),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$offenderId/address/$addressId/phone/$phoneId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) phone else error)),
+      ),
+    )
+  }
+
+  fun stubGetOffenderAddressUsage(
+    offenderId: Long = 12345,
+    addressId: Long = 3456,
+    usageCode: String = "HOME",
+    addressUsage: OffenderAddressUsage = offenderAddressUsage(addressId, usageCode),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$offenderId/address/$addressId/usage/$usageCode")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) addressUsage else error)),
+      ),
+    )
+  }
+
   fun stubUpdateOffenderEmail(
     offenderId: Long = 12345,
     emailAddressId: Long = 45678,
@@ -245,6 +323,27 @@ fun offenderEmailAddress(emailAddressId: Long = 40000): OffenderEmailAddress = O
   createdByUsername = "SYSTEM",
   lastUpdatedDateTime = null,
   lastUpdatedByUsername = null,
+)
+
+fun offenderAddressUsage(addressId: Long = 3456, usageCode: String = "HOME"): OffenderAddressUsage = OffenderAddressUsage(
+  addressId = addressId,
+  usage = usageCode,
+  active = true,
+  createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
+  createdByUsername = "SYSTEM",
+  lastUpdatedDateTime = null,
+  lastUpdatedByUsername = null,
+)
+
+fun offenderPhoneNumber(phoneId: Long = 45678): OffenderPhoneNumber = OffenderPhoneNumber(
+  phoneId = phoneId,
+  number = "0114 123 4567",
+  type = CodeDescription("HOME", "Home"),
+  createdDateTime = LocalDateTime.parse("2001-03-03T00:00:00"),
+  createdByUsername = "SYSTEM",
+  lastUpdatedDateTime = null,
+  lastUpdatedByUsername = null,
+  extension = "123",
 )
 
 fun corePerson(prisonNumber: String = "A1234BC", aliasesAndIdentifiers: List<CoreOffender>? = null): CorePerson = CorePerson(

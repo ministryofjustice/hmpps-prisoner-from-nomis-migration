@@ -94,6 +94,10 @@ fun StaffDetails.toSyncStaffRequest() = PrisonUserSyncRequest(
   createdBy = audit.createUsername,
   modifiedTimestamp = audit.modifyDatetime,
   modifiedBy = audit.modifyUserId,
+  // TODO: pull in from Nomis
+  administrationCaseloads = listOf(),
+  // TODO: pull in from Nomis
+  memberCaseloads = listOf(),
 )
 
 private fun StaffEmail.toSyncUserEmail() = SyncPrisonUserEmail(

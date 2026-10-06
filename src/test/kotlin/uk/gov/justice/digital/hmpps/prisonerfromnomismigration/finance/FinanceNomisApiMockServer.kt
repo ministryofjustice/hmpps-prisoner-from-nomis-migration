@@ -10,10 +10,10 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerTransactionSynchronisationIntTest.Companion.BOOKING_ID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerTransactionSynchronisationIntTest.Companion.NOMIS_TRANSACTION_ID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerTransactionSynchronisationIntTest.Companion.OFFENDER_ID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.PrisonerTransactionSynchronisationIntTest.Companion.OFFENDER_ID_DISPLAY
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions.PrisonerTransactionSynchronisationIntTest.Companion.BOOKING_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions.PrisonerTransactionSynchronisationIntTest.Companion.NOMIS_TRANSACTION_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions.PrisonerTransactionSynchronisationIntTest.Companion.OFFENDER_ID
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions.PrisonerTransactionSynchronisationIntTest.Companion.OFFENDER_ID_DISPLAY
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonAccountBalanceDto
@@ -34,6 +34,23 @@ class FinanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
     nomisApi.stubFor(
       get(urlEqualTo("/transactions/$transactionId")).willReturn(
         okJson(jsonMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetPrisonerTransactionNotFound(
+    transactionId: Long = 1001,
+    status: HttpStatus = HttpStatus.NOT_FOUND,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/transactions/$transactionId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(
+            jsonMapper.writeValueAsString(error),
+          ),
       ),
     )
   }

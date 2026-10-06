@@ -100,6 +100,9 @@ generic-prometheus-alerts:
     activities:
       - "syscon-devs-dev-migration_activities_queue"
       - "syscon-devs-dev-migration_activities_dlq"
+    advances:
+    - "syscon-devs-dev-migration_advances_queue"
+    - "syscon-devs-dev-migration_advances_dlq"
     allocations:
       - "syscon-devs-dev-migration_allocations_queue"
       - "syscon-devs-dev-migration_allocations_dlq"

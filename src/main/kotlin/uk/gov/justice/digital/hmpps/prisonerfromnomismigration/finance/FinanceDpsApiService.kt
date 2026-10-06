@@ -7,17 +7,17 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.Advan
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.HoldsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.NOMISSyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.HoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncOffenderTransactionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleaseHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleasedHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitOrLogAndRethrowBadRequest
-import java.util.UUID
 
 @Service
 class FinanceDpsApiService(@Qualifier("financeApiWebClient") private val webClient: WebClient) {
@@ -38,20 +38,22 @@ class FinanceDpsApiService(@Qualifier("financeApiWebClient") private val webClie
       .awaitOrLogAndRethrowBadRequest()
   }
 
-  suspend fun syncAddHoldTransaction(request: SyncCreateHoldRequest): HoldResponse = holdsApi.postHolds(request)
+  suspend fun migrateHold(request: SyncCreateHoldRequest): SyncCreateHoldResponse = holdsApi.migrateHolds(request)
+    .awaitOrLogAndRethrowBadRequest()
+
+  suspend fun syncAddHoldTransaction(request: SyncCreateHoldRequest): SyncCreateHoldResponse = holdsApi.postHolds(request)
     .awaitOrLogAndRethrowBadRequest()
 
   suspend fun syncReleaseHoldTransaction(holdNumber: Long, request: SyncReleaseHoldRequest): SyncReleasedHoldResponse = holdsApi.releaseHold(holdNumber, request)
     .awaitOrLogAndRethrowBadRequest()
 
-  suspend fun syncPrisonerAdvance(request: SyncCreateAdvanceRecordRequest): SyncCreateAdvanceResponse = webClient.post()
-    .uri("/sync/advances")
+  // TODO use openapi docs call when the API is updated
+  suspend fun migrateAdvance(request: SyncCreateAdvanceRecordRequest): SyncCreateAdvanceRecordResponse = webClient.post()
+    .uri("/migrate/advances")
     .bodyValue(request)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
-  // TODO add correct return type for syncPrisonerAdvance when the API is updated
-  // advancesApi.postAdvance(request)
-  //  .awaitOrLogAndRethrowBadRequest()
-}
 
-class SyncCreateAdvanceResponse(val id: UUID)
+  suspend fun syncPrisonerAdvance(request: SyncCreateAdvanceRecordRequest): SyncCreateAdvanceRecordResponse = advancesApi.postAdvance(request)
+    .awaitOrLogAndRethrowBadRequest()
+}

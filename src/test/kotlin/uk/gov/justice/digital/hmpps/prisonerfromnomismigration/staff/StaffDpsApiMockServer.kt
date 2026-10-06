@@ -119,10 +119,15 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
           modifiedBy = "FRED_BROWN2",
         ),
       ),
+      // TODO add test data when pulled in from Nomis
+      memberCaseloads = listOf(),
+      // TODO add test data when pulled in from Nomis
+      administrationCaseloads = listOf(),
       createdTimestamp = LocalDateTime.parse("2020-12-04T10:42:43"),
       createdBy = "JIM_BEAM",
       modifiedTimestamp = LocalDateTime.parse("2021-09-12T10:42:43"),
       modifiedBy = "FRED_BROWN",
+
     )
 
     fun verifyUserSyncRequest(staffId: Long = 1234) {

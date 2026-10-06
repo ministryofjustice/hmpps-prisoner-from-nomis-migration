@@ -17,11 +17,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceAp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerPointInTimeBalance
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.HoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerAccountPointInTimeBalance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleaseHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleasedHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
@@ -131,7 +132,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       releaseDateTime = LocalDateTime.parse("2025-06-04T05:06:07"),
     )
     fun addAdvanceDto(prisonNumber: String = "A0001BC") = SyncCreateAdvanceRecordRequest(
-      legacyPaymentProfileId = 12345L,
+      legacyPaymentProfileId = 12345,
       legacyInformationNumber = "9876-1",
       prisonNumber = prisonNumber,
       prisonID = "LEI",
@@ -139,10 +140,11 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       repaymentAmount = BigDecimal.valueOf(0.5),
       repaymentStartDate = LocalDateTime.of(2024, Month.JUNE, 18, 0, 0, 0),
       reference = "description of the advance",
-      // comment = "This is a comment",
+      comment = "This is a comment",
       createdBy = "JD12345",
       createdOn = LocalDateTime.of(2024, Month.JUNE, 18, 12, 10),
       status = SyncCreateAdvanceRecordRequest.Status.ACTIVE,
+      legacyTransactionId = 2345,
     )
   }
 
@@ -187,7 +189,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubPostAddHold(response: HoldResponse) {
+  fun stubPostAddHold(response: SyncCreateHoldResponse) {
     stubFor(
       post("/sync/holds").willReturn(
         aResponse()
@@ -231,21 +233,27 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubMigrateHold(
+    response: SyncCreateHoldResponse = SyncCreateHoldResponse(
+      holdUuid = UUID.randomUUID(),
+      holdNumber = 12345,
+    ),
+  ) {
+    stubFor(
+      post("/migrate/holds")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
   fun stubAddHold(
-    response: HoldResponse = HoldResponse(
-      id = UUID.randomUUID(),
-      prisonNumber = "A1234BC",
-      legacyHoldNumber = 12345,
-      subAccountRef = HoldResponse.SubAccountRef.CASH,
-      createdAt = LocalDateTime.parse("2025-06-01T01:02:03"),
-      createdBy = "testUser",
-      holdFromDate = LocalDateTime.parse("2025-06-01T01:02:03"),
-      isReleased = false,
-      holdType = HoldResponse.HoldType.HOA,
-      amount = 125,
-      holdLocation = "Some location",
-      holdUntilDate = LocalDateTime.parse("2025-06-03T04:05:06"),
-      description = "This is a hold",
+    response: SyncCreateHoldResponse = SyncCreateHoldResponse(
+      holdUuid = UUID.randomUUID(),
+      holdNumber = 12345,
     ),
   ) {
     stubFor(
@@ -279,10 +287,24 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSyncPrisonerAdvance(
-    response: SyncCreateAdvanceResponse = SyncCreateAdvanceResponse(
-      id = UUID.randomUUID(),
-    ),
+  fun stubMigrateAdvance(
+    id: UUID = UUID.randomUUID(),
+    response: SyncCreateAdvanceRecordResponse = SyncCreateAdvanceRecordResponse(1234, id),
+  ) {
+    stubFor(
+      post("/migrate/advances")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubSyncAdvance(
+    id: UUID = UUID.randomUUID(),
+    response: SyncCreateAdvanceRecordResponse = SyncCreateAdvanceRecordResponse(1234, id),
   ) {
     stubFor(
       post("/sync/advances")

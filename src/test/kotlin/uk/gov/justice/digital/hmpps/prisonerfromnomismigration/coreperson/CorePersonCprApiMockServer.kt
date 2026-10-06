@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionSaveResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasesAndIdentifiersResponseBody
@@ -84,6 +85,23 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
       nomisContactId = nomisContactId,
       nomisContactType = SysconContactMapping.NomisContactType.EMAIL,
       cprContactId = cprContactId,
+    )
+
+    fun syncCorePersonAddressUsageResponse(
+      nomisAddressId: Long = 3456,
+      addressUsageCode: SysconAddressUsageMapping.NomisAddressUsageCode = SysconAddressUsageMapping.NomisAddressUsageCode.HOME,
+      cprAddressUsageId: String = UUID.randomUUID().toString(),
+    ) = SysconAddressUsageMapping(
+      nomisAddressUsageId = nomisAddressId,
+      nomisAddressUsageCode = addressUsageCode,
+      cprAddressUsageId = cprAddressUsageId,
+    )
+
+    fun syncCorePersonAddressResponse(nomisAddressId: Long, cprAddressId: String) = SysconAddressMapping(
+      nomisAddressId = nomisAddressId,
+      cprAddressId = cprAddressId,
+      addressUsageMappings = emptyList(),
+      contactMappings = emptyList(),
     )
   }
 
@@ -200,6 +218,24 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubSyncCreateAddressContact(
+    prisonNumber: String = "A1234BC",
+    cprAddressId: String = "cpr-address-id",
+    status: HttpStatus = HttpStatus.CREATED,
+    response: SysconContactMapping = syncCorePersonEmailResponse(),
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    stubFor(
+      post("/syscon-sync/person/$prisonNumber/address/$cprAddressId/contact")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.CREATED) response else error)),
+        ),
+    )
+  }
+
   fun stubSyncUpdateEmail(
     prisonNumber: String = "A1234BC",
     cprContactId: String = "cprContactId",
@@ -207,6 +243,22 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     stubFor(
       put("/syscon-sync/person/$prisonNumber/contact/$cprContactId")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubSyncUpdateAddressContact(
+    prisonNumber: String = "A1234BC",
+    cprAddressId: String = "cpr-address-id",
+    cprContactId: String = "cprContactId",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      put("/syscon-sync/person/$prisonNumber/address/$cprAddressId/contact/$cprContactId")
         .willReturn(
           aResponse()
             .withStatus(status.value())
@@ -227,6 +279,102 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(status.value())
             .withHeader("Content-Type", "application/json"),
         ),
+    )
+  }
+
+  fun stubSyncDeleteAddressContact(
+    prisonNumber: String = "A1234BC",
+    cprContactId: String = "cprContactId",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      delete("/syscon-sync/person/$prisonNumber/address/contact/$cprContactId")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json"),
+        ),
+    )
+  }
+
+  fun stubSyncCreateAddressUsage(
+    prisonNumber: String = "A1234BC",
+    cprAddressId: String = "cpr-address-id",
+    status: HttpStatus = HttpStatus.CREATED,
+    response: SysconAddressUsageMapping = syncCorePersonAddressUsageResponse(),
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    stubFor(
+      post("/syscon-sync/person/$prisonNumber/address/$cprAddressId/usage")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.CREATED) response else error)),
+        ),
+    )
+  }
+
+  fun stubSyncUpdateAddressUsage(
+    prisonNumber: String = "A1234BC",
+    cprAddressId: String = "cpr-address-id",
+    cprAddressUsageId: String = "cpr-address-usage-id",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      put("/syscon-sync/person/$prisonNumber/address/$cprAddressId/usage/$cprAddressUsageId")
+        .willReturn(aResponse().withStatus(status.value())),
+    )
+  }
+
+  fun stubSyncDeleteAddressUsage(
+    prisonNumber: String = "A1234BC",
+    cprAddressId: String = "cpr-address-id",
+    cprAddressUsageId: String = "cpr-address-usage-id",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      delete("/syscon-sync/person/$prisonNumber/address/$cprAddressId/usage/$cprAddressUsageId")
+        .willReturn(aResponse().withStatus(status.value())),
+    )
+  }
+
+  fun stubSyncCreateAddress(
+    prisonNumber: String = "A1234BC",
+    addressId: Long = 3456,
+    cprAddressId: String = "cpr-address-id",
+    status: HttpStatus = HttpStatus.CREATED,
+  ) {
+    stubFor(
+      post("/syscon-sync/person/$prisonNumber/address")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(syncCorePersonAddressResponse(addressId, cprAddressId))),
+        ),
+    )
+  }
+
+  fun stubSyncUpdateAddress(
+    prisonNumber: String = "A1234BC",
+    cprAddressId: String = "cpr-address-id",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      put("/syscon-sync/person/$prisonNumber/address/$cprAddressId")
+        .willReturn(aResponse().withStatus(status.value())),
+    )
+  }
+
+  fun stubSyncDeleteAddress(
+    prisonNumber: String = "A1234BC",
+    cprAddressId: String = "cpr-address-id",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      delete("/syscon-sync/person/$prisonNumber/address/$cprAddressId")
+        .willReturn(aResponse().withStatus(status.value())),
     )
   }
 

@@ -117,6 +117,56 @@ class FinanceDpsApiServiceTest {
   }
 
   @Nested
+  inner class MigrateHold {
+    @Test
+    internal fun `will pass oauth2 token to the sync endpoint`() = runTest {
+      financeApi.stubMigrateHold()
+
+      apiService.migrateHold(addHoldDto())
+
+      financeApi.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will send request data to migrate endpoint`() = runTest {
+      financeApi.stubMigrateHold()
+
+      apiService.migrateHold(addHoldDto())
+
+      financeApi.verify(
+        postRequestedFor(anyUrl())
+          .withRequestBodyJsonPath("prisonNumber", equalTo("A1234BC"))
+          .withRequestBodyJsonPath("subAccountCode", equalTo("2101"))
+          .withRequestBodyJsonPath("holdNumber", equalTo("12345"))
+          .withRequestBodyJsonPath("createdAt", equalTo("2025-06-01T01:02:03"))
+          .withRequestBodyJsonPath("createdBy", equalTo("testUser"))
+          .withRequestBodyJsonPath("holdFromDate", equalTo("2025-06-01T01:02:03"))
+          .withRequestBodyJsonPath("isReleased", equalTo("false"))
+          .withRequestBodyJsonPath("holdTransactionId", equalTo("12344"))
+          .withRequestBodyJsonPath("holdType", equalTo("HOA"))
+          .withRequestBodyJsonPath("holdLocation", equalTo("Some location"))
+          .withRequestBodyJsonPath("amount", equalTo("10.0"))
+          .withRequestBodyJsonPath("holdUntilDate", equalTo("2025-09-09T04:05:06"))
+          .withRequestBodyJsonPath("description", equalTo("This is a hold")),
+      )
+    }
+
+    @Test
+    fun `will call the migrate endpoint`() = runTest {
+      financeApi.stubMigrateHold()
+
+      apiService.migrateHold(addHoldDto())
+
+      financeApi.verify(
+        postRequestedFor(urlPathEqualTo("/migrate/holds")),
+      )
+    }
+  }
+
+  @Nested
   inner class SyncAddHold {
     @Test
     internal fun `will pass oauth2 token to the sync endpoint`() = runTest {
@@ -205,10 +255,60 @@ class FinanceDpsApiServiceTest {
   }
 
   @Nested
-  inner class SyncPrisonerAdvance {
+  inner class MigrateAdvance {
     @Test
     internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
-      financeApi.stubSyncPrisonerAdvance()
+      financeApi.stubMigrateAdvance()
+
+      apiService.migrateAdvance(addAdvanceDto())
+
+      financeApi.verify(
+        postRequestedFor(anyUrl())
+          .withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `will sync request data to migrate advance endpoint`() = runTest {
+      financeApi.stubMigrateAdvance()
+
+      apiService.migrateAdvance(addAdvanceDto())
+      financeApi.verify(
+        postRequestedFor(anyUrl())
+          .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo("12345"))
+          .withRequestBodyJsonPath("legacyInformationNumber", equalTo("9876-1"))
+          .withRequestBodyJsonPath("prisonNumber", equalTo("A0001BC"))
+          .withRequestBodyJsonPath("prisonID", equalTo("LEI"))
+          .withRequestBodyJsonPath("amount", equalTo("2.1"))
+          .withRequestBodyJsonPath("repaymentAmount", equalTo("0.5"))
+          .withRequestBodyJsonPath("repaymentStartDate", equalTo("2024-06-18T00:00:00"))
+          .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
+          .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
+          .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
+          .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:10:00"))
+          .withRequestBodyJsonPath("status", equalTo("ACTIVE"))
+          // TODO REMOVE - this will not be required once the migrate endpoint is added
+          .withRequestBodyJsonPath("legacyTransactionId", equalTo("2345")),
+      )
+    }
+
+    @Test
+    fun `will call the migrate prisoner advance endpoint`() = runTest {
+      financeApi.stubMigrateAdvance()
+
+      apiService.migrateAdvance(addAdvanceDto())
+
+      financeApi.verify(
+        postRequestedFor(urlPathEqualTo("/migrate/advances")),
+      )
+    }
+  }
+
+  @Nested
+  inner class SyncAdvance {
+    @Test
+    internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
+      financeApi.stubSyncAdvance()
 
       apiService.syncPrisonerAdvance(addAdvanceDto())
 
@@ -220,20 +320,20 @@ class FinanceDpsApiServiceTest {
 
     @Test
     internal fun `will sync request data to sync advance endpoint`() = runTest {
-      financeApi.stubSyncPrisonerAdvance()
+      financeApi.stubSyncAdvance()
 
       apiService.syncPrisonerAdvance(addAdvanceDto())
       financeApi.verify(
         postRequestedFor(anyUrl())
           .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo("12345"))
+          .withRequestBodyJsonPath("legacyTransactionId", equalTo("2345"))
           .withRequestBodyJsonPath("legacyInformationNumber", equalTo("9876-1"))
           .withRequestBodyJsonPath("prisonNumber", equalTo("A0001BC"))
           .withRequestBodyJsonPath("prisonID", equalTo("LEI"))
           .withRequestBodyJsonPath("amount", equalTo("2.1"))
           .withRequestBodyJsonPath("repaymentAmount", equalTo("0.5"))
           .withRequestBodyJsonPath("repaymentStartDate", equalTo("2024-06-18T00:00:00"))
-          // TODO add in when set in api call
-          // .withRequestBodyJsonPath("comment", equalTo("comment"))
+          .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
           .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
           .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
           .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:10:00"))
@@ -243,7 +343,7 @@ class FinanceDpsApiServiceTest {
 
     @Test
     fun `will call the sync prisoner advance endpoint`() = runTest {
-      financeApi.stubSyncPrisonerAdvance()
+      financeApi.stubSyncAdvance()
 
       apiService.syncPrisonerAdvance(addAdvanceDto())
 

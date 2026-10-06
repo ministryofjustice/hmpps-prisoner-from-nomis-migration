@@ -19,7 +19,7 @@ import kotlin.String
 @Component
 class AdvancesNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
-  fun stubGetAdvanceById(
+  fun stubGetAdvance(
     advanceId: Long = 12345,
     prisonNumber: String = "A0001BC",
     prisonerAdvance: PrisonerAdvanceDto? = prisonerAdvance(prisonNumber = prisonNumber),
@@ -36,7 +36,7 @@ class AdvancesNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetAdvanceByIdNotFound(
+  fun stubGetAdvanceNotFound(
     advanceId: Long = 12345,
     status: HttpStatus = HttpStatus.NOT_FOUND,
     error: ErrorResponse = ErrorResponse(status = status.value()),
@@ -56,7 +56,7 @@ class AdvancesNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetPrisonerAdvances(
     rootOffenderId: Long = 12345,
     prisonNumber: String = "A0001BC",
-    prisonerAdvance: PrisonerAdvanceDto? = prisonerAdvance(prisonNumber = prisonNumber),
+    prisonerAdvances: List<PrisonerAdvanceDto> = listOf(prisonerAdvance(prisonNumber = prisonNumber)),
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/finance/prisoners/root-offender-id/$rootOffenderId/advances")).willReturn(
@@ -64,7 +64,7 @@ class AdvancesNomisApiMockServer(private val jsonMapper: JsonMapper) {
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(
-            jsonMapper.writeValueAsString(listOf(prisonerAdvance)),
+            jsonMapper.writeValueAsString(prisonerAdvances),
 
           ),
       ),

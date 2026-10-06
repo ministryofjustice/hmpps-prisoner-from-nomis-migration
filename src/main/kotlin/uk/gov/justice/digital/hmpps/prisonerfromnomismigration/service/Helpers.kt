@@ -17,6 +17,7 @@ class MigrationMessage<M, T>(
 ) : LocalMessage<M>(type)
 
 const val ACTIVITIES_QUEUE_ID = "migrationactivities"
+const val ADVANCES_QUEUE_ID = "migrationadvances"
 const val AGENCY_REGISTERS_QUEUE_ID = "migrationagencyregisters"
 const val ALLOCATIONS_QUEUE_ID = "migrationallocations"
 const val APPOINTMENTS_QUEUE_ID = "migrationappointments"
@@ -58,6 +59,7 @@ const val VISIT_BALANCE_SYNC_QUEUE_ID = "eventvisitbalance"
 
 enum class MigrationType(val queueId: String, val telemetryName: String) {
   ACTIVITIES(ACTIVITIES_QUEUE_ID, "activity"),
+  ADVANCES(ADVANCES_QUEUE_ID, "advances"),
   AGENCY_REGISTERS(AGENCY_REGISTERS_QUEUE_ID, "agencyregisters"),
   ALLOCATIONS(ALLOCATIONS_QUEUE_ID, "activity-allocation"),
   APPOINTMENTS(APPOINTMENTS_QUEUE_ID, "appointments"),

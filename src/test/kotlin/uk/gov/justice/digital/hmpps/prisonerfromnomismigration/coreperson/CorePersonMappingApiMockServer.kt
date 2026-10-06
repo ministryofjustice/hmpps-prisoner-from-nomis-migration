@@ -11,9 +11,10 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -98,31 +99,33 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubGetByNomisEmailIdOrNull(
-    nomisEmailAddressId: Long = 123456,
-    mapping: CorePersonEmailAddressMappingDto? = corePersonEmailAddressMapping(nomisEmailAddressId),
+  fun stubGetByNomisAddressUsageIdOrNull(
+    nomisAddressId: Long = 123456,
+    addressUsageCode: String = "HOME",
+    mapping: CorePersonAddressUsageMappingDto? = corePersonAddressUsageMapping(nomisAddressId, addressUsageCode),
   ) {
     stubGet(
-      "/mapping/core-person/email/nomis-email-address-id/$nomisEmailAddressId",
+      "/mapping/core-person/address-usage/nomis-address-id/$nomisAddressId/usage-code/$addressUsageCode",
       mapping,
     )
   }
 
-  fun stubGetByNomisPhoneIdOrNull(
-    nomisPhoneId: Long = 123456,
-    mapping: CorePersonPhoneMappingDto? = corePersonPhoneMapping(nomisPhoneId),
+  fun stubGetByNomisContactIdOrNull(
+    nomisContactId: Long = 123456,
+    nomisContactType: NomisContactType,
+    mapping: CorePersonContactMappingDto? = corePersonContactMapping(nomisContactId, nomisContactType),
   ) {
     stubGet(
-      "/mapping/core-person/phone/nomis-phone-id/$nomisPhoneId",
+      "/mapping/core-person/contact/nomis-contact-id/$nomisContactId/type/$nomisContactType",
       mapping,
     )
   }
 
   fun stubDeleteByNomisAddressId(nomisAddressId: Long = 123456) = stubDelete("/mapping/core-person/address/nomis-address-id/$nomisAddressId")
 
-  fun stubDeleteByNomisEmailId(nomisEmailAddressId: Long = 123456) = stubDelete("/mapping/core-person/email/nomis-email-address-id/$nomisEmailAddressId")
+  fun stubDeleteByNomisAddressUsageId(nomisAddressId: Long = 123456, addressUsageCode: String = "HOME") = stubDelete("/mapping/core-person/address-usage/nomis-address-id/$nomisAddressId/usage-code/$addressUsageCode")
 
-  fun stubDeleteByNomisPhoneId(nomisPhoneId: Long = 123456) = stubDelete("/mapping/core-person/phone/nomis-phone-id/$nomisPhoneId")
+  fun stubDeleteByNomisContactId(nomisContactId: Long = 123456, nomisContactType: NomisContactType) = stubDelete("/mapping/core-person/contact/nomis-contact-id/$nomisContactId/type/$nomisContactType")
 
   private fun stubDelete(path: String) {
     mappingApi.stubFor(
@@ -134,14 +137,37 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateAddressMapping() = stubCreate("/mapping/core-person/address")
 
-  fun stubCreateEmailMapping() = stubCreate("/mapping/core-person/email")
+  fun stubCreateAddressMapping(error: DuplicateMappingErrorResponse) = stubCreate("/mapping/core-person/address", error)
 
-  fun stubCreatePhoneMapping() = stubCreate("/mapping/core-person/phone")
+  fun stubCreateAddressMappingFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person/address")
+
+  fun stubCreateAddressUsageMapping() = stubCreate("/mapping/core-person/address-usage")
+
+  fun stubCreateAddressUsageMapping(error: DuplicateMappingErrorResponse) = stubCreate("/mapping/core-person/address-usage", error)
+
+  fun stubCreateAddressUsageMappingFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person/address-usage")
+
+  fun stubCreateContactMapping() = stubCreate("/mapping/core-person/contact")
+
+  fun stubCreateContactMapping(error: DuplicateMappingErrorResponse) = stubCreate("/mapping/core-person/contact", error)
+
+  fun stubCreateContactMappingFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person/contact")
 
   private fun stubCreate(path: String) {
     mappingApi.stubFor(
       post(urlEqualTo(path)).willReturn(
         aResponse().withStatus(HttpStatus.CREATED.value()),
+      ),
+    )
+  }
+
+  private fun stubCreate(path: String, error: DuplicateMappingErrorResponse) {
+    mappingApi.stubFor(
+      post(urlEqualTo(path)).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.CONFLICT.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
       ),
     )
   }
@@ -164,18 +190,20 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
     mappingType = CorePersonAddressMappingDto.MappingType.MIGRATED,
   )
 
-  private fun corePersonEmailAddressMapping(nomisEmailAddressId: Long) = CorePersonEmailAddressMappingDto(
-    cprId = "cpr-email-id",
-    nomisId = nomisEmailAddressId,
+  private fun corePersonAddressUsageMapping(nomisAddressId: Long, addressUsageCode: String) = CorePersonAddressUsageMappingDto(
+    cprId = "cpr-address-usage-id",
+    nomisId = nomisAddressId,
+    addressUsageCode = addressUsageCode,
     nomisPrisonNumber = "A1234BC",
-    mappingType = CorePersonEmailAddressMappingDto.MappingType.MIGRATED,
+    mappingType = CorePersonAddressUsageMappingDto.MappingType.MIGRATED,
   )
 
-  private fun corePersonPhoneMapping(nomisPhoneId: Long) = CorePersonPhoneMappingDto(
-    cprId = "cpr-phone-id",
-    nomisId = nomisPhoneId,
+  private fun corePersonContactMapping(nomisId: Long, nomisContactType: NomisContactType) = CorePersonContactMappingDto(
+    cprId = "cpr-contact-id",
+    nomisId = nomisId,
+    nomisContactType = nomisContactType,
     nomisPrisonNumber = "A1234BC",
-    mappingType = CorePersonPhoneMappingDto.MappingType.MIGRATED,
+    mappingType = CorePersonContactMappingDto.MappingType.MIGRATED,
   )
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)

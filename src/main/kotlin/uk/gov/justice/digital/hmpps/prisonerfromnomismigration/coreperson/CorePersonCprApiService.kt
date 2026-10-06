@@ -5,20 +5,18 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.SysconSyncApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddress
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAliasesAndIdentifiersRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonDisabilityStatus
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonImmigrationStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonNationality
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionSaveResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonSexualOrientation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasesAndIdentifiersResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
@@ -27,11 +25,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val webClient: WebClient) {
   private val api = SysconSyncApi(webClient)
 
-  suspend fun migrateCorePersonAliasesAndIdentifiers(prisonNumber: String, request: PrisonAliasesAndIdentifiersRequest): SysconAliasesAndIdentifiersResponseBody = api
-    .prepare(api.saveAliasesAndIdentifiersRequestConfig(prisonNumber, request))
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
-
   suspend fun migrateCorePersonAddressesAndContacts(prisonNumber: String, request: PrisonAddressesAndContactsRequest): SysconAddressesAndContactsResponseBody = api
     .prepare(api.saveAddressesAndContactsRequestConfig(prisonNumber, request))
     .retrieve()
@@ -39,26 +32,6 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
 
   suspend fun migrateCorePersonReligion(prisonNumber: String, request: PrisonReligionRequest): SysconReligionResponseBody = api
     .prepare(api.savePrisonerReligionsRequestConfig(prisonNumber, request))
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
-
-  suspend fun syncCreateSexualOrientation(prisonNumber: String, request: PrisonSexualOrientation): String = api
-    .prepare(api.updateSexualOrientationRequestConfig(prisonNumber, request))
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
-
-  suspend fun syncCreateDisability(prisonNumber: String, request: PrisonDisabilityStatus): String = api
-    .prepare(api.updateDisabilityStatusRequestConfig(prisonNumber, request))
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
-
-  suspend fun syncCreateImmigrationStatus(prisonNumber: String, request: PrisonImmigrationStatus): String = api
-    .prepare(api.updateImmigrationStatusRequestConfig(prisonNumber, request))
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
-
-  suspend fun syncCreateNationality(prisonNumber: String, request: PrisonNationality): String = api
-    .prepare(api.saveNationalityRequestConfig(prisonNumber, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
@@ -71,20 +44,59 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .updatePrisonReligion(prisonNumber, cprReligionId, religion)
     .awaitSingle()
 
-  suspend fun syncCreateEmail(prisonNumber: String, email: PrisonContact): SysconContactMapping = api
-    .prepare(api.createPrisonerContactRequestConfig(prisonNumber, email))
+  suspend fun syncCreateContact(prisonNumber: String, contact: PrisonContact): SysconContactMapping = api
+    .prepare(api.createPrisonerContactRequestConfig(prisonNumber, contact))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncUpdateEmail(prisonNumber: String, cprContactId: String, email: PrisonContact): Unit = api
-    .updatePrisonerContact(prisonNumber, cprContactId, email)
+  suspend fun syncUpdateContact(prisonNumber: String, cprContactId: String, contact: PrisonContact): Unit = api
+    .updatePrisonerContact(prisonNumber, cprContactId, contact)
     .awaitSingle()
 
-  suspend fun syncDeleteEmail(prisonNumber: String, cprContactId: String): Unit = api
+  suspend fun syncDeleteContact(prisonNumber: String, cprContactId: String): Unit = api
     .deletePrisonerContact(prisonNumber, cprContactId)
+    .awaitSingle()
+
+  suspend fun syncCreateAddress(prisonNumber: String, address: PrisonAddress): SysconAddressMapping = api
+    .prepare(api.createPrisonerAddressRequestConfig(prisonNumber, address))
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun syncUpdateAddress(prisonNumber: String, cprAddressId: String, address: PrisonAddress): Unit = api
+    .updatePrisonerAddress(prisonNumber, cprAddressId, address)
+    .awaitSingle()
+
+  suspend fun syncDeleteAddress(prisonNumber: String, cprAddressId: String): Unit = api
+    .deletePrisonerAddress(prisonNumber, cprAddressId)
     .awaitSingle()
 
   suspend fun processPrisonMerge(prisonNumber: String, prisonMerge: PrisonMerge): Unit = api
     .processPrisonMerge(prisonNumber, prisonMerge)
+    .awaitSingle()
+
+  suspend fun syncCreateAddressContact(prisonNumber: String, cprAddressId: String, contact: PrisonContact): SysconContactMapping = api
+    .prepare(api.createPrisonerAddressContactRequestConfig(prisonNumber, cprAddressId, contact))
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun syncUpdateAddressContact(prisonNumber: String, cprAddressId: String, cprContactId: String, contact: PrisonContact): Unit = api
+    .updatePrisonerAddressContact(prisonNumber, cprAddressId, cprContactId, contact)
+    .awaitSingle()
+
+  suspend fun syncDeleteAddressContact(prisonNumber: String, cprContactId: String): Unit = api
+    .deletePrisonerAddressContact(prisonNumber, cprContactId)
+    .awaitSingle()
+
+  suspend fun syncCreateAddressUsage(prisonNumber: String, cprAddressId: String, addressUsage: PrisonAddressUsage): SysconAddressUsageMapping = api
+    .prepare(api.createPrisonerAddressUsageRequestConfig(prisonNumber, cprAddressId, addressUsage))
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun syncUpdateAddressUsage(prisonNumber: String, cprAddressId: String, cprAddressUsageId: String, addressUsage: PrisonAddressUsage): Unit = api
+    .updatePrisonerAddressUsage(prisonNumber, cprAddressId, cprAddressUsageId, addressUsage)
+    .awaitSingle()
+
+  suspend fun syncDeleteAddressUsage(prisonNumber: String, cprAddressId: String, cprAddressUsageId: String): Unit = api
+    .deletePrisonerAddressUsage(prisonNumber, cprAddressId, cprAddressUsageId)
     .awaitSingle()
 }

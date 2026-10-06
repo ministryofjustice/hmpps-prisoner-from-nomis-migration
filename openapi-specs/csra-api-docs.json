@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-22.562.49a87b9"
+    "version" : "2026-10-05.602.aa3cb89"
   },
   "servers" : [ {
     "url" : "/",
@@ -1592,7 +1592,7 @@
             "items" : {
               "type" : "string",
               "description" : "A CSRA rating value for filtering the prison prisoner list; NO_RATING matches prisoners with no current rating",
-              "enum" : [ "NO_RATING", "STANDARD", "STANDARD_LEGACY", "HIGH", "HIGH_GENERAL", "HIGH_GENERAL_INTERIM", "HIGH_GENERAL_PROVISIONAL", "HIGH_SPECIFIC", "HIGH_SPECIFIC_PROVISIONAL", "MED", "LOW", "PEND" ]
+              "enum" : [ "NO_RATING", "STANDARD", "STANDARD_LEGACY", "HIGH", "HIGH_GENERAL", "HIGH_GENERAL_INTERIM", "HIGH_GENERAL_PROVISIONAL", "HIGH_SPECIFIC", "HIGH_SPECIFIC_PROVISIONAL", "MED", "LOW" ]
             }
           }
         }, {
@@ -3485,6 +3485,12 @@
             "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
             "example" : "LOW"
           },
+          "calculatedLevel" : {
+            "type" : [ "string", "null" ],
+            "description" : "The calculated NOMIS level before any review or approval level overrode it.",
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "example" : "LOW"
+          },
           "assessmentComment" : {
             "type" : [ "string", "null" ],
             "description" : "The assessment comment recorded in NOMIS"
@@ -3601,11 +3607,11 @@
           },
           "ratings" : {
             "type" : "array",
-            "description" : "The distinct CSRA rating filter values the prisoner has CSRAs of, ordered to match the UI checkbox sequence: HIGH, HIGH_GENERAL, HIGH_GENERAL_INTERIM, HIGH_GENERAL_PROVISIONAL, HIGH_SPECIFIC, HIGH_SPECIFIC_PROVISIONAL, STANDARD, STANDARD_LEGACY, LOW, MED, PEND.",
+            "description" : "The distinct CSRA rating filter values the prisoner has CSRAs of, ordered to match the UI checkbox sequence: HIGH, HIGH_GENERAL, HIGH_GENERAL_INTERIM, HIGH_GENERAL_PROVISIONAL, HIGH_SPECIFIC, HIGH_SPECIFIC_PROVISIONAL, STANDARD, STANDARD_LEGACY, LOW, MED.",
             "items" : {
               "type" : "string",
               "description" : "A CSRA rating value for filtering the prison prisoner list; NO_RATING matches prisoners with no current rating",
-              "enum" : [ "NO_RATING", "STANDARD", "STANDARD_LEGACY", "HIGH", "HIGH_GENERAL", "HIGH_GENERAL_INTERIM", "HIGH_GENERAL_PROVISIONAL", "HIGH_SPECIFIC", "HIGH_SPECIFIC_PROVISIONAL", "MED", "LOW", "PEND" ]
+              "enum" : [ "NO_RATING", "STANDARD", "STANDARD_LEGACY", "HIGH", "HIGH_GENERAL", "HIGH_GENERAL_INTERIM", "HIGH_GENERAL_PROVISIONAL", "HIGH_SPECIFIC", "HIGH_SPECIFIC_PROVISIONAL", "MED", "LOW" ]
             }
           },
           "establishments" : {
@@ -3641,15 +3647,102 @@
             "example" : "REVIEW"
           },
           "rating" : {
-            "type" : "string",
-            "description" : "The recorded rating (final result if present, otherwise the interim result)",
+            "type" : [ "string", "null" ],
+            "deprecated" : true,
+            "description" : "Deprecated: the final rating, or the provisional one where there is no final rating yet. Use `finalRating` and `provisionalRating` instead; this field will be removed once the UI has migrated.",
             "enum" : [ "HIGH", "HIGH_GENERAL", "HIGH_SPECIFIC", "STANDARD" ],
             "example" : "STANDARD"
           },
           "reviewComment" : {
             "type" : [ "string", "null" ],
-            "description" : "The review/assessment comment, if any. Where `legacy` is present, prefer its assessmentComment and approvalComment — NOMIS records the two separately and this field resolves them to one.",
+            "deprecated" : true,
+            "description" : "Deprecated: the comment belonging to the rating in `rating`. Use `finalReviewComment` and `provisionalReviewComment` instead; this field will be removed once the UI has migrated.",
             "example" : "PNC checked. No issues found."
+          },
+          "recordedDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "deprecated" : true,
+            "description" : "Deprecated: the date the rating in `rating` was recorded, falling back to the assessment date. Use `finalRecordedDate` and `provisionalRecordedDate` instead; this field will be removed once the UI has migrated.",
+            "example" : "2025-10-11"
+          },
+          "finalRating" : {
+            "type" : [ "string", "null" ],
+            "description" : "The final rating when the review has reached a final outcome",
+            "enum" : [ "HIGH", "HIGH_GENERAL", "HIGH_SPECIFIC", "STANDARD" ],
+            "example" : "STANDARD"
+          },
+          "finalReviewComment" : {
+            "type" : [ "string", "null" ],
+            "description" : "The final review/assessment comment when one exists",
+            "example" : "PNC checked. No issues found."
+          },
+          "finalRecordedDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The date the final rating was recorded",
+            "example" : "2025-10-11"
+          },
+          "finalPrisonId" : {
+            "type" : [ "string", "null" ],
+            "description" : "The prison where the final stage was recorded",
+            "example" : "LEI"
+          },
+          "finalPrisonName" : {
+            "type" : [ "string", "null" ],
+            "description" : "The name of the prison where the final stage was recorded, falling back to the id if it cannot be resolved",
+            "example" : "Leeds (HMP)"
+          },
+          "provisionalRating" : {
+            "type" : [ "string", "null" ],
+            "description" : "The provisional rating when the review has not reached a final outcome yet",
+            "enum" : [ "HIGH", "HIGH_GENERAL", "HIGH_SPECIFIC", "STANDARD" ],
+            "example" : "HIGH_GENERAL"
+          },
+          "provisionalReviewComment" : {
+            "type" : [ "string", "null" ],
+            "description" : "The provisional review/assessment comment when one exists",
+            "example" : "Day 2 assessment complete."
+          },
+          "provisionalRecordedDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The date the provisional rating was recorded",
+            "example" : "2025-10-11"
+          },
+          "provisionalPrisonId" : {
+            "type" : [ "string", "null" ],
+            "description" : "The prison where the provisional or interim stage was recorded",
+            "example" : "LEI"
+          },
+          "provisionalPrisonName" : {
+            "type" : [ "string", "null" ],
+            "description" : "The name of the prison where the provisional or interim stage was recorded, falling back to the id if it cannot be resolved",
+            "example" : "Leeds (HMP)"
+          },
+          "interimReviewer" : {
+            "type" : [ "string", "null" ],
+            "description" : "The username of the reviewer who completed the interim stage. Only present for CSRA reviews with an interim stage: interim reviews are the only CSRA history item the UI shows the reviewer for.",
+            "example" : "NQP56Y"
+          },
+          "closureReason" : {
+            "type" : [ "string", "null" ],
+            "description" : "The reason the review was closed or archived. Only present if the review was closed or archived.",
+            "enum" : [ "NOT_COMPLETED_PRISONER_TRANSFER", "NOT_COMPLETED_PRISONER_RELEASE" ]
+          },
+          "riskTo" : {
+            "type" : "array",
+            "description" : "The risk details of the rating shown on this row: the final stage's where there is a final rating, otherwise the provisional stage's. Matches the rule used by the current-rating endpoint.",
+            "items" : {
+              "$ref" : "#/components/schemas/CsraRiskToDetail"
+            }
+          },
+          "vulnerabilities" : {
+            "type" : "array",
+            "description" : "The vulnerability details of the rating shown on this row: the final stage's where there is a final rating, otherwise the provisional stage's. Matches the rule used by the current-rating endpoint.",
+            "items" : {
+              "$ref" : "#/components/schemas/CsraVulnerabilityDetail"
+            }
           },
           "prisonId" : {
             "type" : [ "string", "null" ],
@@ -3661,12 +3754,6 @@
             "description" : "The name of the prison the CSRA was recorded at, falling back to the id if it cannot be resolved",
             "example" : "Leeds (HMP)"
           },
-          "recordedDate" : {
-            "type" : "string",
-            "format" : "date",
-            "description" : "The date the rating was recorded",
-            "example" : "2025-10-11"
-          },
           "legacy" : {
             "description" : "Legacy NOMIS detail. Present only on reviews migrated from NOMIS, so its presence identifies the row as legacy.",
             "oneOf" : [ {
@@ -3676,7 +3763,7 @@
             } ]
           }
         },
-        "required" : [ "assessmentType", "id", "rating", "recordedDate", "type" ]
+        "required" : [ "assessmentType", "id", "riskTo", "type", "vulnerabilities" ]
       },
       "CsraReviewInProgressRow" : {
         "type" : "object",

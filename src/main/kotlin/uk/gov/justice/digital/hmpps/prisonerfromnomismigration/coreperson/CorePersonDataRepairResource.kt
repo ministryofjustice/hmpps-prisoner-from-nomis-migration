@@ -16,7 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundE
 @Tag(name = "Core Person Repair Resource")
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__UPDATE__RW')")
 class CorePersonDataRepairResource(
-  private val synchronisationService: CorePersonSynchronisationService,
+  private val addressContactSynchronisationService: CorePersonSynchronisationAddressContactService,
   private val telemetryClient: TelemetryClient,
 ) {
   @PostMapping("/prisoners/{prisonNumber}/core-person/addresses-contacts/repair")
@@ -29,7 +29,7 @@ class CorePersonDataRepairResource(
   )
   suspend fun repairCorePersonAddressesAndContacts(@PathVariable prisonNumber: String) {
     try {
-      synchronisationService.resynchroniseAddressesAndContacts(prisonNumber)
+      addressContactSynchronisationService.resynchroniseAddressesAndContacts(prisonNumber)
     } catch (_: NotFound) {
       throw NotFoundException("Prisoner $prisonNumber not found")
     }

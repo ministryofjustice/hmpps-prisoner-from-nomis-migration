@@ -38,7 +38,7 @@ class TapMovementService(
   private val mappingApiService: TapMappingApiService,
   private val nomisApiService: TapsNomisApiService,
   private val dpsApiService: TapDpsApiService,
-  private val migrationService: TapMigrationService,
+  private val repairService: TapRepairService,
 ) : TelemetryEnabled {
   companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -46,7 +46,7 @@ class TapMovementService(
 
   suspend fun tapMovementChanged(event: ExternalMovementEvent) = when {
     event.movementType != TAP -> {}
-    event.auditModuleName == EDIT_EXTERNAL_MOVEMENTS_AUDIT_MODULE -> migrationService.resyncPrisonerTaps(event.offenderIdDisplay!!)
+    event.auditModuleName == EDIT_EXTERNAL_MOVEMENTS_AUDIT_MODULE -> repairService.resyncPrisonerTaps(event.offenderIdDisplay!!)
     event.recordInserted -> tapMovementInserted(event)
     event.recordDeleted -> tapMovementDeleted(event)
     else -> tapMovementUpdated(event)
