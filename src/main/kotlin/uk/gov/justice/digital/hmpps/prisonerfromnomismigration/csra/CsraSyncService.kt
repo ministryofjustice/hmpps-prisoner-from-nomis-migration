@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CsraMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -159,8 +160,24 @@ class CsraSyncService(
       val csras = csraMappingApiService.updateMappingsByBookingId(bookingId, movedFromNomsNumber, movedToNomsNumber)
       val idsToResynchronise = csras.map { UUID.fromString(it.dpsCsraId) }
       telemetry["count"] = idsToResynchronise.size
-      csraDpsApiService.moveCsras(movedFromNomsNumber, movedToNomsNumber, csras = idsToResynchronise)
+
+      queueService.sendMessage(
+        messageType = SynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_TARGET.name,
+        synchronisationType = SynchronisationType.CSRAS,
+        message = CsraMoveBookingMessage(
+          movedFromNomsNumber = movedFromNomsNumber,
+          movedToNomsNumber = movedToNomsNumber,
+          csraIds = idsToResynchronise,
+        ),
+        telemetryAttributes = telemetry.valuesAsStrings(),
+      )
     }
+  }
+
+  suspend fun moveCsras(message: InternalMessage<CsraMoveBookingMessage>) {
+    val (movedFromNomsNumber, movedToNomsNumber, csraIds) = message.body
+    csraDpsApiService.moveCsras(movedFromNomsNumber, movedToNomsNumber, csras = csraIds)
+    telemetryClient.trackEvent("csras-booking-moved-resynchronise-success", message.telemetryAttributes)
   }
 
   enum class MappingResponse {
@@ -230,3 +247,9 @@ class CsraSyncService(
     }
   }
 }
+
+data class CsraMoveBookingMessage(
+  val movedFromNomsNumber: String,
+  val movedToNomsNumber: String,
+  val csraIds: List<UUID>,
+)

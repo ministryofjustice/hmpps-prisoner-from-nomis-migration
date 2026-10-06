@@ -107,4 +107,65 @@ class CsraMoveBookingIntTest(
       }
     }
   }
+
+  @Nested
+  inner class DPSFailsOnce {
+    private val uuid1 = generateUUID(1)
+    private val uuid2 = generateUUID(2)
+
+    @BeforeEach
+    fun setUp() {
+      csraMappingApiMockServer.stubUpdateMappingsByBookingId(
+        listOf(
+          CsraMappingDto(
+            dpsCsraId = uuid1,
+            nomisSequence = 1,
+            offenderNo = "A1234AA",
+            nomisBookingId = 1,
+            mappingType = CsraMappingDto.MappingType.MIGRATED,
+          ),
+          CsraMappingDto(
+            dpsCsraId = uuid2,
+            nomisSequence = 2,
+            offenderNo = "A1234AA",
+            nomisBookingId = 1,
+            mappingType = CsraMappingDto.MappingType.MIGRATED,
+          ),
+        ),
+      )
+      csraApi.stubMoveFailsOnce()
+
+      awsSqsCsraEventClient.sendMessage(
+        csraEventQueueUrl,
+        bookingMovedDomainEvent(
+          bookingId = 12,
+          movedToNomsNumber = "A1234BB",
+          movedFromNomsNumber = "A1234AA",
+        ),
+      )
+    }
+
+    @Test
+    fun `will retry if the DPS call fails`() {
+      // ensure the process has finished before the test ends by checking the telemetry
+      await untilAsserted {
+        verify(telemetryClient).trackEvent(
+          eq("csras-booking-moved-resynchronise-success"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo("12")
+            assertThat(it["movedToNomsNumber"]).isEqualTo("A1234BB")
+            assertThat(it["movedFromNomsNumber"]).isEqualTo("A1234AA")
+            assertThat(it["count"]).isEqualTo("2")
+          },
+          isNull(),
+        )
+      }
+      csraApi.verify(
+        2,
+        putRequestedFor(urlPathEqualTo("/nomis-sync/move/from/A1234AA/to/A1234BB"))
+          .withRequestBodyJsonPath("$[0]", uuid1)
+          .withRequestBodyJsonPath("$[1]", uuid2),
+      )
+    }
+  }
 }

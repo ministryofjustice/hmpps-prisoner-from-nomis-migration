@@ -9,6 +9,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.status
 import com.github.tomakehurst.wiremock.client.WireMock.urlMatching
+import com.github.tomakehurst.wiremock.stubbing.Scenario.STARTED
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -108,6 +109,21 @@ class CsraApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubMove() {
     csraApi.stubFor(
       put(urlMatching("/nomis-sync/move/from/.+/to/.+")).willReturn(ok()),
+    )
+  }
+
+  fun stubMoveFailsOnce() {
+    csraApi.stubFor(
+      put(urlMatching("/nomis-sync/move/from/.+/to/.+")).inScenario("CSRA booking move fails once")
+        .whenScenarioStateIs(STARTED)
+        .willReturn(status(500))
+        .willSetStateTo("CSRA booking move succeeds"),
+    )
+    csraApi.stubFor(
+      put(urlMatching("/nomis-sync/move/from/.+/to/.+")).inScenario("CSRA booking move fails once")
+        .whenScenarioStateIs("CSRA booking move succeeds")
+        .willReturn(ok())
+        .willSetStateTo(STARTED),
     )
   }
 }

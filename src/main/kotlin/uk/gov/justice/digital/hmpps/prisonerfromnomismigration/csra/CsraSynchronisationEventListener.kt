@@ -9,6 +9,7 @@ import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RESYNCHRONISE_MOVE_BOOKING_TARGET
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CSRA_SYNC_QUEUE_ID
@@ -51,6 +52,7 @@ class CsraSynchronisationEventListener(
         }
 
         RETRY_SYNCHRONISATION_MAPPING.name -> csraSyncService.retryCreateMapping(sqsMessage.Message.fromJson())
+        RESYNCHRONISE_MOVE_BOOKING_TARGET.name -> csraSyncService.moveCsras(sqsMessage.Message.fromJson())
       }
     }
   }
