@@ -145,16 +145,15 @@ class AdvancesMigrationIntTest(
         assertThat(migrationRequests).hasSize(2)
         assertThat(migrationRequests.map { it.legacyPaymentProfileId })
           .containsExactlyInAnyOrder(12345L, 54321L)
-
-        // TODO add in
-        // assertThat(migrationRequest.legacyInformationNumber).isEqualTo("info-1234")
-        // assertThat(migrationRequest.comment).isEqualTo("This is a comment")
+        assertThat(migrationRequests[0].legacyInformationNumber).isEqualTo("info-123")
+        assertThat(migrationRequests[0].comment).isEqualTo("This is a comment")
         assertThat(migrationRequests[0].prisonNumber).isEqualTo("A0001BC")
         assertThat(migrationRequests[0].prisonID).isEqualTo("LEI")
         assertThat(migrationRequests[0].amount).isEqualTo(BigDecimal("2.10"))
         assertThat(migrationRequests[0].repaymentAmount).isEqualTo(BigDecimal("0.50"))
         assertThat(migrationRequests[0].repaymentStartDate).isEqualTo(LocalDateTime.parse("2024-06-18T00:00:00"))
         assertThat(migrationRequests[0].reference).isEqualTo("description of the advance")
+        // TODO Migration shouldn't have status - remove when api set up
         assertThat(migrationRequests[0].status).isEqualTo(SyncCreateAdvanceRecordRequest.Status.ACTIVE)
         assertThat(migrationRequests[0].createdBy).isEqualTo("JD12345")
         assertThat(migrationRequests[0].createdOn).isEqualTo(LocalDateTime.parse("2024-06-18T12:30:45"))
