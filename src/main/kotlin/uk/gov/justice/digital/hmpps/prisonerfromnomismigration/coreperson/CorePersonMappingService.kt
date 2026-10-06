@@ -14,12 +14,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonMappingResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonMappingResourceApi.NomisContactTypeDeleteCorePersonContactMappingByNomisId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonMappingResourceApi.NomisContactTypeGetCorePersonContactMappingByNomisId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonEmailAddressMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonPhoneMappingDto
 
 @Service
 class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorePersonMappingsDto>("/mapping/core-person", webClient) {
@@ -72,45 +73,45 @@ class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     }
     .awaitFirstOrDefault(CreateMappingResult())
 
-  suspend fun getByNomisEmailIdOrNull(nomisInternetAddressId: Long): CorePersonEmailAddressMappingDto? = api
-    .prepare(api.getCorePersonEmailMappingByNomisIdRequestConfig(nomisInternetAddressId))
+  suspend fun getByNomisEmailIdOrNull(nomisInternetAddressId: Long): CorePersonContactMappingDto? = api
+    .prepare(api.getCorePersonContactMappingByNomisIdRequestConfig(nomisInternetAddressId, NomisContactTypeGetCorePersonContactMappingByNomisId.EMAIL))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun getByNomisEmailId(nomisInternetAddressId: Long): CorePersonEmailAddressMappingDto = api
-    .prepare(api.getCorePersonEmailMappingByNomisIdRequestConfig(nomisInternetAddressId))
+  suspend fun getByNomisEmailId(nomisInternetAddressId: Long): CorePersonContactMappingDto = api
+    .prepare(api.getCorePersonContactMappingByNomisIdRequestConfig(nomisInternetAddressId, NomisContactTypeGetCorePersonContactMappingByNomisId.EMAIL))
     .retrieve()
     .awaitBody()
 
   suspend fun deleteByNomisEmailId(nomisInternetAddressId: Long) {
-    api.deleteCorePersonEmailMappingByNomisId(nomisInternetAddressId).awaitSingle()
+    api.deleteCorePersonContactMappingByNomisId(nomisInternetAddressId, NomisContactTypeDeleteCorePersonContactMappingByNomisId.EMAIL).awaitSingle()
   }
 
-  suspend fun createEmailMapping(mapping: CorePersonEmailAddressMappingDto): CreateMappingResult<CorePersonEmailAddressMappingDto> = api.createCorePersonEmailMapping(mapping)
-    .map { CreateMappingResult<CorePersonEmailAddressMappingDto>() }
+  suspend fun createEmailMapping(mapping: CorePersonContactMappingDto): CreateMappingResult<CorePersonContactMappingDto> = api.createCorePersonContactMapping(mapping)
+    .map { CreateMappingResult<CorePersonContactMappingDto>() }
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
-      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CorePersonEmailAddressMappingDto>>() {})))
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CorePersonContactMappingDto>>() {})))
     }
     .awaitFirstOrDefault(CreateMappingResult())
 
-  suspend fun getByNomisPhoneIdOrNull(nomisPhoneId: Long): CorePersonPhoneMappingDto? = api
-    .prepare(api.getCorePersonPhoneMappingByNomisIdRequestConfig(nomisPhoneId))
+  suspend fun getByNomisPhoneIdOrNull(nomisPhoneId: Long): CorePersonContactMappingDto? = api
+    .prepare(api.getCorePersonContactMappingByNomisIdRequestConfig(nomisPhoneId, NomisContactTypeGetCorePersonContactMappingByNomisId.PHONE))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun getByNomisPhoneId(nomisPhoneId: Long): CorePersonPhoneMappingDto = api
-    .prepare(api.getCorePersonPhoneMappingByNomisIdRequestConfig(nomisPhoneId))
+  suspend fun getByNomisPhoneId(nomisPhoneId: Long): CorePersonContactMappingDto = api
+    .prepare(api.getCorePersonContactMappingByNomisIdRequestConfig(nomisPhoneId, NomisContactTypeGetCorePersonContactMappingByNomisId.PHONE))
     .retrieve()
     .awaitBody()
 
   suspend fun deleteByNomisPhoneId(nomisPhoneId: Long) {
-    api.deleteCorePersonPhoneMappingByNomisId(nomisPhoneId).awaitSingle()
+    api.deleteCorePersonContactMappingByNomisId(nomisPhoneId, NomisContactTypeDeleteCorePersonContactMappingByNomisId.PHONE).awaitSingle()
   }
 
-  suspend fun createPhoneMapping(mapping: CorePersonPhoneMappingDto): CreateMappingResult<CorePersonPhoneMappingDto> = api.createCorePersonPhoneMapping(mapping)
-    .map { CreateMappingResult<CorePersonPhoneMappingDto>() }
+  suspend fun createPhoneMapping(mapping: CorePersonContactMappingDto): CreateMappingResult<CorePersonContactMappingDto> = api.createCorePersonContactMapping(mapping)
+    .map { CreateMappingResult<CorePersonContactMappingDto>() }
     .onErrorResume(WebClientResponseException.Conflict::class.java) {
-      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CorePersonPhoneMappingDto>>() {})))
+      Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CorePersonContactMappingDto>>() {})))
     }
     .awaitFirstOrDefault(CreateMappingResult())
 

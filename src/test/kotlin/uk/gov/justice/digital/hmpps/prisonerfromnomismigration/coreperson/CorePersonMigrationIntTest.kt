@@ -31,6 +31,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType.EMAIL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType.PHONE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
@@ -229,8 +231,9 @@ class CorePersonMigrationIntTest(
           assertThat(personMapping.nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
           assertThat(addresses).hasSize(1)
           assertThat(addressUsages).hasSize(1)
-          assertThat(phoneNumbers).hasSize(2)
-          assertThat(emailAddresses).hasSize(1)
+          assertThat(contacts).hasSize(3)
+          assertThat(contacts.filter { it.nomisContactType == PHONE }).hasSize(2)
+          assertThat(contacts.filter { it.nomisContactType == EMAIL }).hasSize(1)
         }
       }
 
@@ -315,8 +318,7 @@ class CorePersonMigrationIntTest(
           assertThat(personMapping.cprId).isEqualTo(nomisPrisonNumber)
           assertThat(personMapping.nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
           assertThat(addresses).hasSize(1)
-          assertThat(phoneNumbers).hasSize(0)
-          assertThat(emailAddresses).hasSize(0)
+          assertThat(contacts).hasSize(0)
           assertThat(addressUsages).hasSize(0)
         }
       }
@@ -512,8 +514,7 @@ class CorePersonMigrationIntTest(
                   nomisPrisonNumber = nomisPrisonNumber,
                 ),
                 addresses = emptyList(),
-                phoneNumbers = emptyList(),
-                emailAddresses = emptyList(),
+                contacts = emptyList(),
                 addressUsages = emptyList(),
               ),
               existing = CorePersonMappingsDto(
@@ -523,8 +524,7 @@ class CorePersonMigrationIntTest(
                   nomisPrisonNumber = nomisPrisonNumber,
                 ),
                 addresses = emptyList(),
-                phoneNumbers = emptyList(),
-                emailAddresses = emptyList(),
+                contacts = emptyList(),
                 addressUsages = emptyList(),
               ),
             ),
