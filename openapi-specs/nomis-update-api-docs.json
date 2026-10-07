@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-09-29.5113.91ed54d"
+    "version" : "2026-10-07.5206.9ca7887"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -45,6 +45,42 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/RetryDlqResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue-admin/retry-dlq-messages/{dlqName}" : {
+      "put" : {
+        "tags" : [ "hmpps-reactive-queue-resource" ],
+        "operationId" : "retryDlqMessages",
+        "parameters" : [ {
+          "name" : "dlqName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RetryDlqMessagesBody"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RetryDlqMessagesResult"
                 }
               }
             }
@@ -628,6 +664,49 @@
           },
           "404" : {
             "description" : "Either mapping found for case/appearance or case/appearance/charge not found in DPS",
+            "content" : { }
+          }
+        }
+      }
+    },
+    "/prisoners/{offenderNo}/court-sentencing/dps-court-case/{courtCaseId}/case-references/repair" : {
+      "put" : {
+        "tags" : [ "Court Sentencing Update Resource" ],
+        "summary" : "Resynchronises case references for a court case from DPS to NOMIS",
+        "description" : "Used when case references need resynchronising to NOMIS which failed previously, so emergency use only. Requires ROLE_PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "repairCaseReferencesInNomis",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "courtCaseId",
+          "in" : "path",
+          "description" : "The DPS ID of the court case to have its case references re-synced to NOMIS",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "description" : "The DPS ID of the court case to have its case references re-synced to NOMIS"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "repair successful",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : { }
+          },
+          "403" : {
+            "description" : "Incorrect permissions to call endpoint",
+            "content" : { }
+          },
+          "404" : {
+            "description" : "Either no mapping found for case or case not found in DPS",
             "content" : { }
           }
         }
@@ -1832,6 +1911,48 @@
         }
       }
     },
+    "/queue-admin/search-dlq-messages/{dlqName}" : {
+      "get" : {
+        "tags" : [ "hmpps-reactive-queue-resource" ],
+        "operationId" : "searchDlqMessages",
+        "parameters" : [ {
+          "name" : "dlqName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "filter",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "maxMessages",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 100
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SearchDlqResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/queue-admin/get-dlq-messages/{dlqName}" : {
       "get" : {
         "tags" : [ "hmpps-reactive-queue-resource" ],
@@ -2734,6 +2855,38 @@
         },
         "required" : [ "messagesFoundCount" ]
       },
+      "RetryDlqMessagesBody" : {
+        "type" : "object",
+        "properties" : {
+          "messageIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "messageIds" ]
+      },
+      "RetryDlqMessagesResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messagesRetriedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "retriedMessageIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "messagesFoundCount", "messagesRetriedCount", "retriedMessageIds" ]
+      },
       "PurgeQueueResult" : {
         "type" : "object",
         "properties" : {
@@ -3217,6 +3370,26 @@
           }
         },
         "required" : [ "body", "messageId" ]
+      },
+      "SearchDlqResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messagesReturnedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DlqMessage"
+            }
+          }
+        },
+        "required" : [ "messages", "messagesFoundCount", "messagesReturnedCount" ]
       },
       "GetDlqResult" : {
         "type" : "object",
