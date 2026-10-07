@@ -1,10 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
-import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
-import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -15,12 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CreateOffenderEmailRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CreateOffenderEmailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.UpdateOffenderEmailRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDateTime
 
 @ExtendWith(NomisApiExtension::class)
@@ -88,33 +80,6 @@ class CorePersonNomisApiServiceTest(
       val addressesAndContacts = apiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = "A12345BC")
 
       assertThat(addressesAndContacts.addresses!![0].addressId).isEqualTo(12345)
-    }
-  }
-
-  @Nested
-  inner class CreateOffenderEmail {
-    @Test
-    fun `will pass NOMIS offender id to service`() = runTest {
-      mockServer.stubCreateOffenderEmail(offenderId = 12345)
-
-      apiService.createOffenderEmail(offenderId = 12345, createOffenderEmailRequest())
-
-      mockServer.verify(
-        postRequestedFor(urlPathEqualTo("/core-person/12345/email"))
-          .withRequestBodyJsonPath("email", equalTo("test@example.com")),
-      )
-    }
-
-    @Test
-    fun `will return the created email id`() = runTest {
-      mockServer.stubCreateOffenderEmail(
-        offenderId = 12345,
-        response = CreateOffenderEmailResponse(emailAddressId = 45678),
-      )
-
-      val response = apiService.createOffenderEmail(offenderId = 12345, createOffenderEmailRequest())
-
-      assertThat(response.emailAddressId).isEqualTo(45678)
     }
   }
 
@@ -269,37 +234,4 @@ class CorePersonNomisApiServiceTest(
       assertThat(usage.active).isFalse()
     }
   }
-
-  @Nested
-  inner class UpdateOffenderEmail {
-    @Test
-    fun `will pass NOMIS ids to service`() = runTest {
-      mockServer.stubUpdateOffenderEmail(offenderId = 12345, emailAddressId = 45678)
-
-      apiService.updateOffenderEmail(offenderId = 12345, emailAddressId = 45678, updateOffenderEmailRequest())
-
-      mockServer.verify(
-        putRequestedFor(urlPathEqualTo("/core-person/12345/email/45678"))
-          .withRequestBodyJsonPath("email", equalTo("test@example.com")),
-      )
-    }
-  }
-
-  @Nested
-  inner class DeleteOffenderEmail {
-    @Test
-    fun `will pass NOMIS ids to service`() = runTest {
-      mockServer.stubDeleteOffenderEmail(offenderId = 12345, emailAddressId = 45678)
-
-      apiService.deleteOffenderEmail(offenderId = 12345, emailAddressId = 45678)
-
-      mockServer.verify(
-        deleteRequestedFor(urlPathEqualTo("/core-person/12345/email/45678")),
-      )
-    }
-  }
-
-  fun createOffenderEmailRequest() = CreateOffenderEmailRequest(email = "test@example.com")
-
-  fun updateOffenderEmailRequest() = UpdateOffenderEmailRequest(email = "test@example.com")
 }
