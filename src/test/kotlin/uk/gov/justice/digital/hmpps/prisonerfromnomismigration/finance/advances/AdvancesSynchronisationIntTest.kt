@@ -2,10 +2,15 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.exactly
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.matches
+import org.awaitility.kotlin.untilAsserted
+import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -16,10 +21,13 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
+import java.util.UUID
 
 class AdvancesSynchronisationIntTest(
   @Autowired private val nomisApiMock: AdvancesNomisApiMockServer,
@@ -65,49 +73,196 @@ class AdvancesSynchronisationIntTest(
 
     @Nested
     inner class WhenCreatedInNomis {
-      @BeforeEach
-      fun setUp() {
-        nomisApiMock.stubGetAdvance(advanceId)
-        financeApi.stubSyncAdvance()
-        sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
-          .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-created-success") }
+      @Nested
+      inner class HappyPath {
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubGetAdvance(advanceId)
+          financeApi.stubSyncAdvance()
+          sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
+            .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-created-success") }
+        }
+
+        @Test
+        fun `will retrieve the advance from NOMIS`() {
+          nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/$advanceId")))
+        }
+
+        @Test
+        fun `will create the advance in DPS`() {
+          financeApi.verify(
+            postRequestedFor(anyUrl())
+              .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo(advanceId.toString()))
+              .withRequestBodyJsonPath("legacyInformationNumber", equalTo("info-123"))
+              .withRequestBodyJsonPath("legacyTransactionId", equalTo("123"))
+              .withRequestBodyJsonPath("prisonNumber", equalTo("A0001BC"))
+              .withRequestBodyJsonPath("prisonID", equalTo("LEI"))
+              .withRequestBodyJsonPath("amount", equalTo("2.1"))
+              .withRequestBodyJsonPath("repaymentStartDate", equalTo("2024-06-18T00:00:00"))
+              .withRequestBodyJsonPath("repaymentAmount", equalTo("0.5"))
+              .withRequestBodyJsonPath("status", equalTo("ACTIVE"))
+              .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
+              .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
+              .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
+              .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:30:45")),
+          )
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("prisoneradvance-synchronisation-created-success"),
+            check {
+              assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+              assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
+            },
+            isNull(),
+          )
+        }
       }
 
-      @Test
-      fun `will retrieve the advance from NOMIS`() {
-        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/$advanceId")))
+      @Nested
+      @DisplayName("When mapping POST fails")
+      inner class MappingFail {
+        private val dpsAdvanceId = UUID.randomUUID()
+
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubGetAdvance(advanceId)
+          financeApi.stubSyncAdvance(id = dpsAdvanceId)
+          mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = advanceId, mapping = null)
+        }
+
+        @Nested
+        @DisplayName("Fails once")
+        inner class FailsOnce {
+          @BeforeEach
+          fun setUp() {
+            mappingApiMock.stubCreateMappingFailureFollowedBySuccess()
+
+            sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
+              .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-mapping-created") }
+          }
+
+          @Test
+          fun `will create the advance in DPS`() {
+            financeApi.verify(
+              postRequestedFor(urlPathEqualTo("/sync/advances")),
+            )
+          }
+
+          @Test
+          fun `will attempt to create mapping twice and succeed`() {
+            mappingApiMock.verify(
+              exactly(2),
+              postRequestedFor(urlPathEqualTo("/mapping/advances"))
+                .withRequestBodyJsonPath("dpsId", equalTo(dpsAdvanceId.toString()))
+                .withRequestBodyJsonPath("nomisAdvanceId", equalTo(advanceId.toString()))
+                .withRequestBodyJsonPath("mappingType", equalTo("NOMIS_CREATED")),
+            )
+
+            assertThat(
+              awsSqsFinanceOffenderEventsDlqClient.countAllMessagesOnQueue(financeQueueOffenderEventsDlqUrl).get(),
+            ).isEqualTo(0)
+          }
+
+          @Test
+          fun `will track a telemetry event for partial success`() {
+            verify(telemetryClient).trackEvent(
+              eq("prisoneradvance-synchronisation-created-success"),
+              check {
+                assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+                assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
+                assertThat(it["dpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
+                assertThat(it["mapping"]).isEqualTo("initial-failure")
+              },
+              isNull(),
+            )
+
+            verify(telemetryClient).trackEvent(
+              eq("prisoneradvance-synchronisation-mapping-created"),
+              check {
+                assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
+                assertThat(it["dpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Nested
+        @DisplayName("Fails constantly")
+        inner class FailsConstantly {
+          @BeforeEach
+          fun setUp() {
+            mappingApiMock.stubCreateMapping(status = INTERNAL_SERVER_ERROR)
+            sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
+            await untilCallTo {
+              awsSqsFinanceOffenderEventsDlqClient.countAllMessagesOnQueue(financeQueueOffenderEventsDlqUrl).get()
+            } matches { it == 1 }
+          }
+
+          @Test
+          fun `will create the advance in DPS`() {
+            financeApi.verify(
+              1,
+              postRequestedFor(urlPathEqualTo("/sync/advances")),
+            )
+          }
+
+          @Test
+          fun `will attempt to create mapping several times and keep failing`() {
+            mappingApiMock.verify(
+              exactly(3),
+              postRequestedFor(urlPathEqualTo("/mapping/advances")),
+            )
+          }
+
+          @Test
+          fun `will track a telemetry event for success`() {
+            verify(telemetryClient).trackEvent(
+              eq("prisoneradvance-synchronisation-created-success"),
+              check {
+                assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+                assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
+                assertThat(it["dpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
+                assertThat(it["mapping"]).isEqualTo("initial-failure")
+              },
+              isNull(),
+            )
+          }
+        }
       }
 
-      @Test
-      fun `will create the advance in DPS`() {
-        financeApi.verify(
-          postRequestedFor(anyUrl())
-            .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo(advanceId.toString()))
-            .withRequestBodyJsonPath("legacyInformationNumber", equalTo("info-123"))
-            .withRequestBodyJsonPath("legacyTransactionId", equalTo("123"))
-            .withRequestBodyJsonPath("prisonNumber", equalTo("A0001BC"))
-            .withRequestBodyJsonPath("prisonID", equalTo("LEI"))
-            .withRequestBodyJsonPath("amount", equalTo("2.1"))
-            .withRequestBodyJsonPath("repaymentStartDate", equalTo("2024-06-18T00:00:00"))
-            .withRequestBodyJsonPath("repaymentAmount", equalTo("0.5"))
-            .withRequestBodyJsonPath("status", equalTo("ACTIVE"))
-            .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
-            .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
-            .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
-            .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:30:45")),
-        )
-      }
+      @Nested
+      @DisplayName("When finance api POST fails")
+      inner class DPSApiFail {
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubGetAdvance(advanceId)
+          financeApi.stubSyncAdvanceFailure()
 
-      @Test
-      fun `will track telemetry`() {
-        verify(telemetryClient).trackEvent(
-          eq("prisoneradvance-synchronisation-created-success"),
-          check {
-            assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
-            assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
-          },
-          isNull(),
-        )
+          sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
+        }
+
+        @Test
+        fun `will not attempt to create mapping and will track a telemetry event for failure`() {
+          await untilAsserted {
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("prisoneradvance-synchronisation-created-error"),
+              check {
+                assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
+                assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+                assertThat(it["error"]).isEqualTo("500 Internal Server Error from POST http://localhost:8102/sync/advances")
+              },
+              isNull(),
+            )
+          }
+          mappingApiMock.verify(
+            0,
+            postRequestedFor(urlPathEqualTo("/mapping/advances")),
+          )
+        }
       }
     }
   }
