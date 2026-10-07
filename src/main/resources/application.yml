@@ -139,6 +139,11 @@ spring:
             client-id: ${agencyregisters.client.id}
             client-secret: ${agencyregisters.client.secret}
             authorization-grant-type: client_credentials
+          prisoner-location-api:
+            provider: hmpps-auth
+            client-id: ${prisoner.location.client.id}
+            client-secret: ${prisoner.location.client.secret}
+            authorization-grant-type: client_credentials
           drug-testing-api:
             provider: hmpps-auth
             client-id: ${drug.testing.client.id}
