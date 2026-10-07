@@ -33,6 +33,17 @@ class AdvancesMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/advances")
 
+  fun stubCreateMapping(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
+    mappingApi.stubFor(
+      post("/mapping/advances").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(error)),
+      ),
+    )
+  }
+
   fun stubCreateMapping(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
       post("/mapping/advances").willReturn(

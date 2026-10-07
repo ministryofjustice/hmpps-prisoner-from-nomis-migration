@@ -316,4 +316,23 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
     )
   }
+
+  fun stubSyncAdvanceFailure() {
+    stubFor(
+      post("/sync/advances").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(INTERNAL_SERVER_ERROR.value())
+          .withBody(
+            jsonMapper.writeValueAsString(
+              ErrorResponse(
+                status = 500,
+                userMessage = "test message",
+                developerMessage = "dev message",
+              ),
+            ),
+          ),
+      ),
+    )
+  }
 }
