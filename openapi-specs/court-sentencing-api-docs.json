@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-06.2629.db3f052"
+    "version" : "2026-10-07.2644.5a53c55"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -49,6 +49,9 @@
   }, {
     "name" : "legacy-recall-controller",
     "description" : "GET operation for syncing recall data. This controller is only ever used for syncing DPS recalls to NOMIS."
+  }, {
+    "name" : "document-generation-controller",
+    "description" : "Endpoint for generating documents"
   }, {
     "name" : "court-appearance-schedules-controller",
     "description" : "Court Appearance schedules"
@@ -3374,6 +3377,70 @@
         "responses" : {
           "204" : {
             "description" : "No Content"
+          }
+        }
+      }
+    },
+    "/document-generator/f986" : {
+      "post" : {
+        "tags" : [ "document-generation-controller" ],
+        "summary" : "Create F986 Document",
+        "description" : "This endpoint will create an F986 document",
+        "operationId" : "createF986Document",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateF986"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Returns F986 PDF document stream",
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - no results found based on courtAppearanceUuid",
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/pdf" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
           }
         }
       }
@@ -7438,7 +7505,7 @@
             "uniqueItems" : true
           }
         },
-        "required" : [ "eventType", "isBreach", "prisonerId" ]
+        "required" : [ "eventType", "prisonerId" ]
       },
       "LegacyLinkCase" : {
         "type" : "object",
@@ -7540,7 +7607,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:44:41.783330708"
+            "example" : "07:44:40.673159993"
           },
           "outcomeDispositionCode" : {
             "type" : [ "string", "null" ]
@@ -7919,7 +7986,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:44:41.783330708"
+            "example" : "07:44:40.673159993"
           },
           "courtCode" : {
             "type" : "string"
@@ -9606,6 +9673,18 @@
         },
         "required" : [ "hearingId", "prisonerNumber" ]
       },
+      "ExistingCaseReferenceAndId" : {
+        "type" : "object",
+        "properties" : {
+          "caseReference" : {
+            "type" : "string"
+          },
+          "caseUniqueIdentifier" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "caseReference", "caseUniqueIdentifier" ]
+      },
       "HmctsAutopopulateFeature" : {
         "type" : "object",
         "properties" : {
@@ -9622,14 +9701,24 @@
       "HmctsHearingAutopopulateEligibility" : {
         "type" : "object",
         "properties" : {
+          "prisonerNumber" : {
+            "type" : "string"
+          },
+          "hearingId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "cases" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExistingCaseReferenceAndId"
+            }
+          },
           "features" : {
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/HmctsAutopopulateFeature"
             }
-          },
-          "existingCaseIdentifier" : {
-            "type" : [ "string", "null" ]
           },
           "hasBeenCompleted" : {
             "type" : "boolean"
@@ -9638,7 +9727,7 @@
             "type" : "boolean"
           }
         },
-        "required" : [ "features", "hasBeenCompleted", "hasWarrantAndPcr" ]
+        "required" : [ "cases", "features", "hasBeenCompleted", "hasWarrantAndPcr", "hearingId", "prisonerNumber" ]
       },
       "RepublishEvents" : {
         "type" : "object",
@@ -9651,6 +9740,34 @@
           }
         },
         "required" : [ "eventsMetadata" ]
+      },
+      "CreateF986" : {
+        "type" : "object",
+        "properties" : {
+          "courtAppearanceUuid" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "courtPremise" : {
+            "type" : [ "string", "null" ]
+          },
+          "courtStreet" : {
+            "type" : [ "string", "null" ]
+          },
+          "courtTown" : {
+            "type" : [ "string", "null" ]
+          },
+          "courtCounty" : {
+            "type" : [ "string", "null" ]
+          },
+          "courtPostalCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "prisonTelephoneNumber" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "courtAppearanceUuid" ]
       },
       "SentenceTypeUpdate" : {
         "type" : "object",
@@ -10927,7 +11044,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:44:41.783330708"
+            "example" : "07:44:40.673159993"
           },
           "courtCode" : {
             "type" : "string"
@@ -11619,7 +11736,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "07:44:41.783330708"
+            "example" : "07:44:40.673159993"
           },
           "nomisOutcomeCode" : {
             "type" : [ "string", "null" ]
@@ -11698,7 +11815,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:44:41.783330708"
+            "example" : "07:44:40.673159993"
           },
           "courtId" : {
             "type" : "string"
@@ -11850,7 +11967,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "07:44:41.783330708"
+            "example" : "07:44:40.673159993"
           },
           "charges" : {
             "type" : "array",
@@ -11887,7 +12004,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:44:41.783330708"
+            "example" : "07:44:40.673159993"
           },
           "courtId" : {
             "type" : "string"
@@ -12483,7 +12600,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:44:41.783330708"
+            "example" : "07:44:40.673159993"
           },
           "courtCode" : {
             "type" : [ "string", "null" ]
@@ -12652,11 +12769,11 @@
             "type" : "integer",
             "format" : "int32"
           },
-          "first" : {
-            "type" : "boolean"
-          },
           "sort" : {
             "$ref" : "#/components/schemas/SortObject"
+          },
+          "first" : {
+            "type" : "boolean"
           },
           "numberOfElements" : {
             "type" : "integer",
