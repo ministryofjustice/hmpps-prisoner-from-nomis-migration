@@ -72,7 +72,7 @@ class AdvancesMigrationService(
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonNumberAndRootOffenderId>) {
     val prisonNumber = context.body.prisonNumber
     val rootOffenderId = context.body.rootOffenderId
-    val advances = advancesNomisApiService.getPrisonerAdvances(rootOffenderId)
+    val advances = advancesNomisApiService.getActivePrisonerAdvances(rootOffenderId)
 
     advances.forEach { advance ->
       val alreadyMigratedMapping = advancesMappingService.getByNomisIdOrNull(advance.id)

@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -112,7 +113,7 @@ class AdvancesMigrationIntTest(
 
         advancesNomisApiMock.stubGetActiveAdvancesCount(count = 20)
         nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = "A0000BC")
-        advancesNomisApiMock.stubGetPrisonerAdvances(rootOffenderId = 0, prisonerAdvances = prisonerAdvances)
+        advancesNomisApiMock.stubGetPrisonerAdvances(rootOffenderId = 0, prisonerAdvances = prisonerAdvances, activeOnly = true)
         financeApi.stubMigrateAdvance(advanceUuid = dpsAdvanceId)
         mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = 12345, mapping = null)
         mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = 54321, mapping = null)
@@ -133,8 +134,11 @@ class AdvancesMigrationIntTest(
       }
 
       @Test
-      fun `will call nomis prisoner to get prisoner advance details`() {
-        advancesNomisApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/0/advances")))
+      fun `will call nomis prisoner to get active prisoner advance details`() {
+        advancesNomisApiMock.verify(
+          getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/0/advances"))
+            .withQueryParam("activeOnly", equalTo("true")),
+        )
       }
 
       @Test
@@ -221,7 +225,7 @@ class AdvancesMigrationIntTest(
         setupMigrationTest()
         advancesNomisApiMock.stubGetActiveAdvancesCount(count = 20)
         nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = "A0000BC")
-        advancesNomisApiMock.stubGetPrisonerAdvances(rootOffenderId = 0)
+        advancesNomisApiMock.stubGetPrisonerAdvances(rootOffenderId = 0, activeOnly = true)
         mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = 12345)
         mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = 54321)
 
@@ -230,8 +234,11 @@ class AdvancesMigrationIntTest(
       }
 
       @Test
-      fun `will retrieve  advance details`() {
-        advancesNomisApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/0/advances")))
+      fun `will retrieve active advance details`() {
+        advancesNomisApiMock.verify(
+          getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/0/advances"))
+            .withQueryParam("activeOnly", equalTo("true")),
+        )
       }
 
       @Test
@@ -270,7 +277,7 @@ class AdvancesMigrationIntTest(
         advancesNomisApiMock.stubGetActiveAdvancesCount(count = 20)
         nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = "A0000BC")
 
-        advancesNomisApiMock.stubGetPrisonerAdvances(rootOffenderId = 0)
+        advancesNomisApiMock.stubGetPrisonerAdvances(rootOffenderId = 0, activeOnly = true)
         financeApi.stubMigrateAdvance(advanceUuid = dpsAdvanceId)
         mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = 12345, mapping = null)
         mappingApiMock.stubCreateMapping(
@@ -299,7 +306,10 @@ class AdvancesMigrationIntTest(
 
       @Test
       fun `will get details for offender only once`() {
-        advancesNomisApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/0/advances")))
+        advancesNomisApiMock.verify(
+          getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/0/advances"))
+            .withQueryParam("activeOnly", equalTo("true")),
+        )
       }
 
       @Test

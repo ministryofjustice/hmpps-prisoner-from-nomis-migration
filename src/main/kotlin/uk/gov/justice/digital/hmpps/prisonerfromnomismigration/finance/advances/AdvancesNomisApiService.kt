@@ -17,15 +17,16 @@ class AdvancesNomisApiService(@Qualifier("nomisApiWebClient") private val webCli
     .getAdvance(advanceId)
     .awaitSingleOrNullForNotFound()
 
-  suspend fun getPrisonerAdvances(rootOffenderId: Long): List<PrisonerAdvanceDto> = api
-    .getPrisonerAdvancesById(rootOffenderId)
-    .awaitSingle()
-
   suspend fun getActivePrisonerAdvances(rootOffenderId: Long): List<PrisonerAdvanceDto> = api
     .getPrisonerAdvancesById(rootOffenderId = rootOffenderId, activeOnly = true)
     .awaitSingle()
 
   suspend fun getActiveAdvancesCount(): AdvancesCount = api
     .getActiveAdvancesCount()
+    .awaitSingle()
+
+  // TODO this may no longer be needed - remove if not required
+  suspend fun getPrisonerAdvances(rootOffenderId: Long): List<PrisonerAdvanceDto> = api
+    .getPrisonerAdvancesById(rootOffenderId)
     .awaitSingle()
 }
