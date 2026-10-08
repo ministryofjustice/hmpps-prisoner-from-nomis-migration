@@ -12,6 +12,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAdvanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -66,8 +67,8 @@ class AdvancesNomisApiServiceTest {
         assertThat(startDate).isEqualTo(LocalDate.parse("2024-06-18"))
         assertThat(reference).isEqualTo("description of the advance")
         assertThat(comment).isEqualTo("This is a comment")
-        // TODO add informationNumber test when returned
-        assertThat(status).isEqualTo("active")
+        assertThat(informationNumber).isEqualTo("info-123")
+        assertThat(status).isEqualTo(PrisonerAdvanceDto.Status.ACTIVE)
         assertThat(createDatetime).isEqualTo(LocalDateTime.parse("2024-06-18T12:30:45"))
         assertThat(createdBy).isEqualTo("JD12345")
       }
@@ -114,11 +115,56 @@ class AdvancesNomisApiServiceTest {
         assertThat(startDate).isEqualTo(LocalDate.parse("2024-06-18"))
         assertThat(reference).isEqualTo("description of the advance")
         assertThat(comment).isEqualTo("This is a comment")
-        // TODO add informationNumber test when returned
-        assertThat(status).isEqualTo("active")
+        assertThat(informationNumber).isEqualTo("info-123")
+        assertThat(status).isEqualTo(PrisonerAdvanceDto.Status.ACTIVE)
         assertThat(createDatetime).isEqualTo(LocalDateTime.parse("2024-06-18T12:30:45"))
         assertThat(createdBy).isEqualTo("JD12345")
       }
+    }
+
+    @Test
+    fun `can request active only advances for the prisoner`() = runTest {
+      mockServer.stubGetPrisonerAdvances(activeOnly = true)
+
+      apiService.getActivePrisonerAdvances(12345)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/12345/advances"))
+          .withQueryParam("activeOnly", equalTo("true")),
+      )
+    }
+  }
+
+  @Nested
+  inner class GetActiveAdvancesCount {
+    @Test
+    fun `will pass oauth2 token to service`() = runTest {
+      mockServer.stubGetActiveAdvancesCount()
+
+      apiService.getActiveAdvancesCount()
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetActiveAdvancesCount()
+
+      apiService.getActiveAdvancesCount()
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/active-count")),
+      )
+    }
+
+    @Test
+    fun `will return advance details`() = runTest {
+      mockServer.stubGetActiveAdvancesCount()
+
+      val advancesCount = apiService.getActiveAdvancesCount()
+      assertThat(advancesCount.activeCount).isEqualTo(235)
     }
   }
 }

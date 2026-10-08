@@ -1,13 +1,16 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
+import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AdvancesCount
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAdvanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
@@ -56,16 +59,32 @@ class AdvancesNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetPrisonerAdvances(
     rootOffenderId: Long = 12345,
     prisonNumber: String = "A0001BC",
+    activeOnly: Boolean = false,
     prisonerAdvances: List<PrisonerAdvanceDto> = listOf(prisonerAdvance(prisonNumber = prisonNumber)),
   ) {
     nomisApi.stubFor(
-      get(urlEqualTo("/finance/prisoners/root-offender-id/$rootOffenderId/advances")).willReturn(
+      get(urlPathEqualTo("/finance/prisoners/root-offender-id/$rootOffenderId/advances"))
+        .apply { if (activeOnly) withQueryParam("activeOnly", equalTo("true")) }
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.OK.value())
+            .withBody(
+              jsonMapper.writeValueAsString(prisonerAdvances),
+
+            ),
+        ),
+    )
+  }
+
+  fun stubGetActiveAdvancesCount(count: Long = 235) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/finance/prisoners/advances/active-count")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
           .withBody(
-            jsonMapper.writeValueAsString(prisonerAdvances),
-
+            jsonMapper.writeValueAsString(AdvancesCount(activeCount = count)),
           ),
       ),
     )
@@ -86,7 +105,7 @@ fun prisonerAdvance(prisonNumber: String = "A0001BC"): PrisonerAdvanceDto = Pris
   reference = "description of the advance",
   comment = "This is a comment",
   informationNumber = "info-123",
-  status = "active",
+  status = PrisonerAdvanceDto.Status.ACTIVE,
   createdBy = "JD12345",
   createDatetime = LocalDateTime.of(2024, Month.JUNE, 18, 12, 30, 45),
 )

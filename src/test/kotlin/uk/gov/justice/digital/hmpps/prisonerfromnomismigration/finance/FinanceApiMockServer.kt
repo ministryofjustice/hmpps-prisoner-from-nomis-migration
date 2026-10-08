@@ -21,6 +21,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.Pri
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRepayRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceWriteOffRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleaseHoldRequest
@@ -113,6 +115,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
         ),
       ),
     )
+
     fun addHoldDto() = SyncCreateHoldRequest(
       prisonNumber = "A1234BC",
       subAccountCode = 2101,
@@ -131,7 +134,8 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun releaseHoldDto() = SyncReleaseHoldRequest(
       releaseDateTime = LocalDateTime.parse("2025-06-04T05:06:07"),
     )
-    fun addAdvanceDto(prisonNumber: String = "A0001BC") = SyncCreateAdvanceRecordRequest(
+
+    fun createAdvanceDto(prisonNumber: String = "A0001BC") = SyncCreateAdvanceRecordRequest(
       legacyPaymentProfileId = 12345,
       legacyInformationNumber = "9876-1",
       prisonNumber = prisonNumber,
@@ -145,6 +149,17 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdOn = LocalDateTime.of(2024, Month.JUNE, 18, 12, 10),
       status = SyncCreateAdvanceRecordRequest.Status.ACTIVE,
       legacyTransactionId = 2345,
+    )
+    fun repayAdvanceDto() = SyncCreateAdvanceRepayRequest(
+      amount = BigDecimal.TWO,
+      transactionId = 3456,
+      createdBy = "KE12345",
+      createdAt = LocalDateTime.of(2024, Month.JUNE, 20, 11, 30),
+    )
+    fun writeOffAdvanceDto() = SyncCreateAdvanceWriteOffRequest(
+      amount = BigDecimal.TWO,
+      writtenOffBy = "LF12345",
+      writeOffDateTime = LocalDateTime.of(2024, Month.JUNE, 29, 9, 15),
     )
   }
 
@@ -216,8 +231,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       post("/migrate/prisoner-balances/$prisonNumber")
         .willReturn(
           aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json"),
+            .withStatus(200),
         ),
     )
   }
@@ -227,8 +241,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       post("/migrate/general-ledger-balances/$prisonId")
         .willReturn(
           aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json"),
+            .withStatus(200),
         ),
     )
   }
@@ -288,8 +301,8 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
   }
 
   fun stubMigrateAdvance(
-    id: UUID = UUID.randomUUID(),
-    response: SyncCreateAdvanceRecordResponse = SyncCreateAdvanceRecordResponse(1234, id),
+    advanceUuid: UUID = UUID.randomUUID(),
+    response: SyncCreateAdvanceRecordResponse = SyncCreateAdvanceRecordResponse(1234, advanceUuid),
   ) {
     stubFor(
       post("/migrate/advances")
@@ -302,9 +315,9 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubSyncAdvance(
-    id: UUID = UUID.randomUUID(),
-    response: SyncCreateAdvanceRecordResponse = SyncCreateAdvanceRecordResponse(1234, id),
+  fun stubCreateAdvance(
+    advanceUuid: UUID = UUID.randomUUID(),
+    response: SyncCreateAdvanceRecordResponse = SyncCreateAdvanceRecordResponse(1234, advanceUuid),
   ) {
     stubFor(
       post("/sync/advances")
@@ -313,6 +326,30 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(200)
             .withHeader("Content-Type", "application/json")
             .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubRepayAdvance(
+    advanceUuid: UUID = UUID.randomUUID(),
+  ) {
+    stubFor(
+      post("/sync/advances/$advanceUuid/repay")
+        .willReturn(
+          aResponse()
+            .withStatus(200),
+        ),
+    )
+  }
+
+  fun stubWriteOffAdvance(
+    advanceUuid: UUID = UUID.randomUUID(),
+  ) {
+    stubFor(
+      post("/sync/advances/$advanceUuid/write-off")
+        .willReturn(
+          aResponse()
+            .withStatus(200),
         ),
     )
   }

@@ -48,8 +48,7 @@ class AdvancesMigrationService(
     private val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
-  // TODO Should this be the total number of active advances?
-  override suspend fun getTotalNumberOfIds(migrationFilter: Any): Long = nomisApiService.getPrisonerIds(0, 1).totalElements
+  override suspend fun getTotalNumberOfIds(migrationFilter: Any): Long = advancesNomisApiService.getActiveAdvancesCount().activeCount
 
   override suspend fun getMigrationCount(migrationId: String): Long = mappingService.getPagedModelMigrationCount(migrationId)
 
@@ -89,7 +88,7 @@ class AdvancesMigrationService(
         val response = dpsApiService.migrateAdvance(advance.toSyncAdvanceDto())
         val mapping = AdvanceMappingDto(
           nomisAdvanceId = advance.id,
-          dpsId = response.advanceUuid.toString(),
+          dpsId = response.advanceId.toString(),
           mappingType = MIGRATED,
           label = context.migrationId,
         )
