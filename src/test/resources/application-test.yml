@@ -32,7 +32,7 @@ api.base.url:
   movements-transfer: http://localhost:8108
   agencyregisters: http://localhost:8109
   drug.testing: http://localhost:8110
-  prisoner-location: http://localhost:8111
+  person-location: http://localhost:8111
 
 visits:
   page:
