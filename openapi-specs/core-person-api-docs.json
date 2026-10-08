@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-10-02.5608.cdb0f81"
+    "version" : "2026-10-07.5693.6ca7b49"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -102,6 +102,41 @@
       }
     },
     "/syscon-sync/person/{prisonNumber}/contact/{cprContactId}" : {
+      "get" : {
+        "tags" : [ "Syscon Sync" ],
+        "description" : "Get a prisoner contact record by Prison Number and contact uuid. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
+        "operationId" : "getPrisonerContact",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "cprContactId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonContact"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
+      },
       "put" : {
         "tags" : [ "Syscon Sync" ],
         "description" : "Update prisoner contact record by Prison Number and contact uuid. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
@@ -170,6 +205,41 @@
       }
     },
     "/syscon-sync/person/{prisonNumber}/address/{cprAddressId}" : {
+      "get" : {
+        "tags" : [ "Syscon Sync" ],
+        "description" : "Get a prisoner address record by Prison Number and address uuid. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
+        "operationId" : "getPrisonerAddress",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "cprAddressId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonAddress"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
+      },
       "put" : {
         "tags" : [ "Syscon Sync" ],
         "description" : "Update prisoner address record by Prison Number and address uuid. Role required is **ROLE_CORE_PERSON_RECORD_API__SYSCON_SYNC_RW**.",
@@ -230,8 +300,7 @@
         } ],
         "responses" : {
           "204" : {
-            "description" : "No Content",
-            "content" : { }
+            "description" : "No Content"
           }
         },
         "security" : [ {
@@ -470,6 +539,55 @@
         "responses" : {
           "200" : {
             "description" : "OK"
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
+      }
+    },
+    "/person/prison/{prisonNumber}/contacts/{contactId}" : {
+      "put" : {
+        "tags" : [ "Prison" ],
+        "description" : "Update a contact for the prisoner by Prison Number and contact id. Role required is **ROLE_CORE_PERSON_RECORD_API__PRISON_RW**. ",
+        "operationId" : "updateContactByPrisonNumber",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "The prisoner number",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "contactId",
+          "in" : "path",
+          "description" : "The contact id",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PrisonContactRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonContactResponse"
+                }
+              }
+            }
           }
         },
         "security" : [ {
@@ -912,6 +1030,105 @@
         } ]
       }
     },
+    "/person/prison/{prisonNumber}/contacts" : {
+      "get" : {
+        "tags" : [ "Prison" ],
+        "description" : "Retrieve the prisoner's contacts by Prison Number, optionally filtered by contact type. Role required is **ROLE_CORE_PERSON_RECORD_API__RO**. ",
+        "operationId" : "getContactsByPrisonNumber",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "The prisoner number",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "includeTypes",
+          "in" : "query",
+          "description" : "Only return contacts of these types",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "HOME", "BUS", "FAX", "ALTB", "ALTH", "MOBILE", "VISIT", "EMAIL" ]
+            }
+          },
+          "example" : "HOME,MOBILE"
+        }, {
+          "name" : "excludeTypes",
+          "in" : "query",
+          "description" : "Do not return contacts of these types",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "HOME", "BUS", "FAX", "ALTB", "ALTH", "MOBILE", "VISIT", "EMAIL" ]
+            }
+          },
+          "example" : "EMAIL"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PrisonContactResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
+      },
+      "post" : {
+        "tags" : [ "Prison" ],
+        "description" : "Add a contact for the prisoner by Prison Number. Role required is **ROLE_CORE_PERSON_RECORD_API__PRISON_RW**. ",
+        "operationId" : "createContactByPrisonNumber",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "The prisoner number",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PrisonContactRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PrisonContactResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
+      }
+    },
     "/queue-admin/get-dlq-messages/{dlqName}" : {
       "get" : {
         "tags" : [ "hmpps-queue-resource" ],
@@ -1098,6 +1315,40 @@
             "content" : { }
           }
         }
+      }
+    },
+    "/person/prison/{prisonNumber}/addresses" : {
+      "get" : {
+        "tags" : [ "Prison" ],
+        "description" : "Retrieve the prisoner's addresses by Prison Number, most recent first. Role required is **ROLE_CORE_PERSON_RECORD_API__RO**. ",
+        "operationId" : "getAddressesByPrisonNumberDps",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "description" : "The prisoner number",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/CanonicalAddress"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
       }
     },
     "/person/prison/dps/{prisonNumber}" : {
@@ -1339,7 +1590,7 @@
         "type" : "object",
         "properties" : {
           "nomisContactId" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64",
             "description" : "The nomis contact id",
             "example" : 1234
@@ -1381,15 +1632,25 @@
             "type" : [ "string", "null" ],
             "description" : "The contact modify user id",
             "example" : "12345"
+          },
+          "cprAddressId" : {
+            "type" : [ "string", "null" ],
+            "description" : "The CPR address id of the address owning this contact. Will be null is not owned by an address",
+            "example" : "12345"
+          },
+          "prisonNumber" : {
+            "type" : [ "string", "null" ],
+            "description" : "The prison number of person owning this contact. Will be null if not owned by a person but owned by an address instead",
+            "example" : "12345"
           }
         },
-        "required" : [ "createDateTime", "createUserId", "nomisContactId", "type" ]
+        "required" : [ "createDateTime", "createUserId", "type" ]
       },
       "PrisonAddress" : {
         "type" : "object",
         "properties" : {
           "nomisAddressId" : {
-            "type" : "integer",
+            "type" : [ "integer", "null" ],
             "format" : "int64",
             "description" : "Is nomis address id",
             "example" : 5678
@@ -1514,7 +1775,7 @@
             "example" : "12345"
           }
         },
-        "required" : [ "addressUsage", "contacts", "createDateTime", "createUserId", "isPrimary", "nomisAddressId" ]
+        "required" : [ "addressUsage", "contacts", "createDateTime", "createUserId", "isPrimary" ]
       },
       "PrisonAddressUsage" : {
         "type" : "object",
@@ -1880,6 +2141,94 @@
             "type" : "string"
           }
         }
+      },
+      "PrisonContactRequest" : {
+        "type" : "object",
+        "description" : "Create or update a prisoner contact",
+        "properties" : {
+          "type" : {
+            "type" : "string",
+            "description" : "Type of contact",
+            "enum" : [ "HOME", "BUS", "FAX", "ALTB", "ALTH", "MOBILE", "VISIT", "EMAIL" ],
+            "example" : "BUS"
+          },
+          "value" : {
+            "type" : "string",
+            "description" : "The value for the contact",
+            "example" : "01234 567 890"
+          },
+          "extension" : {
+            "type" : [ "string", "null" ],
+            "description" : "The contact extension",
+            "example" : "123"
+          },
+          "userId" : {
+            "type" : "string",
+            "description" : "The user who made the change"
+          }
+        },
+        "required" : [ "type", "userId", "value" ]
+      },
+      "CanonicalContactType" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : [ "string", "null" ],
+            "description" : "Address contact type code",
+            "example" : "HOME"
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "description" : "Address contact type description",
+            "example" : "Home"
+          }
+        }
+      },
+      "PrisonContactResponse" : {
+        "type" : "object",
+        "description" : "A prisoner contact",
+        "properties" : {
+          "contactId" : {
+            "type" : "string",
+            "description" : "The CPR contact id",
+            "example" : "f4165b62-d9eb-406c-bfb1-4f54f4bd2c6d"
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/CanonicalContactType",
+            "description" : "Contact type"
+          },
+          "value" : {
+            "type" : "string",
+            "description" : "Contact value",
+            "example" : "+44 20 7946 0000"
+          },
+          "extension" : {
+            "type" : [ "string", "null" ],
+            "description" : "Contact extension",
+            "example" : "1234"
+          },
+          "createDateTime" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "Date contact was created",
+            "example" : "2023-01-01T12:00:00"
+          },
+          "createUserId" : {
+            "type" : [ "string", "null" ],
+            "description" : "Username of staff member that added contact"
+          },
+          "modifyDateTime" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "Date contact was last modified",
+            "example" : "2023-01-01T12:00:00"
+          },
+          "modifyUserId" : {
+            "type" : [ "string", "null" ],
+            "description" : "Username of staff member that last modified contact"
+          }
+        },
+        "required" : [ "contactId", "type", "value" ]
       },
       "PrisonReligionInsertRequest" : {
         "type" : "object",
@@ -2805,21 +3154,6 @@
         },
         "required" : [ "type" ]
       },
-      "CanonicalContactType" : {
-        "type" : "object",
-        "properties" : {
-          "code" : {
-            "type" : [ "string", "null" ],
-            "description" : "Address contact type code",
-            "example" : "HOME"
-          },
-          "description" : {
-            "type" : [ "string", "null" ],
-            "description" : "Address contact type description",
-            "example" : "Home"
-          }
-        }
-      },
       "CanonicalEthnicity" : {
         "type" : "object",
         "properties" : {
@@ -3018,9 +3352,16 @@
           "identifiers" : {
             "$ref" : "#/components/schemas/CanonicalIdentifiers",
             "description" : "Person identifiers"
+          },
+          "contacts" : {
+            "type" : "array",
+            "description" : "Person contacts",
+            "items" : {
+              "$ref" : "#/components/schemas/CanonicalContact"
+            }
           }
         },
-        "required" : [ "addresses", "aliases", "ethnicity", "identifiers", "nationalities", "religion", "sex", "sexualOrientation", "title" ]
+        "required" : [ "addresses", "aliases", "contacts", "ethnicity", "identifiers", "nationalities", "religion", "sex", "sexualOrientation", "title" ]
       },
       "CanonicalReligion" : {
         "type" : "object",
@@ -3169,6 +3510,13 @@
             "$ref" : "#/components/schemas/CanonicalIdentifiers",
             "description" : "Person identifiers"
           },
+          "contacts" : {
+            "type" : "array",
+            "description" : "Person contacts",
+            "items" : {
+              "$ref" : "#/components/schemas/CanonicalContact"
+            }
+          },
           "religionHistory" : {
             "type" : "array",
             "items" : {
@@ -3176,7 +3524,7 @@
             }
           }
         },
-        "required" : [ "addresses", "aliases", "ethnicity", "identifiers", "nationalities", "religion", "religionHistory", "sex", "sexualOrientation", "title" ]
+        "required" : [ "addresses", "aliases", "contacts", "ethnicity", "identifiers", "nationalities", "religion", "religionHistory", "sex", "sexualOrientation", "title" ]
       },
       "ReferenceDataResponse" : {
         "type" : "object",
