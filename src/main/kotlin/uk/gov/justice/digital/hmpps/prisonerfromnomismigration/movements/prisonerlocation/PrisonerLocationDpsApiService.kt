@@ -9,7 +9,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerlocation.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerlocation.model.ResyncResponse
 
 @Service
-class PrisonerLocationDpsApiService(@Qualifier("prisonerLocationDpsApiWebClient") private val webClient: WebClient) {
+class PrisonerLocationDpsApiService(@Qualifier("personLocationDpsApiWebClient") private val webClient: WebClient) {
 
   private val syncApi = SyncApi(webClient)
 

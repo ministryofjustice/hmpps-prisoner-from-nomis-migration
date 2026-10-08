@@ -14,16 +14,21 @@ import java.time.Duration
 
 @Configuration
 class PrisonerLocationConfiguration(
-  @Value("\${api.base.url.prisoner-location}") val prisonerLocationUrl: String,
+  @Value("\${api.base.url.person-location}") val prisonerLocationUrl: String,
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
-  @Value("\${api.prisoner-location-timeout:10s}") val dpsTimeout: Duration,
+  @Value("\${api.person-location-timeout:10s}") val dpsTimeout: Duration,
+  @Value("\${api.person-location-mapping-timeout:60s}") val mappingTimeout: Duration,
+  @Value("\${api.base.url.mapping}") val mappingApiBaseUri: String,
 ) {
 
   @Bean
-  fun prisonerLocationDpsApiWebClient(
+  fun personLocationDpsApiWebClient(
     authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
     builder: WebClient.Builder,
-  ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "prisoner-location-api", url = prisonerLocationUrl, dpsTimeout)
+  ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "person-location-api", url = prisonerLocationUrl, dpsTimeout)
+
+  @Bean
+  fun prisonerLocationMappingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "nomis-mapping-api", url = mappingApiBaseUri, mappingTimeout)
 
   @Bean
   fun prisonerLocationApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(prisonerLocationUrl, healthTimeout)
