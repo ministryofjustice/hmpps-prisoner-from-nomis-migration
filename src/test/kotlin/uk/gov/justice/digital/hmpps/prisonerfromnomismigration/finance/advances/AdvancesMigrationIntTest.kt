@@ -110,7 +110,7 @@ class AdvancesMigrationIntTest(
       fun setUp() {
         setupMigrationTest()
 
-        nomisApiMock.stubGetPrisonerIds(1, 1, "A0000BC")
+        advancesNomisApiMock.stubGetActiveAdvancesCount(count = 20)
         nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = "A0000BC")
         advancesNomisApiMock.stubGetPrisonerAdvances(rootOffenderId = 0, prisonerAdvances = prisonerAdvances)
         financeApi.stubMigrateAdvance(advanceUuid = dpsAdvanceId)
@@ -219,7 +219,7 @@ class AdvancesMigrationIntTest(
       @BeforeAll
       fun setUp() {
         setupMigrationTest()
-        nomisApiMock.stubGetPrisonerIds(1, 1, "A0000BC")
+        advancesNomisApiMock.stubGetActiveAdvancesCount(count = 20)
         nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = "A0000BC")
         advancesNomisApiMock.stubGetPrisonerAdvances(rootOffenderId = 0)
         mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = 12345)
@@ -267,7 +267,7 @@ class AdvancesMigrationIntTest(
       fun setUp() {
         setupMigrationTest()
 
-        nomisApiMock.stubGetPrisonerIds(1, 1, "A0000BC")
+        advancesNomisApiMock.stubGetActiveAdvancesCount(count = 20)
         nomisApiMock.stubGetAllPrisonersIdRangesAndInRange(pageSize = 1, totalElements = 1, firstOffenderNo = "A0000BC")
 
         advancesNomisApiMock.stubGetPrisonerAdvances(rootOffenderId = 0)
