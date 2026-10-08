@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
-import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
@@ -68,7 +67,7 @@ class AdvancesSynchronisationIntTest(
       @BeforeEach
       fun setUp() {
         nomisApiMock.stubGetAdvance(advanceId)
-        financeApi.stubSyncAdvance()
+        financeApi.stubCreateAdvance()
         sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
           .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-created-success") }
       }

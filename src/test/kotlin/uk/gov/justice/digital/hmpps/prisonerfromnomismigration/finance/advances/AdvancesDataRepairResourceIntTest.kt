@@ -60,7 +60,7 @@ class AdvancesDataRepairResourceIntTest(
       @BeforeEach
       fun setUp() {
         nomisApiMockServer.stubGetAdvance()
-        financeApi.stubSyncAdvance()
+        financeApi.stubCreateAdvance()
 
         webTestClient.post().uri("/prisoners/advances/$advanceId/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
@@ -78,7 +78,6 @@ class AdvancesDataRepairResourceIntTest(
         financeApi.verify(
           postRequestedFor(urlPathEqualTo("/sync/advances"))
             .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo("12345"))
-            // TODO fix when Nomis API returns the InformationNumber
             .withRequestBodyJsonPath("legacyInformationNumber", equalTo("info-123"))
             .withRequestBodyJsonPath("prisonNumber", equalTo("A0001BC"))
             .withRequestBodyJsonPath("prisonID", equalTo("LEI"))

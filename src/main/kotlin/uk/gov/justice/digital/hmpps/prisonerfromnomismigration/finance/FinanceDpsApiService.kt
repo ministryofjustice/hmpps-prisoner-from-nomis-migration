@@ -10,6 +10,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.Gen
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRepayRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceWriteOffRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncOffenderTransactionRequest
@@ -18,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.Syn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitOrLogAndRethrowBadRequest
+import java.util.UUID
 
 @Service
 class FinanceDpsApiService(@Qualifier("financeApiWebClient") private val webClient: WebClient) {
@@ -47,13 +50,23 @@ class FinanceDpsApiService(@Qualifier("financeApiWebClient") private val webClie
   suspend fun syncReleaseHoldTransaction(holdNumber: Long, request: SyncReleaseHoldRequest): SyncReleasedHoldResponse = holdsApi.releaseHold(holdNumber, request)
     .awaitOrLogAndRethrowBadRequest()
 
-  // TODO use openapi docs call when the API is updated
+  // TODO update when Finance API is updated to return a response
   suspend fun migrateAdvance(request: SyncCreateAdvanceRecordRequest): SyncCreateAdvanceRecordResponse = webClient.post()
     .uri("/migrate/advances")
     .bodyValue(request)
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
-  suspend fun syncPrisonerAdvance(request: SyncCreateAdvanceRecordRequest): SyncCreateAdvanceRecordResponse = advancesApi.postAdvance(request)
+  suspend fun createAdvance(request: SyncCreateAdvanceRecordRequest): SyncCreateAdvanceRecordResponse = advancesApi.postAdvance(request)
     .awaitOrLogAndRethrowBadRequest()
+
+  suspend fun repayAdvance(advanceId: UUID, request: SyncCreateAdvanceRepayRequest) {
+    advancesApi.postAdvanceRepay(advanceId, request)
+      .awaitOrLogAndRethrowBadRequest()
+  }
+
+  suspend fun writeOffAdvance(advanceId: UUID, request: SyncCreateAdvanceWriteOffRequest) {
+    advancesApi.postAdvanceWriteOff(advanceId, request)
+      .awaitOrLogAndRethrowBadRequest()
+  }
 }

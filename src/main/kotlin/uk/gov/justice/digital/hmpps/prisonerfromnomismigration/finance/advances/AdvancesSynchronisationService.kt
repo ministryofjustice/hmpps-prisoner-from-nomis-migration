@@ -29,7 +29,7 @@ class AdvancesSynchronisationService(
   suspend fun resynchroniseAdvance(advanceId: Long) {
     val advance = nomisApiService.getAdvance(advanceId)
       ?: throw NotFoundException("advanceId $advanceId not found")
-    dpsApiService.syncPrisonerAdvance(advance.toSyncAdvanceDto())
+    dpsApiService.createAdvance(advance.toSyncAdvanceDto())
   }
 
   suspend fun advanceInserted(event: AdvanceEvent) {
@@ -42,7 +42,7 @@ class AdvancesSynchronisationService(
       track("prisoneradvance-synchronisation-created", telemetry) {
         val advance = nomisApiService.getAdvance(advanceId)
           ?: throw NotFoundException("advanceId $advanceId not found")
-        dpsApiService.syncPrisonerAdvance(advance.toSyncAdvanceDto())
+        dpsApiService.createAdvance(advance.toSyncAdvanceDto())
       }
     }
   }
