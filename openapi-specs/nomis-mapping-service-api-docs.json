@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-08.872.87aa1b8"
+    "version" : "2026-10-09.876.45998bf"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -662,17 +662,17 @@
         }
       }
     },
-    "/mapping/prisoner-location/migrate" : {
+    "/mapping/person-location/migrate" : {
       "put" : {
-        "tags" : [ "prisoner-location-migration-resource" ],
+        "tags" : [ "person-location-migration-resource" ],
         "summary" : "Creates all mappings for a prisoner's bookings and external movements which are all migrated at the same time",
         "description" : "Creates mappings for a prisoner's custodial series (bookings) and external movements. Requires ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
-        "operationId" : "createPrisonerLocationMappings",
+        "operationId" : "createPersonLocationMappings",
         "requestBody" : {
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/PrisonerLocationsMappingDto"
+                "$ref" : "#/components/schemas/PersonLocationsMappingDto"
               }
             }
           },
@@ -23845,7 +23845,7 @@
         },
         "required" : [ "nomisBookingId", "nomisSanctionSequence" ]
       },
-      "PrisonerLocationBookingMappingDto" : {
+      "PersonLocationBookingMappingDto" : {
         "type" : "object",
         "description" : "Mappings for a prisoner booking (DPS custodial series) and its external movements",
         "properties" : {
@@ -23864,13 +23864,13 @@
             "type" : "array",
             "description" : "Mappings for the booking's external movements",
             "items" : {
-              "$ref" : "#/components/schemas/PrisonerLocationMovementMappingDto"
+              "$ref" : "#/components/schemas/PersonLocationMovementMappingDto"
             }
           }
         },
         "required" : [ "bookingId", "dpsCustodialSeriesId", "movements" ]
       },
-      "PrisonerLocationMovementMappingDto" : {
+      "PersonLocationMovementMappingDto" : {
         "type" : "object",
         "description" : "Mappings for a single external movement",
         "properties" : {
@@ -23888,7 +23888,7 @@
         },
         "required" : [ "dpsExternalMovementId", "nomisMovementSeq" ]
       },
-      "PrisonerLocationsMappingDto" : {
+      "PersonLocationsMappingDto" : {
         "type" : "object",
         "description" : "Mappings for a prisoner's entire location history",
         "properties" : {
@@ -23901,7 +23901,7 @@
             "type" : "array",
             "description" : "The mappings for each booking",
             "items" : {
-              "$ref" : "#/components/schemas/PrisonerLocationBookingMappingDto"
+              "$ref" : "#/components/schemas/PersonLocationBookingMappingDto"
             }
           },
           "migrationId" : {
