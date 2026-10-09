@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-10-07.5693.6ca7b49"
+    "version" : "2026-10-09.5751.ea026ab"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -347,8 +347,7 @@
         },
         "responses" : {
           "204" : {
-            "description" : "No Content",
-            "content" : { }
+            "description" : "No Content"
           }
         },
         "security" : [ {
@@ -383,8 +382,7 @@
         } ],
         "responses" : {
           "204" : {
-            "description" : "No Content",
-            "content" : { }
+            "description" : "No Content"
           }
         },
         "security" : [ {
@@ -431,8 +429,7 @@
         },
         "responses" : {
           "204" : {
-            "description" : "No Content",
-            "content" : { }
+            "description" : "No Content"
           }
         },
         "security" : [ {
@@ -1558,8 +1555,7 @@
         } ],
         "responses" : {
           "204" : {
-            "description" : "No Content",
-            "content" : { }
+            "description" : "No Content"
           }
         },
         "security" : [ {
@@ -3063,6 +3059,26 @@
             "items" : {
               "$ref" : "#/components/schemas/CanonicalContact"
             }
+          },
+          "createDateTime" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "Date address was created",
+            "example" : "2023-01-01T12:00:00"
+          },
+          "createUserId" : {
+            "type" : [ "string", "null" ],
+            "description" : "Username of staff member that added address"
+          },
+          "modifyDateTime" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "Date address was last modified",
+            "example" : "2023-01-01T12:00:00"
+          },
+          "modifyUserId" : {
+            "type" : [ "string", "null" ],
+            "description" : "Username of staff member that last modified address"
           }
         },
         "required" : [ "contacts", "cprAddressId", "status", "usages" ]
@@ -3101,6 +3117,26 @@
             "type" : "boolean",
             "description" : "Address usage active flag",
             "example" : true
+          },
+          "createDateTime" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "Date address usage was created",
+            "example" : "2023-01-01T12:00:00"
+          },
+          "createUserId" : {
+            "type" : [ "string", "null" ],
+            "description" : "Username of staff member that added address usage"
+          },
+          "modifyDateTime" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "Date address usage was last modified",
+            "example" : "2023-01-01T12:00:00"
+          },
+          "modifyUserId" : {
+            "type" : [ "string", "null" ],
+            "description" : "Username of staff member that last modified address usage"
           }
         },
         "required" : [ "isActive" ]
@@ -3150,6 +3186,26 @@
             "type" : [ "string", "null" ],
             "description" : "Contact extension",
             "example" : "1234"
+          },
+          "createDateTime" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "Date contact was created",
+            "example" : "2023-01-01T12:00:00"
+          },
+          "createUserId" : {
+            "type" : [ "string", "null" ],
+            "description" : "Username of staff member that added contact"
+          },
+          "modifyDateTime" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "Date contact was last modified",
+            "example" : "2023-01-01T12:00:00"
+          },
+          "modifyUserId" : {
+            "type" : [ "string", "null" ],
+            "description" : "Username of staff member that last modified contact"
           }
         },
         "required" : [ "type" ]
