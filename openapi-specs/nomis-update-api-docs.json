@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-08.5203.70af7b4"
+    "version" : "2026-10-09.5245.29e6534"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -45,6 +45,42 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/RetryDlqResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/queue-admin/retry-dlq-messages/{dlqName}" : {
+      "put" : {
+        "tags" : [ "hmpps-reactive-queue-resource" ],
+        "operationId" : "retryDlqMessages",
+        "parameters" : [ {
+          "name" : "dlqName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RetryDlqMessagesBody"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/RetryDlqMessagesResult"
                 }
               }
             }
@@ -1875,6 +1911,48 @@
         }
       }
     },
+    "/queue-admin/search-dlq-messages/{dlqName}" : {
+      "get" : {
+        "tags" : [ "hmpps-reactive-queue-resource" ],
+        "operationId" : "searchDlqMessages",
+        "parameters" : [ {
+          "name" : "dlqName",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "filter",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "maxMessages",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 100
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SearchDlqResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/queue-admin/get-dlq-messages/{dlqName}" : {
       "get" : {
         "tags" : [ "hmpps-reactive-queue-resource" ],
@@ -2777,6 +2855,38 @@
         },
         "required" : [ "messagesFoundCount" ]
       },
+      "RetryDlqMessagesBody" : {
+        "type" : "object",
+        "properties" : {
+          "messageIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "messageIds" ]
+      },
+      "RetryDlqMessagesResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messagesRetriedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "retriedMessageIds" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        },
+        "required" : [ "messagesFoundCount", "messagesRetriedCount", "retriedMessageIds" ]
+      },
       "PurgeQueueResult" : {
         "type" : "object",
         "properties" : {
@@ -3260,6 +3370,26 @@
           }
         },
         "required" : [ "body", "messageId" ]
+      },
+      "SearchDlqResult" : {
+        "type" : "object",
+        "properties" : {
+          "messagesFoundCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messagesReturnedCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "messages" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/DlqMessage"
+            }
+          }
+        },
+        "required" : [ "messages", "messagesFoundCount", "messagesReturnedCount" ]
       },
       "GetDlqResult" : {
         "type" : "object",
