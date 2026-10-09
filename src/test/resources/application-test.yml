@@ -128,6 +128,13 @@ transfermovements:
     count: 1
   page:
     size: 2
+personlocations:
+  complete-check:
+    delay-seconds: 0
+    retry-seconds: 0
+    count: 1
+  page:
+    size: 2
 visitslots:
   complete-check:
     delay-seconds: 0
@@ -256,6 +263,9 @@ hmpps.sqs:
       errorVisibilityTimeout: 0
       dlqMaxReceiveCount: 1
     migrationtransfermovements:
+      errorVisibilityTimeout: 0
+      dlqMaxReceiveCount: 1
+    migrationpersonlocations:
       errorVisibilityTimeout: 0
       dlqMaxReceiveCount: 1
   topics:
