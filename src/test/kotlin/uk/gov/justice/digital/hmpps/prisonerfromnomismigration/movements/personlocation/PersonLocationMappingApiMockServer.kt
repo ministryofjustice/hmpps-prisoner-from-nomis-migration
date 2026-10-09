@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.prisonerlocation
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation
 
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
@@ -8,34 +8,27 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerLocationBookingMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerLocationMovementMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerLocationsMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.util.*
 
 @Component
-class PrisonerLocationMappingApiMockServer(private val jsonMapper: JsonMapper) {
+class PersonLocationMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
-  fun stubCreatePrisonerLocationMappings() {
+  fun stubCreatePersonLocationMappings(
+    status: HttpStatus = HttpStatus.CREATED,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
     mappingApi.stubFor(
-      put("/mapping/prisoner-location/migrate")
+      put("/mapping/person-location/migrate")
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
-            .withStatus(201),
+            .withStatus(status.value())
+            .apply { if (status != HttpStatus.CREATED) withBody(jsonMapper.writeValueAsString(error)) },
         ),
-    )
-  }
-
-  fun stubCreatePrisonerLocationMappings(status: HttpStatus, error: ErrorResponse = ErrorResponse(status = status.value())) {
-    mappingApi.stubFor(
-      put("/mapping/prisoner-location/migrate").willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(jsonMapper.writeValueAsString(error)),
-      ),
     )
   }
 
@@ -44,21 +37,21 @@ class PrisonerLocationMappingApiMockServer(private val jsonMapper: JsonMapper) {
   fun verify(count: CountMatchingStrategy, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
 }
 
-fun prisonerLocationsMapping(
+fun personLocationsMapping(
   offenderNo: String = "A1234BC",
   bookingId: Long = 12345,
   dpsCustodialSeriesId: UUID = UUID.randomUUID(),
   nomisMovementSeq: Int = 1,
   dpsExternalMovementId: UUID = UUID.randomUUID(),
-) = PrisonerLocationsMappingDto(
+) = PersonLocationsMappingDto(
   offenderNo = offenderNo,
   migrationId = "2020-01-01T11:10:00",
   bookings = listOf(
-    PrisonerLocationBookingMappingDto(
+    PersonLocationBookingMappingDto(
       bookingId = bookingId,
       dpsCustodialSeriesId = dpsCustodialSeriesId,
       movements = listOf(
-        PrisonerLocationMovementMappingDto(
+        PersonLocationMovementMappingDto(
           nomisMovementSeq = nomisMovementSeq,
           dpsExternalMovementId = dpsExternalMovementId,
         ),

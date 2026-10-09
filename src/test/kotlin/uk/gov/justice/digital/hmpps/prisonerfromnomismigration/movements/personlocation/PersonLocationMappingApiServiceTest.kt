@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.prisonerlocation
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -18,29 +18,29 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PrisonerLocationsMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import java.util.*
 
 @ExtendWith(MappingApiExtension::class)
 @SpringAPIServiceTest
-@Import(PrisonerLocationMappingApiService::class, PrisonerLocationMappingApiMockServer::class, PrisonerLocationConfiguration::class)
-class PrisonerLocationMappingApiServiceTest {
+@Import(PersonLocationMappingApiService::class, PersonLocationMappingApiMockServer::class, PersonLocationConfiguration::class)
+class PersonLocationMappingApiServiceTest {
   @Autowired
-  private lateinit var apiService: PrisonerLocationMappingApiService
+  private lateinit var apiService: PersonLocationMappingApiService
 
   @Autowired
-  private lateinit var mappingApi: PrisonerLocationMappingApiMockServer
+  private lateinit var mappingApi: PersonLocationMappingApiMockServer
 
-  private val errorType = object : ParameterizedTypeReference<DuplicateErrorResponse<PrisonerLocationsMappingDto>>() {}
+  private val errorType = object : ParameterizedTypeReference<DuplicateErrorResponse<PersonLocationsMappingDto>>() {}
 
   @Nested
   inner class CreateMigrationMappings {
     @Test
     internal fun `should pass oauth2 token to service`() = runTest {
-      mappingApi.stubCreatePrisonerLocationMappings()
+      mappingApi.stubCreatePersonLocationMappings()
 
-      apiService.createMapping(prisonerLocationsMapping(), errorType)
+      apiService.createMapping(personLocationsMapping(), errorType)
 
       mappingApi.verify(
         putRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
@@ -51,10 +51,10 @@ class PrisonerLocationMappingApiServiceTest {
     internal fun `should pass data to service`() = runTest {
       val dpsCustodialSeriesId = UUID.randomUUID()
       val dpsExternalMovementId = UUID.randomUUID()
-      mappingApi.stubCreatePrisonerLocationMappings()
+      mappingApi.stubCreatePersonLocationMappings()
 
       apiService.createMapping(
-        prisonerLocationsMapping(
+        personLocationsMapping(
           offenderNo = "A1234BC",
           bookingId = 12345,
           dpsCustodialSeriesId = dpsCustodialSeriesId,
@@ -65,7 +65,7 @@ class PrisonerLocationMappingApiServiceTest {
       ).also { assertThat(it.isError).isFalse }
 
       mappingApi.verify(
-        putRequestedFor(urlPathEqualTo("/mapping/prisoner-location/migrate"))
+        putRequestedFor(urlPathEqualTo("/mapping/person-location/migrate"))
           .withRequestBody(matchingJsonPath("offenderNo", equalTo("A1234BC")))
           .withRequestBody(matchingJsonPath("migrationId", equalTo("2020-01-01T11:10:00")))
           .withRequestBody(matchingJsonPath("bookings[0].bookingId", equalTo("12345")))
@@ -77,10 +77,10 @@ class PrisonerLocationMappingApiServiceTest {
 
     @Test
     fun `should throw if API calls fail`() = runTest {
-      mappingApi.stubCreatePrisonerLocationMappings(INTERNAL_SERVER_ERROR)
+      mappingApi.stubCreatePersonLocationMappings(INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.createMapping(prisonerLocationsMapping(), errorType)
+        apiService.createMapping(personLocationsMapping(), errorType)
       }
     }
   }

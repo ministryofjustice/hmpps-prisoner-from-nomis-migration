@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.prisonerlocation
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
@@ -9,18 +9,19 @@ import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
+import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.test.context.junit.jupiter.SpringExtension.getApplicationContext
 import tools.jackson.databind.json.JsonMapper
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.prisonerlocation.PrisonerLocationDpsApiExtension.Companion.dpsPrisonerLocationServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.prisonerlocation.PrisonerLocationDpsApiExtension.Companion.jsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerlocation.model.ResyncExternalMovementsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.prisonerlocation.model.ResyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncExternalMovementsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 
-class PrisonerLocationDpsApiExtension :
+class PersonLocationDpsApiExtension :
   BeforeAllCallback,
   AfterAllCallback,
   BeforeEachCallback {
@@ -28,38 +29,38 @@ class PrisonerLocationDpsApiExtension :
     private var enableResetBeforeEach = true
 
     @JvmField
-    val dpsPrisonerLocationServer = PrisonerLocationDpsApiMockServer()
+    val dpsPersonLocationServer = PersonLocationDpsApiMockServer()
     lateinit var jsonMapper: JsonMapper
 
     fun resetAndDisableResetBeforeEach() {
       enableResetBeforeEach = false
-      dpsPrisonerLocationServer.resetAll()
+      dpsPersonLocationServer.resetAll()
     }
   }
 
   override fun beforeAll(context: ExtensionContext) {
-    dpsPrisonerLocationServer.start()
+    dpsPersonLocationServer.start()
     jsonMapper = (getApplicationContext(context).getBean("jacksonJsonMapper") as JsonMapper)
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    if (enableResetBeforeEach) dpsPrisonerLocationServer.resetAll()
+    if (enableResetBeforeEach) dpsPersonLocationServer.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
-    dpsPrisonerLocationServer.stop()
+    dpsPersonLocationServer.stop()
     enableResetBeforeEach = true
   }
 }
 
 @Component
-class PrisonerLocationDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
+class PersonLocationDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   companion object {
     private const val WIREMOCK_PORT = 8111
 
     @Suppress("unused")
-    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsPrisonerLocationServer.getRequestBody(pattern, jsonMapper)
-    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsPrisonerLocationServer.getRequestBodies(pattern, jsonMapper)
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = dpsPersonLocationServer.getRequestBody(pattern, jsonMapper)
+    inline fun <reified T> getRequestBodies(pattern: RequestPatternBuilder): List<T> = dpsPersonLocationServer.getRequestBodies(pattern, jsonMapper)
 
     fun resyncExternalMovementsRequest() = ResyncExternalMovementsRequest(
       custodialSeries = listOf(),
@@ -70,30 +71,19 @@ class PrisonerLocationDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubResyncPrisoner(personIdentifier: String = "A1234BC", response: ResyncResponse = resyncResponse()) {
-    dpsPrisonerLocationServer.stubFor(
-      put("/resync/external-movements/$personIdentifier")
-        .willReturn(
-          aResponse()
-            .withStatus(200)
-            .withHeader("Content-Type", "application/json")
-            .withBody(jsonMapper.writeValueAsString(response)),
-        ),
-    )
-  }
-
   fun stubResyncPrisoner(
     personIdentifier: String = "A1234BC",
-    status: Int,
-    error: ErrorResponse = ErrorResponse(status = status),
+    response: ResyncResponse = resyncResponse(),
+    status: HttpStatus = HttpStatus.CREATED,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
-    dpsPrisonerLocationServer.stubFor(
+    dpsPersonLocationServer.stubFor(
       put("/resync/external-movements/$personIdentifier")
         .willReturn(
           aResponse()
-            .withStatus(status)
+            .withStatus(status.value())
             .withHeader("Content-Type", "application/json")
-            .withBody(jsonMapper.writeValueAsString(error)),
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.CREATED) response else error)),
         ),
     )
   }
