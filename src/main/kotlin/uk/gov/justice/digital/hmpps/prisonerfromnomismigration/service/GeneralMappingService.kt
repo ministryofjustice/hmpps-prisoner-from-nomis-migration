@@ -43,6 +43,7 @@ class GeneralMappingService(
     MigrationType.CSRA -> csraMappingApiService.getMigrationCount(migrationId)
     MigrationType.DRUG_TESTING -> -1 // No implementation necessary
     MigrationType.EXTERNAL_MOVEMENTS -> 0
+    MigrationType.PERSON_LOCATIONS -> 0 // TODO SDIT-4312 - implement
     MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.PROPERTY -> propertyMappingService.getMigrationCount(migrationId)

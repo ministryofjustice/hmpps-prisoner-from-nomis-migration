@@ -158,6 +158,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONTRANSFERMOVEMENTS_QUEUE_NAME: "sqs_name"
     sqs-migration-transfermovements-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONTRANSFERMOVEMENTS_DLQ_NAME: "sqs_name"
+    sqs-migration-personlocations-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONPERSONLOCATIONS_QUEUE_NAME: "sqs_name"
+    sqs-migration-personlocations-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONPERSONLOCATIONS_DLQ_NAME: "sqs_name"
     sqs-migration-agencyregisters-queue:
       HMPPS_SQS_QUEUES_MIGRATIONAGENCYREGISTERS_QUEUE_NAME: "sqs_name"
     sqs-migration-agencyregisters-dlq:

@@ -255,6 +255,11 @@ transfermovements:
     delay-seconds: 180
     count: 9
 
+personlocations:
+  complete-check:
+    delay-seconds: 180
+    count: 9
+
 officialvisits:
   complete-check:
     delay-seconds: 180
