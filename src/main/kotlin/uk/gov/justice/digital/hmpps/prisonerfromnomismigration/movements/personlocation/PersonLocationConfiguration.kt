@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.prisonerlocation
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation
 
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
@@ -13,8 +13,8 @@ import uk.gov.justice.hmpps.kotlin.health.ReactiveHealthPingCheck
 import java.time.Duration
 
 @Configuration
-class PrisonerLocationConfiguration(
-  @Value("\${api.base.url.person-location}") val prisonerLocationUrl: String,
+class PersonLocationConfiguration(
+  @Value("\${api.base.url.person-location}") val personLocationUrl: String,
   @Value("\${api.health-timeout:2s}") val healthTimeout: Duration,
   @Value("\${api.person-location-timeout:10s}") val dpsTimeout: Duration,
   @Value("\${api.person-location-mapping-timeout:60s}") val mappingTimeout: Duration,
@@ -25,14 +25,14 @@ class PrisonerLocationConfiguration(
   fun personLocationDpsApiWebClient(
     authorizedClientManager: ReactiveOAuth2AuthorizedClientManager,
     builder: WebClient.Builder,
-  ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "person-location-api", url = prisonerLocationUrl, dpsTimeout)
+  ): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "person-location-api", url = personLocationUrl, dpsTimeout)
 
   @Bean
-  fun prisonerLocationMappingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "nomis-mapping-api", url = mappingApiBaseUri, mappingTimeout)
+  fun personLocationMappingApiWebClient(authorizedClientManager: ReactiveOAuth2AuthorizedClientManager, builder: WebClient.Builder): WebClient = builder.reactiveAuthorisedWebClient(authorizedClientManager, registrationId = "nomis-mapping-api", url = mappingApiBaseUri, mappingTimeout)
 
   @Bean
-  fun prisonerLocationApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(prisonerLocationUrl, healthTimeout)
+  fun personLocationApiHealthWebClient(builder: WebClient.Builder): WebClient = builder.reactiveHealthWebClient(personLocationUrl, healthTimeout)
 
-  @Component("prisonerLocationApi")
-  class PrisonerLocationApiHealth(@Qualifier("prisonerLocationApiHealthWebClient") webClient: WebClient) : ReactiveHealthPingCheck(webClient)
+  @Component("personLocationApi")
+  class PersonLocationApiHealth(@Qualifier("personLocationApiHealthWebClient") webClient: WebClient) : ReactiveHealthPingCheck(webClient)
 }

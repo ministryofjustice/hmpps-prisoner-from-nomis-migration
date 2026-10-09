@@ -1,4 +1,4 @@
-package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.prisonerlocation
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
@@ -12,17 +12,19 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
+import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.prisonerlocation.PrisonerLocationDpsApiExtension.Companion.dpsPrisonerLocationServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.prisonerlocation.PrisonerLocationDpsApiMockServer.Companion.resyncExternalMovementsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiMockServer.Companion.resyncExternalMovementsRequest
 
-@ExtendWith(PrisonerLocationDpsApiExtension::class)
+@ExtendWith(PersonLocationDpsApiExtension::class)
 @SpringAPIServiceTest
-@Import(PrisonerLocationDpsApiService::class, PrisonerLocationConfiguration::class, PrisonerLocationDpsApiMockServer::class)
-class PrisonerLocationDpsApiServiceTest {
+@Import(PersonLocationDpsApiService::class, PersonLocationConfiguration::class, PersonLocationDpsApiMockServer::class)
+class PersonLocationDpsApiServiceTest {
   @Autowired
-  private lateinit var apiService: PrisonerLocationDpsApiService
+  private lateinit var apiService: PersonLocationDpsApiService
 
   @Nested
   inner class Resync {
@@ -30,11 +32,11 @@ class PrisonerLocationDpsApiServiceTest {
 
     @Test
     internal fun `should pass oauth2 token`() = runTest {
-      dpsPrisonerLocationServer.stubResyncPrisoner()
+      dpsPersonLocationServer.stubResyncPrisoner()
 
-      apiService.resyncPrisoner("A1234BC", request)
+      apiService.resyncPerson("A1234BC", request)
 
-      dpsPrisonerLocationServer.verify(
+      dpsPersonLocationServer.verify(
         putRequestedFor(anyUrl())
           .withHeader("Authorization", equalTo("Bearer ABCDE")),
       )
@@ -42,29 +44,29 @@ class PrisonerLocationDpsApiServiceTest {
 
     @Test
     fun `should call the resync endpoint`() = runTest {
-      dpsPrisonerLocationServer.stubResyncPrisoner()
+      dpsPersonLocationServer.stubResyncPrisoner()
 
-      apiService.resyncPrisoner("A1234BC", request)
+      apiService.resyncPerson("A1234BC", request)
 
-      dpsPrisonerLocationServer.verify(
+      dpsPersonLocationServer.verify(
         putRequestedFor(urlPathEqualTo("/resync/external-movements/A1234BC")),
       )
     }
 
     @Test
     fun `should throw if error`() = runTest {
-      dpsPrisonerLocationServer.stubResyncPrisoner(status = 500)
+      dpsPersonLocationServer.stubResyncPrisoner(status = INTERNAL_SERVER_ERROR)
 
       assertThrows<WebClientResponseException.InternalServerError> {
-        apiService.resyncPrisoner("A1234BC", request)
+        apiService.resyncPerson("A1234BC", request)
       }
     }
 
     @Test
     fun `should return null if not found`() = runTest {
-      dpsPrisonerLocationServer.stubResyncPrisoner(status = 404)
+      dpsPersonLocationServer.stubResyncPrisoner(status = NOT_FOUND)
 
-      assertThat(apiService.resyncPrisoner("A1234BC", request)).isNull()
+      assertThat(apiService.resyncPerson("A1234BC", request)).isNull()
     }
   }
 }

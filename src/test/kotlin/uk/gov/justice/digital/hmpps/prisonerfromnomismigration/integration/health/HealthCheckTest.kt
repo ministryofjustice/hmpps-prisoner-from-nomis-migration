@@ -12,7 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.drugtesting.DrugT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerDpsApiExtension
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.prisonerlocation.PrisonerLocationDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.officialvisits.OfficialVisitsDpsApiExtension
@@ -49,7 +49,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsAp
   NomisSyncApiExtension::class,
   OfficialVisitsDpsApiExtension::class,
   OrganisationsDpsApiExtension::class,
-  PrisonerLocationDpsApiExtension::class,
+  PersonLocationDpsApiExtension::class,
   PropertyApiExtension::class,
   SentencingApiExtension::class,
   StaffDpsApiExtension::class,
@@ -87,7 +87,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
       .jsonPath("components.officialVisitsApi.status").isEqualTo("UP")
       .jsonPath("components.organisationsApi.status").isEqualTo("UP")
       .jsonPath("components.personalRelationshipsApi.status").isEqualTo("UP")
-      .jsonPath("components.prisonerLocationApi.status").isEqualTo("UP")
+      .jsonPath("components.personLocationApi.status").isEqualTo("UP")
       .jsonPath("components.propertyApi.status").isEqualTo("UP")
       .jsonPath("components.sentencingApi.status").isEqualTo("UP")
       .jsonPath("components.staffApi.status").isEqualTo("UP")
@@ -161,7 +161,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     FinanceApiExtension.financeApi.stubHealthPing(status)
     LocationsApiExtension.locationsApi.stubHealthPing(status)
     OrganisationsDpsApiExtension.dpsOrganisationsServer.stubHealthPing(status)
-    PrisonerLocationDpsApiExtension.dpsPrisonerLocationServer.stubHealthPing(status)
+    PersonLocationDpsApiExtension.dpsPersonLocationServer.stubHealthPing(status)
     PropertyApiExtension.propertyDpsApi.stubHealthPing(status)
     SentencingApiExtension.sentencingApi.stubHealthPing(status)
     StaffDpsApiExtension.dpsStaffServer.stubHealthPing(status)
