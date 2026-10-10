@@ -55,30 +55,49 @@ class CsraSyncService(
       telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
       return
     }
-    try {
+    track(telemetryName, telemetry) {
       val nomisCsra = csraNomisApiService.getCsra(event.bookingId, event.assessmentSeq)
-
-      csraDpsApiService.sync(event.offenderIdDisplay, CsraSyncRequest(nomisCsra.toDPSCsra()))
-        .apply {
-          if (!this.created) {
-            throw IllegalStateException("Csra ${event.bookingId} already exists in DPS")
-            // probably redundant as this just depends on sending a UUID
-          }
-          telemetry["dpsCsraId"] = this.csraReviewId.toString()
-          tryToCreateMapping(event, this.csraReviewId.toString(), telemetry)
-            .also { mappingCreateResult ->
-              if (mappingCreateResult == MappingResponse.MAPPING_FAILED) {
-                telemetry["mapping"] = "initial-failure"
-              }
-              telemetryClient.trackEvent("$telemetryName-success", telemetry)
-            }
+      val mapping = csraMappingApiService.getMappingByNomisId(bookingId, assessmentSeq)
+      if (nomisCsra == null) {
+        telemetry["nomis-exists"] = "false"
+        if (mapping == null) {
+          // ignore, as this is a 'ghost' creation + deletion of a CSRA in NOMIS in same transaction
+          telemetry["mapping-exists"] = "false"
+          telemetry["ignored"] = "no-nomis-csra-and-no-mapping"
+        } else {
+          // ignore, as this is a mapping for a CSRA that has been deleted in NOMIS
+          telemetry["mapping-exists"] = "true"
+          telemetry["dpsCsraId"] = mapping.dpsCsraId
+          telemetry["ignored"] = "no-nomis-csra-but-mapping-exists"
         }
-    } catch (e: Exception) {
-      telemetryClient.trackEvent(
-        "$telemetryName-failed",
-        telemetry + ("error" to (e.message ?: e.javaClass.name)),
-      )
-      throw e
+      } else {
+        telemetry["nomis-exists"] = "true"
+        if (mapping == null) {
+          telemetry["mapping-exists"] = "false"
+          csraDpsApiService.sync(event.offenderIdDisplay, CsraSyncRequest(nomisCsra.toDPSCsra()))
+            .apply {
+              if (!this.created) {
+                throw IllegalStateException("Csra ${event.bookingId} already exists in DPS")
+                // probably redundant as this just depends on sending a UUID
+              }
+              telemetry["dpsCsraId"] = this.csraReviewId.toString()
+              tryToCreateMapping(event, this.csraReviewId.toString(), telemetry)
+                .also { mappingCreateResult ->
+                  if (mappingCreateResult == MappingResponse.MAPPING_FAILED) {
+                    telemetry["mapping"] = "initial-failure"
+                  }
+                }
+            }
+        } else {
+          // CSRA has been replaced: Do an update to overwrite the old CSRA in DPS
+          telemetry["mapping-exists"] = "true"
+          telemetry["dpsCsraId"] = mapping.dpsCsraId
+          csraDpsApiService.sync(
+            offenderIdDisplay,
+            CsraSyncRequest(review = nomisCsra.toDPSCsra(), csraReviewId = UUID.fromString(mapping.dpsCsraId)),
+          )
+        }
+      }
     }
   }
 
@@ -101,17 +120,12 @@ class CsraSyncService(
     }
     track(telemetryName, telemetry) {
       val nomisData = csraNomisApiService.getCsra(bookingId, assessmentSeq)
-      csraMappingApiService.getMappingByNomisId(bookingId, assessmentSeq)
-        .also { mapping ->
-          telemetry["dpsCsraId"] = mapping.dpsCsraId
-          csraDpsApiService.sync(
-            offenderIdDisplay,
-            CsraSyncRequest(
-              review = nomisData.toDPSCsra(),
-              csraReviewId = UUID.fromString(mapping.dpsCsraId),
-            ),
-          )
-        }
+      val mapping = csraMappingApiService.getMappingByNomisId(bookingId, assessmentSeq)
+      telemetry["dpsCsraId"] = mapping!!.dpsCsraId
+      csraDpsApiService.sync(
+        offenderIdDisplay,
+        CsraSyncRequest(review = nomisData!!.toDPSCsra(), csraReviewId = UUID.fromString(mapping.dpsCsraId)),
+      )
     }
   }
 
@@ -132,7 +146,37 @@ class CsraSyncService(
       telemetryClient.trackEvent("$telemetryName-skipped", telemetry)
       return
     }
-    TODO()
+
+    track(telemetryName, telemetry) {
+      val nomisCsra = csraNomisApiService.getCsra(event.bookingId, event.assessmentSeq)
+      val mapping = csraMappingApiService.getMappingByNomisId(bookingId, assessmentSeq)
+      if (nomisCsra == null) {
+        telemetry["nomis-exists"] = "false"
+        if (mapping == null) {
+          // ignore, as this is a 'ghost' creation + deletion of a CSRA in NOMIS in same transaction
+          telemetry["mapping-exists"] = "false"
+          telemetry["ignored"] = "no-nomis-csra-and-no-mapping"
+        } else {
+          telemetry["mapping-exists"] = "true"
+          telemetry["dpsCsraId"] = mapping.dpsCsraId
+          TODO() // should not be needed ... except in scripts ? But booking-deleted should handle that?
+        }
+      } else {
+        telemetry["nomis-exists"] = "true"
+        if (mapping == null) {
+          telemetry["mapping-exists"] = "false"
+          throw IllegalStateException("CSRA found in NOMIS but no mapping for bookingId=${event.bookingId}, sequence=${event.assessmentSeq}")
+        } else {
+          // CSRA has been replaced: an update is needed
+          telemetry["mapping-exists"] = "true"
+          telemetry["dpsCsraId"] = mapping.dpsCsraId
+          csraDpsApiService.sync(
+            offenderIdDisplay,
+            CsraSyncRequest(review = nomisCsra.toDPSCsra(), csraReviewId = UUID.fromString(mapping.dpsCsraId)),
+          )
+        }
+      }
+    }
   }
 
   suspend fun handlePrisonerMerged(event: PrisonerMergeDomainEvent) {
