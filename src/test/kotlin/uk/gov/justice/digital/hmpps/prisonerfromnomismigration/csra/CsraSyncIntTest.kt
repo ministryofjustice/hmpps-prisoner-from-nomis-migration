@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
+import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -22,10 +23,11 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension.Companion.csraApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CsraMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.HmppsQueue
+import org.awaitility.kotlin.matches as awaitMatches
 
 private const val DPS_ID = "e52d7268-6e10-41a8-a0b9-2319b32520d6"
 private const val BOOKING_ID = 123456L
@@ -83,11 +85,127 @@ class CsraSyncIntTest(
     @DisplayName("When CSRA was created in NOMIS")
     inner class NomisCreated {
       @Nested
-      @DisplayName("Happy path")
-      inner class HappyPath {
+      @DisplayName("No Nomis, No Mapping")
+      inner class HappyPathNoNomisNoMapping {
+        @BeforeEach
+        fun setUp() {
+          csraNomisApiMockServer.stubGetCsraError(BOOKING_ID, SEQUENCE, 404)
+          csraMappingApiMockServer.stubGetByNomisId(404)
+          csraApi.stubSyncCsraCreate(OFFENDER_ID_DISPLAY, DPS_ID)
+          csraMappingApiMockServer.stubPostMapping()
+
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(
+              eventType = "ASSESSMENT-INSERTED",
+              bookingId = BOOKING_ID,
+              assessmentSeq = SEQUENCE,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+          waitForCompletion()
+        }
+
+        @Test
+        fun `will not update CSRA in DPS`() {
+          csraApi.verify(
+            0,
+            postRequestedFor(anyUrl()),
+          )
+        }
+
+        @Test
+        fun `will not create mapping between DPS and NOMIS ids`() {
+          csraMappingApiMockServer.verify(
+            0,
+            postRequestedFor(urlPathEqualTo("/mapping/csras")),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          verify(telemetryClient).trackEvent(
+            eq("csras-synchronisation-created-success"),
+            check {
+              assertThat(it["nomis-exists"]).isEqualTo("false")
+              assertThat(it["mapping-exists"]).isEqualTo("false")
+              assertThat(it["ignored"]).isEqualTo("no-nomis-csra-and-no-mapping")
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      @DisplayName("No Nomis, Mapping")
+      inner class HappyPathNoNomisMapping {
+        @BeforeEach
+        fun setUp() {
+          csraNomisApiMockServer.stubGetCsraError(BOOKING_ID, SEQUENCE, 404)
+          csraMappingApiMockServer.stubGetByNomisId(
+            bookingId = BOOKING_ID,
+            sequence = SEQUENCE,
+            dpsCsraId = DPS_ID,
+          )
+          csraApi.stubSyncCsraCreate(OFFENDER_ID_DISPLAY, DPS_ID)
+          csraMappingApiMockServer.stubPostMapping()
+
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(
+              eventType = "ASSESSMENT-INSERTED",
+              bookingId = BOOKING_ID,
+              assessmentSeq = SEQUENCE,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+          waitForCompletion()
+        }
+
+        @Test
+        fun `will not update CSRA in DPS`() {
+          csraApi.verify(
+            0,
+            postRequestedFor(anyUrl()),
+          )
+        }
+
+        @Test
+        fun `will not create mapping between DPS and NOMIS ids`() {
+          csraMappingApiMockServer.verify(
+            0,
+            postRequestedFor(urlPathEqualTo("/mapping/csras")),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          verify(telemetryClient).trackEvent(
+            eq("csras-synchronisation-created-success"),
+            check {
+              assertThat(it["nomis-exists"]).isEqualTo("false")
+              assertThat(it["mapping-exists"]).isEqualTo("true")
+              assertThat(it["ignored"]).isEqualTo("no-nomis-csra-but-mapping-exists")
+              assertThat(it["dpsCsraId"]).isEqualTo(DPS_ID)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      @DisplayName("Nomis, No Mapping")
+      inner class HappyPathNomisNoMapping {
         @BeforeEach
         fun setUp() {
           csraNomisApiMockServer.stubGetCsra(bookingId = BOOKING_ID, sequence = SEQUENCE)
+          csraMappingApiMockServer.stubGetByNomisId(404)
           csraApi.stubSyncCsraCreate(OFFENDER_ID_DISPLAY, DPS_ID)
           csraMappingApiMockServer.stubPostMapping()
 
@@ -159,6 +277,71 @@ class CsraSyncIntTest(
           verify(telemetryClient).trackEvent(
             eq("csras-synchronisation-created-success"),
             check {
+              assertThat(it["nomis-exists"]).isEqualTo("true")
+              assertThat(it["mapping-exists"]).isEqualTo("false")
+              assertThat(it["dpsCsraId"]).isEqualTo(DPS_ID)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      @DisplayName("Nomis, Mapping")
+      inner class HappyPathNomisMapping {
+        @BeforeEach
+        fun setUp() {
+          csraNomisApiMockServer.stubGetCsra(bookingId = BOOKING_ID, sequence = SEQUENCE)
+          csraMappingApiMockServer.stubGetByNomisId(
+            bookingId = BOOKING_ID,
+            sequence = SEQUENCE,
+            dpsCsraId = DPS_ID,
+          )
+          csraApi.stubSyncCsraCreate(OFFENDER_ID_DISPLAY, DPS_ID)
+          csraMappingApiMockServer.stubPostMapping()
+
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(
+              eventType = "ASSESSMENT-INSERTED",
+              bookingId = BOOKING_ID,
+              assessmentSeq = SEQUENCE,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+          waitForCompletion()
+        }
+
+        @Test
+        fun `will update CSRA in DPS`() {
+          csraApi.verify(
+            1,
+            postRequestedFor(anyUrl())
+              .withRequestBodyJsonPath("csraReviewId", equalTo(DPS_ID))
+              .withRequestBodyJsonPath("review.bookingId", equalTo(BOOKING_ID.toString()))
+              .withRequestBodyJsonPath("review.nomisSequence", equalTo(SEQUENCE.toString()))
+              .withRequestBodyJsonPath("review.assessmentDate", "2021-02-03"),
+          )
+        }
+
+        @Test
+        fun `will not create mapping between DPS and NOMIS ids`() {
+          csraMappingApiMockServer.verify(
+            0,
+            postRequestedFor(urlPathEqualTo("/mapping/csras")),
+          )
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          verify(telemetryClient).trackEvent(
+            eq("csras-synchronisation-created-success"),
+            check {
+              assertThat(it["nomis-exists"]).isEqualTo("true")
+              assertThat(it["mapping-exists"]).isEqualTo("true")
               assertThat(it["dpsCsraId"]).isEqualTo(DPS_ID)
               assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
               assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
@@ -202,7 +385,7 @@ class CsraSyncIntTest(
 
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("csras-synchronisation-created-failed"),
+              eq("csras-synchronisation-created-error"),
               check {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
@@ -231,7 +414,7 @@ class CsraSyncIntTest(
 
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("csras-synchronisation-created-failed"),
+              eq("csras-synchronisation-created-error"),
               check {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
@@ -382,13 +565,7 @@ class CsraSyncIntTest(
           csraMappingApiMockServer.stubGetByNomisId(
             bookingId = BOOKING_ID,
             sequence = SEQUENCE,
-            CsraMappingDto(
-              dpsCsraId = DPS_ID,
-              nomisBookingId = BOOKING_ID,
-              nomisSequence = SEQUENCE,
-              offenderNo = OFFENDER_ID_DISPLAY,
-              mappingType = CsraMappingDto.MappingType.NOMIS_CREATED,
-            ),
+            dpsCsraId = DPS_ID,
           )
           csraNomisApiMockServer.stubGetCsra(bookingId = BOOKING_ID, sequence = SEQUENCE)
           csraApi.stubSyncCsraUpdate(OFFENDER_ID_DISPLAY, DPS_ID)
@@ -481,7 +658,314 @@ class CsraSyncIntTest(
     }
   }
 
-  private fun waitForCompletion(namePattern: String = "csras-synchronisation-(cre|upd)ated-success") {
+  @Nested
+  @DisplayName("ASSESSMENT-DELETED")
+  inner class Deleted {
+    @Nested
+    @DisplayName("When property was updated in DPS")
+    inner class DPSDeleted {
+      @BeforeEach
+      fun setUp() {
+        awsSqsCsraEventClient.sendMessage(
+          csraEventQueueUrl,
+          csraEvent(
+            eventType = "ASSESSMENT-DELETED",
+            bookingId = BOOKING_ID,
+            assessmentSeq = SEQUENCE,
+            offenderNo = OFFENDER_ID_DISPLAY,
+            auditModuleName = "DPS_SYNCHRONISATION",
+          ),
+        )
+      }
+
+      @Test
+      fun `the event is ignored`() {
+        await untilAsserted {
+          verify(telemetryClient).trackEvent(
+            eq("csras-synchronisation-deleted-skipped"),
+            check {
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
+            },
+            isNull(),
+          )
+        }
+
+        // will not bother getting mapping
+        csraMappingApiMockServer.verify(0, getRequestedFor(anyUrl()))
+        // will not call DPS sync
+        csraApi.verify(0, postRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("When CSRA was deleted in NOMIS")
+    inner class NomisDeleted {
+      @Nested
+      @DisplayName("No Nomis, No Mapping")
+      inner class HappyPathNoNomisNoMapping {
+        @BeforeEach
+        fun setUp() {
+          csraNomisApiMockServer.stubGetCsraError(BOOKING_ID, SEQUENCE, 404)
+          csraMappingApiMockServer.stubGetByNomisId(404)
+
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(
+              eventType = "ASSESSMENT-DELETED",
+              bookingId = BOOKING_ID,
+              assessmentSeq = SEQUENCE,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+          waitForCompletion()
+        }
+
+        @Test
+        fun `will not update CSRA in DPS`() {
+          csraApi.verify(0, postRequestedFor(anyUrl()))
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          verify(telemetryClient).trackEvent(
+            eq("csras-synchronisation-deleted-success"),
+            check {
+              assertThat(it["nomis-exists"]).isEqualTo("false")
+              assertThat(it["mapping-exists"]).isEqualTo("false")
+              assertThat(it["ignored"]).isEqualTo("no-nomis-csra-and-no-mapping")
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      @DisplayName("No Nomis, Mapping")
+      inner class HappyPathNoNomisMapping {
+        @BeforeEach
+        fun setUp() {
+          csraNomisApiMockServer.stubGetCsraError(BOOKING_ID, SEQUENCE, 404)
+          csraMappingApiMockServer.stubGetByNomisId(
+            bookingId = BOOKING_ID,
+            sequence = SEQUENCE,
+            dpsCsraId = DPS_ID,
+          )
+
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(
+              eventType = "ASSESSMENT-DELETED",
+              bookingId = BOOKING_ID,
+              assessmentSeq = SEQUENCE,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+          // this scenario is not yet implemented (TODO in CsraSyncService.delete()), so the message
+          // will repeatedly fail to process and will end up on the dead letter queue
+          await untilCallTo { csraEventQueue.countAllMessagesOnDLQQueue() } awaitMatches { it == 1 }
+        }
+
+        // TODO
+      }
+
+      @Nested
+      @DisplayName("Nomis, No Mapping - error scenario")
+      inner class ErrorNomisNoMapping {
+        @BeforeEach
+        fun setUp() {
+          csraNomisApiMockServer.stubGetCsra(bookingId = BOOKING_ID, sequence = SEQUENCE)
+          csraMappingApiMockServer.stubGetByNomisId(404)
+
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(
+              eventType = "ASSESSMENT-DELETED",
+              bookingId = BOOKING_ID,
+              assessmentSeq = SEQUENCE,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+        }
+
+        @Test
+        fun `will not update CSRA in DPS`() {
+          await untilAsserted {
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("csras-synchronisation-deleted-error"),
+              anyMap(),
+              isNull(),
+            )
+          }
+          csraApi.verify(0, postRequestedFor(anyUrl()))
+        }
+
+        @Test
+        fun `will track a telemetry event for the error`() {
+          await untilAsserted {
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("csras-synchronisation-deleted-error"),
+              check {
+                assertThat(it["nomis-exists"]).isEqualTo("true")
+                assertThat(it["mapping-exists"]).isEqualTo("false")
+                assertThat(it["error"]).isEqualTo(
+                  "CSRA found in NOMIS but no mapping for bookingId=$BOOKING_ID, sequence=$SEQUENCE",
+                )
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("Nomis, Mapping")
+      inner class HappyPathNomisMapping {
+        @BeforeEach
+        fun setUp() {
+          csraNomisApiMockServer.stubGetCsra(bookingId = BOOKING_ID, sequence = SEQUENCE)
+          csraMappingApiMockServer.stubGetByNomisId(
+            bookingId = BOOKING_ID,
+            sequence = SEQUENCE,
+            dpsCsraId = DPS_ID,
+          )
+          csraApi.stubSyncCsraUpdate(OFFENDER_ID_DISPLAY, DPS_ID)
+
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(
+              eventType = "ASSESSMENT-DELETED",
+              bookingId = BOOKING_ID,
+              assessmentSeq = SEQUENCE,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+          waitForCompletion()
+        }
+
+        @Test
+        fun `will update CSRA in DPS`() {
+          csraApi.verify(
+            1,
+            postRequestedFor(anyUrl())
+              .withRequestBodyJsonPath("csraReviewId", equalTo(DPS_ID))
+              .withRequestBodyJsonPath("review.bookingId", equalTo(BOOKING_ID.toString()))
+              .withRequestBodyJsonPath("review.nomisSequence", equalTo(SEQUENCE.toString())),
+          )
+        }
+
+        @Test
+        fun `will not create mapping between DPS and NOMIS ids`() {
+          csraMappingApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/mapping/csras")))
+        }
+
+        @Test
+        fun `will track a telemetry event for success`() {
+          verify(telemetryClient).trackEvent(
+            eq("csras-synchronisation-deleted-success"),
+            check {
+              assertThat(it["nomis-exists"]).isEqualTo("true")
+              assertThat(it["mapping-exists"]).isEqualTo("true")
+              assertThat(it["dpsCsraId"]).isEqualTo(DPS_ID)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      @DisplayName("Will ignore CATEGORY assessments")
+      inner class CategoryAssessment {
+        @BeforeEach
+        fun setUp() {
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(eventType = "ASSESSMENT-DELETED", assessmentType = "CATEGORY"),
+          )
+          waitForCompletion("csras-synchronisation-deleted-skipped-category")
+        }
+
+        @Test
+        fun `will not POST anything`() {
+          csraApi.verify(0, postRequestedFor(anyUrl()))
+          csraMappingApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/mapping/csras")))
+        }
+      }
+
+      @Nested
+      @DisplayName("Error scenarios")
+      inner class Exceptions {
+        @Test
+        fun `Nomis call fails`() {
+          csraNomisApiMockServer.stubGetCsraError(bookingId = BOOKING_ID, sequence = SEQUENCE)
+
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(eventType = "ASSESSMENT-DELETED"),
+          )
+
+          await untilAsserted {
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("csras-synchronisation-deleted-error"),
+              check {
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["error"]).isEqualTo("500 Internal Server Error from GET http://localhost:8081/prisoners/booking-id/$BOOKING_ID/csra/$SEQUENCE")
+              },
+              isNull(),
+            )
+          }
+        }
+
+        @Test
+        fun `DPS call fails`() {
+          csraNomisApiMockServer.stubGetCsra(bookingId = BOOKING_ID, sequence = SEQUENCE)
+          csraMappingApiMockServer.stubGetByNomisId(
+            bookingId = BOOKING_ID,
+            sequence = SEQUENCE,
+            dpsCsraId = DPS_ID,
+          )
+          csraApi.stubSyncCsraCreateError(OFFENDER_ID_DISPLAY)
+
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(
+              eventType = "ASSESSMENT-DELETED",
+              bookingId = BOOKING_ID,
+              assessmentSeq = SEQUENCE,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+
+          await untilAsserted {
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("csras-synchronisation-deleted-error"),
+              check {
+                assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+                assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
+                assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
+                assertThat(it["error"]).isEqualTo("500 Internal Server Error from POST http://localhost:8105/nomis-sync/sync/$OFFENDER_ID_DISPLAY")
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+  }
+
+  private fun waitForCompletion(namePattern: String = "csras-synchronisation-(crea|upda|dele)ted-success") {
     await untilAsserted {
       verify(telemetryClient).trackEvent(matches(namePattern), anyMap(), isNull())
     }
