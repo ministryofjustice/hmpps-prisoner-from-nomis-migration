@@ -23,7 +23,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
@@ -104,8 +103,12 @@ class PersonLocationMigrationIntTest(
             movements = listOf(1 to dpsMovementId1, 2 to dpsMovementId2),
           ),
         )
+        transferScheduleMappingApi.stubGetTransferSchedulerPrisonerMappingIds(
+          prisonerNumber = prisonerNumber,
+          nomisEventId = 54321L,
+          dpsTransferScheduleId = dpsTransferScheduleId,
+        )
       }
-    transferScheduleMappingApi.stubGetTransferScheduleMapping(nomisEventId = 54321L, dpsTransferScheduleId = dpsTransferScheduleId)
     mappingApi.stubCreatePersonLocationMappings()
   }
 
@@ -128,6 +131,13 @@ class PersonLocationMigrationIntTest(
     @Test
     fun `should get NOMIS person locations`() {
       personLocationNomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/$prisonerNumber/person-locations")))
+    }
+
+    @Test
+    fun `should only get schedule mappings for scheduled movement types`() {
+      transferScheduleMappingApi.verify(1, getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/$prisonerNumber/ids")))
+      tapMappingApi.verify(0, getRequestedFor(urlPathEqualTo("/mapping/taps/$prisonerNumber/ids")))
+      courtSchedulerMappingApi.verify(0, getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/$prisonerNumber/ids")))
     }
 
     @Test
@@ -260,9 +270,9 @@ class PersonLocationMigrationIntTest(
           )
         },
       )
-      tapMappingApi.stubGetTapScheduleMapping(nomisEventId = 101, dpsOccurrenceId = dpsTapOccurrenceId)
-      courtSchedulerMappingApi.stubGetCourtScheduleMapping(nomisEventId = 102, dpsCourtAppearanceId = dpsCourtAppearanceId)
-      transferScheduleMappingApi.stubGetTransferScheduleMapping(nomisEventId = 103, status = HttpStatus.NOT_FOUND)
+      tapMappingApi.stubGetTapPrisonerMappingIds(prisonerNumber = "A1234BC", nomisScheduleOutEventId = 101, dpsOccurrenceId = dpsTapOccurrenceId)
+      courtSchedulerMappingApi.stubGetCourtSchedulerPrisonerMappingIds(prisonerNumber = "A1234BC", nomisEventId = 102, dpsCourtAppearanceId = dpsCourtAppearanceId)
+      transferScheduleMappingApi.stubGetTransferSchedulerPrisonerMappingIds(prisonerNumber = "A1234BC", dpsTransferScheduleId = null)
 
       performMigration("A1234BC")
     }
@@ -305,8 +315,10 @@ class PersonLocationMigrationIntTest(
     }
 
     @Test
-    fun `should look up transfer schedule mapping even if not found`() {
-      transferScheduleMappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/103")))
+    fun `should get each type of schedule mappings once for the prisoner`() {
+      tapMappingApi.verify(1, getRequestedFor(urlPathEqualTo("/mapping/taps/A1234BC/ids")))
+      courtSchedulerMappingApi.verify(1, getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/A1234BC/ids")))
+      transferScheduleMappingApi.verify(1, getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/A1234BC/ids")))
     }
   }
 
