@@ -74,7 +74,8 @@ class PersonLocationNomisApiServiceTest {
         with(movements[1]) {
           assertThat(sequence).isEqualTo(2)
           assertThat(from).isNull()
-          assertThat(to).isNull()
+          assertThat(to?.type).isEqualTo(MovementLocation.Type.OTHER)
+          assertThat(to?.code).isNull()
           assertThat(scheduleId).isEqualTo(54321L)
         }
       }

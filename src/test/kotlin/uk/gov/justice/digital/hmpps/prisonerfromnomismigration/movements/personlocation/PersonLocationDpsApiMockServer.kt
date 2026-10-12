@@ -16,10 +16,13 @@ import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.CustodialSeriesMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ExternalMovementMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncExternalMovementsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
+import java.util.UUID
 
 class PersonLocationDpsApiExtension :
   BeforeAllCallback,
@@ -66,8 +69,18 @@ class PersonLocationDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       custodialSeries = listOf(),
     )
 
-    fun resyncResponse() = ResyncResponse(
-      custodialSeries = listOf(),
+    fun resyncResponse(
+      bookingId: Long = 12345L,
+      dpsCustodialSeriesId: UUID = UUID.randomUUID(),
+      movements: List<Pair<Int, UUID>> = listOf(1 to UUID.randomUUID(), 2 to UUID.randomUUID()),
+    ) = ResyncResponse(
+      custodialSeries = listOf(
+        CustodialSeriesMapping(
+          dpsId = dpsCustodialSeriesId,
+          legacyBookingId = bookingId,
+          movements = movements.map { (sequence, dpsId) -> ExternalMovementMapping(dpsId = dpsId, legacySequenceNumber = sequence) },
+        ),
+      ),
     )
   }
 
