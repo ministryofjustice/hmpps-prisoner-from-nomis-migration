@@ -98,7 +98,7 @@ class PersonLocationMigrationService(
 
     val nomisPersonLocations = personLocationNomisApi.getOffenderPersonLocationsOrNull(offenderNo)
       ?: OffenderPersonLocationsResponse(bookings = listOf())
-    val dpsScheduleReferences = nomisPersonLocations.getDpsScheduleReferences()
+    val dpsScheduleReferences = nomisPersonLocations.getDpsScheduleReferences(offenderNo)
     val dpsResponse = dpsApi.resyncPerson(offenderNo, nomisPersonLocations.toDpsRequest(dpsScheduleReferences))
       ?: ResyncResponse(custodialSeries = listOf())
     val mappings = dpsResponse.toMappings(offenderNo, migrationId)
@@ -115,22 +115,22 @@ class PersonLocationMigrationService(
     }
   }
 
-  private suspend fun OffenderPersonLocationsResponse.getDpsScheduleReferences(): Map<Long, String> = bookings
+  private suspend fun OffenderPersonLocationsResponse.getDpsScheduleReferences(offenderNo: String): DpsScheduleReferences = bookings
     .flatMap { it.movements }
-    .mapNotNull { movement -> movement.scheduleId?.let { movement.movementType to it } }
+    .filter { it.scheduleId != null }
+    .map { it.movementType }
     .distinct()
-    .mapNotNull { (movementType, scheduleId) -> getDpsScheduleReference(movementType, scheduleId)?.let { scheduleId to it } }
-    .toMap()
+    .associateWith { getDpsScheduleReferences(offenderNo, it) }
 
-  private suspend fun getDpsScheduleReference(movementType: PersonLocationMovement.MovementType, scheduleId: Long): String? = when (movementType) {
-    PersonLocationMovement.MovementType.TAP -> tapMappingApi.getTapScheduleMappingOrNull(scheduleId)
-      ?.let { "urn:temporary-absence-scheduler:temporary-absence:${it.dpsOccurrenceId}" }
-    PersonLocationMovement.MovementType.CRT -> courtSchedulerMappingApi.getCourtScheduleMappingOrNull(scheduleId)
-      ?.let { "urn:court-appearance-scheduler:court-appearance:${it.dpsCourtAppearanceId}" }
-    PersonLocationMovement.MovementType.TRN -> transferScheduleMappingApi.getTransferScheduleMappingOrNull(scheduleId)
-      ?.let { "urn:transfer-scheduler:transfer:${it.dpsTransferScheduleId}" }
+  private suspend fun getDpsScheduleReferences(offenderNo: String, movementType: PersonLocationMovement.MovementType): Map<Long, String> = when (movementType) {
+    PersonLocationMovement.MovementType.TAP -> tapMappingApi.getTapPrisonerMappingIds(offenderNo).schedules
+      .associate { it.nomisEventId to "urn:temporary-absence-scheduler:temporary-absence:${it.dpsOccurrenceId}" }
+    PersonLocationMovement.MovementType.CRT -> courtSchedulerMappingApi.getCourtSchedulerPrisonMappingIds(offenderNo).schedules
+      .associate { it.nomisEventId to "urn:court-appearance-scheduler:court-appearance:${it.dpsCourtAppearanceId}" }
+    PersonLocationMovement.MovementType.TRN -> transferScheduleMappingApi.getMappings(offenderNo).schedules
+      .associate { it.nomisEventId to "urn:transfer-scheduler:transfer:${it.dpsTransferScheduleId}" }
     // There are no DPS schedules for admissions or releases
-    PersonLocationMovement.MovementType.ADM, PersonLocationMovement.MovementType.REL -> null
+    PersonLocationMovement.MovementType.ADM, PersonLocationMovement.MovementType.REL -> emptyMap()
   }
 
   private suspend fun createMappings(mappings: PersonLocationsMappingDto) = mappingApi.createMapping(
@@ -155,7 +155,10 @@ class PersonLocationMigrationService(
   override fun parseContextMapping(json: String): MigrationMessage<*, PersonLocationsMappingDto> = jsonMapper.readValue(json)
 }
 
-fun OffenderPersonLocationsResponse.toDpsRequest(dpsScheduleReferences: Map<Long, String>) = ResyncExternalMovementsRequest(
+// DPS schedule references keyed by movement type then NOMIS schedule (event) ID
+typealias DpsScheduleReferences = Map<PersonLocationMovement.MovementType, Map<Long, String>>
+
+fun OffenderPersonLocationsResponse.toDpsRequest(dpsScheduleReferences: DpsScheduleReferences) = ResyncExternalMovementsRequest(
   custodialSeries = bookings.map { booking ->
     ResyncCustodialSeries(
       custodialSeries = SyncCustodialSeries(
@@ -176,7 +179,7 @@ fun OffenderPersonLocationsResponse.toDpsRequest(dpsScheduleReferences: Map<Long
   },
 )
 
-private fun PersonLocationMovement.toDpsMovement(bookingId: Long, dpsScheduleReferences: Map<Long, String>) = ResyncExternalMovement(
+private fun PersonLocationMovement.toDpsMovement(bookingId: Long, dpsScheduleReferences: DpsScheduleReferences) = ResyncExternalMovement(
   movement = SyncExternalMovement(
     type = when (directionCode) {
       PersonLocationMovement.DirectionCode.IN -> SyncExternalMovement.Type.ARRIVAL
@@ -199,7 +202,7 @@ private fun PersonLocationMovement.toDpsMovement(bookingId: Long, dpsScheduleRef
         PersonLocationMovement.MovementType.TRN -> SyncExternalJourney.Type.TRANSFER
         PersonLocationMovement.MovementType.REL -> SyncExternalJourney.Type.RELEASE
       },
-      scheduleReference = scheduleId?.let { dpsScheduleReferences[it] },
+      scheduleReference = scheduleId?.let { dpsScheduleReferences[movementType]?.get(it) },
     ),
     legacyBookingId = bookingId,
     legacySequenceNumber = sequence,
