@@ -462,7 +462,7 @@ class CorePersonSynchronisationAddressContactService(
       )
     } ?: run {
       track("coreperson-address-usage-synchronisation-created", telemetry) {
-        val addressMapping = getParentAddressMappingOrThrow(event, "ADDRESSES_USAGE-INSERTED")
+        val addressMapping = getParentAddressMappingOrThrow(event, "OFFENDER_ADDRESS_USAGE-INSERTED")
         telemetry["cprAddressId"] = addressMapping.cprId
         val nomisAddressUsage = corePersonNomisApiService.getOffenderAddressUsage(event.offenderId, event.addressId, event.addressUsage)
         val cprAddressUsage = corePersonCprApiService.syncCreateAddressUsage(
@@ -496,7 +496,7 @@ class CorePersonSynchronisationAddressContactService(
     track("coreperson-address-usage-synchronisation-updated", telemetry) {
       val mapping = corePersonMappingService.getByNomisAddressUsageId(event.addressId, event.addressUsage)
       telemetry["cprAddressUsageId"] = mapping.cprId
-      val addressMapping = getParentAddressMappingOrThrow(event, "ADDRESSES_USAGE-UPDATED")
+      val addressMapping = getParentAddressMappingOrThrow(event, "OFFENDER_ADDRESS_USAGE-UPDATED")
       telemetry["cprAddressId"] = addressMapping.cprId
       val nomisAddressUsage = corePersonNomisApiService.getOffenderAddressUsage(event.offenderId, event.addressId, event.addressUsage)
       corePersonCprApiService.syncUpdateAddressUsage(
@@ -514,7 +514,7 @@ class CorePersonSynchronisationAddressContactService(
     corePersonMappingService.getByNomisAddressUsageIdOrNull(event.addressId, event.addressUsage)?.also { mapping ->
       track("coreperson-address-usage-synchronisation-deleted", telemetry) {
         telemetry["cprAddressUsageId"] = mapping.cprId
-        val addressMapping = getParentAddressMappingOrThrow(event, "ADDRESSES_USAGE-DELETED")
+        val addressMapping = getParentAddressMappingOrThrow(event, "OFFENDER_ADDRESS_USAGE-DELETED")
         telemetry["cprAddressId"] = addressMapping.cprId
         corePersonCprApiService.syncDeleteAddressUsage(mapping.nomisPrisonNumber, addressMapping.cprId, mapping.cprId)
         corePersonMappingService.deleteByNomisAddressUsageId(event.addressId, event.addressUsage)
