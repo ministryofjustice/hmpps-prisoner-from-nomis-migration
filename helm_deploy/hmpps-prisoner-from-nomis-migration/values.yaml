@@ -274,5 +274,4 @@ generic-service:
 # See https://user-guide.cloud-platform.service.justice.gov.uk/documentation/monitoring-an-app/how-to-create-alarms.html#creating-your-own-custom-alerts
 generic-prometheus-alerts:
   targetApplication: hmpps-prisoner-from-nomis-migration
-  alertSeverity: syscon
   sqsAlertsTotalMessagesThreshold: "0"
