@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-10-09.5767.2f016d4"
+    "version" : "2026-10-09.5793.e943c82"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -271,8 +271,7 @@
         },
         "responses" : {
           "204" : {
-            "description" : "No Content",
-            "content" : { }
+            "description" : "No Content"
           }
         },
         "security" : [ {
@@ -1176,7 +1175,7 @@
           "content" : {
             "application/json" : {
               "schema" : {
-                "$ref" : "#/components/schemas/PrisonAddressRequest"
+                "$ref" : "#/components/schemas/PrisonCreateAddressRequest"
               }
             }
           },
@@ -1240,7 +1239,10 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/CanonicalAddress"
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/PrisonContactResponse"
+                  }
                 }
               }
             }
@@ -1706,7 +1708,7 @@
             "type" : "string",
             "format" : "date-time",
             "description" : "The contact create date and time",
-            "example" : "2000-01-01 12:00:00"
+            "example" : "2000-01-01T12:00:00"
           },
           "createUserId" : {
             "type" : "string",
@@ -1717,7 +1719,7 @@
             "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "The contact modify date and time",
-            "example" : "2000-01-01 12:00:00"
+            "example" : "2000-01-01T12:00:00"
           },
           "modifyUserId" : {
             "type" : [ "string", "null" ],
@@ -1847,7 +1849,7 @@
             "type" : "string",
             "format" : "date-time",
             "description" : "The address create date and time",
-            "example" : "2000-01-01 12:00:00"
+            "example" : "2000-01-01T12:00:00"
           },
           "createUserId" : {
             "type" : "string",
@@ -1858,7 +1860,7 @@
             "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "The address modify date and time",
-            "example" : "2000-01-01 12:00:00"
+            "example" : "2000-01-01T12:00:00"
           },
           "modifyUserId" : {
             "type" : [ "string", "null" ],
@@ -1892,7 +1894,7 @@
             "type" : "string",
             "format" : "date-time",
             "description" : "The address usage create date and time",
-            "example" : "2000-01-01 12:00:00"
+            "example" : "2000-01-01T12:00:00"
           },
           "createUserId" : {
             "type" : "string",
@@ -1903,7 +1905,7 @@
             "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "The address usage modify date and time",
-            "example" : "2000-01-01 12:00:00"
+            "example" : "2000-01-01T12:00:00"
           },
           "modifyUserId" : {
             "type" : [ "string", "null" ],
@@ -2383,7 +2385,7 @@
             "type" : [ "string", "null" ],
             "format" : "date-time",
             "description" : "The religion modify date and time",
-            "example" : "2000-01-01 12:00:00"
+            "example" : "2000-01-01T12:00:00"
           },
           "modifyUserId" : {
             "type" : [ "string", "null" ],
@@ -2399,7 +2401,7 @@
             "type" : "string",
             "format" : "date-time",
             "description" : "The religion create date and time",
-            "example" : "2000-01-01 12:00:00"
+            "example" : "2000-01-01T12:00:00"
           },
           "createUserId" : {
             "type" : "string",
@@ -2926,9 +2928,9 @@
         },
         "required" : [ "cprAddressId", "crn" ]
       },
-      "PrisonAddressRequest" : {
+      "PrisonCreateAddressRequest" : {
         "type" : "object",
-        "description" : "Create or update a prisoner address",
+        "description" : "Create a prisoner address",
         "properties" : {
           "subBuildingName" : {
             "type" : [ "string", "null" ],
@@ -2973,7 +2975,7 @@
           },
           "statusCode" : {
             "type" : "string",
-            "description" : "The address status code. `primary in Prison API is M, `mail` in Prison API is MA and both selected is PM.",
+            "description" : "The address status code. `primary` in Prison API is M, `mail` in Prison API is MA and both selected is PM.",
             "enum" : [ "B", "M", "MA", "P", "PR", "PR1", "RJ", "RT", "S", "PM", "UNKNOWN" ],
             "example" : "M"
           },
