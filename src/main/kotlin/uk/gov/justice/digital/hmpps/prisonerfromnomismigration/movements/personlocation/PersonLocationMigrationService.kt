@@ -8,6 +8,7 @@ import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
@@ -95,24 +96,30 @@ class PersonLocationMigrationService(
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonNumberAndRootOffenderId>) {
     val offenderNo = context.body.prisonNumber
     val migrationId = context.migrationId
+    val telemetry = mutableMapOf(
+      "offenderNo" to offenderNo,
+      "migrationId" to migrationId,
+    )
 
-    val nomisPersonLocations = personLocationNomisApi.getOffenderPersonLocationsOrNull(offenderNo)
-      ?: OffenderPersonLocationsResponse(bookings = listOf())
-    val dpsScheduleReferences = nomisPersonLocations.getDpsScheduleReferences(offenderNo)
-    val dpsResponse = dpsApi.resyncPerson(offenderNo, nomisPersonLocations.toDpsRequest(dpsScheduleReferences))
-      ?: ResyncResponse(custodialSeries = listOf())
-    val mappings = dpsResponse.toMappings(offenderNo, migrationId)
+    runCatching {
+      val nomisPersonLocations = personLocationNomisApi.getOffenderPersonLocationsOrNull(offenderNo)
+        ?: OffenderPersonLocationsResponse(bookings = listOf())
+      if (nomisPersonLocations.bookings.isEmpty()) {
+        publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no person locations" })
+        return
+      }
 
-    // TODO SDIT-4312 - handle failures and requeue failed mappings
-    createMappings(mappings).also {
-      publishTelemetry(
-        if (it.isError) "duplicate" else "migrated",
-        mapOf(
-          "offenderNo" to offenderNo,
-          "migrationId" to migrationId,
-        ),
-      )
+      val dpsScheduleReferences = nomisPersonLocations.getDpsScheduleReferences(offenderNo)
+      val dpsResponse = dpsApi.resyncPerson(offenderNo, nomisPersonLocations.toDpsRequest(dpsScheduleReferences))
+        ?: ResyncResponse(custodialSeries = listOf())
+      val mappings = dpsResponse.toMappings(offenderNo, migrationId)
+
+      createMappingOrOnFailureDo(mappings) { requeueCreateMapping(mappings, context) }
     }
+      .onFailure {
+        publishTelemetry("failed", telemetry.apply { this["reason"] = it.message ?: "Unknown error" })
+        throw it
+      }
   }
 
   private suspend fun OffenderPersonLocationsResponse.getDpsScheduleReferences(offenderNo: String): DpsScheduleReferences = bookings
@@ -133,10 +140,42 @@ class PersonLocationMigrationService(
     PersonLocationMovement.MovementType.ADM, PersonLocationMovement.MovementType.REL -> emptyMap()
   }
 
+  private suspend fun createMappingOrOnFailureDo(
+    mappings: PersonLocationsMappingDto,
+    failureHandler: suspend (error: Throwable) -> Unit,
+  ) {
+    runCatching {
+      createMappings(mappings)
+    }.onSuccess {
+      publishTelemetry(
+        if (it.isError) "duplicate" else "migrated",
+        mapOf(
+          "offenderNo" to mappings.offenderNo,
+          "migrationId" to mappings.migrationId,
+        ),
+      )
+    }.onFailure {
+      failureHandler(it)
+    }
+  }
+
   private suspend fun createMappings(mappings: PersonLocationsMappingDto) = mappingApi.createMapping(
     mappings,
     object : ParameterizedTypeReference<DuplicateErrorResponse<PersonLocationsMappingDto>>() {},
   )
+
+  private suspend fun requeueCreateMapping(
+    mappings: PersonLocationsMappingDto,
+    context: MigrationContext<*>,
+  ) {
+    queueService.sendMessage(
+      MigrationMessageType.RETRY_MIGRATION_MAPPING,
+      MigrationContext(
+        context = context,
+        body = mappings,
+      ),
+    )
+  }
 
   private fun publishTelemetry(type: String, telemetry: Map<String, String>) {
     telemetryClient.trackEvent(
@@ -146,7 +185,9 @@ class PersonLocationMigrationService(
   }
 
   override suspend fun retryCreateMapping(context: MigrationContext<PersonLocationsMappingDto>) {
-    // TODO SDIT-4312 - implement retrying the person location mappings
+    createMappingOrOnFailureDo(context.body) {
+      throw it
+    }
   }
 
   override fun parseContextFilter(json: String): MigrationMessage<*, PersonLocationMigrationFilter> = jsonMapper.readValue(json)

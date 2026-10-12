@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation
 
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
+import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -35,6 +36,10 @@ class PersonLocationMappingApiMockServer(private val jsonMapper: JsonMapper) {
             .apply { if (status != HttpStatus.CREATED) withBody(jsonMapper.writeValueAsString(error)) },
         ),
     )
+  }
+
+  fun stubCreatePersonLocationMappingsFailureFollowedBySuccess() {
+    mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/person-location/migrate", WireMock::put)
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
