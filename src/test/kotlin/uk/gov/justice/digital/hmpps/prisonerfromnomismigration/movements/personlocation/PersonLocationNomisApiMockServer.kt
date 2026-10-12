@@ -75,6 +75,7 @@ fun offenderPersonLocationsResponse(
           movementTime = bookingBeginTime.plusDays(10),
           movementReason = CodeDescription(code = "NOTR", description = "Normal Transfer"),
           audit = NomisAudit(createDatetime = bookingBeginTime.plusDays(10), createUsername = "SOME_USER"),
+          from = MovementLocation(type = MovementLocation.Type.PRISON, description = "Leeds (HMP)", code = "LEI"),
           to = MovementLocation(type = MovementLocation.Type.OTHER, description = "Unknown destination"),
           scheduleId = 54321L,
           commentText = "Transfer comment",

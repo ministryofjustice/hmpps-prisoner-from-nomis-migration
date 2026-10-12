@@ -8,7 +8,10 @@ import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
@@ -41,6 +44,9 @@ class PersonLocationMigrationService(
   private val personLocationNomisApi: PersonLocationNomisApiService,
   private val dpsApi: PersonLocationDpsApiService,
   private val nomisApi: NomisApiService,
+  private val tapMappingApi: TapMappingApiService,
+  private val courtSchedulerMappingApi: CourtSchedulerMappingApiService,
+  private val transferScheduleMappingApi: TransferScheduleMappingApiService,
   jsonMapper: JsonMapper,
   @Value($$"${personlocations.page.size:1000}") pageSize: Long,
   @Value($$"${personlocations.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
@@ -92,7 +98,8 @@ class PersonLocationMigrationService(
 
     val nomisPersonLocations = personLocationNomisApi.getOffenderPersonLocationsOrNull(offenderNo)
       ?: OffenderPersonLocationsResponse(bookings = listOf())
-    val dpsResponse = dpsApi.resyncPerson(offenderNo, nomisPersonLocations.toDpsRequest())
+    val dpsScheduleReferences = nomisPersonLocations.getDpsScheduleReferences()
+    val dpsResponse = dpsApi.resyncPerson(offenderNo, nomisPersonLocations.toDpsRequest(dpsScheduleReferences))
       ?: ResyncResponse(custodialSeries = listOf())
     val mappings = dpsResponse.toMappings(offenderNo, migrationId)
 
@@ -106,6 +113,24 @@ class PersonLocationMigrationService(
         ),
       )
     }
+  }
+
+  private suspend fun OffenderPersonLocationsResponse.getDpsScheduleReferences(): Map<Long, String> = bookings
+    .flatMap { it.movements }
+    .mapNotNull { movement -> movement.scheduleId?.let { movement.movementType to it } }
+    .distinct()
+    .mapNotNull { (movementType, scheduleId) -> getDpsScheduleReference(movementType, scheduleId)?.let { scheduleId to it } }
+    .toMap()
+
+  private suspend fun getDpsScheduleReference(movementType: PersonLocationMovement.MovementType, scheduleId: Long): String? = when (movementType) {
+    PersonLocationMovement.MovementType.TAP -> tapMappingApi.getTapScheduleMappingOrNull(scheduleId)
+      ?.let { "urn:temporary-absence-scheduler:temporary-absence:${it.dpsOccurrenceId}" }
+    PersonLocationMovement.MovementType.CRT -> courtSchedulerMappingApi.getCourtScheduleMappingOrNull(scheduleId)
+      ?.let { "urn:court-appearance-scheduler:court-appearance:${it.dpsCourtAppearanceId}" }
+    PersonLocationMovement.MovementType.TRN -> transferScheduleMappingApi.getTransferScheduleMappingOrNull(scheduleId)
+      ?.let { "urn:transfer-scheduler:transfer:${it.dpsTransferScheduleId}" }
+    // There are no DPS schedules for admissions or releases
+    PersonLocationMovement.MovementType.ADM, PersonLocationMovement.MovementType.REL -> null
   }
 
   private suspend fun createMappings(mappings: PersonLocationsMappingDto) = mappingApi.createMapping(
@@ -130,7 +155,7 @@ class PersonLocationMigrationService(
   override fun parseContextMapping(json: String): MigrationMessage<*, PersonLocationsMappingDto> = jsonMapper.readValue(json)
 }
 
-fun OffenderPersonLocationsResponse.toDpsRequest() = ResyncExternalMovementsRequest(
+fun OffenderPersonLocationsResponse.toDpsRequest(dpsScheduleReferences: Map<Long, String>) = ResyncExternalMovementsRequest(
   custodialSeries = bookings.map { booking ->
     ResyncCustodialSeries(
       custodialSeries = SyncCustodialSeries(
@@ -144,14 +169,14 @@ fun OffenderPersonLocationsResponse.toDpsRequest() = ResyncExternalMovementsRequ
         legacyBookingId = booking.bookingId,
         legacyBookingReference = booking.bookingNumber,
       ),
-      movements = booking.movements.map { it.toDpsMovement(booking.bookingId) },
+      movements = booking.movements.map { it.toDpsMovement(booking.bookingId, dpsScheduleReferences) },
       created = booking.audit.toCreated(),
       modified = booking.audit.toModified(),
     )
   },
 )
 
-private fun PersonLocationMovement.toDpsMovement(bookingId: Long) = ResyncExternalMovement(
+private fun PersonLocationMovement.toDpsMovement(bookingId: Long, dpsScheduleReferences: Map<Long, String>) = ResyncExternalMovement(
   movement = SyncExternalMovement(
     type = when (directionCode) {
       PersonLocationMovement.DirectionCode.IN -> SyncExternalMovement.Type.ARRIVAL
@@ -164,8 +189,7 @@ private fun PersonLocationMovement.toDpsMovement(bookingId: Long) = ResyncExtern
       hierarchy = listOf(),
     ),
     occurredAt = movementTime,
-    // TODO SDIT-4312 - DPS requires a from location but some very old NOMIS movements don't have one - waiting on DPS to decide how to handle this
-    from = from?.toDpsLocation() ?: SyncExternalMovementFrom(description = "", locationType = "SimpleLocation", code = ""),
+    from = toDpsFromLocation(bookingId),
     to = to?.toDpsLocation(),
     journey = SyncExternalJourney(
       type = when (movementType) {
@@ -175,7 +199,7 @@ private fun PersonLocationMovement.toDpsMovement(bookingId: Long) = ResyncExtern
         PersonLocationMovement.MovementType.TRN -> SyncExternalJourney.Type.TRANSFER
         PersonLocationMovement.MovementType.REL -> SyncExternalJourney.Type.RELEASE
       },
-      scheduleReference = scheduleId?.toString(),
+      scheduleReference = scheduleId?.let { dpsScheduleReferences[it] },
     ),
     legacyBookingId = bookingId,
     legacySequenceNumber = sequence,
@@ -184,6 +208,13 @@ private fun PersonLocationMovement.toDpsMovement(bookingId: Long) = ResyncExtern
   created = audit.toCreated(),
   modified = audit.toModified(),
 )
+
+private fun PersonLocationMovement.toDpsFromLocation(bookingId: Long) = from?.toDpsLocation()
+  ?: when (directionCode) {
+    // Some very old inbound NOMIS movements have no from location
+    PersonLocationMovement.DirectionCode.IN -> SyncExternalMovementFrom(description = "Outside", locationType = "SimpleLocation", code = "")
+    PersonLocationMovement.DirectionCode.OUT -> throw IllegalStateException("Outbound movement $bookingId/$sequence has no from location")
+  }
 
 private fun MovementLocation.toDpsLocation() = when (type) {
   MovementLocation.Type.PRISON -> SyncExternalMovementFrom(description = description, locationType = "Prison", code = code!!)

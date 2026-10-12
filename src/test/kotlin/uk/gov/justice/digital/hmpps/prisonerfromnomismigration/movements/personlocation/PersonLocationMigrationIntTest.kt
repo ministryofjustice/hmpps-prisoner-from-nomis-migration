@@ -23,14 +23,22 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyBlocking
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiMockServer.Companion.resyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMappingApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncExternalMovementsRequest
@@ -50,6 +58,9 @@ class PersonLocationMigrationIntTest(
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
   @Autowired private val personLocationNomisApi: PersonLocationNomisApiMockServer,
   @Autowired private val mappingApi: PersonLocationMappingApiMockServer,
+  @Autowired private val tapMappingApi: TapMappingApiMockServer,
+  @Autowired private val courtSchedulerMappingApi: CourtSchedulerMappingApiMockServer,
+  @Autowired private val transferScheduleMappingApi: TransferScheduleMappingApiMockServer,
 ) : PersonLocationIntegrationTestBase() {
 
   private val nomisApi = NomisApiExtension.nomisApi
@@ -58,6 +69,7 @@ class PersonLocationMigrationIntTest(
   private val dpsCustodialSeriesId = UUID.randomUUID()
   private val dpsMovementId1 = UUID.randomUUID()
   private val dpsMovementId2 = UUID.randomUUID()
+  private val dpsTransferScheduleId = UUID.randomUUID()
   private lateinit var migrationId: String
 
   // Because of how the ID ranges stubs work, we start with the unintuitive rootOffenderId=0 and prisonerNumber="A0000KT"
@@ -93,6 +105,7 @@ class PersonLocationMigrationIntTest(
           ),
         )
       }
+    transferScheduleMappingApi.stubGetTransferScheduleMapping(nomisEventId = 54321L, dpsTransferScheduleId = dpsTransferScheduleId)
     mappingApi.stubCreatePersonLocationMappings()
   }
 
@@ -169,7 +182,7 @@ class PersonLocationMigrationIntTest(
     }
 
     @Test
-    fun `should populate DPS movement with missing and simple locations`() {
+    fun `should populate DPS movement with schedule reference`() {
       PersonLocationDpsApiMockServer.getRequestBody<ResyncExternalMovementsRequest>(
         putRequestedFor(urlPathEqualTo("/resync/external-movements/$prisonerNumber")),
       ).apply {
@@ -178,9 +191,9 @@ class PersonLocationMigrationIntTest(
           assertThat(type).isEqualTo(SyncExternalMovement.Type.DEPARTURE)
           assertThat(occurredAt).isEqualTo(LocalDateTime.parse("2024-01-11T10:00:00"))
           assertThat(reason).isEqualTo(SyncExternalMovementReason(description = "Normal Transfer", reasonType = "CodedReason", code = "NOTR", hierarchy = listOf()))
-          assertThat(from).isEqualTo(SyncExternalMovementFrom(description = "", locationType = "SimpleLocation", code = ""))
+          assertThat(from).isEqualTo(SyncExternalMovementFrom(description = "Leeds (HMP)", locationType = "Prison", code = "LEI"))
           assertThat(to).isEqualTo(SyncExternalMovementFrom(description = "Unknown destination", locationType = "SimpleLocation", code = ""))
-          assertThat(journey).isEqualTo(SyncExternalJourney(type = SyncExternalJourney.Type.TRANSFER, scheduleReference = "54321"))
+          assertThat(journey).isEqualTo(SyncExternalJourney(type = SyncExternalJourney.Type.TRANSFER, scheduleReference = "urn:transfer-scheduler:transfer:$dpsTransferScheduleId"))
           assertThat(notes).isEqualTo("Transfer comment")
         }
       }
@@ -215,6 +228,85 @@ class PersonLocationMigrationIntTest(
         },
         isNull(),
       )
+    }
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class MigrateEntityScheduleReferencesAndMissingLocations {
+    private val dpsTapOccurrenceId = UUID.randomUUID()
+    private val dpsCourtAppearanceId = UUID.randomUUID()
+
+    @BeforeAll
+    fun setUp() {
+      setupMigrationTest()
+
+      stubMigrationDependencies(entities = 1, pageSize = 1)
+      personLocationNomisApi.stubGetOffenderPersonLocations(
+        offenderNo = "A1234BC",
+        response = offenderPersonLocationsResponse().let { response ->
+          response.copy(
+            bookings = listOf(
+              response.bookings[0].copy(
+                movements = listOf(
+                  movement(sequence = 1, movementType = PersonLocationMovement.MovementType.ADM, directionCode = PersonLocationMovement.DirectionCode.IN, from = null),
+                  movement(sequence = 2, movementType = PersonLocationMovement.MovementType.TAP, scheduleId = 101),
+                  movement(sequence = 3, movementType = PersonLocationMovement.MovementType.CRT, scheduleId = 102),
+                  movement(sequence = 4, movementType = PersonLocationMovement.MovementType.TRN, scheduleId = 103),
+                  movement(sequence = 5, movementType = PersonLocationMovement.MovementType.REL),
+                ),
+              ),
+            ),
+          )
+        },
+      )
+      tapMappingApi.stubGetTapScheduleMapping(nomisEventId = 101, dpsOccurrenceId = dpsTapOccurrenceId)
+      courtSchedulerMappingApi.stubGetCourtScheduleMapping(nomisEventId = 102, dpsCourtAppearanceId = dpsCourtAppearanceId)
+      transferScheduleMappingApi.stubGetTransferScheduleMapping(nomisEventId = 103, status = HttpStatus.NOT_FOUND)
+
+      performMigration("A1234BC")
+    }
+
+    private fun movement(
+      sequence: Int,
+      movementType: PersonLocationMovement.MovementType,
+      directionCode: PersonLocationMovement.DirectionCode = PersonLocationMovement.DirectionCode.OUT,
+      scheduleId: Long? = null,
+      from: MovementLocation? = MovementLocation(type = MovementLocation.Type.PRISON, description = "Leeds (HMP)", code = "LEI"),
+    ) = PersonLocationMovement(
+      sequence = sequence,
+      movementType = movementType,
+      directionCode = directionCode,
+      movementTime = LocalDateTime.parse("2024-01-01T10:00:00").plusDays(sequence.toLong()),
+      movementReason = CodeDescription(code = "X", description = "Some reason"),
+      audit = NomisAudit(createDatetime = LocalDateTime.parse("2024-01-01T10:00:00"), createUsername = "SOME_USER"),
+      from = from,
+      scheduleId = scheduleId,
+    )
+
+    private fun dpsMovements() = PersonLocationDpsApiMockServer.getRequestBody<ResyncExternalMovementsRequest>(
+      putRequestedFor(urlPathEqualTo("/resync/external-movements/A1234BC")),
+    ).custodialSeries[0].movements.map { it.movement }
+
+    @Test
+    fun `should default missing from location on inbound movements`() {
+      assertThat(dpsMovements()[0].from).isEqualTo(SyncExternalMovementFrom(description = "Outside", locationType = "SimpleLocation", code = ""))
+    }
+
+    @Test
+    fun `should populate schedule references from the DPS schedule mappings`() {
+      assertThat(dpsMovements().map { it.journey.scheduleReference }).containsExactly(
+        null,
+        "urn:temporary-absence-scheduler:temporary-absence:$dpsTapOccurrenceId",
+        "urn:court-appearance-scheduler:court-appearance:$dpsCourtAppearanceId",
+        null,
+        null,
+      )
+    }
+
+    @Test
+    fun `should look up transfer schedule mapping even if not found`() {
+      transferScheduleMappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/103")))
     }
   }
 
