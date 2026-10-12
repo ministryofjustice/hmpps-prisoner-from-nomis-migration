@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -1733,6 +1734,7 @@ class CorePersonSynchronisationAddressContactIntTest(
     @DisplayName("OFFENDER_ADDRESS_USAGE-INSERTED")
     inner class OffenderAddressUsageAdded {
       @Nested
+      @Disabled("Awaiting trigger that sets the audit module name")
       inner class WhenCreatedInDps {
         @BeforeEach
         fun setUp() {
@@ -1953,6 +1955,7 @@ class CorePersonSynchronisationAddressContactIntTest(
     @DisplayName("OFFENDER_ADDRESS_USAGE-UPDATED")
     inner class OffenderAddressUsageUpdated {
       @Nested
+      @Disabled("Awaiting trigger that sets the audit module name")
       inner class WhenUpdatedInDps {
         @BeforeEach
         fun setUp() {

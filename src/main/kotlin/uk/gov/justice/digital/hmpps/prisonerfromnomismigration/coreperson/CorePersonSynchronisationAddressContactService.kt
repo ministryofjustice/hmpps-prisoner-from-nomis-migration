@@ -451,10 +451,11 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun offenderAddressUsageAdded(event: OffenderAddressUsageEvent) {
     val telemetry = event.toAddressUsageTelemetry()
 
-    if (event.originatesInDpsOrHasMissingAudit) {
-      telemetryClient.trackEvent("coreperson-address-usage-synchronisation-created-skipped", telemetry)
-      return
-    }
+    // TODO: Add back in the event module check once new trigger added
+//    if (event.originatesInDpsOrHasMissingAudit) {
+//      telemetryClient.trackEvent("coreperson-address-usage-synchronisation-created-skipped", telemetry)
+//      return
+//    }
     corePersonMappingService.getByNomisAddressUsageIdOrNull(event.addressId, event.addressUsage)?.also {
       telemetryClient.trackEvent(
         "coreperson-address-usage-synchronisation-created-ignored",
@@ -489,10 +490,11 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun offenderAddressUsageUpdated(event: OffenderAddressUsageEvent) {
     val telemetry = event.toAddressUsageTelemetry()
 
-    if (event.originatesInDpsOrHasMissingAudit) {
-      telemetryClient.trackEvent("coreperson-address-usage-synchronisation-updated-skipped", telemetry)
-      return
-    }
+    // TODO: Add back in the event module check once new trigger added
+//    if (event.originatesInDpsOrHasMissingAudit) {
+//      telemetryClient.trackEvent("coreperson-address-usage-synchronisation-updated-skipped", telemetry)
+//      return
+//    }
     track("coreperson-address-usage-synchronisation-updated", telemetry) {
       val mapping = corePersonMappingService.getByNomisAddressUsageId(event.addressId, event.addressUsage)
       telemetry["cprAddressUsageId"] = mapping.cprId
