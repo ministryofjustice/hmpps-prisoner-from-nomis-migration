@@ -16,6 +16,9 @@ class CsraNomisApiService(@Qualifier("nomisApiWebClient") webClient: WebClient) 
   suspend fun getCsras(offenderNo: String): PrisonerCsrasResponse = csraNomisApi
     .getCsrasForPrisoner(offenderNo).awaitSingle()
 
-  suspend fun getCsra(bookingId: Long, sequence: Int): CsraGetDto? = csraNomisApi
+  suspend fun getCsra(bookingId: Long, sequence: Int): CsraGetDto = csraNomisApi
+    .getCsra(bookingId, sequence).awaitSingle()
+
+  suspend fun getCsraOrNull(bookingId: Long, sequence: Int): CsraGetDto? = csraNomisApi
     .getCsra(bookingId, sequence).awaitSingleOrNullForNotFound()
 }

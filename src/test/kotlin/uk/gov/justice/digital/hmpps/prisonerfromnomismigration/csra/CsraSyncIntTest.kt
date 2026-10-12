@@ -90,7 +90,7 @@ class CsraSyncIntTest(
         @BeforeEach
         fun setUp() {
           csraNomisApiMockServer.stubGetCsraError(BOOKING_ID, SEQUENCE, 404)
-          csraMappingApiMockServer.stubGetByNomisId(404)
+          csraMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
           csraApi.stubSyncCsraCreate(OFFENDER_ID_DISPLAY, DPS_ID)
           csraMappingApiMockServer.stubPostMapping()
 
@@ -205,7 +205,7 @@ class CsraSyncIntTest(
         @BeforeEach
         fun setUp() {
           csraNomisApiMockServer.stubGetCsra(bookingId = BOOKING_ID, sequence = SEQUENCE)
-          csraMappingApiMockServer.stubGetByNomisId(404)
+          csraMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
           csraApi.stubSyncCsraCreate(OFFENDER_ID_DISPLAY, DPS_ID)
           csraMappingApiMockServer.stubPostMapping()
 
@@ -708,7 +708,7 @@ class CsraSyncIntTest(
         @BeforeEach
         fun setUp() {
           csraNomisApiMockServer.stubGetCsraError(BOOKING_ID, SEQUENCE, 404)
-          csraMappingApiMockServer.stubGetByNomisId(404)
+          csraMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
 
           awsSqsCsraEventClient.sendMessage(
             csraEventQueueUrl,
@@ -779,7 +779,7 @@ class CsraSyncIntTest(
         @BeforeEach
         fun setUp() {
           csraNomisApiMockServer.stubGetCsra(bookingId = BOOKING_ID, sequence = SEQUENCE)
-          csraMappingApiMockServer.stubGetByNomisId(404)
+          csraMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
 
           awsSqsCsraEventClient.sendMessage(
             csraEventQueueUrl,

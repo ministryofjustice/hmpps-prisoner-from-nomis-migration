@@ -56,8 +56,8 @@ class CsraSyncService(
       return
     }
     track(telemetryName, telemetry) {
-      val nomisCsra = csraNomisApiService.getCsra(event.bookingId, event.assessmentSeq)
-      val mapping = csraMappingApiService.getMappingByNomisId(bookingId, assessmentSeq)
+      val nomisCsra = csraNomisApiService.getCsraOrNull(event.bookingId, event.assessmentSeq)
+      val mapping = csraMappingApiService.getMappingByNomisIdOrNull(bookingId, assessmentSeq)
       if (nomisCsra == null) {
         telemetry["nomis-exists"] = "false"
         if (mapping == null) {
@@ -121,10 +121,10 @@ class CsraSyncService(
     track(telemetryName, telemetry) {
       val nomisData = csraNomisApiService.getCsra(bookingId, assessmentSeq)
       val mapping = csraMappingApiService.getMappingByNomisId(bookingId, assessmentSeq)
-      telemetry["dpsCsraId"] = mapping!!.dpsCsraId
+      telemetry["dpsCsraId"] = mapping.dpsCsraId
       csraDpsApiService.sync(
         offenderIdDisplay,
-        CsraSyncRequest(review = nomisData!!.toDPSCsra(), csraReviewId = UUID.fromString(mapping.dpsCsraId)),
+        CsraSyncRequest(review = nomisData.toDPSCsra(), csraReviewId = UUID.fromString(mapping.dpsCsraId)),
       )
     }
   }
@@ -148,8 +148,8 @@ class CsraSyncService(
     }
 
     track(telemetryName, telemetry) {
-      val nomisCsra = csraNomisApiService.getCsra(event.bookingId, event.assessmentSeq)
-      val mapping = csraMappingApiService.getMappingByNomisId(bookingId, assessmentSeq)
+      val nomisCsra = csraNomisApiService.getCsraOrNull(event.bookingId, event.assessmentSeq)
+      val mapping = csraMappingApiService.getMappingByNomisIdOrNull(bookingId, assessmentSeq)
       if (nomisCsra == null) {
         telemetry["nomis-exists"] = "false"
         if (mapping == null) {

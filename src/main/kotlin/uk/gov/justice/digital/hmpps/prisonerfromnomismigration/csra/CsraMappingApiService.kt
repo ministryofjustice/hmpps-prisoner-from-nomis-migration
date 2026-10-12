@@ -15,7 +15,11 @@ class CsraMappingApiService(
 ) : MigrationMapping<CsraMappingDto>("/mapping/csras", webClient) {
   private val api = CsraMappingResourceApi(webClient)
 
-  suspend fun getMappingByNomisId(bookingId: Long, sequence: Int): CsraMappingDto? = api
+  suspend fun getMappingByNomisId(bookingId: Long, sequence: Int): CsraMappingDto = api
+    .getCsraMappingByNomisId(bookingId = bookingId, sequence = sequence)
+    .awaitSingle()
+
+  suspend fun getMappingByNomisIdOrNull(bookingId: Long, sequence: Int): CsraMappingDto? = api
     .getCsraMappingByNomisId(bookingId = bookingId, sequence = sequence)
     .awaitSingleOrNullForNotFound()
 
