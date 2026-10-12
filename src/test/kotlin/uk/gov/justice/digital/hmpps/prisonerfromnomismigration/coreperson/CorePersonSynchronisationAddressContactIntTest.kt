@@ -2181,12 +2181,12 @@ class CorePersonSynchronisationAddressContactIntTest(
 
   private fun sendAddressEvent(
     eventType: String,
-    ownerId: Long = 1234L,
+    offenderId: Long = 1234L,
     addressId: Long = 3456L,
     auditModuleName: String = "NOMIS",
   ) = awsSqsCorePersonOffenderEventsClient.sendMessage(
     corePersonQueueOffenderEventsUrl,
-    offenderAddressEvent(eventType, "A1234BC", ownerId, addressId, auditModuleName),
+    offenderAddressEvent(eventType, "A1234BC", offenderId, addressId, auditModuleName),
   )
 }
 
@@ -2243,14 +2243,14 @@ private fun offenderAddressUsageEvent(
 private fun offenderAddressEvent(
   eventType: String,
   offenderIdDisplay: String,
-  ownerId: Long,
+  offenderId: Long,
   addressId: Long,
   auditModuleName: String,
 ) = """
   {
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd",
     "Type": "Notification",
-    "Message": "{\"eventType\":\"$eventType\",\"offenderIdDisplay\":\"$offenderIdDisplay\",\"ownerId\":$ownerId,\"addressId\":$addressId,\"auditModuleName\":\"$auditModuleName\"}",
+    "Message": "{\"eventType\":\"$eventType\",\"offenderIdDisplay\":\"$offenderIdDisplay\",\"offenderId\":$offenderId,\"addressId\":$addressId,\"auditModuleName\":\"$auditModuleName\"}",
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}
     }

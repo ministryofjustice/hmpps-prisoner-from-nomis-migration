@@ -58,7 +58,6 @@ class CorePersonEventListener(
               "OFFENDER_PHONE-INSERTED" -> addressContactService.offenderPhoneAdded(sqsMessage.Message.fromJson())
               "OFFENDER_PHONE-UPDATED" -> addressContactService.offenderPhoneUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_PHONE-DELETED" -> addressContactService.offenderPhoneDeleted(sqsMessage.Message.fromJson())
-
               "OFFENDER_EMAIL-INSERTED" -> addressContactService.offenderEmailAdded(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-UPDATED" -> addressContactService.offenderEmailUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-DELETED" -> addressContactService.offenderEmailDeleted(sqsMessage.Message.fromJson())
@@ -103,7 +102,7 @@ data class OffenderBeliefEvent(
 
 data class OffenderAddressEvent(
   val offenderIdDisplay: String,
-  val ownerId: Long,
+  val offenderId: Long,
   val addressId: Long,
   override val auditModuleName: String?,
 ) : EventAudited

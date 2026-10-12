@@ -173,7 +173,7 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun offenderAddressAdded(event: OffenderAddressEvent) {
     val telemetry = telemetryOf(
       "prisonNumber" to event.offenderIdDisplay,
-      "nomisOffenderId" to event.ownerId,
+      "nomisOffenderId" to event.offenderId,
       "nomisAddressId" to event.addressId,
     )
 
@@ -189,7 +189,7 @@ class CorePersonSynchronisationAddressContactService(
     } ?: run {
       track("coreperson-address-synchronisation-created", telemetry) {
         val prisonNumber = event.offenderIdDisplay
-        val nomisAddress = corePersonNomisApiService.getOffenderAddress(event.ownerId, event.addressId)
+        val nomisAddress = corePersonNomisApiService.getOffenderAddress(event.offenderId, event.addressId)
         val cprAddress = corePersonCprApiService.syncCreateAddress(
           prisonNumber = prisonNumber,
           address = nomisAddress.toPrisonAddressRequest(),
@@ -210,7 +210,7 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun offenderAddressUpdated(event: OffenderAddressEvent) {
     val telemetry = telemetryOf(
       "prisonNumber" to event.offenderIdDisplay,
-      "nomisOffenderId" to event.ownerId,
+      "nomisOffenderId" to event.offenderId,
       "nomisAddressId" to event.addressId,
     )
 
@@ -221,7 +221,7 @@ class CorePersonSynchronisationAddressContactService(
     track("coreperson-address-synchronisation-updated", telemetry) {
       val mapping = corePersonMappingService.getByNomisAddressId(event.addressId)
       telemetry["cprAddressId"] = mapping.cprId
-      val nomisAddress = corePersonNomisApiService.getOffenderAddress(event.ownerId, event.addressId)
+      val nomisAddress = corePersonNomisApiService.getOffenderAddress(event.offenderId, event.addressId)
       corePersonCprApiService.syncUpdateAddress(
         prisonNumber = mapping.nomisPrisonNumber,
         cprAddressId = mapping.cprId,
@@ -233,7 +233,7 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun offenderAddressDeleted(event: OffenderAddressEvent) {
     val telemetry = telemetryOf(
       "prisonNumber" to event.offenderIdDisplay,
-      "nomisOffenderId" to event.ownerId,
+      "nomisOffenderId" to event.offenderId,
       "nomisAddressId" to event.addressId,
     )
     corePersonMappingService.getByNomisAddressIdOrNull(event.addressId)?.also { mapping ->
