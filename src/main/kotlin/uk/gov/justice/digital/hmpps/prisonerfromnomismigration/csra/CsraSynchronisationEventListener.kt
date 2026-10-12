@@ -37,7 +37,6 @@ class CsraSynchronisationEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "csra")) {
             when (eventType) {
               "ASSESSMENT-INSERTED" -> csraSyncService.create(sqsMessage.Message.fromJson())
-              // TODO a CSRA can apparently be inserted and deleted at the same time, so we may need to ignore an insert if it doesn't exist in Nomis
               "ASSESSMENT-UPDATED" -> csraSyncService.update(sqsMessage.Message.fromJson())
               "ASSESSMENT-DELETED" -> csraSyncService.delete(sqsMessage.Message.fromJson())
 
@@ -53,6 +52,7 @@ class CsraSynchronisationEventListener(
 
         RETRY_SYNCHRONISATION_MAPPING.name -> csraSyncService.retryCreateMapping(sqsMessage.Message.fromJson())
         RESYNCHRONISE_MOVE_BOOKING_TARGET.name -> csraSyncService.moveCsras(sqsMessage.Message.fromJson())
+        // PROCESS_CSRA.name -> csraSyncService.process(sqsMessage.Message.fromJson())
       }
     }
   }

@@ -28,10 +28,11 @@ class CsraMappingApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetByNomisId(
     bookingId: Long = 123456,
     sequence: Int = 5,
+    dpsCsraId: String = UUID.randomUUID().toString(),
     mapping: CsraMappingDto = CsraMappingDto(
       nomisBookingId = bookingId,
       nomisSequence = sequence,
-      dpsCsraId = UUID.randomUUID().toString(),
+      dpsCsraId = dpsCsraId,
       offenderNo = "A1234KT",
       mappingType = MIGRATED,
     ),

@@ -42,10 +42,11 @@ class CsraNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetCsraError(
     bookingId: Long,
     sequence: Int = 1,
+    status: Int = 500,
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/prisoners/booking-id/$bookingId/csra/$sequence"))
-        .willReturn(status(500)),
+        .willReturn(status(status)),
     )
   }
 
