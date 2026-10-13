@@ -255,7 +255,9 @@ class FinanceDpsApiServiceTest {
         apiService.syncReleaseHoldTransaction(12345, releaseHoldDto())
 
         financeApi.verify(
-          postRequestedFor(urlPathEqualTo("/sync/holds/12345/release")),
+          postRequestedFor(urlPathEqualTo("/sync/holds/12345/release"))
+            .withRequestBodyJsonPath("releaseDateTime", equalTo("2025-06-04T05:06:07"))
+            .withRequestBodyJsonPath("releaseTransactionId", equalTo("12345")),
         )
       }
     }
