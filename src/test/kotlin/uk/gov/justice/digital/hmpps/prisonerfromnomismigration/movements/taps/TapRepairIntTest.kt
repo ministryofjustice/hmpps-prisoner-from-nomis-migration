@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -498,6 +499,11 @@ class TapRepairIntTest(
       stubMigrationDependencies()
       mappingApi.stubCreateTapPrisonerMappingsFailureFollowedBySuccess()
       migrationId = performRepair()
+      // Wait for the retry before any tests run, otherwise the queue purge before each test can remove the retry message
+      await atMost Duration.ofSeconds(10) untilAsserted {
+        mappingApi.verify(2, putRequestedFor(urlEqualTo("/mapping/taps/migrate")))
+        verify(telemetryClient).trackEvent(eq("temporary-absences-migration-entity-migrated"), any(), isNull())
+      }
     }
 
     @Test
@@ -507,28 +513,24 @@ class TapRepairIntTest(
 
     @Test
     fun `will create mappings twice before succeeding`() {
-      await atMost Duration.ofSeconds(10) untilAsserted {
-        mappingApi.verify(
-          2,
-          putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
-            .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
-            .withRequestBodyJsonPath("migrationId", migrationId),
-        )
-      }
+      mappingApi.verify(
+        2,
+        putRequestedFor(urlEqualTo("/mapping/taps/migrate"))
+          .withRequestBodyJsonPath("prisonerNumber", "A0001KT")
+          .withRequestBodyJsonPath("migrationId", migrationId),
+      )
     }
 
     @Test
     fun `will publish telemetry once`() {
-      await atMost Duration.ofSeconds(10) untilAsserted {
-        verify(telemetryClient, times(1)).trackEvent(
-          eq("temporary-absences-migration-entity-migrated"),
-          check {
-            assertThat(it["offenderNo"]).isEqualTo("A0001KT")
-            assertThat(it["migrationId"]).isEqualTo(migrationId)
-          },
-          isNull(),
-        )
-      }
+      verify(telemetryClient, times(1)).trackEvent(
+        eq("temporary-absences-migration-entity-migrated"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo("A0001KT")
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+        },
+        isNull(),
+      )
     }
   }
 

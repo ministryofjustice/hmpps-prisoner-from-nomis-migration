@@ -790,6 +790,56 @@ class PersonLocationMigrationIntTest(
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class MappingErrorRecovery {
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        stubMigrationDependencies(entities = 1, pageSize = 1)
+        // The call to create mappings fails then succeeds on a retry
+        mappingApi.stubCreatePersonLocationMappingsFailureFollowedBySuccess()
+        repairPrisonerOk(prisonerNumber)
+        await atMost Duration.ofSeconds(10) untilAsserted {
+          mappingApi.verify(2, putRequestedFor(urlPathEqualTo("/mapping/person-location/migrate")))
+          verify(telemetryClient).trackEvent(
+            eq("person-location-migration-entity-migrated"),
+            any(),
+            isNull(),
+          )
+        }
+      }
+
+      @Test
+      fun `should call DPS resync API once`() {
+        dpsApi.verify(1, putRequestedFor(urlPathEqualTo("/resync/external-movements/$prisonerNumber")))
+      }
+
+      @Test
+      fun `should attempt to create mappings twice`() {
+        mappingApi.verify(2, putRequestedFor(urlPathEqualTo("/mapping/person-location/migrate")))
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-migration-entity-repair-requested"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("person-location-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class Security {
       @Test
       fun `access allowed with repair movements role`() {
