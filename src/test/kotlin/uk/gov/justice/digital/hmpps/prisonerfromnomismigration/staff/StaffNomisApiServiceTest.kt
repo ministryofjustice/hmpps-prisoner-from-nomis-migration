@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @ExtendWith(NomisApiExtension::class)
@@ -115,6 +116,19 @@ class StaffNomisApiServiceTest {
             assertThat(roles[0].audit.modifyUserId).isEqualTo("KOFE_MOD")
             assertThat(roles[1].code).isEqualTo("DPS_CODE_2")
           }
+          assertThat(adminCaseloads.size).isEqualTo(1)
+          with(adminCaseloads[0]) {
+            assertThat(caseloadId).isEqualTo("LEI")
+            assertThat(active).isTrue
+            assertThat(expiryDate).isEqualTo(LocalDate.parse("2029-08-01"))
+          }
+          assertThat(memberCaseloads.size).isEqualTo(1)
+          with(memberCaseloads[0]) {
+            assertThat(caseloadId).isEqualTo("MDI")
+            assertThat(active).isTrue
+            assertThat(startDate).isEqualTo(LocalDate.parse("2022-06-02"))
+            assertThat(expiryDate).isEqualTo(LocalDate.parse("2030-12-22"))
+          }
         }
       }
     }
@@ -208,6 +222,19 @@ class StaffNomisApiServiceTest {
             assertThat(roles[0].audit.modifyDatetime).isEqualTo(LocalDateTime.parse("2017-08-01T10:55"))
             assertThat(roles[0].audit.modifyUserId).isEqualTo("KOFE_MOD")
             assertThat(roles[1].code).isEqualTo("DPS_CODE_2")
+          }
+          assertThat(adminCaseloads.size).isEqualTo(1)
+          with(adminCaseloads[0]) {
+            assertThat(caseloadId).isEqualTo("LEI")
+            assertThat(active).isTrue
+            assertThat(expiryDate).isEqualTo(LocalDate.parse("2029-08-01"))
+          }
+          assertThat(memberCaseloads.size).isEqualTo(1)
+          with(memberCaseloads[0]) {
+            assertThat(caseloadId).isEqualTo("MDI")
+            assertThat(active).isTrue
+            assertThat(startDate).isEqualTo(LocalDate.parse("2022-06-02"))
+            assertThat(expiryDate).isEqualTo(LocalDate.parse("2030-12-22"))
           }
         }
       }

@@ -6,7 +6,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.Telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AdminCaseloadResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseloadResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MemberCaseloadResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.RoleResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffAccount
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffDetails
@@ -16,6 +18,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncPrisonUserCaseload
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncPrisonUserEmail
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncPrisonUserRole
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncUserCaseloadAdministrator
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.model.SyncUserCaseloadMember
 
 @Service
 class StaffSynchronisationService(
@@ -110,12 +114,10 @@ private fun StaffAccount.toSyncUserAccount() = SyncPrisonUserAccount(
   accountStatus = status.toDpsAccountStatus(),
   activeCaseloadId = activeCaseloadId,
   lastLoggedIn = lastLoggedIn,
-  roles = this.caseloads.flatMap { caseload -> caseload.roles.map { it.toSyncPrisonUserRole() } },
+  roles = caseloads.flatMap { caseload -> caseload.roles.map { it.toSyncPrisonUserRole() } },
   caseloads = caseloads.map { it.toSyncPrisonUserAccessibleCaseload() },
-  // TODO: pull in from Nomis
-  administrationCaseloads = listOf(),
-  // TODO: pull in from Nomis
-  memberCaseloads = listOf(),
+  administrationCaseloads = adminCaseloads.map { it.toSyncUserCaseloadAdministrator() },
+  memberCaseloads = memberCaseloads.map { it.toSyncUserCaseloadMember() },
   createdTimestamp = audit.createDatetime,
   createdBy = audit.createUsername,
   modifiedTimestamp = audit.modifyDatetime,
@@ -143,6 +145,22 @@ private fun RoleResponse.toSyncPrisonUserRole() = SyncPrisonUserRole(
 
 private fun CaseloadResponse.toSyncPrisonUserAccessibleCaseload() = SyncPrisonUserCaseload(
   caseloadId = caseloadId,
+  createdTimestamp = audit.createDatetime,
+  createdBy = audit.createUsername,
+)
+
+private fun AdminCaseloadResponse.toSyncUserCaseloadAdministrator() = SyncUserCaseloadAdministrator(
+  caseloadId = caseloadId,
+  active = active,
+  expiryDate = expiryDate,
+  createdTimestamp = audit.createDatetime,
+  createdBy = audit.createUsername,
+)
+private fun MemberCaseloadResponse.toSyncUserCaseloadMember() = SyncUserCaseloadMember(
+  caseloadId = caseloadId,
+  active = active,
+  startDate = startDate,
+  expiryDate = expiryDate,
   createdTimestamp = audit.createDatetime,
   createdBy = audit.createUsername,
 )

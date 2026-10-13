@@ -10,7 +10,9 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AdminCaseloadResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseloadResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MemberCaseloadResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageMetadata
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PagedModelStaffIdResponse
@@ -21,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.StaffIdsPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Component
@@ -161,6 +164,16 @@ class StaffNomisApiMockServer(private val jsonMapper: JsonMapper) {
               RoleResponse(code = "DPS_CODE_1", name = "Dps Role 1", audit = audit()),
               RoleResponse(code = "DPS_CODE_2", name = "Dps Role 2", audit = audit()),
             ),
+            audit = audit(),
+          ),
+        ),
+        adminCaseloads = listOf(AdminCaseloadResponse(caseloadId = "LEI", active = true, expiryDate = LocalDate.parse("2029-08-01"), audit = audit())),
+        memberCaseloads = listOf(
+          MemberCaseloadResponse(
+            caseloadId = "MDI",
+            active = true,
+            startDate = LocalDate.parse("2022-06-02"),
+            expiryDate = LocalDate.parse("2030-12-22"),
             audit = audit(),
           ),
         ),
