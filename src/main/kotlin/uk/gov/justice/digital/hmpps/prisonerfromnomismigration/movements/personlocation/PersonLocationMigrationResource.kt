@@ -1,5 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation
 
+import com.microsoft.applicationinsights.TelemetryClient
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -9,7 +10,9 @@ import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -22,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorRespo
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
 class PersonLocationMigrationResource(
   private val migrationService: PersonLocationMigrationService,
+  private val telemetryClient: TelemetryClient,
 ) {
   @PostMapping
   @ResponseStatus(value = HttpStatus.ACCEPTED)
@@ -48,4 +52,39 @@ class PersonLocationMigrationResource(
   suspend fun migratePersonLocations(
     @RequestBody @Valid migrationFilter: PersonLocationMigrationFilter,
   ) = migrationService.startMigration(migrationFilter)
+
+  @PreAuthorize("hasAnyRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW','ROLE_PRISONER_FROM_NOMIS__REPAIR_MOVEMENTS__RW')")
+  @PutMapping("/repair/{prisonerNumber}")
+  @Operation(
+    summary = "Repair all person locations for a single prisoner",
+    description = "Resyncs a single prisoner's person locations to DPS. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b> or <b>PRISONER_FROM_NOMIS__REPAIR_MOVEMENTS__RW</b>",
+    responses = [
+      ApiResponse(
+        responseCode = "200",
+        description = "Prisoner re-synchronised",
+      ),
+      ApiResponse(
+        responseCode = "401",
+        description = "Unauthorized to access this endpoint",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+      ApiResponse(
+        responseCode = "403",
+        description = "Incorrect permissions to repair person locations",
+        content = [Content(mediaType = "application/json", schema = Schema(implementation = ErrorResponse::class))],
+      ),
+    ],
+  )
+  suspend fun repairPrisonerPersonLocations(
+    @Schema(description = "The prisoner to resync")
+    @PathVariable prisonerNumber: String,
+  ) {
+    telemetryClient.trackEvent(
+      "person-location-migration-entity-repair-requested",
+      mapOf("offenderNo" to prisonerNumber),
+      null,
+    )
+
+    migrationService.resyncPrisonerPersonLocations(prisonerNumber)
+  }
 }
