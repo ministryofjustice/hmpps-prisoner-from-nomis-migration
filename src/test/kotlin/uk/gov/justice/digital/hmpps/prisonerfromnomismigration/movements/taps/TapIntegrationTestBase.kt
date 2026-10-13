@@ -1,9 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps
 
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import software.amazon.awssdk.services.sqs.SqsAsyncClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.EXTERNALMOVEMENTS_SYNC_QUEUE_ID
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.EXTERNAL_MOVEMENTS_QUEUE_ID
 import uk.gov.justice.hmpps.sqs.HmppsQueue
@@ -11,7 +10,7 @@ import uk.gov.justice.hmpps.sqs.HmppsQueue
 @ExtendWith(
   TapDpsApiExtension::class,
 )
-abstract class TapIntegrationTestBase : SqsIntegrationTestBase() {
+abstract class TapIntegrationTestBase : MovementsIntegrationTestBase() {
 
   internal val externalMovementsOffenderEventsQueue by lazy { hmppsQueueService.findByQueueId(EXTERNALMOVEMENTS_SYNC_QUEUE_ID) as HmppsQueue }
   internal val awsSqsExternalMovementsOffenderEventsClient by lazy { externalMovementsOffenderEventsQueue.sqsClient }
@@ -21,7 +20,4 @@ abstract class TapIntegrationTestBase : SqsIntegrationTestBase() {
   internal val externalMovementsMappingRetryQueue by lazy { hmppsQueueService.findByQueueId(EXTERNAL_MOVEMENTS_QUEUE_ID) as HmppsQueue }
 
   override fun getQueues(): List<HmppsQueue> = listOf(externalMovementsOffenderEventsQueue, externalMovementsMappingRetryQueue)
-
-  @MockitoSpyBean
-  protected lateinit var tapRepairService: TapRepairService
 }

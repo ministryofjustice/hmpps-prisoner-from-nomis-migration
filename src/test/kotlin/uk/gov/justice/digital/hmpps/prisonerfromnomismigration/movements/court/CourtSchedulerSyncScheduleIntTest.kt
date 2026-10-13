@@ -9,6 +9,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.within
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -69,6 +70,10 @@ class CourtSchedulerSyncScheduleIntTest(
     reset(telemetryClient)
     reset(queueService)
   }
+
+  // The queue service spy isn't reset automatically and is shared with all movements tests, so don't leak any stubbing
+  @AfterAll
+  fun tearDownQueueService() = reset(queueService)
 
   @Nested
   @DisplayName("COURT_EVENTS-INSERTED")
