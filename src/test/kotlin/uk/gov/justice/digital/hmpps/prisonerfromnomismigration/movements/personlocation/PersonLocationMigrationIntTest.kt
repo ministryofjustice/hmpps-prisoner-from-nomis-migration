@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.mockito.kotlin.any
-import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -23,7 +22,8 @@ import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus
+import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
@@ -36,14 +36,25 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.PRISON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPersonLocationsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.DirectionCode.IN
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.DirectionCode.OUT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.ADM
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.CRT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.REL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TAP
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TRN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncExternalMovementsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncCustodialSeries
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncCustodialSeries.Status.OPEN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.ADMISSION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.TRANSFER
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement.Type.ARRIVAL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement.Type.DEPARTURE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovementFrom
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovementReason
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
@@ -149,7 +160,7 @@ class PersonLocationMigrationIntTest(
           assertThat(dpsId).isNull()
           assertThat(legacyBookingId).isEqualTo(12345L)
           assertThat(legacyBookingReference).isEqualTo("B12345")
-          assertThat(status).isEqualTo(SyncCustodialSeries.Status.OPEN)
+          assertThat(status).isEqualTo(OPEN)
           assertThat(isActive).isTrue
           assertThat(openedAt).isEqualTo(LocalDateTime.parse("2024-01-01T10:00:00"))
           assertThat(closedAt).isNull()
@@ -174,12 +185,12 @@ class PersonLocationMigrationIntTest(
           assertThat(dpsCustodySeriesId).isNull()
           assertThat(legacyBookingId).isEqualTo(12345L)
           assertThat(legacySequenceNumber).isEqualTo(1)
-          assertThat(type).isEqualTo(SyncExternalMovement.Type.ARRIVAL)
+          assertThat(type).isEqualTo(ARRIVAL)
           assertThat(occurredAt).isEqualTo(LocalDateTime.parse("2024-01-01T10:00:00"))
           assertThat(reason).isEqualTo(SyncExternalMovementReason(description = "Unconvicted Remand", reasonType = "CodedReason", code = "N", hierarchy = listOf()))
           assertThat(from).isEqualTo(SyncExternalMovementFrom(description = "Leeds Court", locationType = "Court", code = "LEEDCC"))
           assertThat(to).isEqualTo(SyncExternalMovementFrom(description = "Leeds (HMP)", locationType = "Prison", code = "LEI"))
-          assertThat(journey).isEqualTo(SyncExternalJourney(type = SyncExternalJourney.Type.ADMISSION, scheduleReference = null))
+          assertThat(journey).isEqualTo(SyncExternalJourney(type = ADMISSION, scheduleReference = null))
           assertThat(notes).isNull()
         }
       }
@@ -192,12 +203,12 @@ class PersonLocationMigrationIntTest(
       ).apply {
         with(custodialSeries[0].movements[1].movement) {
           assertThat(legacySequenceNumber).isEqualTo(2)
-          assertThat(type).isEqualTo(SyncExternalMovement.Type.DEPARTURE)
+          assertThat(type).isEqualTo(DEPARTURE)
           assertThat(occurredAt).isEqualTo(LocalDateTime.parse("2024-01-11T10:00:00"))
           assertThat(reason).isEqualTo(SyncExternalMovementReason(description = "Normal Transfer", reasonType = "CodedReason", code = "NOTR", hierarchy = listOf()))
           assertThat(from).isEqualTo(SyncExternalMovementFrom(description = "Leeds (HMP)", locationType = "Prison", code = "LEI"))
           assertThat(to).isEqualTo(SyncExternalMovementFrom(description = "Unknown destination", locationType = "SimpleLocation", code = ""))
-          assertThat(journey).isEqualTo(SyncExternalJourney(type = SyncExternalJourney.Type.TRANSFER, scheduleReference = "urn:transfer-scheduler:transfer:$dpsTransferScheduleId"))
+          assertThat(journey).isEqualTo(SyncExternalJourney(type = TRANSFER, scheduleReference = "urn:transfer-scheduler:transfer:$dpsTransferScheduleId"))
           assertThat(notes).isEqualTo("Transfer comment")
         }
       }
@@ -253,11 +264,11 @@ class PersonLocationMigrationIntTest(
             bookings = listOf(
               response.bookings[0].copy(
                 movements = listOf(
-                  movement(sequence = 1, movementType = PersonLocationMovement.MovementType.ADM, directionCode = PersonLocationMovement.DirectionCode.IN, from = null),
-                  movement(sequence = 2, movementType = PersonLocationMovement.MovementType.TAP, scheduleId = 101),
-                  movement(sequence = 3, movementType = PersonLocationMovement.MovementType.CRT, scheduleId = 102),
-                  movement(sequence = 4, movementType = PersonLocationMovement.MovementType.TRN, scheduleId = 103),
-                  movement(sequence = 5, movementType = PersonLocationMovement.MovementType.REL),
+                  movement(sequence = 1, movementType = ADM, directionCode = IN, from = null),
+                  movement(sequence = 2, movementType = TAP, scheduleId = 101),
+                  movement(sequence = 3, movementType = CRT, scheduleId = 102),
+                  movement(sequence = 4, movementType = TRN, scheduleId = 103),
+                  movement(sequence = 5, movementType = REL),
                 ),
               ),
             ),
@@ -274,9 +285,9 @@ class PersonLocationMigrationIntTest(
     private fun movement(
       sequence: Int,
       movementType: PersonLocationMovement.MovementType,
-      directionCode: PersonLocationMovement.DirectionCode = PersonLocationMovement.DirectionCode.OUT,
+      directionCode: PersonLocationMovement.DirectionCode = OUT,
       scheduleId: Long? = null,
-      from: MovementLocation? = MovementLocation(type = MovementLocation.Type.PRISON, description = "Leeds (HMP)", code = "LEI"),
+      from: MovementLocation? = MovementLocation(type = PRISON, description = "Leeds (HMP)", code = "LEI"),
     ) = PersonLocationMovement(
       sequence = sequence,
       movementType = movementType,
@@ -392,7 +403,7 @@ class PersonLocationMigrationIntTest(
 
       stubMigrationDependencies(entities = 1, pageSize = 1)
       // The call to DPS fails
-      dpsApi.stubResyncPrisoner(personIdentifier = prisonerNumber, status = HttpStatus.BAD_REQUEST)
+      dpsApi.stubResyncPrisoner(personIdentifier = prisonerNumber, status = BAD_REQUEST)
       migrationId = performMigration()
     }
 
@@ -408,7 +419,7 @@ class PersonLocationMigrationIntTest(
 
     @Test
     fun `will publish fail telemetry`() {
-      verify(telemetryClient, atLeastOnce()).trackEvent(
+      verify(telemetryClient).trackEvent(
         eq("person-location-migration-entity-failed"),
         check {
           assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
@@ -456,7 +467,7 @@ class PersonLocationMigrationIntTest(
 
     @Test
     fun `will publish fail telemetry`() {
-      verify(telemetryClient, atLeastOnce()).trackEvent(
+      verify(telemetryClient).trackEvent(
         eq("person-location-migration-entity-failed"),
         check {
           assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
@@ -479,7 +490,7 @@ class PersonLocationMigrationIntTest(
       // The call to create mappings fails then succeeds on a retry
       mappingApi.stubCreatePersonLocationMappingsFailureFollowedBySuccess()
       migrationId = performMigration()
-      await atMost Duration.ofSeconds(60) untilAsserted {
+      await atMost Duration.ofSeconds(10) untilAsserted {
         mappingApi.verify(2, putRequestedFor(urlPathEqualTo("/mapping/person-location/migrate")))
         verify(telemetryClient).trackEvent(
           eq("person-location-migration-entity-migrated"),
@@ -560,7 +571,7 @@ class PersonLocationMigrationIntTest(
       setupMigrationTest()
 
       stubMigrationDependencies(entities = 1, pageSize = 1)
-      personLocationNomisApi.stubGetOffenderPersonLocations(offenderNo = prisonerNumber, status = HttpStatus.NOT_FOUND)
+      personLocationNomisApi.stubGetOffenderPersonLocations(offenderNo = prisonerNumber, status = NOT_FOUND)
       migrationId = performMigration()
     }
 
@@ -627,7 +638,7 @@ class PersonLocationMigrationIntTest(
       waitUntilCompleted()
     }
 
-  private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
+  private fun waitUntilCompleted() = await atMost Duration.ofSeconds(10) untilAsserted {
     verify(telemetryClient).trackEvent(
       eq("person-location-migration-completed"),
       any(),
