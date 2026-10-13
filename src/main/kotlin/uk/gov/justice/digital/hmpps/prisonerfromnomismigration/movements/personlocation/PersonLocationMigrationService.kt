@@ -8,6 +8,7 @@ import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
@@ -15,11 +16,22 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingPersonLocations
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingPersonLocations.BookingStatus.CLOSED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingPersonLocations.BookingStatus.OPEN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.COURT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.OTHER
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.PRISON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPersonLocationsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.DirectionCode.IN
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.DirectionCode.OUT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.ADM
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.CRT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.REL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TAP
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TRN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.AtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncCustodialSeries
@@ -28,7 +40,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncCustodialSeries
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.ADMISSION
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.COURT_APPEARANCE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.RELEASE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.TEMPORARY_ABSENCE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.TRANSFER
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement.Type.ARRIVAL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement.Type.DEPARTURE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovementFrom
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovementReason
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRangeMigrationService
@@ -95,24 +114,30 @@ class PersonLocationMigrationService(
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonNumberAndRootOffenderId>) {
     val offenderNo = context.body.prisonNumber
     val migrationId = context.migrationId
+    val telemetry = mutableMapOf(
+      "offenderNo" to offenderNo,
+      "migrationId" to migrationId,
+    )
 
-    val nomisPersonLocations = personLocationNomisApi.getOffenderPersonLocationsOrNull(offenderNo)
-      ?: OffenderPersonLocationsResponse(bookings = listOf())
-    val dpsScheduleReferences = nomisPersonLocations.getDpsScheduleReferences(offenderNo)
-    val dpsResponse = dpsApi.resyncPerson(offenderNo, nomisPersonLocations.toDpsRequest(dpsScheduleReferences))
-      ?: ResyncResponse(custodialSeries = listOf())
-    val mappings = dpsResponse.toMappings(offenderNo, migrationId)
+    runCatching {
+      val nomisPersonLocations = personLocationNomisApi.getOffenderPersonLocationsOrNull(offenderNo)
+        ?: OffenderPersonLocationsResponse(bookings = listOf())
+      if (nomisPersonLocations.bookings.isEmpty()) {
+        publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no person locations" })
+        return
+      }
 
-    // TODO SDIT-4312 - handle failures and requeue failed mappings
-    createMappings(mappings).also {
-      publishTelemetry(
-        if (it.isError) "duplicate" else "migrated",
-        mapOf(
-          "offenderNo" to offenderNo,
-          "migrationId" to migrationId,
-        ),
-      )
+      val dpsScheduleReferences = nomisPersonLocations.getDpsScheduleReferences(offenderNo)
+      val dpsResponse = dpsApi.resyncPerson(offenderNo, nomisPersonLocations.toDpsRequest(dpsScheduleReferences))
+        ?: ResyncResponse(custodialSeries = listOf())
+      val mappings = dpsResponse.toMappings(offenderNo, migrationId)
+
+      createMappingOrOnFailureDo(mappings) { requeueCreateMapping(mappings, context) }
     }
+      .onFailure {
+        publishTelemetry("failed", telemetry.apply { this["reason"] = it.message ?: "Unknown error" })
+        throw it
+      }
   }
 
   private suspend fun OffenderPersonLocationsResponse.getDpsScheduleReferences(offenderNo: String): DpsScheduleReferences = bookings
@@ -123,20 +148,52 @@ class PersonLocationMigrationService(
     .associateWith { getDpsScheduleReferences(offenderNo, it) }
 
   private suspend fun getDpsScheduleReferences(offenderNo: String, movementType: PersonLocationMovement.MovementType): Map<Long, String> = when (movementType) {
-    PersonLocationMovement.MovementType.TAP -> tapMappingApi.getTapPrisonerMappingIds(offenderNo).schedules
+    TAP -> tapMappingApi.getTapPrisonerMappingIds(offenderNo).schedules
       .associate { it.nomisEventId to "urn:temporary-absence-scheduler:temporary-absence:${it.dpsOccurrenceId}" }
-    PersonLocationMovement.MovementType.CRT -> courtSchedulerMappingApi.getCourtSchedulerPrisonMappingIds(offenderNo).schedules
+    CRT -> courtSchedulerMappingApi.getCourtSchedulerPrisonMappingIds(offenderNo).schedules
       .associate { it.nomisEventId to "urn:court-appearance-scheduler:court-appearance:${it.dpsCourtAppearanceId}" }
-    PersonLocationMovement.MovementType.TRN -> transferScheduleMappingApi.getMappings(offenderNo).schedules
+    TRN -> transferScheduleMappingApi.getMappings(offenderNo).schedules
       .associate { it.nomisEventId to "urn:transfer-scheduler:transfer:${it.dpsTransferScheduleId}" }
     // There are no DPS schedules for admissions or releases
-    PersonLocationMovement.MovementType.ADM, PersonLocationMovement.MovementType.REL -> emptyMap()
+    ADM, REL -> emptyMap()
+  }
+
+  private suspend fun createMappingOrOnFailureDo(
+    mappings: PersonLocationsMappingDto,
+    failureHandler: suspend (error: Throwable) -> Unit,
+  ) {
+    runCatching {
+      createMappings(mappings)
+    }.onSuccess {
+      publishTelemetry(
+        if (it.isError) "duplicate" else "migrated",
+        mapOf(
+          "offenderNo" to mappings.offenderNo,
+          "migrationId" to mappings.migrationId,
+        ),
+      )
+    }.onFailure {
+      failureHandler(it)
+    }
   }
 
   private suspend fun createMappings(mappings: PersonLocationsMappingDto) = mappingApi.createMapping(
     mappings,
     object : ParameterizedTypeReference<DuplicateErrorResponse<PersonLocationsMappingDto>>() {},
   )
+
+  private suspend fun requeueCreateMapping(
+    mappings: PersonLocationsMappingDto,
+    context: MigrationContext<*>,
+  ) {
+    queueService.sendMessage(
+      MigrationMessageType.RETRY_MIGRATION_MAPPING,
+      MigrationContext(
+        context = context,
+        body = mappings,
+      ),
+    )
+  }
 
   private fun publishTelemetry(type: String, telemetry: Map<String, String>) {
     telemetryClient.trackEvent(
@@ -146,7 +203,9 @@ class PersonLocationMigrationService(
   }
 
   override suspend fun retryCreateMapping(context: MigrationContext<PersonLocationsMappingDto>) {
-    // TODO SDIT-4312 - implement retrying the person location mappings
+    createMappingOrOnFailureDo(context.body) {
+      throw it
+    }
   }
 
   override fun parseContextFilter(json: String): MigrationMessage<*, PersonLocationMigrationFilter> = jsonMapper.readValue(json)
@@ -163,8 +222,8 @@ fun OffenderPersonLocationsResponse.toDpsRequest(dpsScheduleReferences: DpsSched
     ResyncCustodialSeries(
       custodialSeries = SyncCustodialSeries(
         status = when (booking.bookingStatus) {
-          BookingPersonLocations.BookingStatus.OPEN -> SyncCustodialSeries.Status.OPEN
-          BookingPersonLocations.BookingStatus.CLOSED -> SyncCustodialSeries.Status.CLOSED
+          OPEN -> SyncCustodialSeries.Status.OPEN
+          CLOSED -> SyncCustodialSeries.Status.CLOSED
         },
         isActive = booking.activeBooking,
         openedAt = booking.bookingBeginTime,
@@ -182,8 +241,8 @@ fun OffenderPersonLocationsResponse.toDpsRequest(dpsScheduleReferences: DpsSched
 private fun PersonLocationMovement.toDpsMovement(bookingId: Long, dpsScheduleReferences: DpsScheduleReferences) = ResyncExternalMovement(
   movement = SyncExternalMovement(
     type = when (directionCode) {
-      PersonLocationMovement.DirectionCode.IN -> SyncExternalMovement.Type.ARRIVAL
-      PersonLocationMovement.DirectionCode.OUT -> SyncExternalMovement.Type.DEPARTURE
+      IN -> ARRIVAL
+      OUT -> DEPARTURE
     },
     reason = SyncExternalMovementReason(
       description = movementReason.description,
@@ -196,11 +255,11 @@ private fun PersonLocationMovement.toDpsMovement(bookingId: Long, dpsScheduleRef
     to = to?.toDpsLocation(),
     journey = SyncExternalJourney(
       type = when (movementType) {
-        PersonLocationMovement.MovementType.ADM -> SyncExternalJourney.Type.ADMISSION
-        PersonLocationMovement.MovementType.CRT -> SyncExternalJourney.Type.COURT_APPEARANCE
-        PersonLocationMovement.MovementType.TAP -> SyncExternalJourney.Type.TEMPORARY_ABSENCE
-        PersonLocationMovement.MovementType.TRN -> SyncExternalJourney.Type.TRANSFER
-        PersonLocationMovement.MovementType.REL -> SyncExternalJourney.Type.RELEASE
+        ADM -> ADMISSION
+        CRT -> COURT_APPEARANCE
+        TAP -> TEMPORARY_ABSENCE
+        TRN -> TRANSFER
+        REL -> RELEASE
       },
       scheduleReference = scheduleId?.let { dpsScheduleReferences[movementType]?.get(it) },
     ),
@@ -215,15 +274,15 @@ private fun PersonLocationMovement.toDpsMovement(bookingId: Long, dpsScheduleRef
 private fun PersonLocationMovement.toDpsFromLocation(bookingId: Long) = from?.toDpsLocation()
   ?: when (directionCode) {
     // Some very old inbound NOMIS movements have no from location
-    PersonLocationMovement.DirectionCode.IN -> SyncExternalMovementFrom(description = "Outside", locationType = "SimpleLocation", code = "")
-    PersonLocationMovement.DirectionCode.OUT -> throw IllegalStateException("Outbound movement $bookingId/$sequence has no from location")
+    IN -> SyncExternalMovementFrom(description = "Outside", locationType = "SimpleLocation", code = "")
+    OUT -> throw IllegalStateException("Outbound movement $bookingId/$sequence has no from location")
   }
 
 private fun MovementLocation.toDpsLocation() = when (type) {
-  MovementLocation.Type.PRISON -> SyncExternalMovementFrom(description = description, locationType = "Prison", code = code!!)
-  MovementLocation.Type.COURT -> SyncExternalMovementFrom(description = description, locationType = "Court", code = code!!)
+  PRISON -> SyncExternalMovementFrom(description = description, locationType = "Prison", code = code!!)
+  COURT -> SyncExternalMovementFrom(description = description, locationType = "Court", code = code!!)
   // A DPS SimpleLocation has no code - it's only required here because the generated model flattens the oneOf location types
-  MovementLocation.Type.OTHER -> SyncExternalMovementFrom(description = description, locationType = "SimpleLocation", code = "")
+  OTHER -> SyncExternalMovementFrom(description = description, locationType = "SimpleLocation", code = "")
 }
 
 private fun NomisAudit.toCreated() = AtAndBy(at = createDatetime, by = createUsername.toDpsUser())
