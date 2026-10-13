@@ -133,6 +133,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
     fun releaseHoldDto() = SyncReleaseHoldRequest(
       releaseDateTime = LocalDateTime.parse("2025-06-04T05:06:07"),
+      releaseTransactionId = 12345,
     )
 
     fun createAdvanceDto(prisonNumber: String = "A0001BC") = SyncCreateAdvanceRecordRequest(

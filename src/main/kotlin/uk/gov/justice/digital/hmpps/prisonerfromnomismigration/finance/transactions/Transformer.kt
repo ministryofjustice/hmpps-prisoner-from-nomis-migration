@@ -68,7 +68,10 @@ fun OffenderTransactionDto.toSyncAddHoldRequest(): SyncCreateHoldRequest = SyncC
   createdBy = createdBy,
 )
 
-fun OffenderTransactionDto.toSyncReleaseHoldRequest(): SyncReleaseHoldRequest = SyncReleaseHoldRequest(releaseDateTime = generalLedgerTransactions.firstOrNull()?.transactionTimestamp ?: createdAt)
+fun OffenderTransactionDto.toSyncReleaseHoldRequest(): SyncReleaseHoldRequest = SyncReleaseHoldRequest(
+  releaseDateTime = generalLedgerTransactions.firstOrNull()?.transactionTimestamp ?: createdAt,
+  releaseTransactionId = transactionId,
+)
 
 fun OffenderTransactionDto.SubAccountType.toAccountCode() = when (this) {
   OffenderTransactionDto.SubAccountType.REG -> 2101

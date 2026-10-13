@@ -624,7 +624,8 @@ class PrisonerTransactionSynchronisationIntTest(
 
           financeApi.verify(
             postRequestedFor(urlPathMatching("/sync/holds/65432/release"))
-              .withRequestBodyJsonPath("releaseDateTime", g1.transactionTimestamp),
+              .withRequestBodyJsonPath("releaseDateTime", g1.transactionTimestamp)
+              .withRequestBodyJsonPath("releaseTransactionId", equalTo(NOMIS_TRANSACTION_ID.toString())),
           )
         }
       }
