@@ -49,6 +49,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TRN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncExternalMovementsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncCustodialSeries.Status.OPEN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.ADMISSION
@@ -591,6 +592,293 @@ class PersonLocationMigrationIntTest(
         isNull(),
       )
     }
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class Resync {
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPath {
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        stubMigrationDependencies(entities = 1, pageSize = 1)
+        repairPrisonerOk(prisonerNumber)
+      }
+
+      @Test
+      fun `should call DPS resync API`() {
+        PersonLocationDpsApiMockServer.getRequestBody<ResyncExternalMovementsRequest>(
+          putRequestedFor(urlPathEqualTo("/resync/external-movements/$prisonerNumber")),
+        ).apply {
+          assertThat(custodialSeries).hasSize(1)
+          assertThat(custodialSeries[0].custodialSeries.legacyBookingId).isEqualTo(12345L)
+          assertThat(custodialSeries[0].movements.map { it.movement.legacySequenceNumber }).containsExactly(1, 2)
+          assertThat(custodialSeries[0].movements[1].movement.journey)
+            .isEqualTo(SyncExternalJourney(type = TRANSFER, scheduleReference = "urn:transfer-scheduler:transfer:$dpsTransferScheduleId"))
+        }
+      }
+
+      @Test
+      fun `should create mappings`() {
+        PersonLocationMappingApiMockServer.getRequestBody<PersonLocationsMappingDto>(
+          putRequestedFor(urlPathEqualTo("/mapping/person-location/migrate")),
+        ).apply {
+          assertThat(offenderNo).isEqualTo(prisonerNumber)
+          assertThat(migrationId).isNotEmpty
+          assertThat(bookings).hasSize(1)
+          with(bookings[0]) {
+            assertThat(bookingId).isEqualTo(12345L)
+            assertThat(dpsCustodialSeriesId).isEqualTo(this@PersonLocationMigrationIntTest.dpsCustodialSeriesId)
+            assertThat(movements).containsExactly(
+              PersonLocationMovementMappingDto(nomisMovementSeq = 1, dpsExternalMovementId = dpsMovementId1),
+              PersonLocationMovementMappingDto(nomisMovementSeq = 2, dpsExternalMovementId = dpsMovementId2),
+            )
+          }
+        }
+      }
+
+      @Test
+      fun `should publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-migration-entity-repair-requested"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("person-location-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class PrisonerWithNoMovements {
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        stubMigrationDependencies(entities = 1, pageSize = 1)
+        personLocationNomisApi.stubGetOffenderPersonLocations(
+          offenderNo = prisonerNumber,
+          response = OffenderPersonLocationsResponse(bookings = listOf()),
+        )
+        dpsApi.stubResyncPrisoner(personIdentifier = prisonerNumber, response = ResyncResponse(custodialSeries = listOf()))
+        repairPrisonerOk(prisonerNumber)
+      }
+
+      @Test
+      fun `should call DPS resync API with no custodial series`() {
+        PersonLocationDpsApiMockServer.getRequestBody<ResyncExternalMovementsRequest>(
+          putRequestedFor(urlPathEqualTo("/resync/external-movements/$prisonerNumber")),
+        ).apply {
+          assertThat(custodialSeries).isEmpty()
+        }
+      }
+
+      @Test
+      fun `should update mappings`() {
+        PersonLocationMappingApiMockServer.getRequestBody<PersonLocationsMappingDto>(
+          putRequestedFor(urlPathEqualTo("/mapping/person-location/migrate")),
+        ).apply {
+          assertThat(offenderNo).isEqualTo(prisonerNumber)
+          assertThat(bookings).isEmpty()
+        }
+      }
+
+      @Test
+      fun `should publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-migration-entity-repair-requested"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("person-location-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class PrisonerNotFound {
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        stubMigrationDependencies(entities = 1, pageSize = 1)
+        personLocationNomisApi.stubGetOffenderPersonLocations(offenderNo = prisonerNumber, status = NOT_FOUND)
+        dpsApi.stubResyncPrisoner(personIdentifier = prisonerNumber, response = ResyncResponse(custodialSeries = listOf()))
+        repairPrisonerOk(prisonerNumber)
+      }
+
+      @Test
+      fun `should call DPS resync API with no custodial series`() {
+        PersonLocationDpsApiMockServer.getRequestBody<ResyncExternalMovementsRequest>(
+          putRequestedFor(urlPathEqualTo("/resync/external-movements/$prisonerNumber")),
+        ).apply {
+          assertThat(custodialSeries).isEmpty()
+        }
+      }
+
+      @Test
+      fun `should update mappings`() {
+        PersonLocationMappingApiMockServer.getRequestBody<PersonLocationsMappingDto>(
+          putRequestedFor(urlPathEqualTo("/mapping/person-location/migrate")),
+        ).apply {
+          assertThat(offenderNo).isEqualTo(prisonerNumber)
+          assertThat(bookings).isEmpty()
+        }
+      }
+
+      @Test
+      fun `should publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class ResyncFailure {
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        stubMigrationDependencies(entities = 1, pageSize = 1)
+        dpsApi.stubResyncPrisoner(personIdentifier = prisonerNumber, status = BAD_REQUEST)
+        repairPrisoner(prisonerNumber).expectStatus().is5xxServerError
+      }
+
+      @Test
+      fun `should NOT create mappings`() {
+        mappingApi.verify(0, putRequestedFor(urlPathEqualTo("/mapping/person-location/migrate")))
+      }
+
+      @Test
+      fun `will publish fail telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-migration-entity-failed"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
+            assertThat(it["reason"]).contains("400 Bad Request")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class MappingErrorRecovery {
+      @BeforeAll
+      fun setUp() {
+        setupMigrationTest()
+
+        stubMigrationDependencies(entities = 1, pageSize = 1)
+        // The call to create mappings fails then succeeds on a retry
+        mappingApi.stubCreatePersonLocationMappingsFailureFollowedBySuccess()
+        repairPrisonerOk(prisonerNumber)
+        await atMost Duration.ofSeconds(10) untilAsserted {
+          mappingApi.verify(2, putRequestedFor(urlPathEqualTo("/mapping/person-location/migrate")))
+          verify(telemetryClient).trackEvent(
+            eq("person-location-migration-entity-migrated"),
+            any(),
+            isNull(),
+          )
+        }
+      }
+
+      @Test
+      fun `should call DPS resync API once`() {
+        dpsApi.verify(1, putRequestedFor(urlPathEqualTo("/resync/external-movements/$prisonerNumber")))
+      }
+
+      @Test
+      fun `should attempt to create mappings twice`() {
+        mappingApi.verify(2, putRequestedFor(urlPathEqualTo("/mapping/person-location/migrate")))
+      }
+
+      @Test
+      fun `will publish telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-migration-entity-repair-requested"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("person-location-migration-entity-migrated"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class Security {
+      @Test
+      fun `access allowed with repair movements role`() {
+        setupMigrationTest()
+        stubMigrationDependencies(entities = 1, pageSize = 1)
+
+        repairPrisoner(prisonerNumber, role = "ROLE_PRISONER_FROM_NOMIS__REPAIR_MOVEMENTS__RW").expectStatus().isOk
+      }
+
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.put().uri("/migrate/person-location/repair/$prisonerNumber")
+          .headers(setAuthorisation(roles = listOf()))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.put().uri("/migrate/person-location/repair/$prisonerNumber")
+          .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.put().uri("/migrate/person-location/repair/$prisonerNumber")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+    }
+
+    private fun repairPrisoner(prisonerNumber: String, role: String = "ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW") = webTestClient.put()
+      .uri("/migrate/person-location/repair/$prisonerNumber")
+      .headers(setAuthorisation(roles = listOf(role)))
+      .exchange()
+
+    private fun repairPrisonerOk(prisonerNumber: String) = repairPrisoner(prisonerNumber).expectStatus().isOk
   }
 
   @Nested

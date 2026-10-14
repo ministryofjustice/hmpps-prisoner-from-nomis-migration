@@ -7,6 +7,7 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiService
@@ -118,11 +119,12 @@ class PersonLocationMigrationService(
       "offenderNo" to offenderNo,
       "migrationId" to migrationId,
     )
+    val ignoreMissingPersonLocations = context.properties["ignoreMissingPersonLocations"] as Boolean? ?: true
 
     runCatching {
       val nomisPersonLocations = personLocationNomisApi.getOffenderPersonLocationsOrNull(offenderNo)
         ?: OffenderPersonLocationsResponse(bookings = listOf())
-      if (nomisPersonLocations.bookings.isEmpty()) {
+      if (ignoreMissingPersonLocations && nomisPersonLocations.bookings.isEmpty()) {
         publishTelemetry("ignored", telemetry.apply { this["reason"] = "The offender has no person locations" })
         return
       }
@@ -139,6 +141,16 @@ class PersonLocationMigrationService(
         throw it
       }
   }
+
+  suspend fun resyncPrisonerPersonLocations(prisonerNumber: String) = migrateNomisEntity(
+    MigrationContext(
+      PERSON_LOCATIONS,
+      generateBatchId(),
+      1,
+      PrisonNumberAndRootOffenderId(rootOffenderId = 0, prisonNumber = prisonerNumber),
+      mutableMapOf("ignoreMissingPersonLocations" to false),
+    ),
+  )
 
   private suspend fun OffenderPersonLocationsResponse.getDpsScheduleReferences(offenderNo: String): DpsScheduleReferences = bookings
     .flatMap { it.movements }
