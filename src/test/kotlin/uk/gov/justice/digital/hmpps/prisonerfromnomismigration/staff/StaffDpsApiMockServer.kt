@@ -222,6 +222,8 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             assertThat(caseloadId).isEqualTo("LEI")
             assertThat(active).isTrue
             assertThat(expiryDate).isEqualTo(LocalDate.parse("2029-08-01"))
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+            assertThat(createdBy).isEqualTo("KOFEADDY")
           }
           assertThat(memberCaseloads.size).isEqualTo(1)
           with(memberCaseloads[0]) {
@@ -229,6 +231,8 @@ class StaffDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             assertThat(active).isTrue
             assertThat(startDate).isEqualTo(LocalDate.parse("2022-06-02"))
             assertThat(expiryDate).isEqualTo(LocalDate.parse("2030-12-22"))
+            assertThat(createdTimestamp).isEqualTo(LocalDateTime.parse("2016-08-01T10:55:00"))
+            assertThat(createdBy).isEqualTo("KOFEADDY")
           }
         }
       }

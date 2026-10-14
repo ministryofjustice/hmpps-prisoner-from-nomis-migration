@@ -33,6 +33,11 @@ class StaffSynchronisationService(
     dpsApiService.syncStaff(staffId, nomisStaff.toSyncStaffRequest())
   }
 
+  suspend fun resynchroniseStaff(username: String) {
+    val nomisStaff = nomisApiService.getStaffDetailsByUsername(username)
+    dpsApiService.syncStaff(nomisStaff.id, nomisStaff.toSyncStaffRequest())
+  }
+
   suspend fun staffUpserted(eventType: String, event: StaffEvent) {
     val telemetry = telemetryOf("nomisStaffId" to event.staffId)
     synchroniseStaff(event, "staff-synchronisation-$eventType", telemetry)
