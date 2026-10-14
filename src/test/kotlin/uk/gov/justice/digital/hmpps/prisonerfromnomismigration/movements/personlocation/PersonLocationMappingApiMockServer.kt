@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.person
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
@@ -40,6 +41,22 @@ class PersonLocationMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreatePersonLocationMappingsFailureFollowedBySuccess() {
     mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/person-location/migrate", WireMock::put)
+  }
+
+  fun stubGetPersonLocationMappings(
+    response: List<PersonLocationBookingMappingDto> = listOf(),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(
+      post("/mapping/person-location/nomis-booking-ids/get-list")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) response else error)),
+        ),
+    )
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
