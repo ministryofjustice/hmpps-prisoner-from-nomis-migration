@@ -20,7 +20,7 @@ class StaffDataRepairResource(
   private val staffSynchronisationService: StaffSynchronisationService,
   private val telemetryClient: TelemetryClient,
 ) {
-  @PostMapping("/staff/nomis-staff-id/{staffId}/repair")
+  @PostMapping("/staff/id/{staffId}/repair")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @Operation(
     summary = "Resynchronises details for the given staff (Nomis staffId) from NOMIS to DPS",
