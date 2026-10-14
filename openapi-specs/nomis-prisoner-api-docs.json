@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-09.2194.a1e7235"
+    "version" : "2026-10-13.2208.35b3dce"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -39675,6 +39675,32 @@
         },
         "required" : [ "ids" ]
       },
+      "AdminCaseloadResponse" : {
+        "type" : "object",
+        "properties" : {
+          "caseloadId" : {
+            "type" : "string",
+            "description" : "Caseload id",
+            "example" : "MDI"
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether the caseload is active",
+            "example" : true
+          },
+          "expiryDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The expiry date",
+            "example" : "2023-12-31"
+          },
+          "audit" : {
+            "$ref" : "#/components/schemas/NomisAudit",
+            "description" : "Audit data associated with the user caseload"
+          }
+        },
+        "required" : [ "active", "audit", "caseloadId" ]
+      },
       "CaseloadResponse" : {
         "type" : "object",
         "properties" : {
@@ -39696,6 +39722,38 @@
           }
         },
         "required" : [ "audit", "caseloadId", "roles" ]
+      },
+      "MemberCaseloadResponse" : {
+        "type" : "object",
+        "properties" : {
+          "caseloadId" : {
+            "type" : "string",
+            "description" : "Caseload id",
+            "example" : "MDI"
+          },
+          "active" : {
+            "type" : "boolean",
+            "description" : "Whether the caseload is active",
+            "example" : true
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The start date",
+            "example" : "2023-12-31"
+          },
+          "expiryDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The expiry date",
+            "example" : "2023-12-31"
+          },
+          "audit" : {
+            "$ref" : "#/components/schemas/NomisAudit",
+            "description" : "Audit data associated with the user caseload"
+          }
+        },
+        "required" : [ "active", "audit", "caseloadId", "startDate" ]
       },
       "RoleResponse" : {
         "type" : "object",
@@ -39758,12 +39816,26 @@
               "$ref" : "#/components/schemas/CaseloadResponse"
             }
           },
+          "adminCaseloads" : {
+            "type" : "array",
+            "description" : "Caseloads the user administers",
+            "items" : {
+              "$ref" : "#/components/schemas/AdminCaseloadResponse"
+            }
+          },
+          "memberCaseloads" : {
+            "type" : "array",
+            "description" : "Caseloads the user is a member of",
+            "items" : {
+              "$ref" : "#/components/schemas/MemberCaseloadResponse"
+            }
+          },
           "audit" : {
             "$ref" : "#/components/schemas/NomisAudit",
             "description" : "Audit data associated with the account"
           }
         },
-        "required" : [ "audit", "caseloads", "sourceCode", "status", "typeCode", "username" ]
+        "required" : [ "adminCaseloads", "audit", "caseloads", "memberCaseloads", "sourceCode", "status", "typeCode", "username" ]
       },
       "StaffDetails" : {
         "type" : "object",
@@ -46250,16 +46322,6 @@
             "type" : [ "integer", "null" ],
             "format" : "int64"
           },
-          "txnReferenceNumber" : {
-            "type" : [ "string", "null" ]
-          },
-          "txnEntryAmount" : {
-            "type" : "number"
-          },
-          "txnEntrySeq" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "txnId" : {
             "type" : "integer",
             "format" : "int64"
@@ -46268,8 +46330,18 @@
             "type" : "string",
             "format" : "date-time"
           },
+          "txnEntrySeq" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "txnEntryDesc" : {
             "type" : [ "string", "null" ]
+          },
+          "txnReferenceNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "txnEntryAmount" : {
+            "type" : "number"
           }
         },
         "required" : [ "txnEntryAmount", "txnEntryDate", "txnEntrySeq", "txnId" ]
