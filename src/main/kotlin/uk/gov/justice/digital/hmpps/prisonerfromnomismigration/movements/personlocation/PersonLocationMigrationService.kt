@@ -57,6 +57,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.PERSON_LOCATIONS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import java.util.UUID
 
 @Service
 class PersonLocationMigrationService(
@@ -129,8 +130,9 @@ class PersonLocationMigrationService(
         return
       }
 
+      val existingMappings = nomisPersonLocations.getExistingMappings()
       val dpsScheduleReferences = nomisPersonLocations.getDpsScheduleReferences(offenderNo)
-      val dpsResponse = dpsApi.resyncPerson(offenderNo, nomisPersonLocations.toDpsRequest(dpsScheduleReferences))
+      val dpsResponse = dpsApi.resyncPerson(offenderNo, nomisPersonLocations.toDpsRequest(existingMappings, dpsScheduleReferences))
         ?: ResyncResponse(custodialSeries = listOf())
       val mappings = dpsResponse.toMappings(offenderNo, migrationId)
 
@@ -151,6 +153,13 @@ class PersonLocationMigrationService(
       mutableMapOf("ignoreMissingPersonLocations" to false),
     ),
   )
+
+  private suspend fun OffenderPersonLocationsResponse.getExistingMappings(): ExistingMappings = bookings
+    .map { it.bookingId }
+    .takeIf { it.isNotEmpty() }
+    ?.let { mappingApi.getMappings(it) }
+    .orEmpty()
+    .associateBy { it.bookingId }
 
   private suspend fun OffenderPersonLocationsResponse.getDpsScheduleReferences(offenderNo: String): DpsScheduleReferences = bookings
     .flatMap { it.movements }
@@ -229,10 +238,16 @@ class PersonLocationMigrationService(
 // DPS schedule references keyed by movement type then NOMIS schedule (event) ID
 typealias DpsScheduleReferences = Map<PersonLocationMovement.MovementType, Map<Long, String>>
 
-fun OffenderPersonLocationsResponse.toDpsRequest(dpsScheduleReferences: DpsScheduleReferences) = ResyncExternalMovementsRequest(
+// Existing mappings keyed by NOMIS booking ID
+typealias ExistingMappings = Map<Long, PersonLocationBookingMappingDto>
+
+fun OffenderPersonLocationsResponse.toDpsRequest(existingMappings: ExistingMappings, dpsScheduleReferences: DpsScheduleReferences) = ResyncExternalMovementsRequest(
   custodialSeries = bookings.map { booking ->
+    val bookingMapping = existingMappings[booking.bookingId]
+    val dpsMovementIds = bookingMapping?.movements.orEmpty().associate { it.nomisMovementSeq to it.dpsExternalMovementId }
     ResyncCustodialSeries(
       custodialSeries = SyncCustodialSeries(
+        dpsId = bookingMapping?.dpsCustodialSeriesId,
         status = when (booking.bookingStatus) {
           OPEN -> SyncCustodialSeries.Status.OPEN
           CLOSED -> SyncCustodialSeries.Status.CLOSED
@@ -243,15 +258,24 @@ fun OffenderPersonLocationsResponse.toDpsRequest(dpsScheduleReferences: DpsSched
         legacyBookingId = booking.bookingId,
         legacyBookingReference = booking.bookingNumber,
       ),
-      movements = booking.movements.map { it.toDpsMovement(booking.bookingId, dpsScheduleReferences) },
+      movements = booking.movements.map {
+        it.toDpsMovement(booking.bookingId, dpsMovementIds[it.sequence], bookingMapping?.dpsCustodialSeriesId, dpsScheduleReferences)
+      },
       created = booking.audit.toCreated(),
       modified = booking.audit.toModified(),
     )
   },
 )
 
-private fun PersonLocationMovement.toDpsMovement(bookingId: Long, dpsScheduleReferences: DpsScheduleReferences) = ResyncExternalMovement(
+private fun PersonLocationMovement.toDpsMovement(
+  bookingId: Long,
+  dpsId: UUID?,
+  dpsCustodySeriesId: UUID?,
+  dpsScheduleReferences: DpsScheduleReferences,
+) = ResyncExternalMovement(
   movement = SyncExternalMovement(
+    dpsId = dpsId,
+    dpsCustodySeriesId = dpsCustodySeriesId,
     type = when (directionCode) {
       IN -> ARRIVAL
       OUT -> DEPARTURE

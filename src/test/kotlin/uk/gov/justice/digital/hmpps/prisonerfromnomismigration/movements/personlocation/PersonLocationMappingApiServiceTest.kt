@@ -2,7 +2,9 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.person
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
@@ -18,6 +20,8 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import java.util.*
@@ -81,6 +85,57 @@ class PersonLocationMappingApiServiceTest {
 
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.createMapping(personLocationsMapping(), errorType)
+      }
+    }
+  }
+
+  @Nested
+  inner class GetMappings {
+    @Test
+    internal fun `should pass oauth2 token to service`() = runTest {
+      mappingApi.stubGetPersonLocationMappings()
+
+      apiService.getMappings(listOf(12345L))
+
+      mappingApi.verify(
+        postRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    internal fun `should pass booking ids to service`() = runTest {
+      mappingApi.stubGetPersonLocationMappings()
+
+      apiService.getMappings(listOf(12345L, 12346L))
+
+      mappingApi.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/person-location/nomis-booking-ids/get-list"))
+          .withRequestBody(equalToJson("[12345, 12346]")),
+      )
+    }
+
+    @Test
+    internal fun `should parse response`() = runTest {
+      val dpsCustodialSeriesId = UUID.randomUUID()
+      val dpsExternalMovementId = UUID.randomUUID()
+      val mappings = listOf(
+        PersonLocationBookingMappingDto(
+          bookingId = 12345L,
+          dpsCustodialSeriesId = dpsCustodialSeriesId,
+          movements = listOf(PersonLocationMovementMappingDto(nomisMovementSeq = 1, dpsExternalMovementId = dpsExternalMovementId)),
+        ),
+      )
+      mappingApi.stubGetPersonLocationMappings(response = mappings)
+
+      assertThat(apiService.getMappings(listOf(12345L))).isEqualTo(mappings)
+    }
+
+    @Test
+    fun `should throw if API calls fail`() = runTest {
+      mappingApi.stubGetPersonLocationMappings(status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.getMappings(listOf(12345L))
       }
     }
   }
