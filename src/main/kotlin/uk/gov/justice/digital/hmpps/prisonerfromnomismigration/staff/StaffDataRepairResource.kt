@@ -20,14 +20,14 @@ class StaffDataRepairResource(
   private val staffSynchronisationService: StaffSynchronisationService,
   private val telemetryClient: TelemetryClient,
 ) {
-  @PostMapping("/staff/{staffId}/repair")
+  @PostMapping("/staff/id/{staffId}/repair")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   @Operation(
     summary = "Resynchronises details for the given staff (Nomis staffId) from NOMIS to DPS",
     description = """Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only.
        Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW""",
   )
-  suspend fun repairStaff(@PathVariable staffId: Long) {
+  suspend fun repairStaffById(@PathVariable staffId: Long) {
     try {
       staffSynchronisationService.resynchroniseStaff(staffId)
       telemetryClient.trackEvent(
@@ -38,6 +38,27 @@ class StaffDataRepairResource(
       )
     } catch (_: NotFound) {
       throw NotFoundException("No staff for nomisStaffId $staffId was found")
+    }
+  }
+
+  @PostMapping("/staff/username/{username}/repair")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Operation(
+    summary = "Resynchronises details for the given staff username from NOMIS to DPS",
+    description = """Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, so emergency use only.
+       Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW""",
+  )
+  suspend fun repairStaff(@PathVariable username: String) {
+    try {
+      staffSynchronisationService.resynchroniseStaff(username)
+      telemetryClient.trackEvent(
+        "staff-resynchronisation-repair",
+        mapOf(
+          "username" to username,
+        ),
+      )
+    } catch (_: NotFound) {
+      throw NotFoundException("No staff for username $username was found")
     }
   }
 }

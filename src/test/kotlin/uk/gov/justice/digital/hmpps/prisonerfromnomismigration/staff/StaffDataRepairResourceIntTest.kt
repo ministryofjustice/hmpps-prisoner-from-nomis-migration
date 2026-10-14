@@ -23,16 +23,16 @@ class StaffDataRepairResourceIntTest(
   @Autowired private val nomisApiMockServer: StaffNomisApiMockServer,
 ) : StaffIntegrationTestBase() {
 
-  @DisplayName("POST /staff/{staffId}/repair")
+  @DisplayName("POST /staff/id/{staffId}/repair")
   @Nested
-  inner class RepairPrisonerBalance {
+  inner class RepairStaffByStaffId {
     val staffId: Long = 1234
 
     @Nested
     inner class Security {
       @Test
       fun `access forbidden when no role`() {
-        webTestClient.post().uri("/staff/$staffId/repair")
+        webTestClient.post().uri("/staff/id/$staffId/repair")
           .headers(setAuthorisation(roles = listOf()))
           .exchange()
           .expectStatus().isForbidden
@@ -40,7 +40,7 @@ class StaffDataRepairResourceIntTest(
 
       @Test
       fun `access forbidden with wrong role`() {
-        webTestClient.post().uri("/staff/$staffId/repair")
+        webTestClient.post().uri("/staff/id/$staffId/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
           .exchange()
           .expectStatus().isForbidden
@@ -48,7 +48,7 @@ class StaffDataRepairResourceIntTest(
 
       @Test
       fun `access unauthorised with no auth token`() {
-        webTestClient.post().uri("/staff/$staffId/repair")
+        webTestClient.post().uri("/staff/id/$staffId/repair")
           .exchange()
           .expectStatus().isUnauthorized
       }
@@ -63,7 +63,7 @@ class StaffDataRepairResourceIntTest(
         nomisApiMockServer.stubGetStaffDetailsById(nomisStaffId = staffId)
         dpsStaffServer.stubSyncStaff()
 
-        webTestClient.post().uri("/staff/$staffId/repair")
+        webTestClient.post().uri("/staff/id/$staffId/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isNoContent
@@ -78,8 +78,6 @@ class StaffDataRepairResourceIntTest(
       fun `will send staff details to DPS`() {
         dpsStaffServer.verify(
           putRequestedFor(urlPathEqualTo("/sync/user/1234"))
-            // TODO determine if needed
-            // .withRequestBodyJsonPath("emails[0].legacyEmailId", equalTo("3456"))
             .withRequestBodyJsonPath("emails[0].email", equalTo("john.smith@justice.gov.uk"))
             .withRequestBodyJsonPath("firstName", equalTo("JOHN"))
             .withRequestBodyJsonPath("lastName", equalTo("SMITH"))
@@ -108,10 +106,10 @@ class StaffDataRepairResourceIntTest(
 
       @BeforeEach
       fun setUp() {
-        nomisApiMockServer.stubGetStaffDetailsByIdNotFound(staffId)
+        nomisApiMockServer.stubGetStaffDetailsById(staffId, staff = null)
         dpsStaffServer.stubSyncStaff()
 
-        webTestClient.post().uri("/staff/$staffId/repair")
+        webTestClient.post().uri("/staff/id/$staffId/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isNotFound
@@ -126,7 +124,116 @@ class StaffDataRepairResourceIntTest(
 
       @Test
       fun `will not send staff details to DPS`() {
-        dpsStaffServer.verify(0, getRequestedFor(anyUrl()))
+        dpsStaffServer.verify(0, putRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will not track telemetry for the repair`() {
+        verifyNoInteractions(telemetryClient)
+      }
+    }
+  }
+
+  @DisplayName("POST /staff/username/{username}/repair")
+  @Nested
+  inner class RepairStaffByUsername {
+    val username = "JOHNSMITH_ADM"
+
+    @Nested
+    inner class Security {
+      @Test
+      fun `access forbidden when no role`() {
+        webTestClient.post().uri("/staff/username/$username/repair")
+          .headers(setAuthorisation(roles = listOf()))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.post().uri("/staff/username/$username/repair")
+          .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.post().uri("/staff/username/$username/repair")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMockServer.stubGetStaffDetailsByUsername()
+        dpsStaffServer.stubSyncStaff()
+
+        webTestClient.post().uri("/staff/username/$username/repair")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .exchange()
+          .expectStatus().isNoContent
+      }
+
+      @Test
+      fun `will retrieve staff details for the staff`() {
+        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/staff/username/$username")))
+      }
+
+      @Test
+      fun `will send staff details to DPS`() {
+        dpsStaffServer.verify(
+          putRequestedFor(urlPathEqualTo("/sync/user/1234"))
+            .withRequestBodyJsonPath("emails[0].email", equalTo("john.smith@justice.gov.uk"))
+            .withRequestBodyJsonPath("firstName", equalTo("JOHN"))
+            .withRequestBodyJsonPath("lastName", equalTo("SMITH"))
+            .withRequestBodyJsonPath("accounts[0].username", equalTo("JOHNSMITH_ADM"))
+            .withRequestBodyJsonPath("accounts[0].activeCaseloadId", equalTo("MDI"))
+            .withRequestBodyJsonPath("accounts[0].roles[0].roleCode", equalTo("DPS_CODE_1"))
+            .withRequestBodyJsonPath("accounts[0].caseloads[0].caseloadId", equalTo("LEI")),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for the repair`() {
+        verify(telemetryClient).trackEvent(
+          eq("staff-resynchronisation-repair"),
+          check {
+            assertThat(it["username"]).isEqualTo(username)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class HappyPathNotFound {
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMockServer.stubGetStaffDetailsByUsername(username = username, staff = null)
+        dpsStaffServer.stubSyncStaff()
+
+        webTestClient.post().uri("/staff/username/$username/repair")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .exchange()
+          .expectStatus().isNotFound
+          .expectBody()
+          .jsonPath("userMessage").isEqualTo("Not Found: No staff for username JOHNSMITH_ADM was found")
+      }
+
+      @Test
+      fun `will try to retrieve staff details from Nomis`() {
+        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/staff/username/$username")))
+      }
+
+      @Test
+      fun `will not send staff details to DPS`() {
+        dpsStaffServer.verify(0, putRequestedFor(anyUrl()))
       }
 
       @Test

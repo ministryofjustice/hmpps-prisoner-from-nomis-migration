@@ -9,7 +9,6 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AdminCaseloadResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseloadResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MemberCaseloadResponse
@@ -30,54 +29,61 @@ import java.time.LocalDateTime
 class StaffNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetStaffDetailsById(
     nomisStaffId: Long = 1234,
-    staff: StaffDetails = staffDetails(nomisStaffId),
+    staff: StaffDetails? = staffDetails(nomisStaffId),
     dpsRolesOnly: Boolean = true,
   ) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/staff/id/$nomisStaffId"))
-        .withQueryParam("dpsRolesOnly", equalTo(dpsRolesOnly.toString()))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.OK.value())
-            .withBody(jsonMapper.writeValueAsString(staff)),
-        ),
-    )
-  }
-
-  fun stubGetStaffDetailsByIdNotFound(
-    nomisStaffId: Long = 1234,
-    status: HttpStatus = HttpStatus.NOT_FOUND,
-    error: ErrorResponse = ErrorResponse(status = status.value()),
-  ) {
-    nomisApi.stubFor(
-      get(urlEqualTo("/staff/$nomisStaffId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(
-            jsonMapper.writeValueAsString(error),
+    staff?.apply {
+      nomisApi.stubFor(
+        get(urlPathEqualTo("/staff/id/$nomisStaffId"))
+          .withQueryParam("dpsRolesOnly", equalTo(dpsRolesOnly.toString()))
+          .willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpStatus.OK.value())
+              .withBody(jsonMapper.writeValueAsString(staff)),
           ),
-      ),
-    )
+      )
+    }
+      ?: run {
+        nomisApi.stubFor(
+          get(urlEqualTo("/staff/id/$nomisStaffId")).willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpStatus.NOT_FOUND.value()),
+          ),
+        )
+      }
   }
 
   fun stubGetStaffDetailsByUsername(
     nomisStaffId: Long = 1234,
     username: String = "JOHNSMITH_ADM",
-    staff: StaffDetails = staffDetails(staffId = nomisStaffId, username = username),
+    staff: StaffDetails? = staffDetails(staffId = nomisStaffId, username = username),
     dpsRolesOnly: Boolean = true,
   ) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/staff/username/$username"))
-        .withQueryParam("dpsRolesOnly", equalTo(dpsRolesOnly.toString()))
-        .willReturn(
-          aResponse()
-            .withHeader("Content-Type", "application/json")
-            .withStatus(HttpStatus.OK.value())
-            .withBody(jsonMapper.writeValueAsString(staff)),
-        ),
-    )
+    staff?.apply {
+      nomisApi.stubFor(
+        get(urlPathEqualTo("/staff/username/$username"))
+          .withQueryParam("dpsRolesOnly", equalTo(dpsRolesOnly.toString()))
+          .willReturn(
+            aResponse()
+              .withHeader("Content-Type", "application/json")
+              .withStatus(HttpStatus.OK.value())
+              .withBody(jsonMapper.writeValueAsString(staff)),
+          ),
+      )
+    }
+      ?: run {
+        nomisApi.stubFor(
+          get(urlEqualTo("/staff/username/$username"))
+            .willReturn(
+              aResponse()
+                .withHeader("Content-Type", "application/json")
+                .withStatus(HttpStatus.NOT_FOUND.value()),
+
+            ),
+        )
+      }
   }
 
   fun stubGetStaffIds(
