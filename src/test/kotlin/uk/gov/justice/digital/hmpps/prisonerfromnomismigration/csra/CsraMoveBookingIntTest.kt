@@ -71,7 +71,7 @@ class CsraMoveBookingIntTest(
       // ensure the process has finished before the test ends by checking the telemetry
       await untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("csras-booking-moved-success"),
+          eq("csras-booking-moved-resynchronise-success"),
           check {
             assertThat(it["bookingId"]).isEqualTo("12")
             assertThat(it["movedToNomsNumber"]).isEqualTo("A1234BB")
@@ -95,7 +95,7 @@ class CsraMoveBookingIntTest(
       // ensure the process has finished before the test ends by checking the telemetry
       await untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("csras-booking-moved-success"),
+          eq("csras-booking-moved-resynchronise-success"),
           check {
             assertThat(it["bookingId"]).isEqualTo("12")
             assertThat(it["movedToNomsNumber"]).isEqualTo("A1234BB")
