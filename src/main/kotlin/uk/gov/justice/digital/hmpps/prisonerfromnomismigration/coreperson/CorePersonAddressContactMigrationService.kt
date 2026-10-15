@@ -169,7 +169,7 @@ internal fun CorePersonAddressContact.toMigrateAddressesAndContactsRequest(): Pr
 internal fun OffenderAddress.toPrisonAddressRequest(): PrisonAddress = PrisonAddress(
   nomisAddressId = addressId,
   subBuildingName = flat,
-  buildingNumber = premise,
+  buildingName = premise,
   thoroughfareName = street,
   dependentLocality = locality,
   postcode = postcode,
