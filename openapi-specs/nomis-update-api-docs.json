@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-14.5327.6b03b43"
+    "version" : "2026-10-16.5361.63e1aad"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -1753,23 +1753,21 @@
         }
       }
     },
-    "/core-person/prisoner/{prisonNumberTo}/merge" : {
+    "/core-person/reconciliation" : {
       "post" : {
         "tags" : [ "Core Person Update Resource" ],
-        "summary" : "Temporary endpoint to merge a prisoner",
-        "description" : "After a prisoner merge in core person record, obtain the definitive prisoner details and write back to nomis.\n      Requires PRISONER_TO_NOMIS__UPDATE__RW",
-        "operationId" : "updateOffenderByPrisonNumberAfterMerge",
+        "summary" : "Run a core person reconciliation",
+        "description" : "Run a core person reconciliation for all or all active prisoners.\n      Requires PRISONER_TO_NOMIS__UPDATE__RW",
+        "operationId" : "reconciliation",
         "parameters" : [ {
-          "name" : "prisonNumberTo",
-          "in" : "path",
-          "description" : "Prison number aka noms id / offender id display",
+          "name" : "activeOnly",
+          "in" : "query",
+          "description" : "reconciliation only the active prisoners or all prisoners",
           "required" : true,
           "schema" : {
-            "type" : "string",
-            "description" : "Prison number aka noms id / offender id display",
-            "example" : "A1234BC"
-          },
-          "example" : "A1234BC"
+            "type" : "boolean",
+            "description" : "reconciliation only the active prisoners or all prisoners"
+          }
         } ],
         "responses" : {
           "401" : {
