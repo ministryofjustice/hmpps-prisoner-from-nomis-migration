@@ -30,7 +30,7 @@ fun AgencyResponse.toLegacyAgencyDto() = LegacyAgencyDto(
   payrollRegionCode = payrollRegion?.code,
   courtTypeCode = courtType?.code,
   accessibleAccess = when (disabilityAccessCode) {
-    "WHEEL" -> LegacyAgencyDto.AccessibleAccess.WHEELCHAIR_ACCESS
+    "WHEEL", "WC" -> LegacyAgencyDto.AccessibleAccess.WHEELCHAIR_ACCESS
     "Y", "Yes" -> LegacyAgencyDto.AccessibleAccess.ACCESSIBLE
     "N", "No" -> LegacyAgencyDto.AccessibleAccess.NONE
     "BA" -> LegacyAgencyDto.AccessibleAccess.BY_ARRANGEMENT_ONLY
