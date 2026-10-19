@@ -400,6 +400,9 @@ class FinanceDpsApiServiceTest {
           postRequestedFor(anyUrl())
             .withRequestBodyJsonPath("amount", equalTo("2"))
             .withRequestBodyJsonPath("transactionId", equalTo("3456"))
+            .withRequestBodyJsonPath("caseloadId", equalTo("LEI"))
+            .withRequestBodyJsonPath("entrySequence", equalTo("2"))
+            .withRequestBodyJsonPath("description", equalTo("Repayment of advance"))
             .withRequestBodyJsonPath("createdBy", equalTo("KE12345"))
             .withRequestBodyJsonPath("createdAt", equalTo("2024-06-20T11:30:00")),
         )
