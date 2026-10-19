@@ -33,6 +33,17 @@ class AdvancesMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/advances")
 
+  fun stubCreateMappingFailure(status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR) {
+    mappingApi.stubFor(
+      post("/mapping/advances").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = status.value()))),
+      ),
+    )
+  }
+
   fun stubCreateMapping(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
       post("/mapping/advances").willReturn(
@@ -70,6 +81,31 @@ class AdvancesMappingApiMockServer(private val jsonMapper: JsonMapper) {
               ),
             ),
           ),
+      ),
+    )
+  }
+
+  fun stubGetMigrationCountFailure(status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR) {
+    mappingApi.stubFor(
+      get(urlPathMatching("/mapping/advances/migration-id/.*")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = status.value()))),
+      ),
+    )
+  }
+
+  fun stubGetByNomisIdFailure(
+    nomisAdvanceId: Long = 12345,
+    status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
+  ) {
+    mappingApi.stubFor(
+      get(urlEqualTo("/mapping/advances/nomis-id/$nomisAdvanceId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(ErrorResponse(status = status.value()))),
       ),
     )
   }

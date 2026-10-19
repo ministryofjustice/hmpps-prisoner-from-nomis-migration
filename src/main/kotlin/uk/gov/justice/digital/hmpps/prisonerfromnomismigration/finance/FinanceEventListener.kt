@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceSynchronisationMessageType.RETRY_SYNCHRONISATION_ADVANCE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances.AdvancesSynchronisationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions.TransactionSynchronisationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
@@ -61,11 +62,12 @@ class FinanceEventListener(
               )
               "OFFENDER_ADVANCES-INSERTED" -> advancesSynchronisationService.advanceInserted(sqsMessage.Message.fromJson())
 
+              "OFFENDER_DEDUCTIONS-UPDATED" -> advancesSynchronisationService.deductionUpdated(sqsMessage.Message.fromJson())
+
+              // TODO Waiting for DPS to decide whether to intercept these events
               // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)
-              // TODO Waiting for DPS to decide whether to intercept this event
               // "OFFENDER_TRANSACTIONS-DELETED"
               // extremely rare (only happened once at 11-AUG-2021 10:39:26.470007000 according to oms_deleted_rows, 8 deleted)
-              // TODO Waiting for DPS to decide whether to intercept this event
               // GL_TRANSACTIONS-DELETED"
 
               else -> log.info("Received a message I wasn't expecting {}", eventType)
@@ -77,12 +79,18 @@ class FinanceEventListener(
 
         RETRY_SYNCHRONISATION_MAPPING.name -> transactionSynchronisationService.retryCreateTransactionMapping(sqsMessage.Message.fromJson())
 
+        RETRY_SYNCHRONISATION_ADVANCE_MAPPING.name -> advancesSynchronisationService.retryCreateMapping(sqsMessage.Message.fromJson())
+
         PERFORM_TRANSACTION_SYNC.name -> transactionSynchronisationService.transactionUpserted(sqsMessage.Message.fromJson())
       }
     }
   }
 
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
+}
+
+enum class FinanceSynchronisationMessageType {
+  RETRY_SYNCHRONISATION_ADVANCE_MAPPING,
 }
 
 data class TransactionEvent(
@@ -106,6 +114,12 @@ data class GLTransactionEvent(
 
 data class AdvanceEvent(
   val offenderAdvanceId: Long,
+  val offenderIdDisplay: String,
+  override val auditModuleName: String? = null,
+) : EventAudited
+
+data class DeductionEvent(
+  val offenderDeductionId: Long,
   val offenderIdDisplay: String,
   override val auditModuleName: String? = null,
 ) : EventAudited
