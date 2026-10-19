@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-10-16.5900.02c81c3"
+    "version" : "2026-10-16.5938.d2e5128"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -2917,14 +2917,6 @@
             "description" : "Is the address type verified",
             "examples" : [ false, true ]
           },
-          "usages" : {
-            "type" : "array",
-            "deprecated" : true,
-            "description" : "Legacy list of address usages kept for provider compatibility during migration",
-            "items" : {
-              "$ref" : "#/components/schemas/ProbationCreateAddressUsage"
-            }
-          },
           "usage" : {
             "description" : "The address usage",
             "oneOf" : [ {
@@ -2941,7 +2933,7 @@
             }
           }
         },
-        "required" : [ "contacts", "noFixedAbode", "startDate", "statusCode", "typeVerified", "usages" ]
+        "required" : [ "contacts", "noFixedAbode", "startDate", "statusCode", "typeVerified" ]
       },
       "ProbationCreateAddressContact" : {
         "type" : "object",
