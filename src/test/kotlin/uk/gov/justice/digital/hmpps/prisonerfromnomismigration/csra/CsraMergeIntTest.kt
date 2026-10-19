@@ -51,7 +51,7 @@ class CsraMergeIntTest(
       // ensure the process has finished before the test ends by checking the telemetry
       await untilAsserted {
         verify(telemetryClient).trackEvent(
-          eq("csras-synchronisation-prisoner-merged-success"),
+          eq("csra-synchronisation-prisoner-merged-success"),
           check {
             assertThat(it["nomsNumber"]).isEqualTo("A1234BB")
             assertThat(it["removedNomsNumber"]).isEqualTo("A1234AA")

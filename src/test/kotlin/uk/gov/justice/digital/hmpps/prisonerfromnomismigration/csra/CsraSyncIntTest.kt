@@ -64,7 +64,7 @@ class CsraSyncIntTest(
       fun `the event is ignored`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("csras-synchronisation-created-skipped"),
+            eq("csra-synchronisation-created-skipped"),
             check {
               assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
               assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
@@ -125,7 +125,7 @@ class CsraSyncIntTest(
         @Test
         fun `will track a telemetry event for success`() {
           verify(telemetryClient).trackEvent(
-            eq("csras-synchronisation-created-success"),
+            eq("csra-synchronisation-created-success"),
             check {
               assertThat(it["nomis-exists"]).isEqualTo("false")
               assertThat(it["mapping-exists"]).isEqualTo("false")
@@ -184,7 +184,7 @@ class CsraSyncIntTest(
         @Test
         fun `will track a telemetry event for success`() {
           verify(telemetryClient).trackEvent(
-            eq("csras-synchronisation-created-success"),
+            eq("csra-synchronisation-created-success"),
             check {
               assertThat(it["nomis-exists"]).isEqualTo("false")
               assertThat(it["mapping-exists"]).isEqualTo("true")
@@ -275,7 +275,7 @@ class CsraSyncIntTest(
         @Test
         fun `will track a telemetry event for success`() {
           verify(telemetryClient).trackEvent(
-            eq("csras-synchronisation-created-success"),
+            eq("csra-synchronisation-created-success"),
             check {
               assertThat(it["nomis-exists"]).isEqualTo("true")
               assertThat(it["mapping-exists"]).isEqualTo("false")
@@ -338,7 +338,7 @@ class CsraSyncIntTest(
         @Test
         fun `will track a telemetry event for success`() {
           verify(telemetryClient).trackEvent(
-            eq("csras-synchronisation-created-success"),
+            eq("csra-synchronisation-created-success"),
             check {
               assertThat(it["nomis-exists"]).isEqualTo("true")
               assertThat(it["mapping-exists"]).isEqualTo("true")
@@ -361,7 +361,7 @@ class CsraSyncIntTest(
             csraEventQueueUrl,
             csraEvent(eventType = "ASSESSMENT-INSERTED", assessmentType = "CATEGORY"),
           )
-          waitForCompletion("csras-synchronisation-created-skipped-category")
+          waitForCompletion("csra-synchronisation-created-skipped-category")
         }
 
         @Test
@@ -385,7 +385,7 @@ class CsraSyncIntTest(
 
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("csras-synchronisation-created-error"),
+              eq("csra-synchronisation-created-error"),
               check {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
@@ -414,7 +414,7 @@ class CsraSyncIntTest(
 
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("csras-synchronisation-created-error"),
+              eq("csra-synchronisation-created-error"),
               check {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
@@ -444,7 +444,7 @@ class CsraSyncIntTest(
 
           await untilAsserted {
             verify(telemetryClient, times(1)).trackEvent(
-              eq("csras-synchronisation-created-success"),
+              eq("csra-synchronisation-created-success"),
               check {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
@@ -455,7 +455,7 @@ class CsraSyncIntTest(
               isNull(),
             )
             verify(telemetryClient, times(1)).trackEvent(
-              eq("csras-mapping-created-success"),
+              eq("csra-mapping-created-success"),
               check {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
@@ -486,7 +486,7 @@ class CsraSyncIntTest(
 
           await untilAsserted {
             verify(telemetryClient, times(1)).trackEvent(
-              eq("csras-synchronisation-created-success"),
+              eq("csra-synchronisation-created-success"),
               check {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
@@ -497,7 +497,7 @@ class CsraSyncIntTest(
               isNull(),
             )
             verify(telemetryClient, times(2)).trackEvent(
-              eq("csras-mapping-created-failure"),
+              eq("csra-mapping-created-failure"),
               check {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
@@ -538,7 +538,7 @@ class CsraSyncIntTest(
       fun `the event is ignored`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("csras-synchronisation-updated-skipped"),
+            eq("csra-synchronisation-updated-skipped"),
             check {
               assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
               assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
@@ -626,7 +626,7 @@ class CsraSyncIntTest(
         @Test
         fun `will track a telemetry event for success`() {
           verify(telemetryClient).trackEvent(
-            eq("csras-synchronisation-updated-success"),
+            eq("csra-synchronisation-updated-success"),
             check {
               assertThat(it["dpsCsraId"]).isEqualTo(DPS_ID)
               assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
@@ -647,7 +647,7 @@ class CsraSyncIntTest(
             csraEventQueueUrl,
             csraEvent(eventType = "ASSESSMENT-UPDATED", assessmentType = "CATEGORY"),
           )
-          waitForCompletion("csras-synchronisation-updated-skipped-category")
+          waitForCompletion("csra-synchronisation-updated-skipped-category")
         }
 
         @Test
@@ -682,7 +682,7 @@ class CsraSyncIntTest(
       fun `the event is ignored`() {
         await untilAsserted {
           verify(telemetryClient).trackEvent(
-            eq("csras-synchronisation-deleted-skipped"),
+            eq("csra-synchronisation-deleted-skipped"),
             check {
               assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
               assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
@@ -730,7 +730,7 @@ class CsraSyncIntTest(
         @Test
         fun `will track a telemetry event for success`() {
           verify(telemetryClient).trackEvent(
-            eq("csras-synchronisation-deleted-success"),
+            eq("csra-synchronisation-deleted-success"),
             check {
               assertThat(it["nomis-exists"]).isEqualTo("false")
               assertThat(it["mapping-exists"]).isEqualTo("false")
@@ -796,7 +796,7 @@ class CsraSyncIntTest(
         fun `will not update CSRA in DPS`() {
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("csras-synchronisation-deleted-error"),
+              eq("csra-synchronisation-deleted-error"),
               anyMap(),
               isNull(),
             )
@@ -808,7 +808,7 @@ class CsraSyncIntTest(
         fun `will track a telemetry event for the error`() {
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("csras-synchronisation-deleted-error"),
+              eq("csra-synchronisation-deleted-error"),
               check {
                 assertThat(it["nomis-exists"]).isEqualTo("true")
                 assertThat(it["mapping-exists"]).isEqualTo("false")
@@ -869,7 +869,7 @@ class CsraSyncIntTest(
         @Test
         fun `will track a telemetry event for success`() {
           verify(telemetryClient).trackEvent(
-            eq("csras-synchronisation-deleted-success"),
+            eq("csra-synchronisation-deleted-success"),
             check {
               assertThat(it["nomis-exists"]).isEqualTo("true")
               assertThat(it["mapping-exists"]).isEqualTo("true")
@@ -892,7 +892,7 @@ class CsraSyncIntTest(
             csraEventQueueUrl,
             csraEvent(eventType = "ASSESSMENT-DELETED", assessmentType = "CATEGORY"),
           )
-          waitForCompletion("csras-synchronisation-deleted-skipped-category")
+          waitForCompletion("csra-synchronisation-deleted-skipped-category")
         }
 
         @Test
@@ -916,7 +916,7 @@ class CsraSyncIntTest(
 
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("csras-synchronisation-deleted-error"),
+              eq("csra-synchronisation-deleted-error"),
               check {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
@@ -950,7 +950,7 @@ class CsraSyncIntTest(
 
           await untilAsserted {
             verify(telemetryClient, times(2)).trackEvent(
-              eq("csras-synchronisation-deleted-error"),
+              eq("csra-synchronisation-deleted-error"),
               check {
                 assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
                 assertThat(it["sequence"]).isEqualTo(SEQUENCE.toString())
@@ -965,7 +965,7 @@ class CsraSyncIntTest(
     }
   }
 
-  private fun waitForCompletion(namePattern: String = "csras-synchronisation-(crea|upda|dele)ted-success") {
+  private fun waitForCompletion(namePattern: String = "csra-synchronisation-(crea|upda|dele)ted-success") {
     await untilAsserted {
       verify(telemetryClient).trackEvent(matches(namePattern), anyMap(), isNull())
     }

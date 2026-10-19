@@ -117,11 +117,11 @@ class CsraMigrationService(
             )
           }
           telemetry["csraCount"] = migrationResultList.size.toString()
-          telemetryClient.trackEvent("csras-migration-entity-migrated", telemetry)
+          telemetryClient.trackEvent("csra-migration-entity-migrated", telemetry)
         }
     } catch (e: Exception) {
       telemetry["error"] = e.message ?: e.javaClass.name
-      telemetryClient.trackEvent("csras-migration-entity-failed", telemetry)
+      telemetryClient.trackEvent("csra-migration-entity-failed", telemetry)
       throw e
     }
   }
@@ -152,7 +152,7 @@ class CsraMigrationService(
     if (successOrDuplicate.isError) {
       val duplicateErrorDetails = successOrDuplicate.errorResponse!!.moreInfo
       telemetryClient.trackEvent(
-        "csras-migration-entity-duplicate",
+        "csra-migration-entity-duplicate",
         mapOf(
           "offenderNo" to mapping.offenderNo,
           "migrationId" to mapping.prisonerMappings.label!!,
