@@ -24,7 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Telemetry
 import java.util.UUID
 
-private const val TELEMETRY_PREFIX = "csras-synchronisation"
+private const val TELEMETRY_PREFIX = "csra-synchronisation"
 
 @Service
 class CsraSyncService(
@@ -200,7 +200,7 @@ class CsraSyncService(
       "movedToNomsNumber" to movedToNomsNumber,
       "movedFromNomsNumber" to movedFromNomsNumber,
     )
-    track("csras-booking-moved", telemetry) {
+    track("csra-booking-moved", telemetry) {
       val csras = csraMappingApiService.updateMappingsByBookingId(bookingId, movedFromNomsNumber, movedToNomsNumber)
       val idsToResynchronise = csras.map { UUID.fromString(it.dpsCsraId) }
       telemetry["count"] = idsToResynchronise.size
@@ -221,7 +221,7 @@ class CsraSyncService(
   suspend fun moveCsras(message: InternalMessage<CsraMoveBookingMessage>) {
     val (movedFromNomsNumber, movedToNomsNumber, csraIds) = message.body
     csraDpsApiService.moveCsras(movedFromNomsNumber, movedToNomsNumber, csras = csraIds)
-    telemetryClient.trackEvent("csras-booking-moved-resynchronise-success", message.telemetryAttributes)
+    telemetryClient.trackEvent("csra-booking-moved-resynchronise-success", message.telemetryAttributes)
   }
 
   enum class MappingResponse {
@@ -264,7 +264,7 @@ class CsraSyncService(
       if (it.isError) {
         val duplicateErrorDetails = (it.errorResponse!!).moreInfo
         telemetryClient.trackEvent(
-          "csras-from-nomis-sync-duplicate",
+          "csra-from-nomis-sync-duplicate",
           mapOf(
             "duplicateDpsCsraId" to duplicateErrorDetails.duplicate.dpsCsraId,
             "duplicateBookingId" to duplicateErrorDetails.duplicate.nomisBookingId.toString(),
@@ -281,10 +281,10 @@ class CsraSyncService(
   suspend fun retryCreateMapping(retryMessage: InternalMessage<CsraMappingDto>) {
     try {
       createMapping(retryMessage.body)
-      telemetryClient.trackEvent("csras-mapping-created-success", retryMessage.telemetryAttributes)
+      telemetryClient.trackEvent("csra-mapping-created-success", retryMessage.telemetryAttributes)
     } catch (e: Exception) {
       telemetryClient.trackEvent(
-        "csras-mapping-created-failure",
+        "csra-mapping-created-failure",
         retryMessage.telemetryAttributes + ("error" to (e.message ?: e.javaClass.name)),
       )
       throw e

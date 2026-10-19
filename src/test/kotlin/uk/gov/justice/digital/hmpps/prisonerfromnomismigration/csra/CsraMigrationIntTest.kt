@@ -155,17 +155,17 @@ class CsraMigrationIntTest(
       @Test
       fun `will migrate all prisoner's csras`() {
         verify(telemetryClient, times(2)).trackEvent(
-          eq("csras-migration-entity-migrated"),
+          eq("csra-migration-entity-migrated"),
           any(),
           isNull(),
         )
         verify(telemetryClient).trackEvent(
-          eq("csras-migration-entity-migrated"),
+          eq("csra-migration-entity-migrated"),
           check { assertThat(it).containsEntry("offenderNo", "A0001KT") },
           isNull(),
         )
         verify(telemetryClient).trackEvent(
-          eq("csras-migration-entity-migrated"),
+          eq("csra-migration-entity-migrated"),
           check { assertThat(it).containsEntry("offenderNo", "A0002KT") },
           isNull(),
         )
@@ -350,7 +350,7 @@ class CsraMigrationIntTest(
       @Test
       fun `failure telemetry is posted`() {
         verify(telemetryClient, atLeast(2)).trackEvent(
-          eq("csras-migration-entity-failed"),
+          eq("csra-migration-entity-failed"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NUMBER1)
             assertThat(it["error"]).isEqualTo("400 Bad Request from POST http://localhost:$WIREMOCK_PORT/nomis-sync/migrate/$OFFENDER_NUMBER1")
@@ -374,7 +374,7 @@ class CsraMigrationIntTest(
 
   private fun waitUntilCompleted() = await atMost Duration.ofSeconds(60) untilAsserted {
     verify(telemetryClient).trackEvent(
-      eq("csras-migration-completed"),
+      eq("csra-migration-completed"),
       any(),
       isNull(),
     )
