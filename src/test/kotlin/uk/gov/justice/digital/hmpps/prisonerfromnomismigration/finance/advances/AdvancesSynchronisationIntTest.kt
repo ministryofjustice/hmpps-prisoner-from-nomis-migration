@@ -96,198 +96,201 @@ class AdvancesSynchronisationIntTest(
     }
 
     @Nested
-    inner class HappyPath {
-      @BeforeEach
-      fun setUp() {
-        nomisApiMock.stubGetAdvance(advanceId)
-        mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = advanceId, mapping = null)
-        financeApi.stubCreateAdvance(advanceUuid = dpsAdvanceId)
-        mappingApiMock.stubCreateMapping()
-      }
-
+    inner class WhenCreatedInNomis {
       @Nested
-      inner class HappyPathNoFailures {
+      inner class HappyPath {
         @BeforeEach
         fun setUp() {
-          sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
-            .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-created-success") }
+          nomisApiMock.stubGetAdvance(advanceId)
+          mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = advanceId, mapping = null)
+          financeApi.stubCreateAdvance(advanceUuid = dpsAdvanceId)
+          mappingApiMock.stubCreateMapping()
         }
 
-        @Test
-        fun `will retrieve the advance from NOMIS`() {
-          nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/$advanceId")))
-        }
-
-        @Test
-        fun `will create the advance in DPS`() {
-          financeApi.verify(
-            postRequestedFor(urlPathEqualTo("/sync/advances"))
-              .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo(advanceId.toString()))
-              .withRequestBodyJsonPath("legacyInformationNumber", equalTo("info-123"))
-              .withRequestBodyJsonPath("legacyTransactionId", equalTo("123"))
-              .withRequestBodyJsonPath("prisonNumber", equalTo("A0001BC"))
-              .withRequestBodyJsonPath("prisonID", equalTo("LEI"))
-              .withRequestBodyJsonPath("amount", equalTo("2.1"))
-              .withRequestBodyJsonPath("repaymentStartDate", equalTo("2024-06-18T00:00:00"))
-              .withRequestBodyJsonPath("repaymentAmount", equalTo("0.5"))
-              .withRequestBodyJsonPath("status", equalTo("ACTIVE"))
-              .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
-              .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
-              .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
-              .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:30:45")),
-          )
-        }
-
-        @Test
-        fun `will track telemetry`() {
-          verifySuccessTelemetry()
-        }
-
-        @Test
-        fun `will check for an existing mapping`() {
-          mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/advances/nomis-id/$advanceId")))
-        }
-
-        @Test
-        fun `will create the mapping`() {
-          verifyMappingSaved()
-        }
-      }
-
-      @Nested
-      inner class HappyPathWithMappingFailures {
         @Nested
-        inner class MappingFailures {
-          @Nested
-          inner class FailureAndRecovery {
-            @BeforeEach
-            fun setUp() {
-              mappingApiMock.stubCreateMappingFailureFollowedBySuccess()
-              sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
-                .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-mapping-created") }
-            }
-
-            @Test
-            fun `will eventually create mapping after a retry`() {
-              verifyMappingSaved(2)
-            }
-
-            @Test
-            fun `will create the advance in DPS only once`() {
-              financeApi.verify(1, postRequestedFor(urlPathEqualTo("/sync/advances")))
-              nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/$advanceId")))
-            }
-
-            @Test
-            fun `will track telemetry`() {
-              verifySuccessTelemetry()
-              verify(telemetryClient).trackEvent(
-                eq("prisoneradvance-synchronisation-mapping-created"),
-                check {
-                  assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
-                  assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
-                  assertThat(it["dpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
-                },
-                isNull(),
-              )
-            }
+        inner class HappyPathNoFailures {
+          @BeforeEach
+          fun setUp() {
+            sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
+              .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-created-success") }
           }
 
+          @Test
+          fun `will retrieve the advance from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/$advanceId")))
+          }
+
+          @Test
+          fun `will create the advance in DPS`() {
+            financeApi.verify(
+              postRequestedFor(urlPathEqualTo("/sync/advances"))
+                .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo(advanceId.toString()))
+                .withRequestBodyJsonPath("legacyInformationNumber", equalTo("info-123"))
+                .withRequestBodyJsonPath("legacyTransactionId", equalTo("123"))
+                .withRequestBodyJsonPath("prisonNumber", equalTo("A0001BC"))
+                .withRequestBodyJsonPath("prisonID", equalTo("LEI"))
+                .withRequestBodyJsonPath("amount", equalTo("2.1"))
+                .withRequestBodyJsonPath("repaymentStartDate", equalTo("2024-06-18T00:00:00"))
+                .withRequestBodyJsonPath("repaymentAmount", equalTo("0.5"))
+                .withRequestBodyJsonPath("status", equalTo("ACTIVE"))
+                .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
+                .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
+                .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
+                .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:30:45")),
+            )
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verifySuccessTelemetry()
+          }
+
+          @Test
+          fun `will check for an existing mapping`() {
+            mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/advances/nomis-id/$advanceId")))
+          }
+
+          @Test
+          fun `will create the mapping`() {
+            verifyMappingSaved()
+          }
+        }
+
+        @Nested
+        inner class HappyPathWithMappingFailures {
           @Nested
-          inner class DuplicateDetected {
-            private val existingDpsId = "existing-advance-id"
+          inner class MappingFailures {
+            @Nested
+            inner class FailureAndRecovery {
+              @BeforeEach
+              fun setUp() {
+                mappingApiMock.stubCreateMappingFailureFollowedBySuccess()
+                sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
+                  .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-mapping-created") }
+              }
 
-            @BeforeEach
-            fun setUp() {
-              mappingApiMock.stubCreateMapping(
-                error = DuplicateMappingErrorResponse(
-                  moreInfo = DuplicateErrorContentObject(
-                    duplicate = AdvanceMappingDto(
-                      dpsId = dpsAdvanceId.toString(),
-                      nomisAdvanceId = advanceId,
-                      mappingType = AdvanceMappingDto.MappingType.NOMIS_CREATED,
+              @Test
+              fun `will eventually create mapping after a retry`() {
+                verifyMappingSaved(2)
+              }
+
+              @Test
+              fun `will create the advance in DPS only once`() {
+                financeApi.verify(1, postRequestedFor(urlPathEqualTo("/sync/advances")))
+                nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/$advanceId")))
+              }
+
+              @Test
+              fun `will track telemetry`() {
+                verifySuccessTelemetry()
+                verify(telemetryClient).trackEvent(
+                  eq("prisoneradvance-synchronisation-mapping-created"),
+                  check {
+                    assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+                    assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
+                    assertThat(it["dpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
+                  },
+                  isNull(),
+                )
+              }
+            }
+
+            @Nested
+            inner class DuplicateDetected {
+              private val existingDpsId = "existing-advance-id"
+
+              @BeforeEach
+              fun setUp() {
+                mappingApiMock.stubCreateMapping(
+                  error = DuplicateMappingErrorResponse(
+                    moreInfo = DuplicateErrorContentObject(
+                      duplicate = AdvanceMappingDto(
+                        dpsId = dpsAdvanceId.toString(),
+                        nomisAdvanceId = advanceId,
+                        mappingType = AdvanceMappingDto.MappingType.NOMIS_CREATED,
+                      ),
+                      existing = AdvanceMappingDto(
+                        dpsId = existingDpsId,
+                        nomisAdvanceId = advanceId,
+                        mappingType = AdvanceMappingDto.MappingType.NOMIS_CREATED,
+                      ),
                     ),
-                    existing = AdvanceMappingDto(
-                      dpsId = existingDpsId,
-                      nomisAdvanceId = advanceId,
-                      mappingType = AdvanceMappingDto.MappingType.NOMIS_CREATED,
-                    ),
+                    errorCode = 1409,
+                    status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+                    userMessage = "Duplicate mapping",
                   ),
-                  errorCode = 1409,
-                  status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
-                  userMessage = "Duplicate mapping",
-                ),
-              )
-              sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
-                .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-created-success") }
-            }
+                )
+                sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
+                  .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-created-success") }
+              }
 
-            @Test
-            fun `will create the advance in DPS only once`() {
-              financeApi.verify(1, postRequestedFor(urlPathEqualTo("/sync/advances")))
-            }
+              @Test
+              fun `will create the advance in DPS only once`() {
+                financeApi.verify(1, postRequestedFor(urlPathEqualTo("/sync/advances")))
+              }
 
-            @Test
-            fun `will not bother retrying mapping`() {
-              verifyMappingSaved(1)
-            }
+              @Test
+              fun `will not bother retrying mapping`() {
+                verifyMappingSaved(1)
+              }
 
-            @Test
-            fun `will track telemetry`() {
-              verifySuccessTelemetry()
-              verify(telemetryClient).trackEvent(
-                eq("prisoneradvance-synchronisation-duplicate"),
-                check {
-                  assertThat(it["existingNomisAdvanceId"]).isEqualTo(advanceId.toString())
-                  assertThat(it["existingDpsAdvanceId"]).isEqualTo(existingDpsId)
-                  assertThat(it["duplicateNomisAdvanceId"]).isEqualTo(advanceId.toString())
-                  assertThat(it["duplicateDpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
-                },
-                isNull(),
-              )
+              @Test
+              fun `will track telemetry`() {
+                verifySuccessTelemetry()
+                verify(telemetryClient).trackEvent(
+                  eq("prisoneradvance-synchronisation-duplicate"),
+                  check {
+                    assertThat(it["existingNomisAdvanceId"]).isEqualTo(advanceId.toString())
+                    assertThat(it["existingDpsAdvanceId"]).isEqualTo(existingDpsId)
+                    assertThat(it["duplicateNomisAdvanceId"]).isEqualTo(advanceId.toString())
+                    assertThat(it["duplicateDpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
+                  },
+                  isNull(),
+                )
+              }
             }
           }
         }
       }
-    }
 
-    @Nested
-    inner class UnHappyPath {
       @Nested
-      inner class AlreadyExists {
-        @BeforeEach
-        fun setUp() {
-          mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = advanceId, dpsId = dpsAdvanceId.toString())
-          sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
-            .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-created-ignored") }
-        }
+      inner class UnHappyPath {
+        @Nested
+        inner class AlreadyExists {
+          @BeforeEach
+          fun setUp() {
+            mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = advanceId, dpsId = dpsAdvanceId.toString())
+            sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
+              .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-created-ignored") }
+          }
 
-        @Test
-        fun `will not call NOMIS`() {
-          nomisApiMock.verify(0, getRequestedFor(anyUrl()))
-        }
+          @Test
+          fun `will not call NOMIS`() {
+            nomisApiMock.verify(0, getRequestedFor(anyUrl()))
+          }
 
-        @Test
-        fun `will not create the advance in DPS`() {
-          financeApi.verify(0, postRequestedFor(urlPathEqualTo("/sync/advances")))
-        }
+          @Test
+          fun `will not create the advance in DPS`() {
+            financeApi.verify(0, postRequestedFor(urlPathEqualTo("/sync/advances")))
+          }
 
-        @Test
-        fun `will not attempt to create a mapping`() {
-          mappingApiMock.verify(0, postRequestedFor(anyUrl()))
-        }
+          @Test
+          fun `will not attempt to create a mapping`() {
+            mappingApiMock.verify(0, postRequestedFor(anyUrl()))
+          }
 
-        @Test
-        fun `will track telemetry`() {
-          verify(telemetryClient).trackEvent(
-            eq("prisoneradvance-synchronisation-created-ignored"),
-            check {
-              assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
-              assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
-              assertThat(it["dpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
-            },
-            isNull(),
-          )
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("prisoneradvance-synchronisation-created-ignored"),
+              check {
+                assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+                assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
+                assertThat(it["dpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
+              },
+              isNull(),
+            )
+          }
         }
       }
     }

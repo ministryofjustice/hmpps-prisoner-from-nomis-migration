@@ -50,16 +50,16 @@ class AdvancesSynchronisationService(
     val telemetry = telemetryOf("nomisAdvanceId" to advanceId, "prisonNumber" to event.offenderIdDisplay)
 
     if (event.originatesInDpsOrHasMissingAudit) {
-      telemetryClient.trackEvent("prisoneradvance-synchronisation-created-skipped", telemetry)
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-created-skipped", telemetry)
       return
     }
     mappingService.getByNomisIdOrNull(nomisId = event.offenderAdvanceId)?.also {
       telemetryClient.trackEvent(
-        "prisoneradvance-synchronisation-created-ignored",
+        "$TELEMETRY_PREFIX-created-ignored",
         telemetry + ("dpsAdvanceId" to it.dpsId),
       )
     } ?: run {
-      track("prisoneradvance-synchronisation-created", telemetry) {
+      track("$TELEMETRY_PREFIX-created", telemetry) {
         nomisApiService.getAdvance(advanceId)
           .also { nomisAdvance ->
             val dpsAdvance = dpsApiService.createAdvance(nomisAdvance!!.toSyncAdvanceDto())
