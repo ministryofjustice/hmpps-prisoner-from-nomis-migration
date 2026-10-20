@@ -1,6 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation
 
+import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
@@ -23,6 +25,7 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
@@ -32,6 +35,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personl
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiMockServer.Companion.resyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleMappingApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
@@ -120,6 +124,7 @@ class PersonLocationMigrationIntTest(
           dpsTransferScheduleId = dpsTransferScheduleId,
         )
       }
+    mappingApi.stubGetPersonLocationMappings()
     mappingApi.stubCreatePersonLocationMappings()
   }
 
@@ -137,6 +142,15 @@ class PersonLocationMigrationIntTest(
     @Test
     fun `should get NOMIS person locations`() {
       personLocationNomisApi.verify(getRequestedFor(urlPathEqualTo("/movements/$prisonerNumber/person-locations")))
+    }
+
+    @Test
+    fun `should get existing mappings for the NOMIS bookings`() {
+      mappingApi.verify(
+        1,
+        postRequestedFor(urlPathEqualTo("/mapping/person-location/nomis-booking-ids/get-list"))
+          .withRequestBody(equalToJson("[12345]")),
+      )
     }
 
     @Test
@@ -330,6 +344,58 @@ class PersonLocationMigrationIntTest(
 
   @Nested
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class MigrateEntityWithExistingMappings {
+    private val existingDpsCustodialSeriesId = UUID.randomUUID()
+    private val existingDpsMovementId = UUID.randomUUID()
+
+    @BeforeAll
+    fun setUp() {
+      setupMigrationTest()
+
+      stubMigrationDependencies(entities = 1, pageSize = 1)
+      // Only the first movement has a mapping
+      mappingApi.stubGetPersonLocationMappings(
+        response = listOf(
+          PersonLocationBookingMappingDto(
+            bookingId = 12345L,
+            dpsCustodialSeriesId = existingDpsCustodialSeriesId,
+            movements = listOf(PersonLocationMovementMappingDto(nomisMovementSeq = 1, dpsExternalMovementId = existingDpsMovementId)),
+          ),
+        ),
+      )
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `should populate known DPS IDs`() {
+      PersonLocationDpsApiMockServer.getRequestBody<ResyncExternalMovementsRequest>(
+        putRequestedFor(urlPathEqualTo("/resync/external-movements/$prisonerNumber")),
+      ).apply {
+        assertThat(custodialSeries[0].custodialSeries.dpsId).isEqualTo(existingDpsCustodialSeriesId)
+        with(custodialSeries[0].movements[0].movement) {
+          assertThat(dpsId).isEqualTo(existingDpsMovementId)
+          assertThat(dpsCustodySeriesId).isEqualTo(existingDpsCustodialSeriesId)
+        }
+        with(custodialSeries[0].movements[1].movement) {
+          assertThat(dpsId).isNull()
+          assertThat(dpsCustodySeriesId).isEqualTo(existingDpsCustodialSeriesId)
+        }
+      }
+    }
+
+    @Test
+    fun `should create mappings from the DPS response`() {
+      PersonLocationMappingApiMockServer.getRequestBody<PersonLocationsMappingDto>(
+        putRequestedFor(urlPathEqualTo("/mapping/person-location/migrate")),
+      ).apply {
+        assertThat(bookings[0].dpsCustodialSeriesId).isEqualTo(dpsCustodialSeriesId)
+        assertThat(bookings[0].movements.map { it.dpsExternalMovementId }).containsExactly(dpsMovementId1, dpsMovementId2)
+      }
+    }
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class FullMigration {
     @BeforeAll
     fun setUp() {
@@ -482,6 +548,43 @@ class PersonLocationMigrationIntTest(
 
   @Nested
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class MigrationFailureGetExistingMappings {
+    @BeforeAll
+    fun setUp() {
+      setupMigrationTest()
+
+      stubMigrationDependencies(entities = 1, pageSize = 1)
+      // The call to get existing mappings fails
+      mappingApi.stubGetPersonLocationMappings(status = INTERNAL_SERVER_ERROR)
+      migrationId = performMigration()
+    }
+
+    @Test
+    fun `should NOT call DPS resync API`() {
+      dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/resync/external-movements/$prisonerNumber")))
+    }
+
+    @Test
+    fun `should NOT create mappings`() {
+      mappingApi.verify(0, putRequestedFor(urlPathEqualTo("/mapping/person-location/migrate")))
+    }
+
+    @Test
+    fun `will publish fail telemetry`() {
+      verify(telemetryClient).trackEvent(
+        eq("person-location-migration-entity-failed"),
+        check {
+          assertThat(it["offenderNo"]).isEqualTo(prisonerNumber)
+          assertThat(it["migrationId"]).isEqualTo(migrationId)
+          assertThat(it["reason"]).contains("500 Internal Server Error")
+        },
+        isNull(),
+      )
+    }
+  }
+
+  @Nested
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class MappingErrorRecovery {
     @BeforeAll
     fun setUp() {
@@ -538,6 +641,11 @@ class PersonLocationMigrationIntTest(
         response = OffenderPersonLocationsResponse(bookings = listOf()),
       )
       migrationId = performMigration()
+    }
+
+    @Test
+    fun `should NOT get existing mappings`() {
+      mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/nomis-booking-ids/get-list")))
     }
 
     @Test
@@ -606,7 +714,30 @@ class PersonLocationMigrationIntTest(
         setupMigrationTest()
 
         stubMigrationDependencies(entities = 1, pageSize = 1)
+        mappingApi.stubGetPersonLocationMappings(
+          response = listOf(
+            PersonLocationBookingMappingDto(
+              bookingId = 12345L,
+              dpsCustodialSeriesId = dpsCustodialSeriesId,
+              movements = listOf(
+                PersonLocationMovementMappingDto(nomisMovementSeq = 1, dpsExternalMovementId = dpsMovementId1),
+                PersonLocationMovementMappingDto(nomisMovementSeq = 2, dpsExternalMovementId = dpsMovementId2),
+              ),
+            ),
+          ),
+        )
         repairPrisonerOk(prisonerNumber)
+      }
+
+      @Test
+      fun `should send existing DPS IDs`() {
+        PersonLocationDpsApiMockServer.getRequestBody<ResyncExternalMovementsRequest>(
+          putRequestedFor(urlPathEqualTo("/resync/external-movements/$prisonerNumber")),
+        ).apply {
+          assertThat(custodialSeries[0].custodialSeries.dpsId).isEqualTo(dpsCustodialSeriesId)
+          assertThat(custodialSeries[0].movements.map { it.movement.dpsId }).containsExactly(dpsMovementId1, dpsMovementId2)
+          assertThat(custodialSeries[0].movements.map { it.movement.dpsCustodySeriesId }).containsOnly(dpsCustodialSeriesId)
+        }
       }
 
       @Test
@@ -677,6 +808,11 @@ class PersonLocationMigrationIntTest(
       }
 
       @Test
+      fun `should NOT get existing mappings`() {
+        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/nomis-booking-ids/get-list")))
+      }
+
+      @Test
       fun `should call DPS resync API with no custodial series`() {
         PersonLocationDpsApiMockServer.getRequestBody<ResyncExternalMovementsRequest>(
           putRequestedFor(urlPathEqualTo("/resync/external-movements/$prisonerNumber")),
@@ -725,6 +861,11 @@ class PersonLocationMigrationIntTest(
         personLocationNomisApi.stubGetOffenderPersonLocations(offenderNo = prisonerNumber, status = NOT_FOUND)
         dpsApi.stubResyncPrisoner(personIdentifier = prisonerNumber, response = ResyncResponse(custodialSeries = listOf()))
         repairPrisonerOk(prisonerNumber)
+      }
+
+      @Test
+      fun `should NOT get existing mappings`() {
+        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/nomis-booking-ids/get-list")))
       }
 
       @Test

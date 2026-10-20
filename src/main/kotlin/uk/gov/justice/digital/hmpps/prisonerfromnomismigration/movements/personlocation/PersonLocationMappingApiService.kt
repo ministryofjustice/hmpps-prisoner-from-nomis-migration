@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation
 
 import kotlinx.coroutines.reactive.awaitFirstOrDefault
+import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
@@ -12,12 +13,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.PersonLocationMigrationResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
 
 @Service
 class PersonLocationMappingApiService(@Qualifier("personLocationMappingApiWebClient") webClient: WebClient) : MigrationMapping<PersonLocationsMappingDto>(domainUrl = "/mapping/person-location", webClient) {
 
   private val migrationApi = PersonLocationMigrationResourceApi(webClient)
+
+  suspend fun getMappings(bookingIds: List<Long>): List<PersonLocationBookingMappingDto> = migrationApi.getPersonLocationMappingsByBookingIds(bookingIds).awaitSingle()
 
   override suspend fun createMapping(
     mapping: PersonLocationsMappingDto,
