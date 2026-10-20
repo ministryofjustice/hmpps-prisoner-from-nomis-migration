@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-16.2246.6b33463"
+    "version" : "2026-10-19.2253.5a7592a"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -10830,7 +10830,7 @@
       "post" : {
         "tags" : [ "visits-configuration-resource" ],
         "summary" : "Create a visit time slot",
-        "description" : "Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "description" : "Creates the visit day if it does not already exist. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
         "operationId" : "createVisitTimeSlot",
         "parameters" : [ {
           "name" : "prisonId",
@@ -46911,6 +46911,10 @@
       "PrisonerHoldProjection" : {
         "type" : "object",
         "properties" : {
+          "txnEntrySeq" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "clientUniqueRef" : {
             "type" : [ "string", "null" ]
           },
@@ -46918,13 +46922,13 @@
             "type" : [ "integer", "null" ],
             "format" : "int64"
           },
-          "txnId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "txnEntryDate" : {
             "type" : "string",
             "format" : "date-time"
+          },
+          "txnId" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "txnEntryDesc" : {
             "type" : [ "string", "null" ]
@@ -46934,10 +46938,6 @@
           },
           "txnEntryAmount" : {
             "type" : "number"
-          },
-          "txnEntrySeq" : {
-            "type" : "integer",
-            "format" : "int32"
           }
         },
         "required" : [ "txnEntryAmount", "txnEntryDate", "txnEntrySeq", "txnId" ]
