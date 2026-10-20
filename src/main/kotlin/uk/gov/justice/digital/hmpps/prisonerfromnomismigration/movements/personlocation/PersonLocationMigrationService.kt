@@ -6,14 +6,20 @@ import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.generateBatchId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CAS_URN_PREFIX
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.RAS_URN_PREFIX
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TAP_URN_PREFIX
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TRN_URN_PREFIX
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
@@ -57,7 +63,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.PERSON_LOCATIONS
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import java.util.UUID
+import java.util.*
 
 @Service
 class PersonLocationMigrationService(
@@ -67,6 +73,7 @@ class PersonLocationMigrationService(
   private val nomisApi: NomisApiService,
   private val tapMappingApi: TapMappingApiService,
   private val courtSchedulerMappingApi: CourtSchedulerMappingApiService,
+  private val courtSentencingMappingApi: CourtSentencingMappingApiService,
   private val transferScheduleMappingApi: TransferScheduleMappingApiService,
   jsonMapper: JsonMapper,
   @Value($$"${personlocations.page.size:1000}") pageSize: Long,
@@ -166,18 +173,42 @@ class PersonLocationMigrationService(
     .filter { it.scheduleId != null }
     .map { it.movementType }
     .distinct()
-    .associateWith { getDpsScheduleReferences(offenderNo, it) }
+    .associateWith { getDpsScheduleReferences(offenderNo, it, this) }
 
-  private suspend fun getDpsScheduleReferences(offenderNo: String, movementType: PersonLocationMovement.MovementType): Map<Long, String> = when (movementType) {
+  private suspend fun getDpsScheduleReferences(
+    offenderNo: String,
+    movementType: PersonLocationMovement.MovementType,
+    nomisPersonLocations: OffenderPersonLocationsResponse,
+  ): Map<Long, String> = when (movementType) {
     TAP -> tapMappingApi.getTapPrisonerMappingIds(offenderNo).schedules
-      .associate { it.nomisEventId to "urn:temporary-absence-scheduler:temporary-absence:${it.dpsOccurrenceId}" }
-    CRT -> courtSchedulerMappingApi.getCourtSchedulerPrisonMappingIds(offenderNo).schedules
-      .associate { it.nomisEventId to "urn:court-appearance-scheduler:court-appearance:${it.dpsCourtAppearanceId}" }
+      .associate { it.nomisEventId to "$TAP_URN_PREFIX${it.dpsOccurrenceId}" }
+    CRT -> buildMap {
+      putAll(
+        getCourtSentencingMappings(nomisPersonLocations)
+          .associate { it.nomisCourtAppearanceId to "$RAS_URN_PREFIX${it.dpsCourtAppearanceId}" },
+      )
+      putAll(
+        courtSchedulerMappingApi.getCourtSchedulerPrisonMappingIds(offenderNo).schedules
+          .associate { it.nomisEventId to "$CAS_URN_PREFIX${it.dpsCourtAppearanceId}" },
+      )
+    }
     TRN -> transferScheduleMappingApi.getMappings(offenderNo).schedules
-      .associate { it.nomisEventId to "urn:transfer-scheduler:transfer:${it.dpsTransferScheduleId}" }
+      .associate { it.nomisEventId to "$TRN_URN_PREFIX${it.dpsTransferScheduleId}" }
     // There are no DPS schedules for admissions or releases
     ADM, REL -> emptyMap()
   }
+
+  private suspend fun getCourtSentencingMappings(
+    nomisPersonLocations: OffenderPersonLocationsResponse,
+  ): List<CourtAppearanceMappingDto> = // Schedules owned by court sentencing are not in the court scheduler mappings, so use any sentencing mappings for the rest
+    nomisPersonLocations.bookings
+      .flatMap { it.movements }
+      .filter { it.movementType == CRT }
+      .mapNotNull { it.scheduleId }
+      .distinct()
+      .takeIf { it.isNotEmpty() }
+      ?.let { courtSentencingMappingApi.getAllCourtAppearancesByNomisIds(it) }
+      .orEmpty()
 
   private suspend fun createMappingOrOnFailureDo(
     mappings: PersonLocationsMappingDto,
