@@ -295,7 +295,7 @@ class CourtSchedulerSyncMovementIntTest(
           putRequestedFor(urlPathEqualTo("/sync/court-appearance-movements/A1234BC")),
         ).apply {
           assertThat(movement.dpsCourtAppearanceScheduleId).isNull()
-          assertThat(movement.dpsCourtAppearanceExternalReference).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+          assertThat(movement.dpsCourtAppearanceExternalReference).isEqualTo("$RAS_URN_PREFIX$dpsSentencingCourtAppearanceId")
         }
       }
 
@@ -799,7 +799,7 @@ class CourtSchedulerSyncMovementIntTest(
           putRequestedFor(urlPathEqualTo("/sync/court-appearance-movements/A1234BC")),
         ).apply {
           assertThat(movement.dpsCourtAppearanceScheduleId).isNull()
-          assertThat(movement.dpsCourtAppearanceExternalReference).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+          assertThat(movement.dpsCourtAppearanceExternalReference).isEqualTo("$RAS_URN_PREFIX$dpsSentencingCourtAppearanceId")
         }
       }
 
@@ -1250,7 +1250,7 @@ class CourtSchedulerSyncMovementIntTest(
           putRequestedFor(urlPathEqualTo("/sync/court-appearance-movements/A1234BC")),
         ).apply {
           assertThat(movement.dpsCourtAppearanceScheduleId).isNull()
-          assertThat(movement.dpsCourtAppearanceExternalReference).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+          assertThat(movement.dpsCourtAppearanceExternalReference).isEqualTo("$RAS_URN_PREFIX$dpsSentencingCourtAppearanceId")
         }
       }
 
@@ -1500,7 +1500,7 @@ class CourtSchedulerSyncMovementIntTest(
         ).apply {
           assertThat(movement.dpsId).isEqualTo(dpsCourtMovementId)
           assertThat(movement.dpsCourtAppearanceScheduleId).isNull()
-          assertThat(movement.dpsCourtAppearanceExternalReference).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+          assertThat(movement.dpsCourtAppearanceExternalReference).isEqualTo("$RAS_URN_PREFIX$dpsSentencingCourtAppearanceId")
           assertThat(movement.directionCode).isEqualTo("IN")
         }
       }

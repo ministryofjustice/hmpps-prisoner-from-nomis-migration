@@ -526,7 +526,7 @@ class CourtSchedulerSyncScheduleIntTest(
         CourtSchedulerDpsApiMockServer.getRequestBody<SyncCourtEvent>(
           putRequestedFor(urlPathEqualTo("/sync/court-appearances/A1234BC")),
         ).apply {
-          assertThat(courtEvent.externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+          assertThat(courtEvent.externalReferenceUrn).isEqualTo("$RAS_URN_PREFIX$dpsSentencingCourtAppearanceId")
         }
       }
 
@@ -1361,7 +1361,7 @@ class CourtSchedulerSyncScheduleIntTest(
           assertThat(courtEvent.eventStatus).isEqualTo("SCH")
           assertThat(courtEvent.eventId).isEqualTo(123)
           assertThat(courtEvent.commentText).isEqualTo("court schedule comment")
-          assertThat(courtEvent.externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+          assertThat(courtEvent.externalReferenceUrn).isEqualTo("$RAS_URN_PREFIX$dpsSentencingCourtAppearanceId")
           assertThat(user.username).isEqualTo("SYS")
           assertThat(user.activeCaseloadId).isEqualTo("MDI")
         }

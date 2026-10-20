@@ -304,7 +304,7 @@ private fun CourtScheduleOut.toDpsRequest(courtAppearanceId: UUID?, sentencingCo
     eventId = eventId,
     commentText = comment,
     currentTerm = latestBooking,
-    externalReferenceUrn = sentencingCourtAppearanceId?.let { "$EXTERNAL_REF_PREFIX$sentencingCourtAppearanceId" },
+    externalReferenceUrn = sentencingCourtAppearanceId?.let { "$RAS_URN_PREFIX$sentencingCourtAppearanceId" },
   ),
   occurredAt = this.audit.modifyDatetime ?: this.audit.createDatetime,
   user = SyncUser(

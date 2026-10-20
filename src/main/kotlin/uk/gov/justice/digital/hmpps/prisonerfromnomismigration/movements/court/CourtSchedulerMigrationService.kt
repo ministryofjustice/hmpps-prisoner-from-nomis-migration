@@ -220,7 +220,7 @@ fun OffenderCourtMovementsResponse.toDpsRequest(
           externalReferenceUrn = if (schedule.courtCaseId != null) {
             sentencingMappings.find { it.nomisCourtAppearanceId == schedule.eventId }
               ?.dpsCourtAppearanceId
-              ?.let { "$EXTERNAL_REF_PREFIX$it" }
+              ?.let { "$RAS_URN_PREFIX$it" }
               ?: throw ConflictException("Could not find a sentencing mapping for eventId=${schedule.eventId} but there is a court case so we expect one")
           } else {
             null
@@ -265,7 +265,7 @@ private fun BookingCourtMovementOut.toDpsRequest(
       null
     },
     dpsCourtAppearanceExternalReference = if (hasCourtCase) {
-      sentencingMappings.find { it.nomisCourtAppearanceId == eventId }?.dpsCourtAppearanceId?.let { "$EXTERNAL_REF_PREFIX$it" }
+      sentencingMappings.find { it.nomisCourtAppearanceId == eventId }?.dpsCourtAppearanceId?.let { "$RAS_URN_PREFIX$it" }
     } else {
       null
     },
@@ -297,7 +297,7 @@ private fun BookingCourtMovementIn.toDpsRequest(
       null
     },
     dpsCourtAppearanceExternalReference = if (hasCourtCase) {
-      sentencingMappings.find { it.nomisCourtAppearanceId == eventId }?.dpsCourtAppearanceId?.let { "$EXTERNAL_REF_PREFIX$it" }
+      sentencingMappings.find { it.nomisCourtAppearanceId == eventId }?.dpsCourtAppearanceId?.let { "$RAS_URN_PREFIX$it" }
     } else {
       null
     },

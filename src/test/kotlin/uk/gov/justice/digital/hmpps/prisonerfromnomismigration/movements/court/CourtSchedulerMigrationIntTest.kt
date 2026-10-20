@@ -279,7 +279,7 @@ class CourtSchedulerMigrationIntTest(
         with(courtEvents[0].courtEvent) {
           assertThat(dpsId).isNull()
           assertThat(eventId).isEqualTo(1)
-          assertThat(externalReferenceUrn).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+          assertThat(externalReferenceUrn).isEqualTo("$RAS_URN_PREFIX$dpsSentencingCourtAppearanceId")
         }
       }
     }
@@ -294,7 +294,7 @@ class CourtSchedulerMigrationIntTest(
           assertThat(offenderBookId).isEqualTo(12345)
           assertThat(movementSeq).isEqualTo(3)
           assertThat(dpsCourtAppearanceScheduleId).isNull()
-          assertThat(dpsCourtAppearanceExternalReference).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+          assertThat(dpsCourtAppearanceExternalReference).isEqualTo("$RAS_URN_PREFIX$dpsSentencingCourtAppearanceId")
         }
       }
     }
@@ -309,7 +309,7 @@ class CourtSchedulerMigrationIntTest(
           assertThat(offenderBookId).isEqualTo(12345)
           assertThat(movementSeq).isEqualTo(4)
           assertThat(dpsCourtAppearanceScheduleId).isNull()
-          assertThat(dpsCourtAppearanceExternalReference).isEqualTo("$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceId")
+          assertThat(dpsCourtAppearanceExternalReference).isEqualTo("$RAS_URN_PREFIX$dpsSentencingCourtAppearanceId")
         }
       }
     }

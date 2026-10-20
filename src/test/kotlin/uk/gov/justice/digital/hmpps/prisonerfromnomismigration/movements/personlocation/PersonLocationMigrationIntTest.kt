@@ -29,6 +29,7 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.http.MediaType
 import org.springframework.test.web.reactive.server.returnResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
@@ -75,6 +76,7 @@ class PersonLocationMigrationIntTest(
   @Autowired private val mappingApi: PersonLocationMappingApiMockServer,
   @Autowired private val tapMappingApi: TapMappingApiMockServer,
   @Autowired private val courtSchedulerMappingApi: CourtSchedulerMappingApiMockServer,
+  @Autowired private val courtSentencingMappingApi: CourtSentencingMappingApiMockServer,
   @Autowired private val transferScheduleMappingApi: TransferScheduleMappingApiMockServer,
 ) : PersonLocationIntegrationTestBase() {
 
@@ -266,6 +268,7 @@ class PersonLocationMigrationIntTest(
   inner class MigrateEntityScheduleReferencesAndMissingLocations {
     private val dpsTapOccurrenceId = UUID.randomUUID()
     private val dpsCourtAppearanceId = UUID.randomUUID()
+    private val dpsSentencingCourtAppearanceId = UUID.randomUUID()
 
     @BeforeAll
     fun setUp() {
@@ -284,11 +287,16 @@ class PersonLocationMigrationIntTest(
                   movement(sequence = 3, movementType = CRT, scheduleId = 102),
                   movement(sequence = 4, movementType = TRN, scheduleId = 103),
                   movement(sequence = 5, movementType = REL),
+                  movement(sequence = 6, movementType = CRT, scheduleId = 104),
                 ),
               ),
             ),
           )
         },
+      )
+      courtSentencingMappingApi.stubGetAllCourtAppearanceByNomisIds(
+        nomisCourtAppearanceIds = listOf(104, 102),
+        dpsCourtAppearanceIds = listOf(dpsSentencingCourtAppearanceId.toString(), UUID.randomUUID().toString()),
       )
       tapMappingApi.stubGetTapPrisonerMappingIds(prisonerNumber = "A1234BC", nomisScheduleOutEventId = 101, dpsOccurrenceId = dpsTapOccurrenceId)
       courtSchedulerMappingApi.stubGetCourtSchedulerPrisonerMappingIds(prisonerNumber = "A1234BC", nomisEventId = 102, dpsCourtAppearanceId = dpsCourtAppearanceId)
@@ -331,6 +339,7 @@ class PersonLocationMigrationIntTest(
         "urn:court-appearance-scheduler:court-appearance:$dpsCourtAppearanceId",
         null,
         null,
+        "urn:remand-and-sentencing:court-appearance:$dpsSentencingCourtAppearanceId",
       )
     }
 
@@ -339,6 +348,7 @@ class PersonLocationMigrationIntTest(
       tapMappingApi.verify(1, getRequestedFor(urlPathEqualTo("/mapping/taps/A1234BC/ids")))
       courtSchedulerMappingApi.verify(1, getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/A1234BC/ids")))
       transferScheduleMappingApi.verify(1, getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/A1234BC/ids")))
+      courtSentencingMappingApi.verify(1, postRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-ids/get-list")))
     }
   }
 
