@@ -46,7 +46,10 @@ class StaffEventListener(
               "USER_ACCESSIBLE_CASELOADS-DELETED" -> service.userAccessibleCaseloadUpserted("deleted", sqsMessage.Message.fromJson())
               "USER_CASELOAD_ROLES-INSERTED" -> service.userCaseloadRoleUpserted("created", sqsMessage.Message.fromJson())
               "USER_CASELOAD_ROLES-DELETED" -> service.userCaseloadRoleUpserted("deleted", sqsMessage.Message.fromJson())
-
+              "LAA_ADMINISTRATORS-INSERTED" -> service.laaAdministratorUpserted("created")
+              "LAA_ADMINISTRATORS-DELETED" -> service.laaAdministratorUpserted("deleted")
+              "LAA_GENERAL_USERS-INSERTED" -> service.laaGeneralUserUpserted("created")
+              "LAA_GENERAL_USERS-DELETED" -> service.laaGeneralUserUpserted("deleted")
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
