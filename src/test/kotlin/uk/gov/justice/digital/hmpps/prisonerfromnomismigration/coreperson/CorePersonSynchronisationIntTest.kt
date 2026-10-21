@@ -60,7 +60,11 @@ class CorePersonSynchronisationIntTest : CorePersonIntegrationTestBase() {
               equalToJson(
                 """
                 {
-                  "fromPrisonNumber": "$removedOffenderNo"
+                  "fromPrisonNumber": "$removedOffenderNo",
+                  "toPrisonAddressesAndContactsRequest": {
+                    "addresses": [],
+                    "contacts": []
+                  }
                 }
                 """.trimIndent(),
               ),

@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MergeAdditionalInformationEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMergeDomainEvent
@@ -27,6 +28,11 @@ class CorePersonSynchronisationService(
   }
 }
 
-private fun MergeAdditionalInformationEvent.toPrisonMerge(): PrisonMerge = PrisonMerge(fromPrisonNumber = removedNomsNumber)
-
-class BookingException(message: String) : IllegalArgumentException(message)
+private fun MergeAdditionalInformationEvent.toPrisonMerge(): PrisonMerge = PrisonMerge(
+  fromPrisonNumber = removedNomsNumber,
+  toPrisonAddressesAndContactsRequest =
+  PrisonAddressesAndContactsRequest(
+    addresses = emptyList(),
+    contacts = emptyList(),
+  ),
+)
