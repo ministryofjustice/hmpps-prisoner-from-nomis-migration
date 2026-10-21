@@ -28,4 +28,11 @@ class CorePersonSynchronisationService(
   }
 }
 
-private fun MergeAdditionalInformationEvent.toPrisonMerge(): PrisonMerge = PrisonMerge(fromPrisonNumber = removedNomsNumber, toPrisonAddressesAndContactsRequest = PrisonAddressesAndContactsRequest(addresses = emptyList(), contacts = emptyList()))
+private fun MergeAdditionalInformationEvent.toPrisonMerge(): PrisonMerge = PrisonMerge(
+  fromPrisonNumber = removedNomsNumber,
+  toPrisonAddressesAndContactsRequest =
+  PrisonAddressesAndContactsRequest(
+    addresses = emptyList(),
+    contacts = emptyList(),
+  ),
+)
