@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconPersonMergeResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 
@@ -70,9 +71,10 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") private val w
     .deletePrisonerAddress(prisonNumber, cprAddressId)
     .awaitSingle()
 
-  suspend fun processPrisonMerge(prisonNumber: String, prisonMerge: PrisonMerge): Unit = api
-    .processPrisonMerge(prisonNumber, prisonMerge)
-    .awaitSingle()
+  suspend fun processPrisonMerge(prisonNumber: String, prisonMerge: PrisonMerge): SysconPersonMergeResponseBody = api
+    .prepare(api.processPrisonMergeRequestConfig(prisonNumber, prisonMerge))
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
 
   suspend fun syncCreateAddressContact(prisonNumber: String, cprAddressId: String, contact: PrisonContact): SysconContactMapping = api
     .prepare(api.createPrisonerAddressContactRequestConfig(prisonNumber, cprAddressId, contact))

@@ -250,7 +250,7 @@ private fun CourtMovementOut.toDpsRequest(
     fromAgencyId = fromPrison,
     toAgencyId = toCourt ?: MISSING_COURT,
     commentText = this.commentText,
-    dpsCourtAppearanceExternalReference = dpsSentencingCourtAppearanceScheduleId?.let { "$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceScheduleId" },
+    dpsCourtAppearanceExternalReference = dpsSentencingCourtAppearanceScheduleId?.let { "$RAS_URN_PREFIX$dpsSentencingCourtAppearanceScheduleId" },
   ),
   occurredAt = this.audit.modifyDatetime ?: this.audit.createDatetime,
   user = SyncUser(
@@ -275,7 +275,7 @@ private fun CourtMovementIn.toDpsRequest(
     fromAgencyId = fromCourt ?: MISSING_COURT,
     toAgencyId = toPrison,
     commentText = this.commentText,
-    dpsCourtAppearanceExternalReference = dpsSentencingCourtAppearanceScheduleId?.let { "$EXTERNAL_REF_PREFIX$dpsSentencingCourtAppearanceScheduleId" },
+    dpsCourtAppearanceExternalReference = dpsSentencingCourtAppearanceScheduleId?.let { "$RAS_URN_PREFIX$dpsSentencingCourtAppearanceScheduleId" },
   ),
   occurredAt = this.audit.modifyDatetime ?: this.audit.createDatetime,
   user = SyncUser(
