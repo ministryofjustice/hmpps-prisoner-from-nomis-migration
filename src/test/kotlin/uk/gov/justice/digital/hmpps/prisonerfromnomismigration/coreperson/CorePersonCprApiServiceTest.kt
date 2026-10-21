@@ -365,6 +365,9 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
           .withRequestBodyJsonPath("fromPrisonNumber", equalTo("B2345CD")),
       )
       assertThat(response.toPrisonNumber).isEqualTo("A1234BC")
+      assertThat(response.sysconAddressesAndContactsResponseBody).isNotNull()
+      assertThat(response.sysconAddressesAndContactsResponseBody.addressesMappings).isEmpty()
+      assertThat(response.sysconAddressesAndContactsResponseBody.contactMappings).isEmpty()
     }
   }
 
