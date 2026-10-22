@@ -451,7 +451,7 @@ class FinanceDpsApiServiceTest {
       }
 
       @Test
-      fun `will call the sync sync write-off advance endpoint`() = runTest {
+      fun `will call the sync write-off advance endpoint`() = runTest {
         financeApi.stubWriteOffAdvance(advanceUuid)
 
         apiService.writeOffAdvance(advanceUuid, writeOffAdvanceDto())
