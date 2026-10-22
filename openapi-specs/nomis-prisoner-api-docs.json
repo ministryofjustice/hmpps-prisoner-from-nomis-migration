@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-19.2253.5a7592a"
+    "version" : "2026-10-21.2267.dd4fc9c"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -8987,7 +8987,7 @@
       "put" : {
         "tags" : [ "agency-resource" ],
         "summary" : "Updates the core details of an agency",
-        "description" : "Replaces the core, non-collection details of an agency, for example its description or active status. Addresses, phone numbers and email addresses are managed via their own endpoints. The agency's type can not be changed. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
+        "description" : "Replaces the core, non-collection details of an agency, for example its description, type or active status. Addresses, phone numbers and email addresses are managed via their own endpoints. Requires ROLE_NOMIS_PRISONER_API__SYNCHRONISATION__RW",
         "operationId" : "updateAgency",
         "parameters" : [ {
           "name" : "agencyId",
@@ -34566,6 +34566,12 @@
             "description" : "Description of agency",
             "example" : "Blackburn YOT"
           },
+          "typeCode" : {
+            "type" : "string",
+            "description" : "Agency type code",
+            "example" : "CRT",
+            "minLength" : 1
+          },
           "active" : {
             "type" : "boolean",
             "description" : "Indicates if still used",
@@ -34636,7 +34642,7 @@
             }
           }
         },
-        "required" : [ "active", "description", "localAuthorityCodes" ]
+        "required" : [ "active", "description", "localAuthorityCodes", "typeCode" ]
       },
       "AgencyPhoneNumbersResponse" : {
         "type" : "object",
@@ -46798,6 +46804,10 @@
         },
         "required" : [ "accounts", "prisonNumber", "rootOffenderId" ]
       },
+      "AdjustmentReason" : {
+        "type" : "string",
+        "enum" : [ "P", "WRT" ]
+      },
       "PrisonerAdvanceDto" : {
         "type" : "object",
         "properties" : {
@@ -46856,6 +46866,26 @@
             "description" : "The information number",
             "example" : "12345678-1"
           },
+          "deductionAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "How much has been paid off so far, in pence",
+            "example" : 1130
+          },
+          "adjustmentReason" : {
+            "description" : "The reason code for the adjustment",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AdjustmentReason"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "adjustmentAmount" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "How much has been written off so far, in pence",
+            "example" : 1020
+          },
           "createdBy" : {
             "type" : "string",
             "description" : "The user who created the advance",
@@ -46911,10 +46941,6 @@
       "PrisonerHoldProjection" : {
         "type" : "object",
         "properties" : {
-          "txnEntrySeq" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "clientUniqueRef" : {
             "type" : [ "string", "null" ]
           },
@@ -46922,13 +46948,17 @@
             "type" : [ "integer", "null" ],
             "format" : "int64"
           },
-          "txnEntryDate" : {
-            "type" : "string",
-            "format" : "date-time"
+          "txnEntrySeq" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "txnId" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "txnEntryDate" : {
+            "type" : "string",
+            "format" : "date-time"
           },
           "txnEntryDesc" : {
             "type" : [ "string", "null" ]
