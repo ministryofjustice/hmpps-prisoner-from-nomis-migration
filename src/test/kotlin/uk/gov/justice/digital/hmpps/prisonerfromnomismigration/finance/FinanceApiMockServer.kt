@@ -20,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.Gen
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerAccountPointInTimeBalance
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncAdvanceRepayResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncAdvanceWriteOffResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRepayRequest
@@ -162,7 +163,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       createdAt = LocalDateTime.of(2024, Month.JUNE, 20, 11, 30),
     )
     fun writeOffAdvanceDto() = SyncCreateAdvanceWriteOffRequest(
-      amount = BigDecimal.TWO,
+      writtenOffAmount = BigDecimal.TWO,
       writtenOffBy = "LF12345",
       writeOffDateTime = LocalDateTime.of(2024, Month.JUNE, 29, 9, 15),
     )
@@ -353,12 +354,19 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubWriteOffAdvance(
     advanceUuid: UUID = UUID.randomUUID(),
+    response: SyncAdvanceWriteOffResponse = SyncAdvanceWriteOffResponse(
+      advanceId = advanceUuid,
+      advanceStatus = SyncAdvanceWriteOffResponse.AdvanceStatus.WRITTEN_OFF,
+      writtenOffAmount = BigDecimal.TWO,
+    ),
   ) {
     stubFor(
       post("/sync/advances/$advanceUuid/write-off")
         .willReturn(
           aResponse()
-            .withStatus(200),
+            .withStatus(CREATED.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
