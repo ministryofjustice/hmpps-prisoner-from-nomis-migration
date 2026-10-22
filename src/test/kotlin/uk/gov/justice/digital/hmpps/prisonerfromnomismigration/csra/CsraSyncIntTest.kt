@@ -594,6 +594,7 @@ class CsraSyncIntTest(
               .withRequestBodyJsonPath("review.assessmentPrisonId", "SWI")
               .withRequestBodyJsonPath("review.assessmentType", "CSR")
               .withRequestBodyJsonPath("review.calculatedLevel", "STANDARD")
+              .withRequestBodyJsonPath("review.overrideLevel", "HI")
               .withRequestBodyJsonPath("review.score", "1001")
               .withRequestBodyJsonPath("review.status", "A")
               .withRequestBodyJsonPath("review.committeeCode", "GOV")
