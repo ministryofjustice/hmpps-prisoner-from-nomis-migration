@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-19.2721.436a81e"
+    "version" : "2026-10-21.2741.eb035c8"
   },
   "servers" : [ {
     "url" : "https://remand-and-sentencing-api.hmpps.service.justice.gov.uk",
@@ -5044,6 +5044,54 @@
         }
       }
     },
+    "/person/{prisonerId}/status" : {
+      "get" : {
+        "tags" : [ "person-controller" ],
+        "summary" : "Retrieve person status indicators",
+        "description" : "isOnRemand is true when an active court case has a latest appearance outcome of type REMAND",
+        "operationId" : "getPersonStatus",
+        "parameters" : [ {
+          "name" : "prisonerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Returns person status indicators",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PersonStatus"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PersonStatus"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PersonStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/person/{prisonerId}/sentences-to-chain-to" : {
       "get" : {
         "tags" : [ "person-controller" ],
@@ -5318,6 +5366,84 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/CourtAppearanceSchedulesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/person/{prisonerId}/charges" : {
+      "get" : {
+        "tags" : [ "person-controller" ],
+        "summary" : "retrieve charges for person",
+        "description" : "This endpoint will retrieve charges for person",
+        "operationId" : "charges",
+        "parameters" : [ {
+          "name" : "prisonerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "statuses",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "default" : [ "ACTIVE" ],
+            "items" : {
+              "type" : "string",
+              "enum" : [ "ACTIVE", "INACTIVE" ]
+            }
+          }
+        }, {
+          "name" : "fromDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date",
+            "default" : "0001-01-01"
+          }
+        }, {
+          "name" : "toDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date",
+            "default" : "9999-12-31"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Returns charges for person",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PersonCharges"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorised, requires a valid Oauth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PersonCharges"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden, requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PersonCharges"
                 }
               }
             }
@@ -5791,8 +5917,8 @@
     "/immigration-detention/person/{prisonerId}" : {
       "get" : {
         "tags" : [ "immigration-detention-controller" ],
-        "summary" : "Retrieve all active immigration detention records for a person",
-        "description" : "This endpoint will retrieve  all active immigration detention records for a person",
+        "summary" : "Retrieve active immigration detention records for a person. optionally filtered by dates",
+        "description" : "This endpoint will retrieve active immigration detention records for a person, optional startDate and endDate filter on record date",
         "operationId" : "getImmigrationDetentionByPrisonerId",
         "parameters" : [ {
           "name" : "prisonerId",
@@ -5802,12 +5928,22 @@
             "type" : "string"
           }
         }, {
-          "name" : "bookingId",
+          "name" : "startDate",
           "in" : "query",
           "required" : false,
           "schema" : {
             "type" : "string",
-            "default" : ""
+            "format" : "date",
+            "default" : "0001-01-01"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date",
+            "default" : "9999-12-31"
           }
         } ],
         "responses" : {
@@ -7808,7 +7944,7 @@
             "type" : [ "boolean", "null" ]
           }
         },
-        "required" : [ "eventType", "isBreach", "prisonerId" ]
+        "required" : [ "eventType", "prisonerId" ]
       },
       "LegacyLinkCase" : {
         "type" : "object",
@@ -7910,7 +8046,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:45:41.75693734"
+            "example" : "07:42:42.602571759"
           },
           "outcomeDispositionCode" : {
             "type" : [ "string", "null" ]
@@ -8289,7 +8425,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:45:41.75693734"
+            "example" : "07:42:42.602571759"
           },
           "courtCode" : {
             "type" : "string"
@@ -11059,6 +11195,16 @@
         },
         "required" : [ "offenceCode", "sentenceServeType", "sentenceUuid" ]
       },
+      "PersonStatus" : {
+        "type" : "object",
+        "description" : "Status indicators for a person",
+        "properties" : {
+          "isOnRemand" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "isOnRemand" ]
+      },
       "AppearanceToChainTo" : {
         "type" : "object",
         "properties" : {
@@ -11403,7 +11549,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:45:41.75693734"
+            "example" : "07:42:42.602571759"
           },
           "courtCode" : {
             "type" : "string"
@@ -11672,6 +11818,167 @@
           }
         },
         "required" : [ "courtCaseDocuments" ]
+      },
+      "PersonCharge" : {
+        "type" : "object",
+        "properties" : {
+          "chargeUuid" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "offenceCode" : {
+            "type" : "string"
+          },
+          "offenceStartDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "offenceEndDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "outcome" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ChargeOutcome"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "aggravatingFactors" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AggravatingFactor"
+            }
+          },
+          "legacyData" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/ChargeLegacyData"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "findingOfDomesticAbuse" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "sentence" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PersonSentence"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "aggravatingFactors", "chargeUuid", "offenceCode" ]
+      },
+      "PersonCharges" : {
+        "type" : "object",
+        "properties" : {
+          "charges" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonCharge"
+            }
+          }
+        },
+        "required" : [ "charges" ]
+      },
+      "PersonPeriodLength" : {
+        "type" : "object",
+        "properties" : {
+          "years" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "months" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "weeks" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "days" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int32"
+          },
+          "periodOrder" : {
+            "type" : "string"
+          },
+          "periodLengthType" : {
+            "type" : "string",
+            "enum" : [ "SENTENCE_LENGTH", "CUSTODIAL_TERM", "LICENCE_PERIOD", "TARIFF_LENGTH", "TERM_LENGTH", "OVERALL_SENTENCE_LENGTH", "BREACH_OF_SUPERVISION_REQUIREMENTS", "BREACH_OF_IMPRISONABLE_OFFENCE", "UNSUPPORTED" ]
+          },
+          "legacyData" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/PeriodLengthLegacyData"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "periodLengthUuid" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "periodLengthType", "periodLengthUuid", "periodOrder" ]
+      },
+      "PersonSentence" : {
+        "type" : "object",
+        "properties" : {
+          "sentenceUuid" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "chargeNumber" : {
+            "type" : [ "string", "null" ]
+          },
+          "sentenceServeType" : {
+            "type" : "string"
+          },
+          "sentenceType" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SentenceType"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "convictionDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "fineAmount" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FineAmount"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "legacyData" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/SentenceLegacyData"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "consecutiveToSentenceUuid" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          },
+          "hasRecall" : {
+            "type" : "boolean"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "ACTIVE", "DUPLICATE", "DELETED", "MANY_CHARGES_DATA_FIX", "INACTIVE" ]
+          },
+          "periodLengths" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PersonPeriodLength"
+            }
+          }
+        },
+        "required" : [ "hasRecall", "periodLengths", "sentenceServeType", "sentenceUuid", "status" ]
       },
       "PersonCourtCaseCount" : {
         "type" : "object",
@@ -12095,7 +12402,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "07:45:41.75693734"
+            "example" : "07:42:42.602571759"
           },
           "nomisOutcomeCode" : {
             "type" : [ "string", "null" ]
@@ -12174,7 +12481,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:45:41.75693734"
+            "example" : "07:42:42.602571759"
           },
           "courtId" : {
             "type" : "string"
@@ -12326,7 +12633,7 @@
           },
           "appearanceTime" : {
             "type" : "string",
-            "example" : "07:45:41.75693734"
+            "example" : "07:42:42.602571759"
           },
           "charges" : {
             "type" : "array",
@@ -12363,7 +12670,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:45:41.75693734"
+            "example" : "07:42:42.602571759"
           },
           "courtId" : {
             "type" : "string"
@@ -12431,14 +12738,31 @@
           "caseReference" : {
             "type" : [ "string", "null" ]
           },
-          "offenceCodes" : {
+          "offences" : {
             "type" : "array",
             "items" : {
-              "type" : "string"
+              "$ref" : "#/components/schemas/F986EligibleCourtAppearanceOffence"
             }
           }
         },
-        "required" : [ "appearanceUuid", "courtCode", "offenceCodes", "warrantDate" ]
+        "required" : [ "appearanceUuid", "courtCode", "offences", "warrantDate" ]
+      },
+      "F986EligibleCourtAppearanceOffence" : {
+        "type" : "object",
+        "properties" : {
+          "offenceCode" : {
+            "type" : "string"
+          },
+          "offenceStartDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "offenceEndDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          }
+        },
+        "required" : [ "offenceCode" ]
       },
       "RecallableCourtCase" : {
         "type" : "object",
@@ -12988,7 +13312,7 @@
           },
           "appearanceTime" : {
             "type" : [ "string", "null" ],
-            "example" : "07:45:41.75693734"
+            "example" : "07:42:42.602571759"
           },
           "courtCode" : {
             "type" : [ "string", "null" ]
