@@ -379,7 +379,7 @@ class FinanceDpsApiServiceTest {
       val advanceUuid: UUID = UUID.randomUUID()
 
       @Test
-      internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
+      internal fun `will pass oauth2 token to sync repay advance endpoint`() = runTest {
         financeApi.stubRepayAdvance(advanceUuid)
 
         apiService.repayAdvance(advanceUuid, repayAdvanceDto())
@@ -409,7 +409,7 @@ class FinanceDpsApiServiceTest {
       }
 
       @Test
-      fun `will call the sync prisoner advance endpoint`() = runTest {
+      fun `will call the sync repay advance endpoint`() = runTest {
         financeApi.stubRepayAdvance(advanceUuid)
 
         apiService.repayAdvance(advanceUuid, repayAdvanceDto())
@@ -425,7 +425,7 @@ class FinanceDpsApiServiceTest {
       val advanceUuid: UUID = UUID.randomUUID()
 
       @Test
-      internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
+      internal fun `will pass oauth2 token to sync write-off advance endpoint`() = runTest {
         financeApi.stubWriteOffAdvance(advanceUuid)
 
         apiService.writeOffAdvance(advanceUuid, writeOffAdvanceDto())
@@ -437,21 +437,21 @@ class FinanceDpsApiServiceTest {
       }
 
       @Test
-      internal fun `will sync request data to sync advance endpoint`() = runTest {
+      internal fun `will sync request data to sync write-off advance endpoint`() = runTest {
         financeApi.stubWriteOffAdvance(advanceUuid)
 
         apiService.writeOffAdvance(advanceUuid, writeOffAdvanceDto())
 
         financeApi.verify(
           postRequestedFor(anyUrl())
-            .withRequestBodyJsonPath("amount", equalTo("2"))
+            .withRequestBodyJsonPath("writtenOffAmount", equalTo("2"))
             .withRequestBodyJsonPath("writeOffDateTime", equalTo("2024-06-29T09:15:00"))
             .withRequestBodyJsonPath("writtenOffBy", equalTo("LF12345")),
         )
       }
 
       @Test
-      fun `will call the sync prisoner advance repayment endpoint`() = runTest {
+      fun `will call the sync write-off advance endpoint`() = runTest {
         financeApi.stubWriteOffAdvance(advanceUuid)
 
         apiService.writeOffAdvance(advanceUuid, writeOffAdvanceDto())
