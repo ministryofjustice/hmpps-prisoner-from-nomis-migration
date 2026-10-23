@@ -202,7 +202,7 @@ class CorePersonMigrationIntTest(
             assertThat(type).isEqualTo(PrisonContact.Type.HOME)
             assertThat(value).isEqualTo("0114 123 4567")
           }
-          assertThat(subBuildingName).isEqualTo("Flat 2")
+          assertThat(buildingNumber).isEqualTo("Flat 2")
           assertThat(buildingName).isEqualTo("The Priory")
           assertThat(thoroughfareName).isEqualTo("Main Street")
           assertThat(dependentLocality).isEqualTo("Sheffield")
