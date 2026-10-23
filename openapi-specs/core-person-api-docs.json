@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-10-20.5973.1df09da"
+    "version" : "2026-10-23.6030.7bb2330"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -1541,6 +1541,46 @@
         } ]
       }
     },
+    "/person/prison/{prisonNumber}/image" : {
+      "get" : {
+        "tags" : [ "Prison" ],
+        "description" : "Retrieve image data (as bytes) by prison number from Prison API.This is a proxy endpoint to prison api. Role required is **ROLE_CORE_PERSON_RECORD_API__RO**.",
+        "operationId" : "getMainBookingImageDataByNo",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          },
+          "example" : "A1234AA"
+        }, {
+          "name" : "fullSizeImage",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean",
+            "default" : false
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "image/jpeg" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "api-role" : [ ]
+        } ]
+      }
+    },
     "/person/prison/religion-codes" : {
       "get" : {
         "tags" : [ "Prison" ],
@@ -1752,6 +1792,11 @@
             "description" : "The nomis contact id",
             "example" : 1234
           },
+          "cprContactId" : {
+            "type" : [ "string", "null" ],
+            "description" : "The cpr contact id",
+            "example" : "4f2b1d8a-9e3c-4a1f-8b2d-112233445566"
+          },
           "value" : {
             "type" : [ "string", "null" ],
             "description" : "The contact value",
@@ -1811,6 +1856,11 @@
             "format" : "int64",
             "description" : "Is nomis address id",
             "example" : 5678
+          },
+          "cprAddressId" : {
+            "type" : [ "string", "null" ],
+            "description" : "The cpr address id",
+            "example" : "4f2b1d8a-9e3c-4a1f-8b2d-112233445566"
           },
           "fullAddress" : {
             "type" : [ "string", "null" ],
