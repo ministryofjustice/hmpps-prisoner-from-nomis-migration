@@ -53,7 +53,7 @@ class AdvancesSynchronisationService(
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-created-skipped", telemetry)
       return
     }
-    mappingService.getByNomisIdOrNull(nomisId = event.offenderAdvanceId)?.also {
+    mappingService.getByNomisIdOrNull(nomisId = advanceId)?.also {
       telemetryClient.trackEvent(
         "$TELEMETRY_PREFIX-created-ignored",
         telemetry + ("dpsAdvanceId" to it.dpsId),
@@ -140,6 +140,5 @@ fun PrisonerAdvanceDto.toSyncAdvanceDto() = SyncCreateAdvanceRecordRequest(
   createdOn = createDatetime,
   createdBy = createdBy,
   legacyInformationNumber = informationNumber,
-  // TODO pull in from Nomis
-  legacyTransactionId = 123,
+  legacyTransactionId = advanceCreateTransactionId,
 )
