@@ -20,7 +20,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
 
 @Service
 class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorePersonMappingsDto>("/mapping/core-person", webClient) {
@@ -77,6 +79,11 @@ class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     .prepare(api.getCorePersonContactMappingByNomisIdRequestConfig(nomisInternetAddressId, NomisContactTypeGetCorePersonContactMappingByNomisId.EMAIL))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun getMappingsFromNomisIds(request: CorePersonMappingsByNomisIdsRequest): CorePersonMappingsResult = api
+    .prepare(api.getMappingsFromNomisIdsRequestConfig(request))
+    .retrieve()
+    .awaitBody()
 
   suspend fun getByNomisEmailId(nomisInternetAddressId: Long): CorePersonContactMappingDto = api
     .prepare(api.getCorePersonContactMappingByNomisIdRequestConfig(nomisInternetAddressId, NomisContactTypeGetCorePersonContactMappingByNomisId.EMAIL))
