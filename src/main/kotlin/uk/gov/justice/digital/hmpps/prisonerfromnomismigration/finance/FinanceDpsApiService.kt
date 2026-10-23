@@ -14,6 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.Syn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceWriteOffRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncMigrateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncOffenderTransactionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleaseHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleasedHoldResponse
@@ -51,7 +52,7 @@ class FinanceDpsApiService(@Qualifier("financeApiWebClient") private val webClie
     .awaitOrLogAndRethrowBadRequest()
 
   // TODO update when Finance API is updated to return a response
-  suspend fun migrateAdvance(request: SyncCreateAdvanceRecordRequest): SyncCreateAdvanceRecordResponse = webClient.post()
+  suspend fun migrateAdvance(request: SyncMigrateAdvanceRecordRequest): SyncCreateAdvanceRecordResponse = webClient.post()
     .uri("/migrate/advances")
     .bodyValue(request)
     .retrieve()
@@ -60,13 +61,13 @@ class FinanceDpsApiService(@Qualifier("financeApiWebClient") private val webClie
   suspend fun createAdvance(request: SyncCreateAdvanceRecordRequest): SyncCreateAdvanceRecordResponse = advancesApi.postAdvance(request)
     .awaitOrLogAndRethrowBadRequest()
 
-  suspend fun repayAdvance(advanceId: UUID, request: SyncCreateAdvanceRepayRequest) {
-    advancesApi.postAdvanceRepay(advanceId, request)
+  suspend fun repayAdvance(advanceUuid: UUID, request: SyncCreateAdvanceRepayRequest) {
+    advancesApi.postAdvanceRepay(advanceUuid, request)
       .awaitOrLogAndRethrowBadRequest()
   }
 
-  suspend fun writeOffAdvance(advanceId: UUID, request: SyncCreateAdvanceWriteOffRequest) {
-    advancesApi.postAdvanceWriteOff(advanceId, request)
+  suspend fun writeOffAdvance(advanceUuid: UUID, request: SyncCreateAdvanceWriteOffRequest) {
+    advancesApi.postAdvanceWriteOff(advanceUuid, request)
       .awaitOrLogAndRethrowBadRequest()
   }
 }

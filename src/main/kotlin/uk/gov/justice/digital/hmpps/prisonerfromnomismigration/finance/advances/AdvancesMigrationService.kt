@@ -9,18 +9,23 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceDpsApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.MoneySupport
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncMigrateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdvanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdvanceMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAdvanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRangeMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
+import java.math.BigDecimal
+import java.time.LocalDateTime
 
 @Service
 class AdvancesMigrationService(
@@ -85,7 +90,7 @@ class AdvancesMigrationService(
           label,
         )
       } ?: run {
-        val response = dpsApiService.migrateAdvance(advance.toSyncAdvanceDto())
+        val response = dpsApiService.migrateAdvance(advance.toMigrateAdvanceDto())
         val mapping = AdvanceMappingDto(
           nomisAdvanceId = advance.id,
           dpsId = response.advanceId.toString(),
@@ -151,3 +156,23 @@ class AdvancesMigrationService(
 
   override fun parseContextMapping(json: String): MigrationMessage<*, AdvanceMappingDto> = jsonMapper.readValue(json)
 }
+
+fun PrisonerAdvanceDto.toMigrateAdvanceDto() = SyncMigrateAdvanceRecordRequest(
+  legacyPaymentProfileId = id,
+  legacyInformationNumber = informationNumber,
+  legacyTransactionId = advanceCreateTransactionId,
+  prisonNumber = prisonNumber,
+  prisonID = caseloadId,
+  amountIssued = MoneySupport.penceToPounds(advanceAmount),
+  // TODO pull in from Nomis
+  amountOutstanding = BigDecimal.ONE,
+  repaymentStartDate = startDate.atStartOfDay(),
+  repaymentAmount = MoneySupport.penceToPounds(repaymentAmount),
+  reference = reference,
+  comment = comment,
+  status = SyncMigrateAdvanceRecordRequest.Status.valueOf(status.name),
+  // TODO pull in from Nomis - the last transaction date for the advance (for the DED event)
+  migrationTimestamp = LocalDateTime.parse("2024-06-18T11:33:44"),
+  createdOn = createDatetime,
+  createdBy = createdBy,
+)

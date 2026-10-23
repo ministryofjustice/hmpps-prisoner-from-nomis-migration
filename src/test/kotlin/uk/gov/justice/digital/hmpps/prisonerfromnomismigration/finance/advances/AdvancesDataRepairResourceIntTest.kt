@@ -77,19 +77,19 @@ class AdvancesDataRepairResourceIntTest(
       fun `will send prisonerAdvance to DPS`() {
         financeApi.verify(
           postRequestedFor(urlPathEqualTo("/sync/advances"))
-            .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo("12345"))
+            .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo(advanceId.toString()))
             .withRequestBodyJsonPath("legacyInformationNumber", equalTo("info-123"))
+            .withRequestBodyJsonPath("legacyTransactionId", equalTo("987654"))
             .withRequestBodyJsonPath("prisonNumber", equalTo("A0001BC"))
             .withRequestBodyJsonPath("prisonID", equalTo("LEI"))
             .withRequestBodyJsonPath("amount", equalTo("2.1"))
-            .withRequestBodyJsonPath("repaymentAmount", equalTo("0.5"))
             .withRequestBodyJsonPath("repaymentStartDate", equalTo("2024-06-18T00:00:00"))
+            .withRequestBodyJsonPath("repaymentAmount", equalTo("0.5"))
+            .withRequestBodyJsonPath("status", equalTo("ACTIVE"))
             .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
             .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
             .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
-            .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:30:45"))
-            .withRequestBodyJsonPath("status", equalTo("ACTIVE"))
-            .withRequestBodyJsonPath("legacyTransactionId", equalTo("987654")),
+            .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:30:45")),
         )
       }
 

@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.addHoldDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.createAdvanceDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.migrateAdvanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.prisonBalanceMigrationDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.prisonerBalanceMigrationDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.releaseHoldDto
@@ -271,7 +272,7 @@ class FinanceDpsApiServiceTest {
       internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
         financeApi.stubMigrateAdvance()
 
-        apiService.migrateAdvance(createAdvanceDto())
+        apiService.migrateAdvance(migrateAdvanceDto())
 
         financeApi.verify(
           postRequestedFor(anyUrl())
@@ -283,24 +284,25 @@ class FinanceDpsApiServiceTest {
       internal fun `will sync request data to migrate advance endpoint`() = runTest {
         financeApi.stubMigrateAdvance()
 
-        apiService.migrateAdvance(createAdvanceDto())
+        apiService.migrateAdvance(migrateAdvanceDto())
 
         financeApi.verify(
           postRequestedFor(anyUrl())
             .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo("12345"))
             .withRequestBodyJsonPath("legacyInformationNumber", equalTo("9876-1"))
+            .withRequestBodyJsonPath("legacyTransactionId", equalTo("2345"))
             .withRequestBodyJsonPath("prisonNumber", equalTo("A0001BC"))
             .withRequestBodyJsonPath("prisonID", equalTo("LEI"))
-            .withRequestBodyJsonPath("amount", equalTo("2.1"))
+            .withRequestBodyJsonPath("amountIssued", equalTo("2.1"))
+            .withRequestBodyJsonPath("amountOutstanding", equalTo("0.05"))
             .withRequestBodyJsonPath("repaymentAmount", equalTo("0.5"))
             .withRequestBodyJsonPath("repaymentStartDate", equalTo("2024-06-18T00:00:00"))
             .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
             .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
             .withRequestBodyJsonPath("status", equalTo("ACTIVE"))
             .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
-            .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:10:00"))
-            // TODO REMOVE - this will not be required once the migrate endpoint is added
-            .withRequestBodyJsonPath("legacyTransactionId", equalTo("2345")),
+            .withRequestBodyJsonPath("migrationTimestamp", equalTo("2024-07-17T11:09:00"))
+            .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:10:00")),
         )
       }
 
@@ -308,7 +310,7 @@ class FinanceDpsApiServiceTest {
       fun `will call the migrate prisoner advance endpoint`() = runTest {
         financeApi.stubMigrateAdvance()
 
-        apiService.migrateAdvance(createAdvanceDto())
+        apiService.migrateAdvance(migrateAdvanceDto())
 
         financeApi.verify(
           postRequestedFor(urlPathEqualTo("/migrate/advances")),
@@ -320,7 +322,7 @@ class FinanceDpsApiServiceTest {
         val advanceUuid = UUID.randomUUID()
         financeApi.stubMigrateAdvance(advanceUuid = advanceUuid)
 
-        val dpsAdvance = apiService.migrateAdvance(createAdvanceDto())
+        val dpsAdvance = apiService.migrateAdvance(migrateAdvanceDto())
         assertThat(dpsAdvance.advanceId).isEqualTo(advanceUuid)
       }
     }

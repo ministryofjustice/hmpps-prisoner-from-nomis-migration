@@ -27,6 +27,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.Syn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceWriteOffRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncMigrateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleaseHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleasedHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
@@ -138,9 +139,27 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       releaseTransactionId = 12345,
     )
 
+    fun migrateAdvanceDto(prisonNumber: String = "A0001BC") = SyncMigrateAdvanceRecordRequest(
+      legacyPaymentProfileId = 12345,
+      legacyInformationNumber = "9876-1",
+      legacyTransactionId = 2345,
+      prisonNumber = prisonNumber,
+      prisonID = "LEI",
+      amountIssued = BigDecimal.valueOf(2.10),
+      amountOutstanding = BigDecimal.valueOf(0.05),
+      repaymentAmount = BigDecimal.valueOf(0.5),
+      repaymentStartDate = LocalDateTime.of(2024, Month.JUNE, 18, 0, 0, 0),
+      reference = "description of the advance",
+      comment = "This is a comment",
+      status = SyncMigrateAdvanceRecordRequest.Status.ACTIVE,
+      migrationTimestamp = LocalDateTime.of(2024, Month.JULY, 17, 11, 9),
+      createdBy = "JD12345",
+      createdOn = LocalDateTime.of(2024, Month.JUNE, 18, 12, 10),
+    )
     fun createAdvanceDto(prisonNumber: String = "A0001BC") = SyncCreateAdvanceRecordRequest(
       legacyPaymentProfileId = 12345,
       legacyInformationNumber = "9876-1",
+      legacyTransactionId = 2345,
       prisonNumber = prisonNumber,
       prisonID = "LEI",
       amount = BigDecimal.valueOf(2.10),
@@ -148,10 +167,9 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       repaymentStartDate = LocalDateTime.of(2024, Month.JUNE, 18, 0, 0, 0),
       reference = "description of the advance",
       comment = "This is a comment",
+      status = SyncCreateAdvanceRecordRequest.Status.ACTIVE,
       createdBy = "JD12345",
       createdOn = LocalDateTime.of(2024, Month.JUNE, 18, 12, 10),
-      status = SyncCreateAdvanceRecordRequest.Status.ACTIVE,
-      legacyTransactionId = 2345,
     )
     fun repayAdvanceDto() = SyncCreateAdvanceRepayRequest(
       amount = BigDecimal.TWO,
