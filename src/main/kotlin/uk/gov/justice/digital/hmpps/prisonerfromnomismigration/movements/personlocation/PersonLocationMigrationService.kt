@@ -345,10 +345,17 @@ private fun PersonLocationMovement.toDpsFromLocation(bookingId: Long) = from?.to
     OUT -> throw IllegalStateException("Outbound movement $bookingId/$sequence has no from location")
   }
 
-private fun MovementLocation.toDpsLocation() = when (type) {
+private fun MovementLocation.toDpsLocation() = when {
+  type == PRISON && code == "UNKNWN" || type == COURT && code == "UNKNCT" -> unknownDpsLocation()
+  else -> toKnownDpsLocation()
+}
+
+// A DPS SimpleLocation has no code - it's only required here because the generated model flattens the oneOf location types
+private fun unknownDpsLocation() = SyncExternalMovementFrom(description = "UNKNOWN", locationType = "SimpleLocation", code = "")
+
+private fun MovementLocation.toKnownDpsLocation() = when (type) {
   PRISON -> SyncExternalMovementFrom(description = description, locationType = "Prison", code = code!!)
   COURT -> SyncExternalMovementFrom(description = description, locationType = "Court", code = code!!)
-  // A DPS SimpleLocation has no code - it's only required here because the generated model flattens the oneOf location types
   OTHER -> SyncExternalMovementFrom(description = description, locationType = "SimpleLocation", code = "")
 }
 

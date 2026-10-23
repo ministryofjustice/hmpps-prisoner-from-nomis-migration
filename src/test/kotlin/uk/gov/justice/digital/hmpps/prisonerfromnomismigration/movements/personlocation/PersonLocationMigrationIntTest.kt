@@ -41,6 +41,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.COURT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.PRISON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPersonLocationsResponse
@@ -288,6 +289,8 @@ class PersonLocationMigrationIntTest(
                   movement(sequence = 4, movementType = TRN, scheduleId = 103),
                   movement(sequence = 5, movementType = REL),
                   movement(sequence = 6, movementType = CRT, scheduleId = 104),
+                  movement(sequence = 7, movementType = REL, from = MovementLocation(type = PRISON, description = "Unknown", code = "UNKNWN")),
+                  movement(sequence = 8, movementType = REL, from = MovementLocation(type = COURT, description = "Unknown", code = "UNKNCT")),
                 ),
               ),
             ),
@@ -340,6 +343,15 @@ class PersonLocationMigrationIntTest(
         null,
         null,
         "urn:remand-and-sentencing:court-appearance:$dpsSentencingCourtAppearanceId",
+        null,
+        null,
+      )
+    }
+
+    @Test
+    fun `should send unknown prison and court locations as an UNKNOWN simple location`() {
+      assertThat(dpsMovements().drop(6).map { it.from }).containsOnly(
+        SyncExternalMovementFrom(description = "UNKNOWN", locationType = "SimpleLocation", code = ""),
       )
     }
 
