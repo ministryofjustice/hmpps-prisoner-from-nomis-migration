@@ -126,7 +126,7 @@ class AdvancesSynchronisationIntTest(
               postRequestedFor(urlPathEqualTo("/sync/advances"))
                 .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo(advanceId.toString()))
                 .withRequestBodyJsonPath("legacyInformationNumber", equalTo("info-123"))
-                .withRequestBodyJsonPath("legacyTransactionId", equalTo("123"))
+                .withRequestBodyJsonPath("legacyTransactionId", equalTo("987654"))
                 .withRequestBodyJsonPath("prisonNumber", equalTo("A0001BC"))
                 .withRequestBodyJsonPath("prisonID", equalTo("LEI"))
                 .withRequestBodyJsonPath("amount", equalTo("2.1"))

@@ -88,10 +88,8 @@ class AdvancesDataRepairResourceIntTest(
             .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
             .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
             .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:30:45"))
-            // TODO fix when Nomis API returns the status
             .withRequestBodyJsonPath("status", equalTo("ACTIVE"))
-            // TODO fix when Nomis API returns the transactionId
-            .withRequestBodyJsonPath("legacyTransactionId", equalTo("123")),
+            .withRequestBodyJsonPath("legacyTransactionId", equalTo("987654")),
         )
       }
 

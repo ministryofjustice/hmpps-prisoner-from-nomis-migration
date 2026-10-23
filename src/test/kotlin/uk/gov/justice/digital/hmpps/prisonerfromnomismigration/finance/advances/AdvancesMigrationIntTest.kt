@@ -150,6 +150,7 @@ class AdvancesMigrationIntTest(
         assertThat(migrationRequests.map { it.legacyPaymentProfileId })
           .containsExactlyInAnyOrder(12345L, 54321L)
         assertThat(migrationRequests[0].legacyInformationNumber).isEqualTo("info-123")
+        assertThat(migrationRequests[0].legacyTransactionId).isEqualTo(987654L)
         assertThat(migrationRequests[0].comment).isEqualTo("This is a comment")
         assertThat(migrationRequests[0].prisonNumber).isEqualTo("A0001BC")
         assertThat(migrationRequests[0].prisonID).isEqualTo("LEI")
