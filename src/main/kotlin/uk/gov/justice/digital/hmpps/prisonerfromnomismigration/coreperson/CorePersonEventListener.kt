@@ -49,9 +49,9 @@ class CorePersonEventListener(
               "ADDRESSES_OFFENDER-INSERTED" -> addressContactService.offenderAddressAdded(sqsMessage.Message.fromJson())
               "ADDRESSES_OFFENDER-UPDATED" -> addressContactService.offenderAddressUpdated(sqsMessage.Message.fromJson())
               "ADDRESSES_OFFENDER-DELETED" -> addressContactService.offenderAddressDeleted(sqsMessage.Message.fromJson())
-              "OFFENDER_ADDRESS_USAGE-INSERTED" -> addressContactService.offenderAddressUsageAdded(sqsMessage.Message.fromJson())
-              "OFFENDER_ADDRESS_USAGE-UPDATED" -> addressContactService.offenderAddressUsageUpdated(sqsMessage.Message.fromJson())
-              "OFFENDER_ADDRESS_USAGE-DELETED" -> addressContactService.offenderAddressUsageDeleted(sqsMessage.Message.fromJson())
+              "OFFENDER_ADDRESS_USAGES-INSERTED" -> addressContactService.offenderAddressUsageAdded(sqsMessage.Message.fromJson())
+              "OFFENDER_ADDRESS_USAGES-UPDATED" -> addressContactService.offenderAddressUsageUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER_ADDRESS_USAGES-DELETED" -> addressContactService.offenderAddressUsageDeleted(sqsMessage.Message.fromJson())
               "OFFENDER_ADDRESS_PHONE-INSERTED" -> addressContactService.offenderPhoneAdded(sqsMessage.Message.fromJson())
               "OFFENDER_ADDRESS_PHONE-UPDATED" -> addressContactService.offenderPhoneUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_ADDRESS_PHONE-DELETED" -> addressContactService.offenderPhoneDeleted(sqsMessage.Message.fromJson())
@@ -109,7 +109,7 @@ data class OffenderAddressEvent(
 
 data class OffenderAddressUsageEvent(
   val offenderIdDisplay: String,
-  val offenderId: Long,
+  val rootOffenderId: Long,
   val addressId: Long,
   val addressUsage: String,
   override val auditModuleName: String?,

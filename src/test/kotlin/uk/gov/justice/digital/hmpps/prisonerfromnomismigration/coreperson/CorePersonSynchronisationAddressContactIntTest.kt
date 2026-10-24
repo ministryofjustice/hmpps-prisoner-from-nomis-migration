@@ -9,7 +9,6 @@ import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -1731,14 +1730,13 @@ class CorePersonSynchronisationAddressContactIntTest(
     private val nomisUsagePath = "/core-person/$offenderId/address/$addressId/usage/$usageCode"
 
     @Nested
-    @DisplayName("OFFENDER_ADDRESS_USAGE-INSERTED")
+    @DisplayName("OFFENDER_ADDRESS_USAGES-INSERTED")
     inner class OffenderAddressUsageAdded {
       @Nested
-      @Disabled("Awaiting trigger that sets the audit module name")
       inner class WhenCreatedInDps {
         @BeforeEach
         fun setUp() {
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGE-INSERTED", auditModuleName = "DPS_SYNCHRONISATION")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-INSERTED", auditModuleName = "DPS_SYNCHRONISATION")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-synchronisation-created-skipped") }
         }
 
@@ -1762,7 +1760,7 @@ class CorePersonSynchronisationAddressContactIntTest(
           nomisApiMock.stubGetOffenderAddressUsage(offenderId, addressId, usageCode)
           corePersonCprApiMockServer.stubSyncCreateAddressUsage(prisonNumber, cprAddressId, response = addressUsageResponse())
           mappingApiMock.stubCreateAddressUsageMapping()
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGE-INSERTED")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-INSERTED")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-synchronisation-created-success") }
         }
 
@@ -1810,7 +1808,7 @@ class CorePersonSynchronisationAddressContactIntTest(
         @BeforeEach
         fun setUp() {
           mappingApiMock.stubGetByNomisAddressUsageIdOrNull(addressId, usageCode, addressUsageMapping())
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGE-INSERTED")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-INSERTED")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-synchronisation-created-ignored") }
         }
 
@@ -1852,7 +1850,7 @@ class CorePersonSynchronisationAddressContactIntTest(
               userMessage = "Duplicate mapping",
             ),
           )
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGE-INSERTED")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-INSERTED")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-mapping-synchronisation-duplicate") }
         }
 
@@ -1895,7 +1893,7 @@ class CorePersonSynchronisationAddressContactIntTest(
           nomisApiMock.stubGetOffenderAddressUsage(offenderId, addressId, usageCode)
           corePersonCprApiMockServer.stubSyncCreateAddressUsage(prisonNumber, cprAddressId, response = addressUsageResponse())
           mappingApiMock.stubCreateAddressUsageMappingFollowedBySuccess()
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGE-INSERTED")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-INSERTED")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-mapping-synchronisation-created") }
         }
 
@@ -1927,7 +1925,7 @@ class CorePersonSynchronisationAddressContactIntTest(
         fun setUp() {
           mappingApiMock.stubGetByNomisAddressUsageIdOrNull(addressId, usageCode, null)
           mappingApiMock.stubGetByNomisAddressIdOrNull(addressId, null)
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGE-INSERTED")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-INSERTED")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-synchronisation-created-error", times = 2) }
         }
 
@@ -1945,21 +1943,20 @@ class CorePersonSynchronisationAddressContactIntTest(
         fun `will track the missing address mapping error for each attempt`() {
           verifyAddressUsageRetryTelemetry(
             "coreperson-address-usage-synchronisation-created-error",
-            "Received OFFENDER_ADDRESS_USAGE-INSERTED for address $addressId that has never been created",
+            "Received OFFENDER_ADDRESS_USAGES-INSERTED for address $addressId that has never been created",
           )
         }
       }
     }
 
     @Nested
-    @DisplayName("OFFENDER_ADDRESS_USAGE-UPDATED")
+    @DisplayName("OFFENDER_ADDRESS_USAGES-UPDATED")
     inner class OffenderAddressUsageUpdated {
       @Nested
-      @Disabled("Awaiting trigger that sets the audit module name")
       inner class WhenUpdatedInDps {
         @BeforeEach
         fun setUp() {
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGE-UPDATED", auditModuleName = "DPS_SYNCHRONISATION")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-UPDATED", auditModuleName = "DPS_SYNCHRONISATION")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-synchronisation-updated-skipped") }
         }
 
@@ -1991,7 +1988,7 @@ class CorePersonSynchronisationAddressContactIntTest(
             ),
           )
           corePersonCprApiMockServer.stubSyncUpdateAddressUsage(prisonNumber, cprAddressId, cprAddressUsageId)
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGE-UPDATED")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-UPDATED")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-synchronisation-updated-success") }
         }
 
@@ -2020,7 +2017,7 @@ class CorePersonSynchronisationAddressContactIntTest(
         fun setUp() {
           mappingApiMock.stubGetByNomisAddressUsageIdOrNull(addressId, usageCode, addressUsageMapping())
           mappingApiMock.stubGetByNomisAddressIdOrNull(addressId, null)
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGE-UPDATED")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-UPDATED")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-synchronisation-updated-error", times = 2) }
         }
 
@@ -2038,14 +2035,14 @@ class CorePersonSynchronisationAddressContactIntTest(
         fun `will track the missing address mapping error for each attempt`() {
           verifyAddressUsageRetryTelemetry(
             "coreperson-address-usage-synchronisation-updated-error",
-            "Received OFFENDER_ADDRESS_USAGE-UPDATED for address $addressId that has never been created",
+            "Received OFFENDER_ADDRESS_USAGES-UPDATED for address $addressId that has never been created",
           )
         }
       }
     }
 
     @Nested
-    @DisplayName("OFFENDER_ADDRESS_USAGE-DELETED")
+    @DisplayName("OFFENDER_ADDRESS_USAGES-DELETED")
     inner class OffenderAddressUsageDeleted {
       @Nested
       inner class WhenMappingExists {
@@ -2055,7 +2052,7 @@ class CorePersonSynchronisationAddressContactIntTest(
           mappingApiMock.stubGetByNomisAddressIdOrNull(addressId, addressMapping())
           corePersonCprApiMockServer.stubSyncDeleteAddressUsage(prisonNumber, cprAddressId, cprAddressUsageId)
           mappingApiMock.stubDeleteByNomisAddressUsageId(addressId, usageCode)
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGE-DELETED")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-DELETED")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-synchronisation-deleted-success") }
         }
 
@@ -2080,7 +2077,7 @@ class CorePersonSynchronisationAddressContactIntTest(
         @BeforeEach
         fun setUp() {
           mappingApiMock.stubGetByNomisAddressUsageIdOrNull(addressId, usageCode, null)
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGE-DELETED")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-DELETED")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-synchronisation-deleted-ignored") }
         }
 
@@ -2101,7 +2098,7 @@ class CorePersonSynchronisationAddressContactIntTest(
         fun setUp() {
           mappingApiMock.stubGetByNomisAddressUsageIdOrNull(addressId, usageCode, addressUsageMapping())
           mappingApiMock.stubGetByNomisAddressIdOrNull(addressId, null)
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGE-DELETED")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-DELETED")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-synchronisation-deleted-error", times = 2) }
         }
 
@@ -2119,7 +2116,7 @@ class CorePersonSynchronisationAddressContactIntTest(
         fun `will track the missing address mapping error for each attempt`() {
           verifyAddressUsageRetryTelemetry(
             "coreperson-address-usage-synchronisation-deleted-error",
-            "Received OFFENDER_ADDRESS_USAGE-DELETED for address $addressId that has never been created",
+            "Received OFFENDER_ADDRESS_USAGES-DELETED for address $addressId that has never been created",
           )
         }
       }
@@ -2228,7 +2225,7 @@ private fun offenderPhoneEvent(
 
 private fun offenderAddressUsageEvent(
   eventType: String,
-  offenderId: Long,
+  rootOffenderId: Long,
   addressId: Long,
   addressUsage: String,
   auditModuleName: String,
@@ -2236,7 +2233,7 @@ private fun offenderAddressUsageEvent(
   {
     "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd",
     "Type": "Notification",
-    "Message": "{\"eventType\":\"$eventType\",\"offenderIdDisplay\":\"A1234BC\",\"offenderId\":$offenderId,\"addressId\":$addressId,\"addressUsage\":\"$addressUsage\",\"auditModuleName\":\"$auditModuleName\"}",
+    "Message": "{\"eventType\":\"$eventType\",\"offenderIdDisplay\":\"A1234BC\",\"rootOffenderId\":$rootOffenderId,\"addressId\":$addressId,\"addressUsage\":\"$addressUsage\",\"auditModuleName\":\"$auditModuleName\"}",
     "MessageAttributes": {
       "eventType": {"Type": "String", "Value": "$eventType"}
     }
