@@ -12,10 +12,15 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
+import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 
-class CorePersonSynchronisationIntTest : CorePersonIntegrationTestBase() {
+class CorePersonSynchronisationIntTest(
+  @Autowired private val corePersonNomisApiMock: CorePersonNomisApiMockServer,
+  @Autowired private val corePersonMappingApiMock: CorePersonMappingApiMockServer,
+) : CorePersonIntegrationTestBase() {
   @Nested
   @DisplayName("prison-offender-events.prisoner.merged")
   inner class PrisonerMerge {
@@ -27,7 +32,17 @@ class CorePersonSynchronisationIntTest : CorePersonIntegrationTestBase() {
 
       @BeforeEach
       fun setUp() {
+        corePersonNomisApiMock.stubGetAddressesAndContacts(
+          prisonNumber = offenderNo,
+          addressesAndContacts = CorePersonAddressContact(
+            addresses = emptyList(),
+            phoneNumbers = emptyList(),
+            emailAddresses = emptyList(),
+          ),
+        )
+        corePersonMappingApiMock.stubGetMappingsFromNomisIds()
         corePersonCprApiMockServer.stubProcessPrisonMerge(offenderNo)
+        corePersonMappingApiMock.stubMerge()
         awsSqsCorePersonOffenderEventsClient.sendMessage(
           corePersonQueueOffenderEventsUrl,
           mergeDomainEvent(

@@ -35,7 +35,7 @@ class CorePersonSynchronisationService(
     val existingMappingsRequest = mappingsRequest(nomisAddressesAndContacts)
     val existingMappings = corePersonMappingService.getMappingsFromNomisIds(existingMappingsRequest)
     val prisonAddressesAndContactsRequest = nomisAddressesAndContacts.toMigrateAddressesAndContactsRequest(existingMappings)
-    val cprMergeResponse = corePersonCprApiService.processPrisonMerge(offenderNo, PrisonMerge(offenderNo, prisonAddressesAndContactsRequest))
+    val cprMergeResponse = corePersonCprApiService.processPrisonMerge(offenderNo, PrisonMerge(removedOffenderNo, prisonAddressesAndContactsRequest))
     val newAddressAndContactsMappings = cprMergeResponse.sysconAddressesAndContactsResponseBody.toCorePersonMappingsDto(migrationType = NOMIS_CREATED)
     corePersonMappingService.merge(
       CorePersonMergeMappingsDto(
