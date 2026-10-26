@@ -17,6 +17,11 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconPersonMergeResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AddressUsageByNomisIdRequest
@@ -24,8 +29,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.MappingType.MIGRATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType.EMAIL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType.PHONE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMergeMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 
@@ -132,28 +141,68 @@ class CorePersonSynchronisationIntTest(
               CorePersonContactMappingDto(
                 cprId = "cpr-phone-20000",
                 nomisId = 20000,
-                nomisContactType = CorePersonContactMappingDto.NomisContactType.PHONE,
+                nomisContactType = PHONE,
                 nomisPrisonNumber = offenderNo,
-                mappingType = CorePersonContactMappingDto.MappingType.MIGRATED,
+                mappingType = MIGRATED,
               ),
               CorePersonContactMappingDto(
                 cprId = "cpr-phone-30000",
                 nomisId = 30000,
-                nomisContactType = CorePersonContactMappingDto.NomisContactType.PHONE,
+                nomisContactType = PHONE,
                 nomisPrisonNumber = offenderNo,
-                mappingType = CorePersonContactMappingDto.MappingType.MIGRATED,
+                mappingType = MIGRATED,
               ),
               CorePersonContactMappingDto(
                 cprId = "cpr-email-40000",
                 nomisId = 40000,
-                nomisContactType = CorePersonContactMappingDto.NomisContactType.EMAIL,
+                nomisContactType = EMAIL,
                 nomisPrisonNumber = offenderNo,
-                mappingType = CorePersonContactMappingDto.MappingType.MIGRATED,
+                mappingType = MIGRATED,
               ),
             ),
           ),
         )
-        corePersonCprApiMockServer.stubProcessPrisonMerge(offenderNo)
+        corePersonCprApiMockServer.stubProcessPrisonMerge(
+          prisonNumber = offenderNo,
+          response = SysconPersonMergeResponseBody(
+            toPrisonNumber = offenderNo,
+            sysconAddressesAndContactsResponseBody = SysconAddressesAndContactsResponseBody(
+              prisonNumber = offenderNo,
+              addressesMappings = listOf(
+                SysconAddressMapping(
+                  nomisAddressId = 12345,
+                  cprAddressId = "cpr-address-12345",
+                  addressUsageMappings = listOf(
+                    SysconAddressUsageMapping(
+                      nomisAddressUsageId = 10000,
+                      nomisAddressUsageCode = SysconAddressUsageMapping.NomisAddressUsageCode.HOME,
+                      cprAddressUsageId = "cpr-usage-10000",
+                    ),
+                  ),
+                  contactMappings = listOf(
+                    SysconContactMapping(
+                      nomisContactId = 20000,
+                      nomisContactType = SysconContactMapping.NomisContactType.HOME,
+                      cprContactId = "cpr-phone-20000",
+                    ),
+                  ),
+                ),
+              ),
+              contactMappings = listOf(
+                SysconContactMapping(
+                  nomisContactId = 30000,
+                  nomisContactType = SysconContactMapping.NomisContactType.MOBILE,
+                  cprContactId = "cpr-phone-30000",
+                ),
+                SysconContactMapping(
+                  nomisContactId = 40000,
+                  nomisContactType = SysconContactMapping.NomisContactType.EMAIL,
+                  cprContactId = "cpr-email-40000",
+                ),
+              ),
+            ),
+          ),
+        )
         corePersonMappingApiMock.stubMerge()
         awsSqsCorePersonOffenderEventsClient.sendMessage(
           corePersonQueueOffenderEventsUrl,
@@ -164,6 +213,31 @@ class CorePersonSynchronisationIntTest(
           ),
         )
         waitForAnyProcessingToComplete()
+      }
+
+      @Test
+      fun `will merge the mappings returned from CPR`() {
+        val request: CorePersonMergeMappingsDto =
+          MappingApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/core-person/merge")))
+
+        assertThat(request.toNomisPrisonNumber).isEqualTo(offenderNo)
+        assertThat(request.fromNomisPrisonNumber).isEqualTo(removedOffenderNo)
+        val address = request.addresses.single()
+        assertThat(address.nomisId).isEqualTo(12345L)
+        assertThat(address.cprId).isEqualTo("cpr-address-12345")
+        assertThat(address.nomisPrisonNumber).isEqualTo(offenderNo)
+        assertThat(address.mappingType).isEqualTo(CorePersonAddressMappingDto.MappingType.NOMIS_CREATED)
+
+        val addressUsage = address.addressUsageMappings?.single()!!
+
+        assertThat(addressUsage.nomisId).isEqualTo(10000L)
+        assertThat(addressUsage.addressUsageCode).isEqualTo("HOME")
+        assertThat(addressUsage.cprId).isEqualTo("cpr-usage-10000")
+        assertThat(addressUsage.mappingType).isEqualTo(CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED)
+        val contacts = request.contacts
+        assertThat(contacts.filter { it.nomisId == 20000L && it.nomisContactType == PHONE && it.cprId == "cpr-phone-20000" }).isNotEmpty()
+        assertThat(contacts.filter { it.nomisId == 30000L && it.nomisContactType == PHONE && it.cprId == "cpr-phone-30000" }).isNotEmpty()
+        assertThat(contacts.filter { it.nomisId == 40000L && it.nomisContactType == EMAIL && it.cprId == "cpr-email-40000" }).isNotEmpty()
       }
 
       @Test
