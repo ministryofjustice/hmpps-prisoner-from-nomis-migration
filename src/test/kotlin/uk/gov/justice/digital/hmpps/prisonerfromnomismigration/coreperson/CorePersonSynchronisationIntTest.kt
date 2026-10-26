@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -202,6 +203,64 @@ class CorePersonSynchronisationIntTest(
         val emailContact = contacts.first { it.nomisContactId == 40000L }
         assertThat(emailContact.type).isEqualTo(PrisonContact.Type.EMAIL)
         assertThat(emailContact.cprContactId).isEqualTo("cpr-email-40000")
+      }
+    }
+
+    @Nested
+    inner class WithNoExistingMappings {
+      val bookingId = 1234567L
+      val offenderNo = "A1234KT"
+      val removedOffenderNo = "A1000KT"
+
+      @BeforeEach
+      fun setUp() {
+        corePersonNomisApiMock.stubGetAddressesAndContacts(prisonNumber = offenderNo)
+        corePersonMappingApiMock.stubGetMappingsFromNomisIds()
+        corePersonCprApiMockServer.stubProcessPrisonMerge(offenderNo)
+        corePersonMappingApiMock.stubMerge()
+        awsSqsCorePersonOffenderEventsClient.sendMessage(
+          corePersonQueueOffenderEventsUrl,
+          mergeDomainEvent(
+            bookingId = bookingId,
+            offenderNo = offenderNo,
+            removedOffenderNo = removedOffenderNo,
+          ),
+        )
+        waitForAnyProcessingToComplete()
+      }
+
+      @Test
+      fun `will send the merge request without any CPR ids`() {
+        val request: PrisonMerge =
+          CorePersonCprApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/syscon-sync/person/$offenderNo/merge")))
+        val toPrisonAddressesAndContactsRequest = request.toPrisonAddressesAndContactsRequest!!
+        val address = toPrisonAddressesAndContactsRequest.addresses.single()
+        assertThat(request.fromPrisonNumber).isEqualTo(removedOffenderNo)
+        assertThat(address.nomisAddressId).isEqualTo(12345L)
+        assertThat(address.cprAddressId).isNull()
+        val addressUsage = address.addressUsage.single()
+        assertThat(addressUsage.nomisAddressUsageId).isEqualTo(10000L)
+        assertThat(addressUsage.cprAddressUsageId).isNull()
+        val addressContact = address.contacts.single()
+        assertThat(addressContact.nomisContactId).isEqualTo(20000L)
+        assertThat(addressContact.cprContactId).isNull()
+        val contacts = toPrisonAddressesAndContactsRequest.contacts
+        assertThat(contacts.map { it.nomisContactId }).containsExactlyInAnyOrder(30000L, 40000L)
+        assertThat(contacts.map { it.cprContactId }).containsOnlyNulls()
+      }
+
+      @Test
+      fun `will merge the mappings`() {
+        corePersonMappingApiMock.verify(postRequestedFor(urlPathEqualTo("/mapping/core-person/merge")))
+      }
+
+      @Test
+      fun `will track telemetry for the merge`() {
+        verify(telemetryClient).trackEvent(
+          eq("coreperson-prisoner-merge-synchronisation"),
+          any(),
+          isNull(),
+        )
       }
     }
   }
