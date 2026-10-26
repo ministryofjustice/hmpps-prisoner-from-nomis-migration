@@ -23,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMergeMappingsDto
 
 @Service
 class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorePersonMappingsDto>("/mapping/core-person", webClient) {
@@ -124,5 +125,9 @@ class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
 
   suspend fun replaceMappings(mappings: CorePersonMappingsDto) {
     api.replaceCorePersonMappings(mappings).awaitSingle()
+  }
+
+  suspend fun merge(mappings: CorePersonMergeMappingsDto) {
+    api.merge(mappings).awaitSingle()
   }
 }
