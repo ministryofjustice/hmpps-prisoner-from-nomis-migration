@@ -110,7 +110,7 @@ class CorePersonSynchronisationIntTest(
     }
 
     @Nested
-    inner class WithExistingMappings {
+    inner class HappyPathWithExistingMappings {
       val bookingId = 1234567L
       val offenderNo = "A1234KT"
       val removedOffenderNo = "A1000KT"
@@ -228,7 +228,7 @@ class CorePersonSynchronisationIntTest(
         assertThat(address.nomisPrisonNumber).isEqualTo(offenderNo)
         assertThat(address.mappingType).isEqualTo(CorePersonAddressMappingDto.MappingType.NOMIS_CREATED)
 
-        val addressUsage = address.addressUsageMappings?.single()!!
+        val addressUsage = request.addressUsages.single()
 
         assertThat(addressUsage.nomisId).isEqualTo(10000L)
         assertThat(addressUsage.addressUsageCode).isEqualTo("HOME")
@@ -278,10 +278,44 @@ class CorePersonSynchronisationIntTest(
         assertThat(emailContact.type).isEqualTo(PrisonContact.Type.EMAIL)
         assertThat(emailContact.cprContactId).isEqualTo("cpr-email-40000")
       }
+
+      @Test
+      fun `will send the NOMIS addresses and contacts to the merge request`() {
+        val request: PrisonMerge =
+          CorePersonCprApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/syscon-sync/person/$offenderNo/merge")))
+
+        assertThat(request.toPrisonAddressesAndContactsRequest!!.addresses).hasSize(1)
+        with(request.toPrisonAddressesAndContactsRequest.addresses.first()) {
+          assertThat(nomisAddressId).isEqualTo(12345L)
+          assertThat(isPrimary).isTrue()
+          with(addressUsage.single()) {
+            assertThat(nomisAddressUsageId).isEqualTo(10000L)
+            assertThat(addressUsageCode.name).isEqualTo("HOME")
+          }
+          with(contacts.single()) {
+            assertThat(nomisContactId).isEqualTo(20000L)
+            assertThat(type).isEqualTo(PrisonContact.Type.HOME)
+            assertThat(value).isEqualTo("0114 123 4567")
+          }
+          assertThat(subBuildingName).isEqualTo("Flat 2")
+          assertThat(buildingName).isEqualTo("The Priory")
+          assertThat(thoroughfareName).isEqualTo("Main Street")
+          assertThat(dependentLocality).isEqualTo("Sheffield")
+          assertThat(postcode).isEqualTo("S1 1AA")
+        }
+        with(request.toPrisonAddressesAndContactsRequest) {
+          assertThat(contacts[0].nomisContactId).isEqualTo(30000L)
+          assertThat(contacts[0].type).isEqualTo(PrisonContact.Type.MOBILE)
+          assertThat(contacts[0].value).isEqualTo("07700 900123")
+          assertThat(contacts[1].nomisContactId).isEqualTo(40000L)
+          assertThat(contacts[1].type).isEqualTo(PrisonContact.Type.EMAIL)
+          assertThat(contacts[1].value).isEqualTo("test@example.com")
+        }
+      }
     }
 
     @Nested
-    inner class WithNoExistingMappings {
+    inner class HappyPathWithNoExistingMappings {
       val bookingId = 1234567L
       val offenderNo = "A1234KT"
       val removedOffenderNo = "A1000KT"
