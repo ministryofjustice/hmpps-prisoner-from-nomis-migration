@@ -451,11 +451,10 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun offenderAddressUsageAdded(event: OffenderAddressUsageEvent) {
     val telemetry = event.toAddressUsageTelemetry()
 
-    // TODO: Add back in the event module check once new trigger added
-//    if (event.originatesInDpsOrHasMissingAudit) {
-//      telemetryClient.trackEvent("coreperson-address-usage-synchronisation-created-skipped", telemetry)
-//      return
-//    }
+    if (event.originatesInDpsOrHasMissingAudit) {
+      telemetryClient.trackEvent("coreperson-address-usage-synchronisation-created-skipped", telemetry)
+      return
+    }
     corePersonMappingService.getByNomisAddressUsageIdOrNull(event.addressId, event.addressUsage)?.also {
       telemetryClient.trackEvent(
         "coreperson-address-usage-synchronisation-created-ignored",
@@ -463,9 +462,9 @@ class CorePersonSynchronisationAddressContactService(
       )
     } ?: run {
       track("coreperson-address-usage-synchronisation-created", telemetry) {
-        val addressMapping = getParentAddressMappingOrThrow(event, "OFFENDER_ADDRESS_USAGE-INSERTED")
+        val addressMapping = getParentAddressMappingOrThrow(event, "OFFENDER_ADDRESS_USAGES-INSERTED")
         telemetry["cprAddressId"] = addressMapping.cprId
-        val nomisAddressUsage = corePersonNomisApiService.getOffenderAddressUsage(event.offenderId, event.addressId, event.addressUsage)
+        val nomisAddressUsage = corePersonNomisApiService.getOffenderAddressUsage(event.rootOffenderId, event.addressId, event.addressUsage)
         val cprAddressUsage = corePersonCprApiService.syncCreateAddressUsage(
           prisonNumber = event.offenderIdDisplay,
           cprAddressId = addressMapping.cprId,
@@ -490,17 +489,16 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun offenderAddressUsageUpdated(event: OffenderAddressUsageEvent) {
     val telemetry = event.toAddressUsageTelemetry()
 
-    // TODO: Add back in the event module check once new trigger added
-//    if (event.originatesInDpsOrHasMissingAudit) {
-//      telemetryClient.trackEvent("coreperson-address-usage-synchronisation-updated-skipped", telemetry)
-//      return
-//    }
+    if (event.originatesInDpsOrHasMissingAudit) {
+      telemetryClient.trackEvent("coreperson-address-usage-synchronisation-updated-skipped", telemetry)
+      return
+    }
     track("coreperson-address-usage-synchronisation-updated", telemetry) {
       val mapping = corePersonMappingService.getByNomisAddressUsageId(event.addressId, event.addressUsage)
       telemetry["cprAddressUsageId"] = mapping.cprId
-      val addressMapping = getParentAddressMappingOrThrow(event, "OFFENDER_ADDRESS_USAGE-UPDATED")
+      val addressMapping = getParentAddressMappingOrThrow(event, "OFFENDER_ADDRESS_USAGES-UPDATED")
       telemetry["cprAddressId"] = addressMapping.cprId
-      val nomisAddressUsage = corePersonNomisApiService.getOffenderAddressUsage(event.offenderId, event.addressId, event.addressUsage)
+      val nomisAddressUsage = corePersonNomisApiService.getOffenderAddressUsage(event.rootOffenderId, event.addressId, event.addressUsage)
       corePersonCprApiService.syncUpdateAddressUsage(
         prisonNumber = mapping.nomisPrisonNumber,
         cprAddressId = addressMapping.cprId,
@@ -516,7 +514,7 @@ class CorePersonSynchronisationAddressContactService(
     corePersonMappingService.getByNomisAddressUsageIdOrNull(event.addressId, event.addressUsage)?.also { mapping ->
       track("coreperson-address-usage-synchronisation-deleted", telemetry) {
         telemetry["cprAddressUsageId"] = mapping.cprId
-        val addressMapping = getParentAddressMappingOrThrow(event, "OFFENDER_ADDRESS_USAGE-DELETED")
+        val addressMapping = getParentAddressMappingOrThrow(event, "OFFENDER_ADDRESS_USAGES-DELETED")
         telemetry["cprAddressId"] = addressMapping.cprId
         corePersonCprApiService.syncDeleteAddressUsage(mapping.nomisPrisonNumber, addressMapping.cprId, mapping.cprId)
         corePersonMappingService.deleteByNomisAddressUsageId(event.addressId, event.addressUsage)
@@ -531,7 +529,7 @@ class CorePersonSynchronisationAddressContactService(
 
   private fun OffenderAddressUsageEvent.toAddressUsageTelemetry() = telemetryOf(
     "prisonNumber" to offenderIdDisplay,
-    "nomisOffenderId" to offenderId,
+    "nomisOffenderId" to rootOffenderId,
     "nomisAddressId" to addressId,
     "nomisAddressUsageCode" to addressUsage,
   )
