@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-23.910.a04af57"
+    "version" : "2026-10-26.913.85eef39"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -28574,7 +28574,8 @@
             "type" : "integer",
             "format" : "int64"
           }
-        }
+        },
+        "required" : [ "number", "size", "totalElements", "totalPages" ]
       },
       "PagedModelStaffMappingDto" : {
         "type" : "object",
@@ -28588,7 +28589,8 @@
           "page" : {
             "$ref" : "#/components/schemas/PageMetadata"
           }
-        }
+        },
+        "required" : [ "content", "page" ]
       },
       "PagedModelPrisonerBalanceMappingDto" : {
         "type" : "object",
@@ -28602,7 +28604,8 @@
           "page" : {
             "$ref" : "#/components/schemas/PageMetadata"
           }
-        }
+        },
+        "required" : [ "content", "page" ]
       },
       "PagedModelPrisonBalanceMappingDto" : {
         "type" : "object",
@@ -28616,7 +28619,8 @@
           "page" : {
             "$ref" : "#/components/schemas/PageMetadata"
           }
-        }
+        },
+        "required" : [ "content", "page" ]
       },
       "PageOfficialVisitMappingDto" : {
         "type" : "object",
@@ -29390,7 +29394,8 @@
           "page" : {
             "$ref" : "#/components/schemas/PageMetadata"
           }
-        }
+        },
+        "required" : [ "content", "page" ]
       }
     },
     "securitySchemes" : {

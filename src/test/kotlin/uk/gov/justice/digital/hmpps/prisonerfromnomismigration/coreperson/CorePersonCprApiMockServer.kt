@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasesAndIdentifiersResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconIdentifierMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconPersonMergeResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
@@ -381,6 +382,14 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubProcessPrisonMerge(
     prisonNumber: String = "A1234BC",
     status: HttpStatus = HttpStatus.CREATED,
+    response: SysconPersonMergeResponseBody = SysconPersonMergeResponseBody(
+      toPrisonNumber = prisonNumber,
+      sysconAddressesAndContactsResponseBody = SysconAddressesAndContactsResponseBody(
+        prisonNumber = prisonNumber,
+        addressesMappings = emptyList(),
+        contactMappings = emptyList(),
+      ),
+    ),
   ) {
     stubFor(
       post("/syscon-sync/person/$prisonNumber/merge")
@@ -388,18 +397,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
           aResponse()
             .withStatus(status.value())
             .withHeader("Content-Type", "application/json")
-            .withBody(
-              """
-              {
-                "toPrisonNumber": "$prisonNumber",
-                "sysconAddressesAndContactsResponseBody": {
-                  "prisonNumber": "$prisonNumber",
-                  "addressesMappings": [],
-                  "contactMappings": []
-                }
-              }
-              """.trimIndent(),
-            ),
+            .withBody(jsonMapper.writeValueAsString(response)),
         ),
     )
   }
