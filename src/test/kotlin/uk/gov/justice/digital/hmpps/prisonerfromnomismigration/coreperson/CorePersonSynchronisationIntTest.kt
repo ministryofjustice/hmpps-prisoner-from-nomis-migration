@@ -222,18 +222,18 @@ class CorePersonSynchronisationIntTest(
 
         assertThat(request.toNomisPrisonNumber).isEqualTo(offenderNo)
         assertThat(request.fromNomisPrisonNumber).isEqualTo(removedOffenderNo)
-        val address = request.addresses.single()
-        assertThat(address.nomisId).isEqualTo(12345L)
-        assertThat(address.cprId).isEqualTo("cpr-address-12345")
-        assertThat(address.nomisPrisonNumber).isEqualTo(offenderNo)
-        assertThat(address.mappingType).isEqualTo(CorePersonAddressMappingDto.MappingType.NOMIS_CREATED)
-
-        val addressUsage = request.addressUsages.single()
-
-        assertThat(addressUsage.nomisId).isEqualTo(10000L)
-        assertThat(addressUsage.addressUsageCode).isEqualTo("HOME")
-        assertThat(addressUsage.cprId).isEqualTo("cpr-usage-10000")
-        assertThat(addressUsage.mappingType).isEqualTo(CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED)
+        with(request.addresses.single()) {
+          assertThat(nomisId).isEqualTo(12345L)
+          assertThat(cprId).isEqualTo("cpr-address-12345")
+          assertThat(nomisPrisonNumber).isEqualTo(offenderNo)
+          assertThat(mappingType).isEqualTo(CorePersonAddressMappingDto.MappingType.NOMIS_CREATED)
+        }
+        with(request.addressUsages.single()) {
+          assertThat(nomisId).isEqualTo(10000L)
+          assertThat(addressUsageCode).isEqualTo("HOME")
+          assertThat(cprId).isEqualTo("cpr-usage-10000")
+          assertThat(mappingType).isEqualTo(CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED)
+        }
         val contacts = request.contacts
         assertThat(contacts.filter { it.nomisId == 20000L && it.nomisContactType == PHONE && it.cprId == "cpr-phone-20000" }).isNotEmpty()
         assertThat(contacts.filter { it.nomisId == 30000L && it.nomisContactType == PHONE && it.cprId == "cpr-phone-30000" }).isNotEmpty()
@@ -258,52 +258,54 @@ class CorePersonSynchronisationIntTest(
       fun `will add existing CPR ids to the merge request`() {
         val request: PrisonMerge =
           CorePersonCprApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/syscon-sync/person/$offenderNo/merge")))
-        val toPrisonAddressesAndContactsRequest = request.toPrisonAddressesAndContactsRequest!!
-        val address = toPrisonAddressesAndContactsRequest.addresses.single()
         assertThat(request.fromPrisonNumber).isEqualTo(removedOffenderNo)
-        assertThat(address.nomisAddressId).isEqualTo(12345L)
-        assertThat(address.nomisAddressId).isEqualTo(12345L)
-        assertThat(address.cprAddressId).isEqualTo("cpr-address-12345")
-        val addressUsage = address.addressUsage.single()
-        assertThat(addressUsage.nomisAddressUsageId).isEqualTo(10000L)
-        assertThat(addressUsage.cprAddressUsageId).isEqualTo("cpr-usage-10000")
-        val addressContact = address.contacts.single()
-        assertThat(addressContact.nomisContactId).isEqualTo(20000L)
-        assertThat(addressContact.cprContactId).isEqualTo("cpr-phone-20000")
-        val contacts = toPrisonAddressesAndContactsRequest.contacts
-        val phoneContact = contacts.first { it.nomisContactId == 30000L }
-        assertThat(phoneContact.type).isEqualTo(PrisonContact.Type.MOBILE)
-        assertThat(phoneContact.cprContactId).isEqualTo("cpr-phone-30000")
-        val emailContact = contacts.first { it.nomisContactId == 40000L }
-        assertThat(emailContact.type).isEqualTo(PrisonContact.Type.EMAIL)
-        assertThat(emailContact.cprContactId).isEqualTo("cpr-email-40000")
+        with(request.toPrisonAddressesAndContactsRequest!!) {
+          with(addresses.single()) {
+            assertThat(nomisAddressId).isEqualTo(12345L)
+            assertThat(nomisAddressId).isEqualTo(12345L)
+            assertThat(cprAddressId).isEqualTo("cpr-address-12345")
+            with(addressUsage.single()) {
+              assertThat(nomisAddressUsageId).isEqualTo(10000L)
+              assertThat(cprAddressUsageId).isEqualTo("cpr-usage-10000")
+            }
+            with(contacts.single()) {
+              assertThat(nomisContactId).isEqualTo(20000L)
+              assertThat(cprContactId).isEqualTo("cpr-phone-20000")
+            }
+          }
+          val phoneContact = contacts.first { it.nomisContactId == 30000L }
+          assertThat(phoneContact.type).isEqualTo(PrisonContact.Type.MOBILE)
+          assertThat(phoneContact.cprContactId).isEqualTo("cpr-phone-30000")
+          val emailContact = contacts.first { it.nomisContactId == 40000L }
+          assertThat(emailContact.type).isEqualTo(PrisonContact.Type.EMAIL)
+          assertThat(emailContact.cprContactId).isEqualTo("cpr-email-40000")
+        }
       }
 
       @Test
       fun `will send the NOMIS addresses and contacts to the merge request`() {
         val request: PrisonMerge =
           CorePersonCprApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/syscon-sync/person/$offenderNo/merge")))
-
-        assertThat(request.toPrisonAddressesAndContactsRequest!!.addresses).hasSize(1)
-        with(request.toPrisonAddressesAndContactsRequest.addresses.first()) {
-          assertThat(nomisAddressId).isEqualTo(12345L)
-          assertThat(isPrimary).isTrue()
-          with(addressUsage.single()) {
-            assertThat(nomisAddressUsageId).isEqualTo(10000L)
-            assertThat(addressUsageCode.name).isEqualTo("HOME")
+        with(request.toPrisonAddressesAndContactsRequest!!) {
+          assertThat(addresses.size).isEqualTo(1)
+          with(request.toPrisonAddressesAndContactsRequest.addresses.first()) {
+            assertThat(nomisAddressId).isEqualTo(12345L)
+            assertThat(isPrimary).isTrue()
+            with(addressUsage.single()) {
+              assertThat(nomisAddressUsageId).isEqualTo(10000L)
+              assertThat(addressUsageCode.name).isEqualTo("HOME")
+            }
+            with(contacts.single()) {
+              assertThat(nomisContactId).isEqualTo(20000L)
+              assertThat(type).isEqualTo(PrisonContact.Type.HOME)
+              assertThat(value).isEqualTo("0114 123 4567")
+            }
+            assertThat(subBuildingName).isEqualTo("Flat 2")
+            assertThat(buildingName).isEqualTo("The Priory")
+            assertThat(thoroughfareName).isEqualTo("Main Street")
+            assertThat(dependentLocality).isEqualTo("Sheffield")
+            assertThat(postcode).isEqualTo("S1 1AA")
           }
-          with(contacts.single()) {
-            assertThat(nomisContactId).isEqualTo(20000L)
-            assertThat(type).isEqualTo(PrisonContact.Type.HOME)
-            assertThat(value).isEqualTo("0114 123 4567")
-          }
-          assertThat(subBuildingName).isEqualTo("Flat 2")
-          assertThat(buildingName).isEqualTo("The Priory")
-          assertThat(thoroughfareName).isEqualTo("Main Street")
-          assertThat(dependentLocality).isEqualTo("Sheffield")
-          assertThat(postcode).isEqualTo("S1 1AA")
-        }
-        with(request.toPrisonAddressesAndContactsRequest) {
           assertThat(contacts[0].nomisContactId).isEqualTo(30000L)
           assertThat(contacts[0].type).isEqualTo(PrisonContact.Type.MOBILE)
           assertThat(contacts[0].value).isEqualTo("07700 900123")
@@ -341,17 +343,22 @@ class CorePersonSynchronisationIntTest(
       fun `will send the merge request without any CPR ids`() {
         val request: PrisonMerge =
           CorePersonCprApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/syscon-sync/person/$offenderNo/merge")))
+
         val toPrisonAddressesAndContactsRequest = request.toPrisonAddressesAndContactsRequest!!
-        val address = toPrisonAddressesAndContactsRequest.addresses.single()
         assertThat(request.fromPrisonNumber).isEqualTo(removedOffenderNo)
-        assertThat(address.nomisAddressId).isEqualTo(12345L)
-        assertThat(address.cprAddressId).isNull()
-        val addressUsage = address.addressUsage.single()
-        assertThat(addressUsage.nomisAddressUsageId).isEqualTo(10000L)
-        assertThat(addressUsage.cprAddressUsageId).isNull()
-        val addressContact = address.contacts.single()
-        assertThat(addressContact.nomisContactId).isEqualTo(20000L)
-        assertThat(addressContact.cprContactId).isNull()
+        with(toPrisonAddressesAndContactsRequest.addresses.single()) {
+          assertThat(nomisAddressId).isEqualTo(12345L)
+          assertThat(cprAddressId).isNull()
+          with(addressUsage.single()) {
+            val addressUsage =
+              assertThat(nomisAddressUsageId).isEqualTo(10000L)
+            assertThat(cprAddressUsageId).isNull()
+          }
+          with(contacts.single()) {
+            assertThat(nomisContactId).isEqualTo(20000L)
+            assertThat(cprContactId).isNull()
+          }
+        }
         val contacts = toPrisonAddressesAndContactsRequest.contacts
         assertThat(contacts.map { it.nomisContactId }).containsExactlyInAnyOrder(30000L, 40000L)
         assertThat(contacts.map { it.cprContactId }).containsOnlyNulls()
