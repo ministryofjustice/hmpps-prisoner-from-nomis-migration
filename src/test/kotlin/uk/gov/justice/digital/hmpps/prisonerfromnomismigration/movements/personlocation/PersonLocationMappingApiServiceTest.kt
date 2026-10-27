@@ -16,11 +16,14 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
+import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
@@ -138,6 +141,86 @@ class PersonLocationMappingApiServiceTest {
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getMappings(listOf(12345L))
       }
+    }
+  }
+
+  @Nested
+  inner class CreateBookingMapping {
+    @Test
+    internal fun `should pass data to service`() = runTest {
+      val dpsId = UUID.randomUUID()
+      mappingApi.stubCreatePersonLocationBookingMapping()
+
+      apiService.createBookingMapping(personLocationBookingMapping(nomisBookingId = 12345L, dpsCustodialSeriesId = dpsId)).also { assertThat(it.isError).isFalse }
+
+      mappingApi.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/person-location/booking"))
+          .withRequestBody(matchingJsonPath("nomisBookingId", equalTo("12345"))),
+      )
+    }
+
+    @Test
+    fun `should return error for 409 conflict`() = runTest {
+      val dpsId = UUID.randomUUID()
+      mappingApi.stubCreatePersonLocationBookingMapping(
+        status = CONFLICT,
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            existing = personLocationBookingMapping(nomisBookingId = 12345L, dpsCustodialSeriesId = dpsId),
+            duplicate = personLocationBookingMapping(nomisBookingId = 12346L, dpsCustodialSeriesId = dpsId),
+          ),
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          errorCode = 1409,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      apiService.createBookingMapping(personLocationBookingMapping())
+        .apply {
+          assertThat(isError).isTrue
+          assertThat(errorResponse!!.moreInfo.existing).isNotNull
+          assertThat(errorResponse.moreInfo.duplicate).isNotNull
+        }
+    }
+  }
+
+  @Nested
+  inner class CreateMovementMapping {
+    @Test
+    internal fun `should pass data to service`() = runTest {
+      val dpsId = UUID.randomUUID()
+      mappingApi.stubCreatePersonLocationMovementMapping()
+
+      apiService.createMovementMapping(personLocationMovementMapping(nomisBookingId = 12345L, nomisMovementSeq = 3, dpsExternalMovementId = dpsId)).also { assertThat(it.isError).isFalse }
+
+      mappingApi.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/person-location/movement"))
+          .withRequestBody(matchingJsonPath("nomisBookingId", equalTo("12345"))),
+      )
+    }
+
+    @Test
+    fun `should return error for 409 conflict`() = runTest {
+      val dpsId = UUID.randomUUID()
+      mappingApi.stubCreatePersonLocationMovementMapping(
+        status = CONFLICT,
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            existing = personLocationMovementMapping(nomisBookingId = 12345L, nomisMovementSeq = 1, dpsExternalMovementId = dpsId),
+            duplicate = personLocationMovementMapping(nomisBookingId = 12345L, nomisMovementSeq = 2, dpsExternalMovementId = dpsId),
+          ),
+          status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+          errorCode = 1409,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      apiService.createMovementMapping(personLocationMovementMapping())
+        .apply {
+          assertThat(isError).isTrue
+          assertThat(errorResponse!!.moreInfo.existing).isNotNull
+          assertThat(errorResponse.moreInfo.duplicate).isNotNull
+        }
     }
   }
 
