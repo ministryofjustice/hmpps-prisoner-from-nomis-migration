@@ -58,4 +58,10 @@ class PersonLocationMappingApiService(@Qualifier("personLocationMappingApiWebCli
   suspend fun getMovementMappingOrNull(nomisBookingId: Long, nomisMovementSeq: Int): PersonLocationMovementIdMappingDto? = movementApi.prepare(movementApi.getMovementMappingByNomisIdRequestConfig(nomisBookingId, nomisMovementSeq))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
+
+  suspend fun deleteBookingMapping(nomisBookingId: Long): Unit = bookingApi.deleteBookingMappingByNomisId(nomisBookingId)
+    .awaitSingle()
+
+  suspend fun deleteMovementMapping(nomisBookingId: Long, nomisMovementSeq: Int): Unit = movementApi.deleteMovementMappingByNomisId(nomisBookingId, nomisMovementSeq)
+    .awaitSingle()
 }

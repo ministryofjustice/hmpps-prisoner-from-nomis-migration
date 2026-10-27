@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
@@ -264,6 +265,30 @@ class PersonLocationMappingApiServiceTest {
       mappingApi.stubGetPersonLocationMovementMapping(nomisMovementSeq = 3, status = NOT_FOUND)
 
       assertThat(apiService.getMovementMappingOrNull(12345L, 3)).isNull()
+    }
+  }
+
+  @Nested
+  inner class DeleteBookingMapping {
+    @Test
+    internal fun `should pass ids to URL`() = runTest {
+      mappingApi.stubDeletePersonLocationBookingMapping(nomisBookingId = 23456L)
+
+      apiService.deleteBookingMapping(23456L)
+
+      mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/person-location/booking/nomis-booking-id/23456")))
+    }
+  }
+
+  @Nested
+  inner class DeleteMovementMapping {
+    @Test
+    internal fun `should pass ids to URL`() = runTest {
+      mappingApi.stubDeletePersonLocationMovementMapping(nomisBookingId = 23456L, nomisMovementSeq = 3)
+
+      apiService.deleteMovementMapping(23456L, 3)
+
+      mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/person-location/movement/nomis-booking-id/23456/nomis-movement-seq/3")))
     }
   }
 }
