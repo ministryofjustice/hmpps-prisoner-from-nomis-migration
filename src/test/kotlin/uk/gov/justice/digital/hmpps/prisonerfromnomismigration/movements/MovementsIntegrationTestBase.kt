@@ -4,6 +4,7 @@ import org.springframework.test.context.bean.override.mockito.MockReset
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.SqsIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMigrationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationSyncMovementService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapRepairService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -24,4 +25,7 @@ abstract class MovementsIntegrationTestBase : SqsIntegrationTestBase() {
 
   @MockitoSpyBean
   protected lateinit var transferSchedulerMigrationService: TransferScheduleMigrationService
+
+  @MockitoSpyBean
+  protected lateinit var personLocationSyncMovementService: PersonLocationSyncMovementService
 }

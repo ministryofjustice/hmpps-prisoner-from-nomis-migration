@@ -115,6 +115,9 @@ hmpps.sqs:
     eventtransfermovements:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventpersonlocations:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     eventofficialvisits:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

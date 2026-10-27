@@ -246,6 +246,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTTRANSFERMOVEMENTS_QUEUE_NAME: "sqs_name"
     prison-events-transfermovements-dl-queue:
       HMPPS_SQS_QUEUES_EVENTTRANSFERMOVEMENTS_DLQ_NAME: "sqs_name"
+    prison-events-personlocations-queue:
+      HMPPS_SQS_QUEUES_EVENTPERSONLOCATIONS_QUEUE_NAME: "sqs_name"
+    prison-events-personlocations-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTPERSONLOCATIONS_DLQ_NAME: "sqs_name"
     prison-events-officialvisits-queue:
       HMPPS_SQS_QUEUES_EVENTOFFICIALVISITS_QUEUE_NAME: "sqs_name"
     prison-events-officialvisits-dl-queue:

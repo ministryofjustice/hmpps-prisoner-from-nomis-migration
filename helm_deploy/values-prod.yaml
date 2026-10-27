@@ -63,6 +63,7 @@ generic-service:
     FEATURE_EVENT_TRANSFERMOVEMENTS_TRANSFER_WAITLIST-UPDATED: true
     FEATURE_EVENT_TRANSFERMOVEMENTS_TRANSFER_WAITLIST-DELETED: true
     FEATURE_EVENT_TRANSFERMOVEMENTS_PRISON-OFFENDER-EVENTS_PRISONER_BOOKING_MOVED: true
+    FEATURE_EVENT_PERSONLOCATIONS_EXTERNAL_MOVEMENT-CHANGED: false
     FEATURE_EVENT_OFFENDER_TRANSACTIONS-UPDATED: false
     FEATURE_EVENT_GL_TRANSACTIONS-UPDATED: false
 
@@ -176,3 +177,6 @@ generic-prometheus-alerts:
     transfermovements:
       - "syscon-devs-prod-prisoner_from_nomis_transfermovements_queue"
       - "syscon-devs-prod*-prisoner_from_nomis_transfermovements_dl_queue"
+    personlocations:
+      - "syscon-devs-prod-prisoner_from_nomis_personlocations_queue"
+      - "syscon-devs-prod-prisoner_from_nomis_personlocations_dl_queue"
