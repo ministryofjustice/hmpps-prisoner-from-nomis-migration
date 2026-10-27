@@ -62,6 +62,36 @@ class PersonLocationMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubCreatePersonLocationBookingMapping(
+    status: HttpStatus = HttpStatus.CREATED,
+    error: Any = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(
+      post("/mapping/person-location/booking")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .apply { if (status != HttpStatus.CREATED) withBody(jsonMapper.writeValueAsString(error)) },
+        ),
+    )
+  }
+
+  fun stubCreatePersonLocationMovementMapping(
+    status: HttpStatus = HttpStatus.CREATED,
+    error: Any = ErrorResponse(status = status.value()),
+  ) {
+    mappingApi.stubFor(
+      post("/mapping/person-location/movement")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(status.value())
+            .apply { if (status != HttpStatus.CREATED) withBody(jsonMapper.writeValueAsString(error)) },
+        ),
+    )
+  }
+
   fun stubGetPersonLocationBookingMapping(
     nomisBookingId: Long = 12345L,
     response: PersonLocationBookingIdMappingDto = personLocationBookingMapping(nomisBookingId = nomisBookingId),

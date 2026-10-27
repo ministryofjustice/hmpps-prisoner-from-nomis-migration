@@ -10,6 +10,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitSuccessOrDuplicate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
@@ -41,6 +42,14 @@ class PersonLocationMappingApiService(@Qualifier("personLocationMappingApiWebCli
       Mono.just(CreateMappingResult(it.getResponseBodyAs(errorJavaClass)))
     }
     .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun createBookingMapping(mapping: PersonLocationBookingIdMappingDto) = bookingApi.prepare(bookingApi.createBookingMappingRequestConfig(mapping))
+    .retrieve()
+    .awaitSuccessOrDuplicate<PersonLocationBookingIdMappingDto>()
+
+  suspend fun createMovementMapping(mapping: PersonLocationMovementIdMappingDto) = movementApi.prepare(movementApi.createMovementMappingRequestConfig(mapping))
+    .retrieve()
+    .awaitSuccessOrDuplicate<PersonLocationMovementIdMappingDto>()
 
   suspend fun getBookingMappingOrNull(nomisBookingId: Long): PersonLocationBookingIdMappingDto? = bookingApi.prepare(bookingApi.getBookingMappingByNomisIdRequestConfig(nomisBookingId))
     .retrieve()
