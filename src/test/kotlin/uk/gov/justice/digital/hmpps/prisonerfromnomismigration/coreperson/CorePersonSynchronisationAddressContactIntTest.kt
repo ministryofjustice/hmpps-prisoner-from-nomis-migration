@@ -58,7 +58,7 @@ class CorePersonSynchronisationAddressContactIntTest(
     inner class WhenCreatedInCpr {
       @BeforeEach
       fun setUp() {
-        sendAddressEvent("ADDRESSES_OFFENDER-INSERTED", auditModuleName = "DPS_SYNCHRONISATION")
+        sendAddressEvent("ADDRESSES_OFFENDER-INSERTED", auditModuleName = "DPS_SYNCHRONISATION_CORE_PERSON")
           .also { waitForAnyProcessingToComplete("coreperson-address-synchronisation-created-skipped") }
       }
 
@@ -317,7 +317,7 @@ class CorePersonSynchronisationAddressContactIntTest(
     inner class WhenUpdatedInCpr {
       @BeforeEach
       fun setUp() {
-        sendAddressEvent("ADDRESSES_OFFENDER-UPDATED", ownerId, addressId, auditModuleName = "DPS_SYNCHRONISATION")
+        sendAddressEvent("ADDRESSES_OFFENDER-UPDATED", ownerId, addressId, auditModuleName = "DPS_SYNCHRONISATION_CORE_PERSON")
           .also { waitForAnyProcessingToComplete("coreperson-address-synchronisation-updated-skipped") }
       }
 
@@ -1736,7 +1736,7 @@ class CorePersonSynchronisationAddressContactIntTest(
       inner class WhenCreatedInDps {
         @BeforeEach
         fun setUp() {
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-INSERTED", auditModuleName = "DPS_SYNCHRONISATION")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-INSERTED", auditModuleName = "DPS_SYNCHRONISATION_CORE_PERSON")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-synchronisation-created-skipped") }
         }
 
@@ -1956,7 +1956,7 @@ class CorePersonSynchronisationAddressContactIntTest(
       inner class WhenUpdatedInDps {
         @BeforeEach
         fun setUp() {
-          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-UPDATED", auditModuleName = "DPS_SYNCHRONISATION")
+          sendAddressUsageEvent("OFFENDER_ADDRESS_USAGES-UPDATED", auditModuleName = "DPS_SYNCHRONISATION_CORE_PERSON")
             .also { waitForAnyProcessingToComplete("coreperson-address-usage-synchronisation-updated-skipped") }
         }
 

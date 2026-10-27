@@ -50,7 +50,7 @@ class CorePersonSynchronisationAddressContactService(
         "nomisInternetAddressId" to event.internetAddressId,
       )
 
-    if (event.originatesInDpsOrHasMissingAudit) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("coreperson-email-synchronisation-created-skipped", telemetry)
       return
     }
@@ -91,7 +91,7 @@ class CorePersonSynchronisationAddressContactService(
     val telemetry =
       telemetryOf("nomisOffenderId" to event.offenderId, "cprContactId" to event.offenderId, "nomisInternetAddressId" to event.internetAddressId)
 
-    if (event.originatesInDpsOrHasMissingAudit) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("coreperson-email-synchronisation-updated-skipped", telemetry)
       return
     }
@@ -177,7 +177,7 @@ class CorePersonSynchronisationAddressContactService(
       "nomisAddressId" to event.addressId,
     )
 
-    if (event.originatesInDpsOrHasMissingAudit) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("coreperson-address-synchronisation-created-skipped", telemetry)
       return
     }
@@ -214,7 +214,7 @@ class CorePersonSynchronisationAddressContactService(
       "nomisAddressId" to event.addressId,
     )
 
-    if (event.originatesInDpsOrHasMissingAudit) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("coreperson-address-synchronisation-updated-skipped", telemetry)
       return
     }
@@ -292,7 +292,7 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun offenderPhoneAdded(event: OffenderPhoneEvent) {
     val telemetry = phoneTelemetry(event)
 
-    if (event.originatesInDpsOrHasMissingAudit) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("coreperson-phone-synchronisation-created-skipped", telemetry)
       return
     }
@@ -340,7 +340,7 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun offenderPhoneUpdated(event: OffenderPhoneEvent) {
     val telemetry = phoneTelemetry(event)
 
-    if (event.originatesInDpsOrHasMissingAudit) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("coreperson-phone-synchronisation-updated-skipped", telemetry)
       return
     }
@@ -451,7 +451,7 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun offenderAddressUsageAdded(event: OffenderAddressUsageEvent) {
     val telemetry = event.toAddressUsageTelemetry()
 
-    if (event.originatesInDpsOrHasMissingAudit) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("coreperson-address-usage-synchronisation-created-skipped", telemetry)
       return
     }
@@ -489,7 +489,7 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun offenderAddressUsageUpdated(event: OffenderAddressUsageEvent) {
     val telemetry = event.toAddressUsageTelemetry()
 
-    if (event.originatesInDpsOrHasMissingAudit) {
+    if (event.originatesInDps) {
       telemetryClient.trackEvent("coreperson-address-usage-synchronisation-updated-skipped", telemetry)
       return
     }

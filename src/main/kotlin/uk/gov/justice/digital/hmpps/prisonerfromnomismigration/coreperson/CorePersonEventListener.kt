@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_RELIGION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.religion.CorePersonSynchronisationBeliefsService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
@@ -100,12 +101,17 @@ data class OffenderBeliefEvent(
   override val auditModuleName: String?,
 ) : EventAudited
 
+interface AddressEventAudited : EventAudited {
+  override val originatesInDps: Boolean
+    get() = auditExactMatchOrHasMissingAudit("${DPS_SYNC_AUDIT_MODULE}_CORE_PERSON")
+}
+
 data class OffenderAddressEvent(
   val offenderIdDisplay: String,
   val offenderId: Long,
   val addressId: Long,
   override val auditModuleName: String?,
-) : EventAudited
+) : AddressEventAudited
 
 data class OffenderAddressUsageEvent(
   val offenderIdDisplay: String,
@@ -113,7 +119,7 @@ data class OffenderAddressUsageEvent(
   val addressId: Long,
   val addressUsage: String,
   override val auditModuleName: String?,
-) : EventAudited
+) : AddressEventAudited
 
 data class OffenderEmailEvent(
   val offenderIdDisplay: String,
