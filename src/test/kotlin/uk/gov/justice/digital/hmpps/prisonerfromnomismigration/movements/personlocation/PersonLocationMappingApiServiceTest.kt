@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
+import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -137,6 +138,49 @@ class PersonLocationMappingApiServiceTest {
       assertThrows<WebClientResponseException.InternalServerError> {
         apiService.getMappings(listOf(12345L))
       }
+    }
+  }
+
+  @Nested
+  inner class GetBookingMapping {
+    @Test
+    internal fun `should return mapping`() = runTest {
+      val expectedDpsId = UUID.randomUUID()
+      mappingApi.stubGetPersonLocationBookingMapping(
+        nomisBookingId = 12345L,
+        response = personLocationBookingMapping(nomisBookingId = 12345L, dpsCustodialSeriesId = expectedDpsId),
+      )
+
+      assertThat(apiService.getBookingMappingOrNull(12345L)!!.dpsCustodialSeriesId).isEqualTo(expectedDpsId)
+    }
+
+    @Test
+    internal fun `should return null if not found`() = runTest {
+      mappingApi.stubGetPersonLocationBookingMapping(status = NOT_FOUND)
+
+      assertThat(apiService.getBookingMappingOrNull(12345L)).isNull()
+    }
+  }
+
+  @Nested
+  inner class GetMovementMapping {
+    @Test
+    internal fun `should return mapping`() = runTest {
+      val expectedDpsId = UUID.randomUUID()
+      mappingApi.stubGetPersonLocationMovementMapping(
+        nomisBookingId = 12345L,
+        nomisMovementSeq = 3,
+        response = personLocationMovementMapping(nomisBookingId = 12345L, nomisMovementSeq = 3, dpsExternalMovementId = expectedDpsId),
+      )
+
+      assertThat(apiService.getMovementMappingOrNull(12345L, 3)!!.dpsExternalMovementId).isEqualTo(expectedDpsId)
+    }
+
+    @Test
+    internal fun `should return null if not found`() = runTest {
+      mappingApi.stubGetPersonLocationMovementMapping(nomisMovementSeq = 3, status = NOT_FOUND)
+
+      assertThat(apiService.getMovementMappingOrNull(12345L, 3)).isNull()
     }
   }
 }
