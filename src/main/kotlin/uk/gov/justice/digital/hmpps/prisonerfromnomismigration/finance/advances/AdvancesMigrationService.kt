@@ -24,7 +24,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import java.math.BigDecimal
 import java.time.LocalDateTime
 
 @Service
@@ -164,15 +163,14 @@ fun PrisonerAdvanceDto.toMigrateAdvanceDto() = SyncMigrateAdvanceRecordRequest(
   prisonNumber = prisonNumber,
   prisonID = caseloadId,
   amountIssued = MoneySupport.penceToPounds(advanceAmount),
-  // TODO pull in from Nomis
-  amountOutstanding = BigDecimal.ONE,
+  amountOutstanding = MoneySupport.penceToPounds(outstandingBalance),
   repaymentStartDate = startDate.atStartOfDay(),
   repaymentAmount = MoneySupport.penceToPounds(repaymentAmount),
   reference = reference,
   comment = comment,
   status = SyncMigrateAdvanceRecordRequest.Status.valueOf(status.name),
   // TODO pull in from Nomis - the last transaction date for the advance (for the DED event)
-  migrationTimestamp = LocalDateTime.parse("2024-06-18T11:33:44"),
+  balanceCalculationTime = LocalDateTime.parse("2024-06-18T11:33:44"),
   createdOn = createDatetime,
   createdBy = createdBy,
 )

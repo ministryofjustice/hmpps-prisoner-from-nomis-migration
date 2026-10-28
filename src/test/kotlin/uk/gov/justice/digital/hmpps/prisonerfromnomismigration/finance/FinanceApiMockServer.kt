@@ -152,7 +152,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       reference = "description of the advance",
       comment = "This is a comment",
       status = SyncMigrateAdvanceRecordRequest.Status.ACTIVE,
-      migrationTimestamp = LocalDateTime.of(2024, Month.JULY, 17, 11, 9),
+      balanceCalculationTime = LocalDateTime.of(2024, Month.JULY, 17, 11, 9),
       createdBy = "JD12345",
       createdOn = LocalDateTime.of(2024, Month.JUNE, 18, 12, 10),
     )

@@ -28,7 +28,7 @@ class AdvancesNomisApiMockServer(private val jsonMapper: JsonMapper) {
     prisonerAdvance: PrisonerAdvanceDto? = prisonerAdvance(prisonNumber = prisonNumber),
   ) {
     nomisApi.stubFor(
-      get(urlEqualTo("/finance/prisoners/advances/$advanceId")).willReturn(
+      get(urlEqualTo("/finance/advances/$advanceId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -45,7 +45,7 @@ class AdvancesNomisApiMockServer(private val jsonMapper: JsonMapper) {
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     nomisApi.stubFor(
-      get(urlEqualTo("/finance/prisoners/advances/$advanceId")).willReturn(
+      get(urlEqualTo("/finance/advances/$advanceId")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
@@ -79,7 +79,7 @@ class AdvancesNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubGetActiveAdvancesCount(count: Long = 235) {
     nomisApi.stubFor(
-      get(urlEqualTo("/finance/prisoners/advances/active-count")).willReturn(
+      get(urlEqualTo("/finance/advances/active-count")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -98,9 +98,11 @@ fun prisonerAdvance(prisonNumber: String = "A0001BC"): PrisonerAdvanceDto = Pris
   id = 12345L,
   prisonNumber = prisonNumber,
   caseloadId = "LEI",
-  advanceAmount = 210,
   advanceDate = LocalDate.of(2024, Month.JUNE, 18),
+  advanceAmount = 210,
   repaymentAmount = 50,
+  deductionAmount = 0,
+  outstandingBalance = 160,
   startDate = LocalDate.of(2024, Month.JUNE, 18),
   reference = "description of the advance",
   comment = "This is a comment",

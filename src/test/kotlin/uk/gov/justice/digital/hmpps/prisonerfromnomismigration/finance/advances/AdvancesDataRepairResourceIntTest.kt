@@ -70,7 +70,7 @@ class AdvancesDataRepairResourceIntTest(
 
       @Test
       fun `will retrieve current prisonerAdvance for the prisoner from Nomis`() {
-        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/$advanceId")))
+        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/advances/$advanceId")))
       }
 
       @Test
@@ -121,7 +121,7 @@ class AdvancesDataRepairResourceIntTest(
 
       @Test
       fun `will try to get the advanceId from Nomis`() {
-        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/99999")))
+        nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/advances/99999")))
       }
 
       @Test

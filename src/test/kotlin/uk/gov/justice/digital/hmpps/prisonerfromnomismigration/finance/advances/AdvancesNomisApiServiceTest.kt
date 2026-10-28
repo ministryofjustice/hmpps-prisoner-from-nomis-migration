@@ -47,7 +47,7 @@ class AdvancesNomisApiServiceTest {
       apiService.getAdvance(12345)
 
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/12345")),
+        getRequestedFor(urlPathEqualTo("/finance/advances/12345")),
       )
     }
 
@@ -64,6 +64,8 @@ class AdvancesNomisApiServiceTest {
         assertThat(advanceAmount).isEqualTo(210)
         assertThat(advanceDate).isEqualTo(LocalDate.parse("2024-06-18"))
         assertThat(repaymentAmount).isEqualTo(50)
+        assertThat(deductionAmount).isEqualTo(0)
+        assertThat(outstandingBalance).isEqualTo(160)
         assertThat(startDate).isEqualTo(LocalDate.parse("2024-06-18"))
         assertThat(reference).isEqualTo("description of the advance")
         assertThat(comment).isEqualTo("This is a comment")
@@ -157,7 +159,7 @@ class AdvancesNomisApiServiceTest {
       apiService.getActiveAdvancesCount()
 
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/active-count")),
+        getRequestedFor(urlPathEqualTo("/finance/advances/active-count")),
       )
     }
 
