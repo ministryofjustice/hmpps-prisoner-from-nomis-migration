@@ -37,6 +37,37 @@ class PersonLocationNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetPersonLocationBooking(
+    offenderNo: String = "A1234BC",
+    bookingId: Long = 12345L,
+    response: PersonLocationBooking = personLocationBooking(bookingId = bookingId),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/movements/$offenderNo/person-locations/booking/$bookingId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(jsonMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetPersonLocationMovement(
+    offenderNo: String = "A1234BC",
+    bookingId: Long = 12345L,
+    movementSeq: Int = 1,
+    response: PersonLocationMovement = personLocationMovement(bookingId = bookingId, sequence = movementSeq),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/movements/$offenderNo/person-locations/movement/$bookingId/$movementSeq")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(jsonMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
   fun verify(pattern: RequestPatternBuilder) = nomisApi.verify(pattern)
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
@@ -89,4 +120,31 @@ fun offenderPersonLocationsResponse(
       ),
     ),
   ),
+)
+
+fun personLocationBooking(
+  bookingId: Long = 12345L,
+  bookingBeginTime: LocalDateTime = LocalDateTime.parse("2024-01-01T10:00:00"),
+) = PersonLocationBooking(
+  bookingId = bookingId,
+  bookingNumber = "B12345",
+  activeBooking = true,
+  latestBooking = true,
+  bookingStatus = PersonLocationBooking.BookingStatus.OPEN,
+  bookingBeginTime = bookingBeginTime,
+  audit = NomisAudit(createDatetime = bookingBeginTime, createUsername = "PRISONER_MANAGER_API"),
+)
+
+fun personLocationMovement(
+  bookingId: Long = 12345L,
+  sequence: Int = 1,
+  movementTime: LocalDateTime = LocalDateTime.parse("2024-01-01T10:00:00"),
+) = PersonLocationMovement(
+  bookingId = bookingId,
+  sequence = sequence,
+  movementType = PersonLocationMovement.MovementType.ADM,
+  directionCode = PersonLocationMovement.DirectionCode.IN,
+  movementTime = movementTime,
+  movementReason = CodeDescription(code = "N", description = "Unconvicted Remand"),
+  audit = NomisAudit(createDatetime = movementTime, createUsername = "SOME_USER"),
 )
