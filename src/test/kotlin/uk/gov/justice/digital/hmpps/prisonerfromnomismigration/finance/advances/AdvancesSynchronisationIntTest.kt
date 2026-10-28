@@ -117,7 +117,7 @@ class AdvancesSynchronisationIntTest(
 
           @Test
           fun `will retrieve the advance from NOMIS`() {
-            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/$advanceId")))
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/advances/$advanceId")))
           }
 
           @Test
@@ -177,7 +177,7 @@ class AdvancesSynchronisationIntTest(
               @Test
               fun `will create the advance in DPS only once`() {
                 financeApi.verify(1, postRequestedFor(urlPathEqualTo("/sync/advances")))
-                nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/finance/prisoners/advances/$advanceId")))
+                nomisApiMock.verify(1, getRequestedFor(urlPathEqualTo("/finance/advances/$advanceId")))
               }
 
               @Test
