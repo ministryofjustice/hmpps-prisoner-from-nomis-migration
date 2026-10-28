@@ -97,4 +97,27 @@ class PersonLocationNomisApiServiceTest {
       }
     }
   }
+
+  @Nested
+  inner class GetPersonLocationBooking {
+    @Test
+    fun `will return booking`() = runTest {
+      nomisApiMockServer.stubGetPersonLocationBooking(offenderNo = "A1234BC", bookingId = 23456L)
+
+      assertThat(apiService.getPersonLocationBooking(offenderNo = "A1234BC", bookingId = 23456L).bookingId).isEqualTo(23456L)
+    }
+  }
+
+  @Nested
+  inner class GetPersonLocationMovement {
+    @Test
+    fun `will return movement`() = runTest {
+      nomisApiMockServer.stubGetPersonLocationMovement(offenderNo = "A1234BC", bookingId = 23456L, movementSeq = 3)
+
+      with(apiService.getPersonLocationMovement(offenderNo = "A1234BC", bookingId = 23456L, movementSeq = 3)) {
+        assertThat(bookingId).isEqualTo(23456L)
+        assertThat(sequence).isEqualTo(3)
+      }
+    }
+  }
 }
