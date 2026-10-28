@@ -1192,6 +1192,7 @@ class PrisonerTransactionSynchronisationIntTest(
       caseload = "SWI",
       offenderIdDisplay = offenderNo,
       bookingId = bookingId,
+      transactionType = "DED",
       auditModuleName = auditModuleName,
     ).toJson(),
     MessageAttributes = MessageAttributes(EventType(eventType, "String")),
