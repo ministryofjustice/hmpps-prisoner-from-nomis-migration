@@ -130,6 +130,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONDRUGTESTING_QUEUE_NAME: "sqs_name"
     sqs-migration-drugtesting-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONDRUGTESTING_DLQ_NAME: "sqs_name"
+    sqs-migration-finance-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONFINANCE_QUEUE_NAME: "sqs_name"
+    sqs-migration-finance-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONFINANCE_DLQ_NAME: "sqs_name"
     sqs-migration-property-queue:
       HMPPS_SQS_QUEUES_MIGRATIONPROPERTY_QUEUE_NAME: "sqs_name"
     sqs-migration-property-dlq:

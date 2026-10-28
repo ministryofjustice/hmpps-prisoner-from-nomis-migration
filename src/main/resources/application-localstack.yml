@@ -28,6 +28,9 @@ hmpps.sqs:
     migrationdrugtesting:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    migrationfinance:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     migrationproperty:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

@@ -248,7 +248,11 @@ drugtesting:
     count: 9
 
 finance:
-  transactions.forwardingDelaySeconds: 20
+  transactions:
+    forwardingDelaySeconds: 20
+  complete-check:
+    delay-seconds: 10
+    count: 9
 
 transfermovements:
   complete-check:
@@ -325,6 +329,9 @@ hmpps.sqs:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationdrugtesting:
+      errorVisibilityTimeout: 1, 1, 1, 10
+      propagateTracing: false
+    migrationfinance:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationproperty:
