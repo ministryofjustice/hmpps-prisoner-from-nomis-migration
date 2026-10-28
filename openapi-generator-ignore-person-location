@@ -18,6 +18,7 @@
 !**/CustodialSeriesMapping.kt
 !**/ExternalMovementMapping.kt
 !**/HierarchicalReason.kt
+!**/Hospital.kt
 !**/Location.kt
 !**/MovementReason.kt
 !**/Prison.kt
@@ -28,7 +29,6 @@
 !**/ResyncExternalMovement.kt
 !**/ResyncExternalMovementsRequest.kt
 !**/ResyncResponse.kt
-!**/SecureHospital.kt
 !**/SimpleLocation.kt
 !**/SyncApi.kt
 !**/SyncCustodialSeries.kt

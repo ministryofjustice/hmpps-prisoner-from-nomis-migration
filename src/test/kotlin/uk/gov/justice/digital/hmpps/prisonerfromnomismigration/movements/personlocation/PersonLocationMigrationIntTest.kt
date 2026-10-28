@@ -42,6 +42,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.COURT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.HOSPITAL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.PRISON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPersonLocationsResponse
@@ -56,6 +57,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.CodedReason
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Court
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Hospital
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Prison
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncExternalMovementsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncResponse
@@ -294,6 +296,7 @@ class PersonLocationMigrationIntTest(
                   movement(bookingId = 12345L, sequence = 6, movementType = CRT, scheduleId = 104),
                   movement(bookingId = 12345L, sequence = 7, movementType = REL, from = MovementLocation(type = PRISON, description = "Unknown", code = "UNKNWN")),
                   movement(bookingId = 12345L, sequence = 8, movementType = REL, from = MovementLocation(type = COURT, description = "Unknown", code = "UNKNCT")),
+                  movement(bookingId = 12345L, sequence = 9, movementType = REL, from = MovementLocation(type = HOSPITAL, description = "Northern General Hospital", code = "NGENHO")),
                 ),
               ),
             ),
@@ -351,6 +354,14 @@ class PersonLocationMigrationIntTest(
         "urn:remand-and-sentencing:court-appearance:$dpsSentencingCourtAppearanceId",
         null,
         null,
+        null,
+      )
+    }
+
+    @Test
+    fun `should send hospital locations as a secure hospital`() {
+      assertThat(dpsMovements()[8].from).isEqualTo(
+        Hospital(description = "Northern General Hospital", locationType = "Hospital", code = "NGENHO"),
       )
     }
 
