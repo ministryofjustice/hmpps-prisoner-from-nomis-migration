@@ -23,14 +23,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingPersonLocations.BookingStatus.CLOSED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.BookingPersonLocations.BookingStatus.OPEN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.COURT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.OTHER
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.PRISON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPersonLocationsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationBooking.BookingStatus.CLOSED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationBooking.BookingStatus.OPEN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.DirectionCode.IN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.DirectionCode.OUT
@@ -162,7 +162,7 @@ class PersonLocationMigrationService(
   )
 
   private suspend fun OffenderPersonLocationsResponse.getExistingMappings(): ExistingMappings = bookings
-    .map { it.bookingId }
+    .map { it.booking.bookingId }
     .takeIf { it.isNotEmpty() }
     ?.let { mappingApi.getMappings(it) }
     .orEmpty()
@@ -273,28 +273,30 @@ typealias DpsScheduleReferences = Map<PersonLocationMovement.MovementType, Map<L
 typealias ExistingMappings = Map<Long, PersonLocationBookingMappingDto>
 
 fun OffenderPersonLocationsResponse.toDpsRequest(existingMappings: ExistingMappings, dpsScheduleReferences: DpsScheduleReferences) = ResyncExternalMovementsRequest(
-  custodialSeries = bookings.map { booking ->
-    val bookingMapping = existingMappings[booking.bookingId]
-    val dpsMovementIds = bookingMapping?.movements.orEmpty().associate { it.nomisMovementSeq to it.dpsExternalMovementId }
-    ResyncCustodialSeries(
-      custodialSeries = SyncCustodialSeries(
-        dpsId = bookingMapping?.dpsCustodialSeriesId,
-        status = when (booking.bookingStatus) {
-          OPEN -> SyncCustodialSeries.Status.OPEN
-          CLOSED -> SyncCustodialSeries.Status.CLOSED
+  custodialSeries = bookings.map { personLocationBooking ->
+    with(personLocationBooking.booking) {
+      val bookingMapping = existingMappings[bookingId]
+      val dpsMovementIds = bookingMapping?.movements.orEmpty().associate { it.nomisMovementSeq to it.dpsExternalMovementId }
+      ResyncCustodialSeries(
+        custodialSeries = SyncCustodialSeries(
+          dpsId = bookingMapping?.dpsCustodialSeriesId,
+          status = when (bookingStatus) {
+            OPEN -> SyncCustodialSeries.Status.OPEN
+            CLOSED -> SyncCustodialSeries.Status.CLOSED
+          },
+          isActive = activeBooking,
+          openedAt = bookingBeginTime,
+          closedAt = bookingEndTime,
+          legacyBookingId = bookingId,
+          legacyBookingReference = bookingNumber,
+        ),
+        movements = personLocationBooking.movements.map {
+          it.toDpsMovement(bookingId, dpsMovementIds[it.sequence], bookingMapping?.dpsCustodialSeriesId, dpsScheduleReferences)
         },
-        isActive = booking.activeBooking,
-        openedAt = booking.bookingBeginTime,
-        closedAt = booking.bookingEndTime,
-        legacyBookingId = booking.bookingId,
-        legacyBookingReference = booking.bookingNumber,
-      ),
-      movements = booking.movements.map {
-        it.toDpsMovement(booking.bookingId, dpsMovementIds[it.sequence], bookingMapping?.dpsCustodialSeriesId, dpsScheduleReferences)
-      },
-      created = booking.audit.toCreated(),
-      modified = booking.audit.toModified(),
-    )
+        created = audit.toCreated(),
+        modified = audit.toModified(),
+      )
+    }
   },
 )
 

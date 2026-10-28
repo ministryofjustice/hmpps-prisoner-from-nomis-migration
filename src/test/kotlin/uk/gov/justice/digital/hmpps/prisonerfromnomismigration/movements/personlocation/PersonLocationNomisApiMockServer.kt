@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPersonLocationsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationBooking
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDateTime
@@ -46,14 +47,18 @@ fun offenderPersonLocationsResponse(
 ) = OffenderPersonLocationsResponse(
   bookings = listOf(
     BookingPersonLocations(
-      bookingId = bookingId,
-      bookingNumber = "B12345",
-      activeBooking = true,
-      latestBooking = true,
-      bookingStatus = BookingPersonLocations.BookingStatus.OPEN,
-      bookingBeginTime = bookingBeginTime,
+      booking = PersonLocationBooking(
+        bookingId = bookingId,
+        bookingNumber = "B12345",
+        activeBooking = true,
+        latestBooking = true,
+        bookingStatus = PersonLocationBooking.BookingStatus.OPEN,
+        bookingBeginTime = bookingBeginTime,
+        audit = NomisAudit(createDatetime = bookingBeginTime, createUsername = "PRISONER_MANAGER_API"),
+      ),
       movements = listOf(
         PersonLocationMovement(
+          bookingId = bookingId,
           sequence = 1,
           movementType = PersonLocationMovement.MovementType.ADM,
           directionCode = PersonLocationMovement.DirectionCode.IN,
@@ -69,6 +74,7 @@ fun offenderPersonLocationsResponse(
           to = MovementLocation(type = MovementLocation.Type.PRISON, description = "Leeds (HMP)", code = "LEI"),
         ),
         PersonLocationMovement(
+          bookingId = bookingId,
           sequence = 2,
           movementType = PersonLocationMovement.MovementType.TRN,
           directionCode = PersonLocationMovement.DirectionCode.OUT,
@@ -81,7 +87,6 @@ fun offenderPersonLocationsResponse(
           commentText = "Transfer comment",
         ),
       ),
-      audit = NomisAudit(createDatetime = bookingBeginTime, createUsername = "PRISONER_MANAGER_API"),
     ),
   ),
 )

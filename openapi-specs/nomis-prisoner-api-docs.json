@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-26.2305.02843b3"
+    "version" : "2026-10-27.2311.c76869d"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -23298,7 +23298,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/PersonLocationMovementDetail"
+                  "$ref" : "#/components/schemas/PersonLocationMovement"
                 }
               }
             }
@@ -45360,37 +45360,9 @@
         "type" : "object",
         "description" : "Booking person locations",
         "properties" : {
-          "bookingId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Booking ID"
-          },
-          "bookingNumber" : {
-            "type" : "string",
-            "description" : "Booking Number"
-          },
-          "activeBooking" : {
-            "type" : "boolean",
-            "description" : "Whether this is an active booking"
-          },
-          "latestBooking" : {
-            "type" : "boolean",
-            "description" : "Whether this is the latest booking"
-          },
-          "bookingStatus" : {
-            "type" : "string",
-            "description" : "The open/closed flag ",
-            "enum" : [ "CLOSED", "OPEN" ]
-          },
-          "bookingBeginTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "The booking begin date "
-          },
-          "bookingEndTime" : {
-            "type" : [ "string", "null" ],
-            "format" : "date-time",
-            "description" : "The booking end date "
+          "booking" : {
+            "$ref" : "#/components/schemas/PersonLocationBooking",
+            "description" : "The booking"
           },
           "movements" : {
             "type" : "array",
@@ -45398,13 +45370,9 @@
             "items" : {
               "$ref" : "#/components/schemas/PersonLocationMovement"
             }
-          },
-          "audit" : {
-            "$ref" : "#/components/schemas/NomisAudit",
-            "description" : "Audit data associated with the records"
           }
         },
-        "required" : [ "activeBooking", "audit", "bookingBeginTime", "bookingId", "bookingNumber", "bookingStatus", "latestBooking", "movements" ]
+        "required" : [ "booking", "movements" ]
       },
       "MovementLocation" : {
         "type" : "object",
@@ -45436,66 +45404,50 @@
         },
         "required" : [ "bookings" ]
       },
-      "PersonLocationMovement" : {
+      "PersonLocationBooking" : {
         "type" : "object",
+        "description" : "A single booking's person location details, without its movements",
         "properties" : {
-          "sequence" : {
+          "bookingId" : {
             "type" : "integer",
-            "format" : "int32",
-            "description" : "Movement sequence"
+            "format" : "int64",
+            "description" : "Booking ID"
           },
-          "movementType" : {
+          "bookingNumber" : {
             "type" : "string",
-            "description" : "Movement type",
-            "enum" : [ "ADM", "CRT", "TAP", "TRN", "REL" ]
+            "description" : "Booking Number"
           },
-          "directionCode" : {
+          "activeBooking" : {
+            "type" : "boolean",
+            "description" : "Whether this is an active booking"
+          },
+          "latestBooking" : {
+            "type" : "boolean",
+            "description" : "Whether this is the latest booking"
+          },
+          "bookingStatus" : {
             "type" : "string",
-            "description" : "The direction of the movement",
-            "enum" : [ "IN", "OUT" ]
+            "description" : "The open/closed flag",
+            "enum" : [ "CLOSED", "OPEN" ]
           },
-          "movementTime" : {
+          "bookingBeginTime" : {
             "type" : "string",
             "format" : "date-time",
-            "description" : "Movement time"
+            "description" : "The booking begin date"
           },
-          "movementReason" : {
-            "$ref" : "#/components/schemas/CodeDescription",
-            "description" : "Movement reason code"
-          },
-          "from" : {
-            "description" : "From location",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/MovementLocation"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "to" : {
-            "description" : "To location",
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/MovementLocation"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "scheduleId" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64",
-            "description" : "Schedule ID"
-          },
-          "commentText" : {
+          "bookingEndTime" : {
             "type" : [ "string", "null" ],
-            "description" : "Comment text"
+            "format" : "date-time",
+            "description" : "The booking end date"
           },
           "audit" : {
             "$ref" : "#/components/schemas/NomisAudit",
             "description" : "Audit data associated with the records"
           }
         },
-        "required" : [ "audit", "directionCode", "movementReason", "movementTime", "movementType", "sequence" ]
+        "required" : [ "activeBooking", "audit", "bookingBeginTime", "bookingId", "bookingNumber", "bookingStatus", "latestBooking" ]
       },
-      "PersonLocationMovementDetail" : {
+      "PersonLocationMovement" : {
         "type" : "object",
         "description" : "A single person location movement",
         "properties" : {
@@ -45559,49 +45511,6 @@
           }
         },
         "required" : [ "audit", "bookingId", "directionCode", "movementReason", "movementTime", "movementType", "sequence" ]
-      },
-      "PersonLocationBooking" : {
-        "type" : "object",
-        "description" : "A single booking's person location details, without its movements",
-        "properties" : {
-          "bookingId" : {
-            "type" : "integer",
-            "format" : "int64",
-            "description" : "Booking ID"
-          },
-          "bookingNumber" : {
-            "type" : "string",
-            "description" : "Booking Number"
-          },
-          "activeBooking" : {
-            "type" : "boolean",
-            "description" : "Whether this is an active booking"
-          },
-          "latestBooking" : {
-            "type" : "boolean",
-            "description" : "Whether this is the latest booking"
-          },
-          "bookingStatus" : {
-            "type" : "string",
-            "description" : "The open/closed flag",
-            "enum" : [ "CLOSED", "OPEN" ]
-          },
-          "bookingBeginTime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "The booking begin date"
-          },
-          "bookingEndTime" : {
-            "type" : [ "string", "null" ],
-            "format" : "date-time",
-            "description" : "The booking end date"
-          },
-          "audit" : {
-            "$ref" : "#/components/schemas/NomisAudit",
-            "description" : "Audit data associated with the records"
-          }
-        },
-        "required" : [ "activeBooking", "audit", "bookingBeginTime", "bookingId", "bookingNumber", "bookingStatus", "latestBooking" ]
       },
       "BookingCourtMovementIn" : {
         "type" : "object",
