@@ -248,7 +248,11 @@ drugtesting:
     count: 9
 
 finance:
-  transactions.forwardingDelaySeconds: 20
+  transactions:
+    forwardingDelaySeconds: 20
+  complete-check:
+    delay-seconds: 10
+    count: 9
 
 transfermovements:
   complete-check:

@@ -34,7 +34,7 @@ class ScheduledPaymentsMigrationService(
   jsonMapper: JsonMapper,
   @Value($$"${finance.page.size:1000}") pageSize: Long,
   @Value($$"${finance.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
-  @Value($$"${complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
+  @Value($$"${finance.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${finance.complete-check.count}") completeCheckCount: Int,
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
 ) : ByIdRangeMigrationService<Any, PrisonNumberAndRootOffenderId, ScheduledPaymentMappingDto>(
