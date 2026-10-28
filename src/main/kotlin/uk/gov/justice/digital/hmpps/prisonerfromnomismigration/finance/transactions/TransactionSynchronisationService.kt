@@ -275,6 +275,7 @@ private fun OffenderTransactionDto.toTransactionEvent() = TransactionEvent(
   caseload = caseloadId,
   offenderIdDisplay = offenderNo,
   bookingId = bookingId,
+  transactionType = type,
   auditModuleName = null,
 )
 
@@ -284,6 +285,7 @@ private fun GLTransactionEvent.toTransactionEvent() = TransactionEvent(
   caseload = caseload,
   offenderIdDisplay = offenderIdDisplay,
   bookingId = bookingId,
+  transactionType = transactionType,
   auditModuleName = auditModuleName,
 )
 
