@@ -22,7 +22,7 @@ class ScheduledPaymentsNomisApiService(@Qualifier("nomisApiWebClient") private v
     .awaitSingleOrNullForNotFound()
 
   suspend fun getActivePrisonerScheduledPayments(rootOffenderId: Long): List<PrisonerScheduledPaymentDto> = api
-    .getPrisonerScheduledPaymentsById(rootOffenderId = rootOffenderId)
+    .getPrisonerScheduledPaymentsById(rootOffenderId = rootOffenderId, activeOnly = true)
     .awaitSingle()
 
   suspend fun getActiveScheduledPaymentsCount(): ScheduledPaymentsCount = api.getActiveScheduledPaymentsCount()
