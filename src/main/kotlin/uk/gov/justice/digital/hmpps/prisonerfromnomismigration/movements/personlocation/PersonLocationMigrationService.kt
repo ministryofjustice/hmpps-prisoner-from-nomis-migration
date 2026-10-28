@@ -25,6 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.COURT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.HOSPITAL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.OTHER
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.PRISON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
@@ -43,6 +44,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.AtAndBy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.CodedReason
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Court
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Hospital
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Prison
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncCustodialSeries
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncExternalMovement
@@ -353,6 +355,7 @@ private fun MovementLocation.toDpsLocation() = when {
   else -> when (type) {
     PRISON -> Prison(description = description, locationType = "Prison", code = code!!)
     COURT -> Court(description = description, locationType = "Court", code = code!!)
+    HOSPITAL -> Hospital(description = description, locationType = "Hospital", code = code!!)
     OTHER -> SimpleLocation(description = description, locationType = "SimpleLocation")
   }
 }

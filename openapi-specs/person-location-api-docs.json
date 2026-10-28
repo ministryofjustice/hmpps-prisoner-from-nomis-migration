@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-27.126.09a91eb"
+    "version" : "2026-10-28.131.7f4d967"
   },
   "servers" : [ {
     "url" : "https://person-location-api-dev.hmpps.service.justice.gov.uk",
@@ -298,6 +298,20 @@
         "description" : "More complex hierarchies of reference data such as TAP",
         "required" : [ "description", "hierarchy" ]
       },
+      "Hospital" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/Location"
+        }, {
+          "type" : "object",
+          "properties" : {
+            "code" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "description" : "Hospital location",
+        "required" : [ "code", "description" ]
+      },
       "Location" : {
         "type" : "object",
         "description" : "Represents a movement origin or destination location",
@@ -306,7 +320,7 @@
           "mapping" : {
             "Prison" : "#/components/schemas/Prison",
             "Court" : "#/components/schemas/Court",
-            "SecureHospital" : "#/components/schemas/SecureHospital",
+            "Hospital" : "#/components/schemas/Hospital",
             "SimpleLocation" : "#/components/schemas/SimpleLocation"
           }
         },
@@ -352,20 +366,6 @@
           }
         } ],
         "description" : "Prison location",
-        "required" : [ "code", "description" ]
-      },
-      "SecureHospital" : {
-        "allOf" : [ {
-          "$ref" : "#/components/schemas/Location"
-        }, {
-          "type" : "object",
-          "properties" : {
-            "code" : {
-              "type" : "string"
-            }
-          }
-        } ],
-        "description" : "Hospital location",
         "required" : [ "code", "description" ]
       },
       "SimpleLocation" : {
