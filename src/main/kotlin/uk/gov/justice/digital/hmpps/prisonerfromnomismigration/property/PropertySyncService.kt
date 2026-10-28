@@ -19,8 +19,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.model.SyncPropertyContainerRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.model.SyncPropertyContainerResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.time.LocalDateTime
 import java.util.UUID
 
 private const val TELEMETRY_PREFIX = "property-synchronisation"
@@ -151,6 +153,32 @@ class PropertySyncService(
       ),
     )
     // TODO: not sure if this ever happens
+  }
+
+  suspend fun repair(nomisId: Long) {
+    val nomisPropertyContainer = nomisApiService.getPropertyContainerOrNull(nomisId)
+      ?: throw NotFoundException("property container with nomisId=$nomisId not found")
+    val event = PropertyEvent(
+      "repair",
+      LocalDateTime.now(),
+      nomisPropertyContainer.bookingId,
+      nomisPropertyContainer.offenderNo,
+      nomisId,
+      null,
+    )
+    val telemetry = telemetryOf(
+      "nomisPropertyContainerId" to nomisId.toString(),
+      "bookingId" to nomisPropertyContainer.bookingId.toString(),
+      "offenderNo" to nomisPropertyContainer.offenderNo,
+    )
+    track("property-repair", telemetry) {
+      propertyMappingService.getMappingByNomisIdOrNull(nomisId)
+        ?.run {
+          telemetry["dpsPropertyContainerId"] = dpsPropertyContainerId
+          updated(event)
+        }
+        ?: created(event)
+    }
   }
 
   suspend fun bookingMoved(prisonerMergeEvent: PrisonerBookingMovedDomainEvent) {

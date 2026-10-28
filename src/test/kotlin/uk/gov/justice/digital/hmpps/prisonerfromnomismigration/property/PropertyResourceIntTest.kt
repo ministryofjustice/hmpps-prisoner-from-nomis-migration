@@ -1,8 +1,12 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property
 
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.jsonResponse
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -23,12 +27,16 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.reactive.function.BodyInserters
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PropertyContainerMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.PropertyApiExtension.Companion.propertyDpsApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.model.SyncPropertyContainerResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -41,8 +49,11 @@ import java.util.UUID
 private const val DPS_ID = "e52d7268-6e10-41a8-a0b9-2319b32520d6"
 private const val DPS_ID2 = "edcd118c-41ba-42ea-b5c4-404b453ad58b"
 private const val DPS_LOCATION_ID = "edcd118c-41ba-42ea-b5c4-404b453a0000"
+private const val NOMIS_ID = 1234L
+private const val BOOKING_ID = 5678L
+private const val OFFENDER_NO = "A1234AA"
 
-class PropertyMigrationIntTest(
+class PropertyResourceIntTest(
   @Autowired private val propertyNomisApiMockServer: PropertyNomisApiMockServer,
   @Autowired private val propertyMappingApiMockServer: PropertyMappingApiMockServer,
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
@@ -305,6 +316,246 @@ class PropertyMigrationIntTest(
         },
         isNull(),
       )
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /property/{id}/repair")
+  inner class Repair {
+    private fun WebTestClient.repair(roles: List<String> = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")) = put()
+      .uri("/property/$NOMIS_ID/repair")
+      .headers(setAuthorisation(roles = roles))
+      .exchange()
+
+    @Nested
+    inner class Security {
+      @Test
+      fun `access unauthorised with no auth token`() {
+        webTestClient.put().uri("/property/$NOMIS_ID/repair")
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      fun `access forbidden with no role`() {
+        webTestClient.repair(roles = listOf())
+          .expectStatus().isForbidden
+      }
+
+      @Test
+      fun `access forbidden with wrong role`() {
+        webTestClient.repair(roles = listOf("ROLE_BANANAS"))
+          .expectStatus().isForbidden
+      }
+    }
+
+    @Nested
+    inner class NomisPropertyNotFound {
+      @BeforeEach
+      fun setUp() {
+        nomisApi.stubFor(
+          get(urlEqualTo("/property-containers/$NOMIS_ID"))
+            .willReturn(jsonResponse(ErrorResponse(status = 404), 404)),
+        )
+      }
+
+      @Test
+      fun `will return error and not send anything to DPS`() {
+        webTestClient.repair().expectStatus().isNotFound
+          .expectBody()
+          .jsonPath("$.userMessage").isEqualTo("Not Found: property container with nomisId=$NOMIS_ID not found")
+
+        propertyDpsApi.verify(0, postRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    inner class MappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        propertyNomisApiMockServer.stubGetProperty(
+          propertyResponse = propertyContainerGetResponse(NOMIS_ID, BOOKING_ID, OFFENDER_NO),
+        )
+        propertyMappingApiMockServer.stubGetByNomisId(status = HttpStatus.NOT_FOUND)
+        mappingApi.stubGetApiLocationNomis(123456, DPS_LOCATION_ID)
+        propertyDpsApi.stubUpsert(
+          SyncPropertyContainerResponse(
+            dpsId = UUID.fromString(DPS_ID),
+            nomisPropertyContainerId = NOMIS_ID,
+            mappingType = SyncPropertyContainerResponse.MappingType.CREATED,
+          ),
+        )
+      }
+
+      @Nested
+      inner class HappyPath {
+        @BeforeEach
+        fun setUp() {
+          propertyMappingApiMockServer.stubPostMapping()
+          webTestClient.repair().expectStatus().isOk
+        }
+
+        @Test
+        fun `will create property in DPS`() {
+          propertyDpsApi.verify(
+            1,
+            postRequestedFor(urlPathEqualTo("/sync/property-containers/upsert"))
+              .withRequestBodyJsonPath("nomisPropertyContainerId", NOMIS_ID.toString())
+              .withRequestBodyJsonPath("prisonerNumber", OFFENDER_NO)
+              .withRequestBodyJsonPath("internalLocationId", DPS_LOCATION_ID),
+          )
+        }
+
+        @Test
+        fun `will create mapping between DPS and NOMIS ids`() {
+          propertyMappingApiMockServer.verify(
+            postRequestedFor(urlPathEqualTo("/mapping/property"))
+              .withRequestBodyJsonPath("dpsPropertyContainerId", DPS_ID)
+              .withRequestBodyJsonPath("nomisPropertyContainerId", NOMIS_ID.toString())
+              .withRequestBodyJsonPath("bookingId", BOOKING_ID.toString())
+              .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+          )
+        }
+
+        @Test
+        fun `will track telemetry for the repair`() {
+          verify(telemetryClient).trackEvent(
+            eq("property-repair-success"),
+            check {
+              assertThat(it["nomisPropertyContainerId"]).isEqualTo(NOMIS_ID.toString())
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NO)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class MappingCreateFails {
+        @BeforeEach
+        fun setUp() {
+          propertyMappingApiMockServer.stubPostMappingFailureFollowedBySuccess()
+          webTestClient.repair().expectStatus().isOk
+        }
+
+        @Test
+        fun `will retry creating the mapping without recreating the property`() {
+          await untilAsserted {
+            propertyMappingApiMockServer.verify(
+              2,
+              postRequestedFor(urlPathEqualTo("/mapping/property")),
+            )
+          }
+          propertyDpsApi.verify(1, postRequestedFor(urlPathEqualTo("/sync/property-containers/upsert")))
+        }
+      }
+
+      @Nested
+      inner class DpsFails {
+        @BeforeEach
+        fun setUp() {
+          propertyDpsApi.stubUpsertFailure()
+        }
+
+        @Test
+        fun `will return error and track failure telemetry`() {
+          webTestClient.repair().expectStatus().is5xxServerError
+
+          verify(telemetryClient).trackEvent(
+            eq("property-repair-error"),
+            check {
+              assertThat(it["nomisPropertyContainerId"]).isEqualTo(NOMIS_ID.toString())
+            },
+            isNull(),
+          )
+        }
+      }
+    }
+
+    @Nested
+    inner class MappingExists {
+      @BeforeEach
+      fun setUp() {
+        propertyNomisApiMockServer.stubGetProperty(
+          propertyResponse = propertyContainerGetResponse(NOMIS_ID, BOOKING_ID, OFFENDER_NO),
+        )
+        propertyMappingApiMockServer.stubGetByNomisId(
+          PropertyContainerMappingDto(
+            dpsPropertyContainerId = DPS_ID,
+            nomisPropertyContainerId = NOMIS_ID,
+            bookingId = BOOKING_ID,
+            mappingType = PropertyContainerMappingDto.MappingType.MIGRATED,
+          ),
+        )
+        mappingApi.stubGetApiLocationNomis(123456, DPS_LOCATION_ID)
+      }
+
+      @Nested
+      inner class HappyPath {
+        @BeforeEach
+        fun setUp() {
+          propertyDpsApi.stubUpsert(
+            SyncPropertyContainerResponse(
+              dpsId = UUID.fromString(DPS_ID),
+              nomisPropertyContainerId = NOMIS_ID,
+              mappingType = SyncPropertyContainerResponse.MappingType.UPDATED,
+            ),
+          )
+          webTestClient.repair().expectStatus().isOk
+        }
+
+        @Test
+        fun `will update property in DPS`() {
+          propertyDpsApi.verify(
+            1,
+            postRequestedFor(urlPathEqualTo("/sync/property-containers/upsert"))
+              .withRequestBodyJsonPath("dpsId", DPS_ID)
+              .withRequestBodyJsonPath("nomisPropertyContainerId", NOMIS_ID.toString())
+              .withRequestBodyJsonPath("prisonerNumber", OFFENDER_NO),
+          )
+        }
+
+        @Test
+        fun `will not create a mapping`() {
+          propertyMappingApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/mapping/property")))
+        }
+
+        @Test
+        fun `will track telemetry for the repair`() {
+          verify(telemetryClient).trackEvent(
+            eq("property-repair-success"),
+            check {
+              assertThat(it["nomisPropertyContainerId"]).isEqualTo(NOMIS_ID.toString())
+              assertThat(it["dpsPropertyContainerId"]).isEqualTo(DPS_ID)
+              assertThat(it["bookingId"]).isEqualTo(BOOKING_ID.toString())
+              assertThat(it["offenderNo"]).isEqualTo(OFFENDER_NO)
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class DpsFails {
+        @BeforeEach
+        fun setUp() {
+          propertyDpsApi.stubUpsertFailure()
+        }
+
+        @Test
+        fun `will return error and track failure telemetry`() {
+          webTestClient.repair().expectStatus().is5xxServerError
+
+          verify(telemetryClient).trackEvent(
+            eq("property-repair-error"),
+            check {
+              assertThat(it["dpsPropertyContainerId"]).isEqualTo(DPS_ID)
+            },
+            isNull(),
+          )
+        }
+      }
     }
   }
 }
