@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-02.57.c6ce8ce"
+    "version" : "2026-10-27.126.09a91eb"
   },
   "servers" : [ {
     "url" : "https://person-location-api-dev.hmpps.service.justice.gov.uk",
@@ -264,6 +264,7 @@
             }
           }
         } ],
+        "description" : "Standard reference data code and description",
         "required" : [ "code", "description" ]
       },
       "Court" : {
@@ -277,6 +278,7 @@
             }
           }
         } ],
+        "description" : "Court location",
         "required" : [ "code", "description" ]
       },
       "HierarchicalReason" : {
@@ -293,12 +295,20 @@
             }
           }
         } ],
+        "description" : "More complex hierarchies of reference data such as TAP",
         "required" : [ "description", "hierarchy" ]
       },
       "Location" : {
         "type" : "object",
+        "description" : "Represents a movement origin or destination location",
         "discriminator" : {
-          "propertyName" : "locationType"
+          "propertyName" : "locationType",
+          "mapping" : {
+            "Prison" : "#/components/schemas/Prison",
+            "Court" : "#/components/schemas/Court",
+            "SecureHospital" : "#/components/schemas/SecureHospital",
+            "SimpleLocation" : "#/components/schemas/SimpleLocation"
+          }
         },
         "properties" : {
           "description" : {
@@ -312,8 +322,13 @@
       },
       "MovementReason" : {
         "type" : "object",
+        "description" : "Represents a movement reason",
         "discriminator" : {
-          "propertyName" : "reasonType"
+          "propertyName" : "reasonType",
+          "mapping" : {
+            "CodedReason" : "#/components/schemas/CodedReason",
+            "HierarchicalReason" : "#/components/schemas/HierarchicalReason"
+          }
         },
         "properties" : {
           "description" : {
@@ -336,12 +351,28 @@
             }
           }
         } ],
+        "description" : "Prison location",
+        "required" : [ "code", "description" ]
+      },
+      "SecureHospital" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/Location"
+        }, {
+          "type" : "object",
+          "properties" : {
+            "code" : {
+              "type" : "string"
+            }
+          }
+        } ],
+        "description" : "Hospital location",
         "required" : [ "code", "description" ]
       },
       "SimpleLocation" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/Location"
         } ],
+        "description" : "Generic location",
         "required" : [ "description" ]
       },
       "SyncExternalJourney" : {
@@ -382,9 +413,7 @@
           },
           "reason" : {
             "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodedReason"
-            }, {
-              "$ref" : "#/components/schemas/HierarchicalReason"
+              "$ref" : "#/components/schemas/MovementReason"
             } ]
           },
           "occurredAt" : {
@@ -393,20 +422,15 @@
           },
           "from" : {
             "oneOf" : [ {
-              "$ref" : "#/components/schemas/Court"
-            }, {
-              "$ref" : "#/components/schemas/Prison"
-            }, {
-              "$ref" : "#/components/schemas/SimpleLocation"
+              "$ref" : "#/components/schemas/Location"
             } ]
           },
           "to" : {
+            "type" : "null",
             "oneOf" : [ {
-              "$ref" : "#/components/schemas/Court"
+              "$ref" : "#/components/schemas/Location"
             }, {
-              "$ref" : "#/components/schemas/Prison"
-            }, {
-              "$ref" : "#/components/schemas/SimpleLocation"
+              "type" : "null"
             } ]
           },
           "notes" : {

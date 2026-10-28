@@ -28,6 +28,7 @@
 !**/ResyncExternalMovement.kt
 !**/ResyncExternalMovementsRequest.kt
 !**/ResyncResponse.kt
+!**/SecureHospital.kt
 !**/SimpleLocation.kt
 !**/SyncApi.kt
 !**/SyncCustodialSeries.kt
