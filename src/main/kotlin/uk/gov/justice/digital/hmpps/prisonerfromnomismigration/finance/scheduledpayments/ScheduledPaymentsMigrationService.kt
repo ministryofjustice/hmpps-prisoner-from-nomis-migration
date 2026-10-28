@@ -108,6 +108,10 @@ class ScheduledPaymentsMigrationService(
       }
     }
   }
+  override suspend fun retryCreateMapping(context: MigrationContext<ScheduledPaymentMappingDto>) = createMappingOrOnFailureDo(context, context.body) {
+    throw it
+  }
+
   suspend fun createMappingOrOnFailureDo(
     context: MigrationContext<*>,
     mapping: ScheduledPaymentMappingDto,
