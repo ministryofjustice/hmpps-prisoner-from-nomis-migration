@@ -62,7 +62,7 @@ class PersonLocationNomisApiServiceTest {
 
       assertThat(result.bookings).hasSize(1)
       with(result.bookings[0]) {
-        assertThat(bookingId).isEqualTo(12345)
+        assertThat(booking.bookingId).isEqualTo(12345)
         assertThat(movements).hasSize(2)
         with(movements[0]) {
           assertThat(sequence).isEqualTo(1)

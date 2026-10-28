@@ -283,14 +283,14 @@ class PersonLocationMigrationIntTest(
             bookings = listOf(
               response.bookings[0].copy(
                 movements = listOf(
-                  movement(sequence = 1, movementType = ADM, directionCode = IN, from = null),
-                  movement(sequence = 2, movementType = TAP, scheduleId = 101),
-                  movement(sequence = 3, movementType = CRT, scheduleId = 102),
-                  movement(sequence = 4, movementType = TRN, scheduleId = 103),
-                  movement(sequence = 5, movementType = REL),
-                  movement(sequence = 6, movementType = CRT, scheduleId = 104),
-                  movement(sequence = 7, movementType = REL, from = MovementLocation(type = PRISON, description = "Unknown", code = "UNKNWN")),
-                  movement(sequence = 8, movementType = REL, from = MovementLocation(type = COURT, description = "Unknown", code = "UNKNCT")),
+                  movement(bookingId = 12345L, sequence = 1, movementType = ADM, directionCode = IN, from = null),
+                  movement(bookingId = 12345L, sequence = 2, movementType = TAP, scheduleId = 101),
+                  movement(bookingId = 12345L, sequence = 3, movementType = CRT, scheduleId = 102),
+                  movement(bookingId = 12345L, sequence = 4, movementType = TRN, scheduleId = 103),
+                  movement(bookingId = 12345L, sequence = 5, movementType = REL),
+                  movement(bookingId = 12345L, sequence = 6, movementType = CRT, scheduleId = 104),
+                  movement(bookingId = 12345L, sequence = 7, movementType = REL, from = MovementLocation(type = PRISON, description = "Unknown", code = "UNKNWN")),
+                  movement(bookingId = 12345L, sequence = 8, movementType = REL, from = MovementLocation(type = COURT, description = "Unknown", code = "UNKNCT")),
                 ),
               ),
             ),
@@ -309,12 +309,14 @@ class PersonLocationMigrationIntTest(
     }
 
     private fun movement(
+      bookingId: Long,
       sequence: Int,
       movementType: PersonLocationMovement.MovementType,
       directionCode: PersonLocationMovement.DirectionCode = OUT,
       scheduleId: Long? = null,
       from: MovementLocation? = MovementLocation(type = PRISON, description = "Leeds (HMP)", code = "LEI"),
     ) = PersonLocationMovement(
+      bookingId = bookingId,
       sequence = sequence,
       movementType = movementType,
       directionCode = directionCode,
