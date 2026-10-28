@@ -7,7 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 @Schema(description = "Filter specifying what should be migrated from NOMIS to Property service")
 data class PropertyMigrationFilter(
   @Schema(
-    description = "Only include appointments for these prison ids",
+    description = "Only include property containers for these prison ids",
     example = "['MDI','LEI']",
   )
   val prisonIds: List<String> = emptyList(),
