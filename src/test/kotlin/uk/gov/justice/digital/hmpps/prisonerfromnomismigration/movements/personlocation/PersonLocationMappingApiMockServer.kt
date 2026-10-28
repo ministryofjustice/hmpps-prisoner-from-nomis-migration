@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.person
 import com.github.tomakehurst.wiremock.client.CountMatchingStrategy
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
@@ -123,6 +124,31 @@ class PersonLocationMappingApiMockServer(private val jsonMapper: JsonMapper) {
             .withHeader("Content-Type", "application/json")
             .withStatus(status.value())
             .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) response else error)),
+        ),
+    )
+  }
+
+  fun stubDeletePersonLocationBookingMapping(
+    nomisBookingId: Long = 12345L,
+  ) {
+    mappingApi.stubFor(
+      delete("/mapping/person-location/booking/nomis-booking-id/$nomisBookingId")
+        .willReturn(
+          aResponse()
+            .withStatus(HttpStatus.NO_CONTENT.value()),
+        ),
+    )
+  }
+
+  fun stubDeletePersonLocationMovementMapping(
+    nomisBookingId: Long = 12345L,
+    nomisMovementSeq: Int = 1,
+  ) {
+    mappingApi.stubFor(
+      delete("/mapping/person-location/movement/nomis-booking-id/$nomisBookingId/nomis-movement-seq/$nomisMovementSeq")
+        .willReturn(
+          aResponse()
+            .withStatus(HttpStatus.NO_CONTENT.value()),
         ),
     )
   }
