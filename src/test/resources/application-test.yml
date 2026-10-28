@@ -86,6 +86,12 @@ courtsentencing:
   has-migrated-data: true
 finance:
   transactions.forwardingDelaySeconds: 0
+  complete-check:
+    delay-seconds: 0
+    retry-seconds: 0
+    count: 1
+  page:
+    size: 10
 prisonbalance:
   complete-check:
     delay-seconds: 0
