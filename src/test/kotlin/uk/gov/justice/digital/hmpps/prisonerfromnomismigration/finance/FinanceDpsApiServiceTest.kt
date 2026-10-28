@@ -19,9 +19,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceAp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.prisonerBalanceMigrationDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.releaseHoldDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.repayAdvanceDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.syncScheduledPaymentDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.syncUpdateScheduledPaymentDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiMockServer.Companion.writeOffAdvanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import java.time.LocalDate
 import java.util.UUID
 
 @ExtendWith(FinanceApiExtension::class)
@@ -460,6 +463,117 @@ class FinanceDpsApiServiceTest {
         financeApi.verify(
           postRequestedFor(urlPathEqualTo("/sync/advances/$advanceUuid/write-off")),
         )
+      }
+    }
+  }
+
+  @Nested
+  inner class ScheduledPayments {
+    @Nested
+    inner class CreateScheduledPayment {
+      @Test
+      internal fun `will pass oauth2 token to scheduled payment endpoint`() = runTest {
+        financeApi.stubCreateScheduledPayment()
+
+        apiService.createScheduledPayment(syncScheduledPaymentDto())
+
+        financeApi.verify(
+          postRequestedFor(anyUrl())
+            .withHeader("Authorization", equalTo("Bearer ABCDE")),
+        )
+      }
+
+      @Test
+      internal fun `will send request data to scheduled payment endpoint`() = runTest {
+        financeApi.stubCreateScheduledPayment()
+
+        apiService.createScheduledPayment(syncScheduledPaymentDto())
+
+        financeApi.verify(
+          postRequestedFor(anyUrl())
+            .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo("12345"))
+            .withRequestBodyJsonPath("amount", equalTo("2.1"))
+            .withRequestBodyJsonPath("dayOfPayment", equalTo("TUESDAY"))
+            .withRequestBodyJsonPath("startDate", equalTo("2024-06-18"))
+            .withRequestBodyJsonPath("endDate", equalTo("2024-07-30"))
+            .withRequestBodyJsonPath("subscriptionType", equalTo("TV"))
+            .withRequestBodyJsonPath("prisonId", equalTo("LEI"))
+            .withRequestBodyJsonPath("prisonNumber", equalTo("A0001BC"))
+            .withRequestBodyJsonPath("subAccountCode", equalTo("2101"))
+            .withRequestBodyJsonPath("reference", equalTo("description of the scheduled payment"))
+            .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
+            .withRequestBodyJsonPath("createdAt", equalTo("2024-06-18T12:10:00")),
+        )
+      }
+
+      @Test
+      fun `will call the scheduled payment endpoint`() = runTest {
+        financeApi.stubCreateScheduledPayment()
+
+        apiService.createScheduledPayment(syncScheduledPaymentDto())
+
+        financeApi.verify(
+          postRequestedFor(urlPathEqualTo("/sync/subscriptions")),
+        )
+      }
+
+      @Test
+      fun `will return subscriptionId`() = runTest {
+        val subscriptionId = UUID.randomUUID()
+        financeApi.stubCreateScheduledPayment(subscriptionId)
+
+        val response = apiService.createScheduledPayment(syncScheduledPaymentDto())
+
+        assertThat(response.subscriptionId).isEqualTo(subscriptionId)
+      }
+    }
+
+    @Nested
+    inner class UpdateScheduledPayment {
+      val subscriptionId: UUID = UUID.randomUUID()
+
+      @Test
+      internal fun `will pass oauth2 token to sync scheduled payment endpoint`() = runTest {
+        financeApi.stubUpdateScheduledPayment(subscriptionId)
+
+        apiService.updateScheduledPayment(subscriptionId, syncUpdateScheduledPaymentDto())
+
+        financeApi.verify(
+          postRequestedFor(anyUrl())
+            .withHeader("Authorization", equalTo("Bearer ABCDE")),
+        )
+      }
+
+      @Test
+      internal fun `will send request data to sync scheduled payment endpoint`() = runTest {
+        financeApi.stubUpdateScheduledPayment(subscriptionId)
+
+        apiService.updateScheduledPayment(subscriptionId, syncUpdateScheduledPaymentDto())
+
+        financeApi.verify(
+          postRequestedFor(anyUrl())
+            .withRequestBodyJsonPath("endDate", equalTo("2024-08-06")),
+        )
+      }
+
+      @Test
+      fun `will call the sync scheduled payment endpoint`() = runTest {
+        financeApi.stubUpdateScheduledPayment(subscriptionId)
+
+        apiService.updateScheduledPayment(subscriptionId, syncUpdateScheduledPaymentDto())
+
+        financeApi.verify(
+          postRequestedFor(urlPathEqualTo("/sync/subscriptions/$subscriptionId/update")),
+        )
+      }
+
+      @Test
+      fun `will return updated end date`() = runTest {
+        financeApi.stubUpdateScheduledPayment(subscriptionId)
+
+        val response = apiService.updateScheduledPayment(subscriptionId, syncUpdateScheduledPaymentDto())
+
+        assertThat(response.endDate).isEqualTo(LocalDate.parse("2024-08-06"))
       }
     }
   }

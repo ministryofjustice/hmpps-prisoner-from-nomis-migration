@@ -27,13 +27,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.Syn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceWriteOffRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateSubscriptionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateSubscriptionResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncMigrateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleaseHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleasedHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncUpdateSubscriptionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncUpdateSubscriptionResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.Month
 import java.util.UUID
@@ -184,6 +189,25 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       writtenOffAmount = BigDecimal.TWO,
       writtenOffBy = "LF12345",
       writeOffDateTime = LocalDateTime.of(2024, Month.JUNE, 29, 9, 15),
+    )
+
+    fun syncScheduledPaymentDto(prisonNumber: String = "A0001BC") = SyncCreateSubscriptionRequest(
+      legacyPaymentProfileId = 12345,
+      amount = BigDecimal.valueOf(2.10),
+      dayOfPayment = SyncCreateSubscriptionRequest.DayOfPayment.TUESDAY,
+      startDate = LocalDate.of(2024, Month.JUNE, 18),
+      endDate = LocalDate.of(2024, Month.JULY, 30),
+      subscriptionType = "TV",
+      createdBy = "JD12345",
+      createdAt = LocalDateTime.of(2024, Month.JUNE, 18, 12, 10),
+      prisonId = "LEI",
+      prisonNumber = prisonNumber,
+      subAccountCode = 2101,
+      reference = "description of the scheduled payment",
+    )
+
+    fun syncUpdateScheduledPaymentDto() = SyncUpdateSubscriptionRequest(
+      endDate = LocalDate.of(2024, Month.AUGUST, 6),
     )
   }
 
@@ -383,6 +407,36 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
         .willReturn(
           aResponse()
             .withStatus(CREATED.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubCreateScheduledPayment(
+    subscriptionId: UUID = UUID.randomUUID(),
+    response: SyncCreateSubscriptionResponse = SyncCreateSubscriptionResponse(subscriptionId),
+  ) {
+    stubFor(
+      post("/sync/subscriptions")
+        .willReturn(
+          aResponse()
+            .withStatus(CREATED.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubUpdateScheduledPayment(
+    subscriptionId: UUID,
+    response: SyncUpdateSubscriptionResponse = SyncUpdateSubscriptionResponse(LocalDate.of(2024, Month.AUGUST, 6)),
+  ) {
+    stubFor(
+      post("/sync/subscriptions/$subscriptionId/update")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
             .withHeader("Content-Type", "application/json")
             .withBody(jsonMapper.writeValueAsString(response)),
         ),

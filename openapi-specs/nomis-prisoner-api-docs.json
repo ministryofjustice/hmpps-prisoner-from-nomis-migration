@@ -47310,10 +47310,6 @@
             "type" : [ "integer", "null" ],
             "format" : "int64"
           },
-          "txnId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
           "txnEntrySeq" : {
             "type" : "integer",
             "format" : "int32"
@@ -47321,6 +47317,10 @@
           "txnEntryDate" : {
             "type" : "string",
             "format" : "date-time"
+          },
+          "txnId" : {
+            "type" : "integer",
+            "format" : "int64"
           },
           "txnEntryDesc" : {
             "type" : [ "string", "null" ]
