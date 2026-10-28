@@ -54,16 +54,18 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TAP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TRN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.MigrationHistoryRepository
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.CodedReason
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Court
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Prison
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncExternalMovementsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SimpleLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncCustodialSeries.Status.OPEN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.ADMISSION
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.TRANSFER
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement.Type.ARRIVAL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement.Type.DEPARTURE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovementFrom
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovementReason
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import java.time.Duration
@@ -205,9 +207,9 @@ class PersonLocationMigrationIntTest(
           assertThat(legacySequenceNumber).isEqualTo(1)
           assertThat(type).isEqualTo(ARRIVAL)
           assertThat(occurredAt).isEqualTo(LocalDateTime.parse("2024-01-01T10:00:00"))
-          assertThat(reason).isEqualTo(SyncExternalMovementReason(description = "Unconvicted Remand", reasonType = "CodedReason", code = "N", hierarchy = listOf()))
-          assertThat(from).isEqualTo(SyncExternalMovementFrom(description = "Leeds Court", locationType = "Court", code = "LEEDCC"))
-          assertThat(to).isEqualTo(SyncExternalMovementFrom(description = "Leeds (HMP)", locationType = "Prison", code = "LEI"))
+          assertThat(reason).isEqualTo(CodedReason(description = "Unconvicted Remand", reasonType = "CodedReason", code = "N"))
+          assertThat(from).isEqualTo(Court(description = "Leeds Court", locationType = "Court", code = "LEEDCC"))
+          assertThat(to).isEqualTo(Prison(description = "Leeds (HMP)", locationType = "Prison", code = "LEI"))
           assertThat(journey).isEqualTo(SyncExternalJourney(type = ADMISSION, scheduleReference = null))
           assertThat(notes).isNull()
         }
@@ -223,9 +225,10 @@ class PersonLocationMigrationIntTest(
           assertThat(legacySequenceNumber).isEqualTo(2)
           assertThat(type).isEqualTo(DEPARTURE)
           assertThat(occurredAt).isEqualTo(LocalDateTime.parse("2024-01-11T10:00:00"))
-          assertThat(reason).isEqualTo(SyncExternalMovementReason(description = "Normal Transfer", reasonType = "CodedReason", code = "NOTR", hierarchy = listOf()))
-          assertThat(from).isEqualTo(SyncExternalMovementFrom(description = "Leeds (HMP)", locationType = "Prison", code = "LEI"))
-          assertThat(to).isEqualTo(SyncExternalMovementFrom(description = "Unknown destination", locationType = "SimpleLocation", code = ""))
+          assertThat(reason).isEqualTo(CodedReason(description = "Normal Transfer", reasonType = "CodedReason", code = "NOTR"))
+          assertThat(from).isEqualTo(Prison(description = "Leeds (HMP)", locationType = "Prison", code = "LEI"))
+          assertThat(to!!.description).isEqualTo("Unknown destination")
+          assertThat(to.locationType).isEqualTo("SimpleLocation")
           assertThat(journey).isEqualTo(SyncExternalJourney(type = TRANSFER, scheduleReference = "urn:transfer-scheduler:transfer:$dpsTransferScheduleId"))
           assertThat(notes).isEqualTo("Transfer comment")
         }
@@ -331,7 +334,8 @@ class PersonLocationMigrationIntTest(
 
     @Test
     fun `should default missing from location on inbound movements`() {
-      assertThat(dpsMovements()[0].from).isEqualTo(SyncExternalMovementFrom(description = "Outside", locationType = "SimpleLocation", code = ""))
+      assertThat(dpsMovements()[0].from.description).isEqualTo("Outside")
+      assertThat(dpsMovements()[0].from.locationType).isEqualTo("SimpleLocation")
     }
 
     @Test
@@ -350,9 +354,14 @@ class PersonLocationMigrationIntTest(
 
     @Test
     fun `should send unknown prison and court locations as an UNKNOWN simple location`() {
-      assertThat(dpsMovements().drop(6).map { it.from }).containsOnly(
-        SyncExternalMovementFrom(description = "UNKNOWN", locationType = "SimpleLocation", code = ""),
-      )
+      with(dpsMovements()[6].from as SimpleLocation) {
+        assertThat(description).isEqualTo("UNKNOWN")
+        assertThat(locationType).isEqualTo("SimpleLocation")
+      }
+      with(dpsMovements()[7].from as SimpleLocation) {
+        assertThat(description).isEqualTo("UNKNOWN")
+        assertThat(locationType).isEqualTo("SimpleLocation")
+      }
     }
 
     @Test

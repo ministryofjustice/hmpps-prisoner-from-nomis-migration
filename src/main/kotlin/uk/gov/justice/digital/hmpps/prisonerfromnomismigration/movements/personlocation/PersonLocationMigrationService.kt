@@ -41,10 +41,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TRN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.AtAndBy
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.CodedReason
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Court
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Prison
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncCustodialSeries
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncExternalMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncExternalMovementsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SimpleLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncCustodialSeries
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.ADMISSION
@@ -55,8 +59,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement.Type.ARRIVAL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement.Type.DEPARTURE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovementFrom
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovementReason
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRangeMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
@@ -311,11 +313,10 @@ private fun PersonLocationMovement.toDpsMovement(
       IN -> ARRIVAL
       OUT -> DEPARTURE
     },
-    reason = SyncExternalMovementReason(
+    reason = CodedReason(
       description = movementReason.description,
       reasonType = "CodedReason",
       code = movementReason.code,
-      hierarchy = listOf(),
     ),
     occurredAt = movementTime,
     from = toDpsFromLocation(bookingId),
@@ -341,22 +342,17 @@ private fun PersonLocationMovement.toDpsMovement(
 private fun PersonLocationMovement.toDpsFromLocation(bookingId: Long) = from?.toDpsLocation()
   ?: when (directionCode) {
     // Some very old inbound NOMIS movements have no from location
-    IN -> SyncExternalMovementFrom(description = "Outside", locationType = "SimpleLocation", code = "")
+    IN -> SimpleLocation(description = "Outside", locationType = "SimpleLocation")
     OUT -> throw IllegalStateException("Outbound movement $bookingId/$sequence has no from location")
   }
 
 private fun MovementLocation.toDpsLocation() = when {
-  type == PRISON && code == "UNKNWN" || type == COURT && code == "UNKNCT" -> unknownDpsLocation()
-  else -> toKnownDpsLocation()
-}
-
-// A DPS SimpleLocation has no code - it's only required here because the generated model flattens the oneOf location types
-private fun unknownDpsLocation() = SyncExternalMovementFrom(description = "UNKNOWN", locationType = "SimpleLocation", code = "")
-
-private fun MovementLocation.toKnownDpsLocation() = when (type) {
-  PRISON -> SyncExternalMovementFrom(description = description, locationType = "Prison", code = code!!)
-  COURT -> SyncExternalMovementFrom(description = description, locationType = "Court", code = code!!)
-  OTHER -> SyncExternalMovementFrom(description = description, locationType = "SimpleLocation", code = "")
+  type == PRISON && code == "UNKNWN" || type == COURT && code == "UNKNCT" -> SimpleLocation(description = "UNKNOWN", locationType = "SimpleLocation")
+  else -> when (type) {
+    PRISON -> Prison(description = description, locationType = "Prison", code = code!!)
+    COURT -> Court(description = description, locationType = "Court", code = code!!)
+    OTHER -> SimpleLocation(description = description, locationType = "SimpleLocation")
+  }
 }
 
 private fun NomisAudit.toCreated() = AtAndBy(at = createDatetime, by = createUsername.toDpsUser())
