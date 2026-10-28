@@ -327,6 +327,9 @@ hmpps.sqs:
     migrationdrugtesting:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
+    migrationfinance:
+      errorVisibilityTimeout: 1, 1, 1, 10
+      propagateTracing: false
     migrationproperty:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false

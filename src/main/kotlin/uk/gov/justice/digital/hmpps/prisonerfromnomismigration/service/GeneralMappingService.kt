@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraMappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances.AdvancesMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonbalances.PrisonBalanceMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonerbalances.PrisonerBalanceMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.scheduledpayments.ScheduledPaymentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.property.PropertyMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff.StaffMappingApiService
@@ -28,6 +29,7 @@ class GeneralMappingService(
   private val prisonBalanceMappingApiService: PrisonBalanceMappingApiService,
   private val prisonerBalanceMappingApiService: PrisonerBalanceMappingApiService,
   private val propertyMappingService: PropertyMappingService,
+  private val scheduledPaymentsMappingService: ScheduledPaymentsMappingService,
   private val staffMappingApiService: StaffMappingApiService,
   private val visitMappingService: VisitMappingService,
 ) {
@@ -43,6 +45,7 @@ class GeneralMappingService(
     MigrationType.CSRA -> csraMappingApiService.getMigrationCount(migrationId)
     MigrationType.DRUG_TESTING -> -1 // No implementation necessary
     MigrationType.EXTERNAL_MOVEMENTS -> 0
+    MigrationType.FINANCE_SCHEDULED_PAYMENTS -> scheduledPaymentsMappingService.getPagedModelMigrationCount(migrationId)
     MigrationType.PERSON_LOCATIONS -> -1 // No implementation necessary
     MigrationType.PRISON_BALANCE -> prisonBalanceMappingApiService.getPagedModelMigrationCount(migrationId)
     MigrationType.PRISONER_BALANCE -> prisonerBalanceMappingApiService.getPagedModelMigrationCount(migrationId)

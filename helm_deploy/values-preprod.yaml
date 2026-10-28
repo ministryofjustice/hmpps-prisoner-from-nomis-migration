@@ -136,6 +136,8 @@ generic-prometheus-alerts:
       - "syscon-devs-preprod-migration_drugtesting_queue"
       - "syscon-devs-preprod-migration_drugtesting_dlq"
     finance:
+      - "syscon-devs-preprod-migration_finance_queue"
+      - "syscon-devs-preprod-migration_finance_dlq"
       - "syscon-devs-preprod-prisoner_from_nomis_finance_queue"
       - "syscon-devs-preprod-prisoner_from_nomis_finance_dl_queue"
     prisonbalance:
