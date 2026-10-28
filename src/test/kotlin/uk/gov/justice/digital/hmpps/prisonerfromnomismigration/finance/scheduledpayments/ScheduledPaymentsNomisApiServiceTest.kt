@@ -206,7 +206,7 @@ class ScheduledPaymentsNomisApiServiceTest {
       apiService.getActiveScheduledPaymentsCount()
 
       mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/finance/prisoners/scheduled-payments/active-count")),
+        getRequestedFor(urlPathEqualTo("/finance/scheduled-payments/active-count")),
       )
     }
 
