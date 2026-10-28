@@ -6,6 +6,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.AdvancesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.HoldsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.NOMISSyncApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.SubscriptionsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
@@ -14,11 +15,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.Syn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceWriteOffRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateHoldResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateSubscriptionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateSubscriptionResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncMigrateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncOffenderTransactionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleaseHoldRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncReleasedHoldResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncUpdateSubscriptionRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncUpdateSubscriptionResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitOrLogAndRethrowBadRequest
 import java.util.UUID
@@ -28,6 +33,7 @@ class FinanceDpsApiService(@Qualifier("financeApiWebClient") private val webClie
   private val syncApi = NOMISSyncApi(webClient)
   private val holdsApi = HoldsApi(webClient)
   private val advancesApi = AdvancesApi(webClient)
+  private val subscriptionsApi = SubscriptionsApi(webClient)
 
   suspend fun syncPrisonerTransactions(request: SyncOffenderTransactionRequest): SyncTransactionReceipt = syncApi.postOffenderTransaction(request)
     .awaitOrLogAndRethrowBadRequest()
@@ -70,4 +76,10 @@ class FinanceDpsApiService(@Qualifier("financeApiWebClient") private val webClie
     advancesApi.postAdvanceWriteOff(advanceUuid, request)
       .awaitOrLogAndRethrowBadRequest()
   }
+
+  suspend fun createScheduledPayment(request: SyncCreateSubscriptionRequest): SyncCreateSubscriptionResponse = subscriptionsApi.createSubscription(request)
+    .awaitOrLogAndRethrowBadRequest()
+
+  suspend fun updateScheduledPayment(subscriptionId: UUID, request: SyncUpdateSubscriptionRequest): SyncUpdateSubscriptionResponse = subscriptionsApi.updateSubscription(subscriptionId, request)
+    .awaitOrLogAndRethrowBadRequest()
 }
