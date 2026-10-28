@@ -300,8 +300,8 @@ class FinanceDpsApiServiceTest {
             .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
             .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
             .withRequestBodyJsonPath("status", equalTo("ACTIVE"))
+            .withRequestBodyJsonPath("balanceCalculationTime", equalTo("2024-07-17T11:09:00"))
             .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
-            .withRequestBodyJsonPath("migrationTimestamp", equalTo("2024-07-17T11:09:00"))
             .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:10:00")),
         )
       }

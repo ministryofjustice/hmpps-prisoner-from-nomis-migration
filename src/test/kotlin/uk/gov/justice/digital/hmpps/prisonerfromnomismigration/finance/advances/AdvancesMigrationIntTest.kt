@@ -155,15 +155,12 @@ class AdvancesMigrationIntTest(
         assertThat(migrationRequests[0].prisonNumber).isEqualTo("A0001BC")
         assertThat(migrationRequests[0].prisonID).isEqualTo("LEI")
         assertThat(migrationRequests[0].amountIssued).isEqualTo(BigDecimal("2.10"))
-        // TODO update when returned from Nomis
-        assertThat(migrationRequests[0].amountOutstanding).isEqualTo(BigDecimal.ONE)
+        assertThat(migrationRequests[0].amountOutstanding).isEqualTo(BigDecimal("1.60"))
         assertThat(migrationRequests[0].repaymentAmount).isEqualTo(BigDecimal("0.50"))
         assertThat(migrationRequests[0].repaymentStartDate).isEqualTo(LocalDateTime.parse("2024-06-18T00:00:00"))
         assertThat(migrationRequests[0].reference).isEqualTo("description of the advance")
-        // TODO Migration shouldn't have status - remove when api set up
         assertThat(migrationRequests[0].status).isEqualTo(SyncMigrateAdvanceRecordRequest.Status.ACTIVE)
-        // TODO update when returned from Nomis
-        assertThat(migrationRequests[0].migrationTimestamp).isEqualTo(LocalDateTime.parse("2024-06-18T11:33:44"))
+        assertThat(migrationRequests[0].balanceCalculationTime).isEqualTo(LocalDateTime.parse("2024-06-18T11:33:44"))
         assertThat(migrationRequests[0].createdBy).isEqualTo("JD12345")
         assertThat(migrationRequests[0].createdOn).isEqualTo(LocalDateTime.parse("2024-06-18T12:30:45"))
       }
