@@ -23,18 +23,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationsMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.COURT
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.HOSPITAL
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.OTHER
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation.Type.PRISON
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPersonLocationsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationBooking.BookingStatus.CLOSED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationBooking.BookingStatus.OPEN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.DirectionCode.IN
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.DirectionCode.OUT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.ADM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.CRT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.REL
@@ -42,25 +35,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TRN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.AtAndBy
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.CodedReason
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Court
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Hospital
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Prison
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncCustodialSeries
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncExternalMovement
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncExternalMovementsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SimpleLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncCustodialSeries
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.ADMISSION
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.COURT_APPEARANCE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.RELEASE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.TEMPORARY_ABSENCE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney.Type.TRANSFER
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement.Type.ARRIVAL
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement.Type.DEPARTURE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRangeMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
@@ -295,7 +274,7 @@ fun OffenderPersonLocationsResponse.toDpsRequest(existingMappings: ExistingMappi
           legacyBookingReference = bookingNumber,
         ),
         movements = personLocationBooking.movements.map {
-          it.toDpsMovement(bookingId, dpsMovementIds[it.sequence], bookingMapping?.dpsCustodialSeriesId, dpsScheduleReferences)
+          it.toDpsMovement(dpsMovementIds[it.sequence], bookingMapping?.dpsCustodialSeriesId, dpsScheduleReferences)
         },
         created = audit.toCreated(),
         modified = audit.toModified(),
@@ -305,60 +284,18 @@ fun OffenderPersonLocationsResponse.toDpsRequest(existingMappings: ExistingMappi
 )
 
 private fun PersonLocationMovement.toDpsMovement(
-  bookingId: Long,
   dpsId: UUID?,
   dpsCustodySeriesId: UUID?,
   dpsScheduleReferences: DpsScheduleReferences,
 ) = ResyncExternalMovement(
-  movement = SyncExternalMovement(
+  movement = toSyncExternalMovement(
     dpsId = dpsId,
     dpsCustodySeriesId = dpsCustodySeriesId,
-    type = when (directionCode) {
-      IN -> ARRIVAL
-      OUT -> DEPARTURE
-    },
-    reason = CodedReason(
-      description = movementReason.description,
-      reasonType = "CodedReason",
-      code = movementReason.code,
-    ),
-    occurredAt = movementTime,
-    from = toDpsFromLocation(bookingId),
-    to = to?.toDpsLocation(),
-    journey = SyncExternalJourney(
-      type = when (movementType) {
-        ADM -> ADMISSION
-        CRT -> COURT_APPEARANCE
-        TAP -> TEMPORARY_ABSENCE
-        TRN -> TRANSFER
-        REL -> RELEASE
-      },
-      scheduleReference = scheduleId?.let { dpsScheduleReferences[movementType]?.get(it) },
-    ),
-    legacyBookingId = bookingId,
-    legacySequenceNumber = sequence,
-    notes = commentText,
+    scheduleReference = scheduleId?.let { dpsScheduleReferences[movementType]?.get(it) },
   ),
   created = audit.toCreated(),
   modified = audit.toModified(),
 )
-
-private fun PersonLocationMovement.toDpsFromLocation(bookingId: Long) = from?.toDpsLocation()
-  ?: when (directionCode) {
-    // Some very old inbound NOMIS movements have no from location
-    IN -> SimpleLocation(description = "Outside", locationType = "SimpleLocation")
-    OUT -> throw IllegalStateException("Outbound movement $bookingId/$sequence has no from location")
-  }
-
-private fun MovementLocation.toDpsLocation() = when {
-  type == PRISON && code == "UNKNWN" || type == COURT && code == "UNKNCT" -> SimpleLocation(description = "UNKNOWN", locationType = "SimpleLocation")
-  else -> when (type) {
-    PRISON -> Prison(description = description, locationType = "Prison", code = code!!)
-    COURT -> Court(description = description, locationType = "Court", code = code!!)
-    HOSPITAL -> Hospital(description = description, locationType = "Hospital", code = code!!)
-    OTHER -> SimpleLocation(description = description, locationType = "SimpleLocation")
-  }
-}
 
 private fun NomisAudit.toCreated() = AtAndBy(at = createDatetime, by = createUsername.toDpsUser())
 private fun NomisAudit.toModified() = modifyDatetime?.let { AtAndBy(at = it, by = modifyUserId!!.toDpsUser()) }
