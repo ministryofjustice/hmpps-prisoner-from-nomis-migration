@@ -1104,6 +1104,36 @@ class PersonLocationSyncMovementIntTest(
     }
   }
 
+  @Nested
+  @DisplayName("EXTERNAL_MOVEMENT-CHANGED (edited in NOMIS prisoner movements screen)")
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class MovementsEdited {
+    @BeforeEach
+    fun setUp() {
+      setUpTestClass()
+
+      nomisApi.stubGetOffenderPersonLocations("A1234BC")
+      transferScheduleMappingApi.stubGetTransferSchedulerPrisonerMappingIds(prisonerNumber = "A1234BC", nomisEventId = 54321L, dpsTransferScheduleId = UUID.randomUUID())
+      mappingApi.stubGetPersonLocationMappings()
+      dpsApi.stubResyncPrisoner(personIdentifier = "A1234BC")
+      mappingApi.stubCreatePersonLocationMappings()
+
+      personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent(auditModuleName = "OUMEEMOV", recordInserted = false))
+        .also { waitForAnyProcessingToComplete("person-location-migration-entity-migrated") }
+    }
+
+    @Test
+    fun `should resync the person in DPS rather than sync the movement`() {
+      dpsApi.verify(putRequestedFor(urlPathEqualTo("/resync/external-movements/A1234BC")))
+      dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
+    }
+
+    @Test
+    fun `should update mappings`() {
+      mappingApi.verify(putRequestedFor(urlPathEqualTo("/mapping/person-location/migrate")))
+    }
+  }
+
   private fun getRequest() = getRequestBody<SyncExternalMovementRequest>(putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
 
   private fun transferMovementOut(scheduleId: Long?) = movementOut(TRN, scheduleId)
