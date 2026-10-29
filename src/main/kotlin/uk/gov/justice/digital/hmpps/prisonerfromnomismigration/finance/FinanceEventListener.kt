@@ -106,7 +106,7 @@ data class TransactionEvent(
   val caseload: String,
   val offenderIdDisplay: String? = null,
   val bookingId: Long? = null,
-  val transactionType: String,
+  val transactionType: String? = null,
   override val auditModuleName: String? = null,
 ) : EventAudited
 
@@ -117,7 +117,7 @@ data class GLTransactionEvent(
   val caseload: String,
   val offenderIdDisplay: String? = null,
   val bookingId: Long? = null,
-  val transactionType: String,
+  val transactionType: String? = null,
   override val auditModuleName: String? = null,
 ) : EventAudited
 
