@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.person
 
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
@@ -169,6 +170,16 @@ class PersonLocationDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withHeader("Content-Type", "application/json")
             .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) response else error)),
         ),
+    )
+  }
+
+  fun stubDeleteExternalMovement(
+    dpsId: UUID,
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    dpsPersonLocationServer.stubFor(
+      delete("/sync/external-movements/$dpsId")
+        .willReturn(aResponse().withStatus(status.value())),
     )
   }
 
