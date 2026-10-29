@@ -10,6 +10,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -18,11 +19,16 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiMockServer.Companion.getRequestBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleMappingApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementIdMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementIdMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.MovementLocation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
@@ -379,6 +385,134 @@ class PersonLocationSyncMovementIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["movementSeq"]).isEqualTo("3")
             assertThat(it["error"]).contains("400")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, status = NOT_FOUND)
+        nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = transferMovementOut(scheduleId = null))
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        dpsApi.stubSyncExternalMovement("A1234BC", response = ReferenceId(dpsExternalMovementId))
+        mappingApi.stubCreatePersonLocationMovementMapping(
+          status = CONFLICT,
+          error = DuplicateMappingErrorResponse(
+            moreInfo = DuplicateErrorContentObject(
+              existing = PersonLocationMovementIdMappingDto(
+                nomisBookingId = 12345,
+                nomisMovementSeq = 3,
+                dpsExternalMovementId = dpsExternalMovementId,
+                mappingType = NOMIS_CREATED,
+              ),
+              duplicate = PersonLocationMovementIdMappingDto(
+                nomisBookingId = 12345,
+                nomisMovementSeq = 999,
+                dpsExternalMovementId = dpsExternalMovementId,
+                mappingType = NOMIS_CREATED,
+              ),
+            ),
+            errorCode = 1409,
+            status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+            userMessage = "Duplicate mapping",
+          ),
+        )
+
+        personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent())
+          .also { waitForAnyProcessingToComplete("person-location-sync-movement-inserted-duplicate") }
+      }
+
+      @Test
+      fun `should create DPS external movement`() {
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
+      }
+
+      @Test
+      fun `should try to create mapping`() {
+        mappingApi.verify(postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(eq("person-location-sync-movement-inserted-success"), any(), isNull())
+      }
+
+      @Test
+      fun `should publish duplicate telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-movement-inserted-duplicate"),
+          check {
+            assertThat(it["existingBookingId"]).isEqualTo("12345")
+            assertThat(it["existingMovementSeq"]).isEqualTo("3")
+            assertThat(it["existingDpsExternalMovementId"]).isEqualTo("$dpsExternalMovementId")
+            assertThat(it["duplicateBookingId"]).isEqualTo("12345")
+            assertThat(it["duplicateMovementSeq"]).isEqualTo("999")
+            assertThat(it["duplicateDpsExternalMovementId"]).isEqualTo("$dpsExternalMovementId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenMappingCreateFailsOnce {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, status = NOT_FOUND)
+        nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = transferMovementOut(scheduleId = null))
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        dpsApi.stubSyncExternalMovement("A1234BC", response = ReferenceId(dpsExternalMovementId))
+        mappingApi.stubCreatePersonLocationMovementMappingFailureFollowedBySuccess()
+
+        personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent())
+          .also { waitForAnyProcessingToComplete("person-location-sync-movement-mapping-retry-created") }
+      }
+
+      @Test
+      fun `should create DPS external movement once`() {
+        dpsApi.verify(1, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
+      }
+
+      @Test
+      fun `should create mapping on 2nd call`() {
+        mappingApi.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/person-location/movement"))
+            .withRequestBodyJsonPath("nomisBookingId", "12345")
+            .withRequestBodyJsonPath("nomisMovementSeq", "3")
+            .withRequestBodyJsonPath("dpsExternalMovementId", "$dpsExternalMovementId")
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-movement-inserted-success"),
+          check { assertThat(it["dpsExternalMovementId"]).isEqualTo("$dpsExternalMovementId") },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should publish mapping created telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-movement-mapping-retry-created"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["dpsExternalMovementId"]).isEqualTo("$dpsExternalMovementId")
           },
           isNull(),
         )
