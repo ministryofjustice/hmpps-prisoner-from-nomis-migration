@@ -2,11 +2,12 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.person
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchParent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementEvent
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.MovementType.TRN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TRN_URN_PREFIX
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleMappingApiService
@@ -29,8 +30,8 @@ class PersonLocationSyncMovementService(
 ) : TelemetryEnabled {
 
   suspend fun externalMovementChanged(event: ExternalMovementEvent) {
-    // Only inserted transfer movements are synchronised so far
-    if (event.movementType == TRN && event.recordInserted) {
+    // Updates and deletes are not synchronised yet
+    if (event.recordInserted) {
       externalMovementInserted(event)
     }
   }
@@ -43,12 +44,22 @@ class PersonLocationSyncMovementService(
       "movementSeq" to movementSeq,
     )
 
-    if (mappingApiService.getMovementMappingOrNull(bookingId, movementSeq) != null) return
+    if (event.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-inserted-ignored", telemetry)
+      return
+    }
+
+    mappingApiService.getMovementMappingOrNull(bookingId, movementSeq)?.also {
+      telemetry["dpsExternalMovementId"] = it.dpsExternalMovementId
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-inserted-ignored", telemetry)
+      return
+    }
 
     track("$TELEMETRY_PREFIX-inserted", telemetry) {
       val nomis = nomisApiService.getPersonLocationMovement(prisonerNumber, bookingId, movementSeq)
         .also { telemetry["nomisEventId"] = "${it.scheduleId}" }
-      val dpsScheduleId = nomis.scheduleId?.let { scheduleId ->
+      // Schedule references for other movement types are not synchronised yet
+      val dpsScheduleId = nomis.scheduleId?.takeIf { nomis.movementType == PersonLocationMovement.MovementType.TRN }?.let { scheduleId ->
         tryFetchParent { transferScheduleMappingApiService.getTransferScheduleMappingOrNull(scheduleId) }
           .dpsTransferScheduleId
       }
