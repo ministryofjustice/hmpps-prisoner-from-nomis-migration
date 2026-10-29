@@ -16,12 +16,22 @@ import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.CodedReason
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.CustodialSeriesMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ExternalMovementMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.Prison
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ReferenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncExternalMovementsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ResyncResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncCustodialSeries
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncCustodialSeriesRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalJourney
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovementRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBodies
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
+import java.time.LocalDateTime
 import java.util.UUID
 
 class PersonLocationDpsApiExtension :
@@ -69,6 +79,33 @@ class PersonLocationDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
       custodialSeries = listOf(),
     )
 
+    fun syncExternalMovementRequest() = SyncExternalMovementRequest(
+      occurredAt = LocalDateTime.parse("2025-09-02T13:23:00"),
+      syncUser = SyncUser(username = "USER", activeCaseloadId = "MDI"),
+      movement = SyncExternalMovement(
+        type = SyncExternalMovement.Type.DEPARTURE,
+        reason = CodedReason(description = "Normal Transfer", reasonType = "CodedReason", code = "NOTR"),
+        occurredAt = LocalDateTime.parse("2025-09-02T13:23:00"),
+        from = Prison(description = "Brixton (HMP)", locationType = "Prison", code = "BXI"),
+        to = Prison(description = "Leeds (HMP)", locationType = "Prison", code = "LEI"),
+        journey = SyncExternalJourney(type = SyncExternalJourney.Type.TRANSFER),
+        legacyBookingId = 12345,
+        legacySequenceNumber = 3,
+      ),
+    )
+
+    fun syncCustodialSeriesRequest() = SyncCustodialSeriesRequest(
+      occurredAt = LocalDateTime.parse("2025-09-02T13:23:00"),
+      syncUser = SyncUser(username = "USER", activeCaseloadId = "MDI"),
+      custodialSeries = SyncCustodialSeries(
+        status = SyncCustodialSeries.Status.OPEN,
+        isActive = true,
+        openedAt = LocalDateTime.parse("2025-09-01T10:00:00"),
+        legacyBookingId = 12345,
+        legacyBookingReference = "B12345",
+      ),
+    )
+
     fun resyncResponse(
       bookingId: Long = 12345L,
       dpsCustodialSeriesId: UUID = UUID.randomUUID(),
@@ -97,6 +134,40 @@ class PersonLocationDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(status.value())
             .withHeader("Content-Type", "application/json")
             .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.CREATED) response else error)),
+        ),
+    )
+  }
+
+  fun stubSyncExternalMovement(
+    personIdentifier: String = "A1234BC",
+    response: ReferenceId = ReferenceId(dpsId = UUID.randomUUID()),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    dpsPersonLocationServer.stubFor(
+      put("/sync/external-movements/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) response else error)),
+        ),
+    )
+  }
+
+  fun stubSyncCustodialSeries(
+    personIdentifier: String = "A1234BC",
+    response: ReferenceId = ReferenceId(dpsId = UUID.randomUUID()),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    dpsPersonLocationServer.stubFor(
+      put("/sync/custodial-series/$personIdentifier")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) response else error)),
         ),
     )
   }
