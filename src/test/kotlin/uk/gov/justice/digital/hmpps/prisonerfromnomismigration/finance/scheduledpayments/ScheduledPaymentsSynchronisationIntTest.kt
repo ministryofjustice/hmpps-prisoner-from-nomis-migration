@@ -1,11 +1,15 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.scheduledpayments
 
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -13,10 +17,12 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorContent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -406,6 +412,110 @@ class ScheduledPaymentsSynchronisationIntTest(
               assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
               assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
               assertThat(it["dpsScheduledPaymentId"]).isEqualTo(dpsScheduledPaymentId.toString())
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class Failures {
+        @Nested
+        inner class WhenMappingIsMissing {
+          @BeforeEach
+          fun setUp() {
+            mappingApiMock.stubGetByNomisId(scheduledPaymentId, mapping = null)
+            sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED")
+              .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-error", times = 2) }
+          }
+
+          @Test
+          fun `will track the missing mapping error for each attempt`() {
+            verifyUpdateError(404, "/mapping/scheduled-payments/nomis-id/$scheduledPaymentId", hasMapping = false)
+          }
+
+          @Test
+          fun `will retry and send the event to the DLQ without updating DPS`() {
+            mappingApiMock.verify(2, getRequestedFor(urlPathEqualTo("/mapping/scheduled-payments/nomis-id/$scheduledPaymentId")))
+            nomisApiMock.verify(0, getRequestedFor(anyUrl()))
+            financeApi.verify(0, postRequestedFor(anyUrl()))
+            await untilAsserted {
+              assertThat(financeOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1)
+            }
+          }
+        }
+
+        @Nested
+        inner class WhenMappingLookupFails {
+          @BeforeEach
+          fun setUp() {
+            mappingApiMock.stubGetByNomisIdFailure(scheduledPaymentId)
+            sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED")
+              .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-error", times = 2) }
+          }
+
+          @Test
+          fun `will track the mapping lookup error for each attempt`() {
+            verifyUpdateError(500, "/mapping/scheduled-payments/nomis-id/$scheduledPaymentId", hasMapping = false)
+          }
+
+          @Test
+          fun `will retry and send the event to the DLQ without updating DPS`() {
+            mappingApiMock.verify(2, getRequestedFor(urlPathEqualTo("/mapping/scheduled-payments/nomis-id/$scheduledPaymentId")))
+            nomisApiMock.verify(0, getRequestedFor(anyUrl()))
+            financeApi.verify(0, postRequestedFor(anyUrl()))
+            await untilAsserted {
+              assertThat(financeOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1)
+            }
+          }
+        }
+
+        @Nested
+        inner class WhenDpsUpdateFails {
+          @BeforeEach
+          fun setUp() {
+            nomisApiMock.stubGetScheduledPayment(
+              scheduledPaymentId,
+              prisonNumber,
+              prisonerScheduledPayment(prisonNumber).copy(endDate = LocalDate.parse("2024-08-06")),
+            )
+            financeApi.stubFor(
+              post("/sync/subscriptions/$dpsScheduledPaymentId/update")
+                .willReturn(aResponse().withStatus(500)),
+            )
+            sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED")
+              .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-error", times = 2) }
+          }
+
+          @Test
+          fun `will track the DPS update error for each attempt`() {
+            verifyUpdateError(500, "/sync/subscriptions/$dpsScheduledPaymentId/update", hasMapping = true)
+          }
+
+          @Test
+          fun `will retry the end date update and send the event to the DLQ`() {
+            financeApi.verify(
+              2,
+              postRequestedFor(urlPathEqualTo("/sync/subscriptions/$dpsScheduledPaymentId/update"))
+                .withRequestBodyJsonPath("endDate", equalTo("2024-08-06")),
+            )
+            await untilAsserted {
+              assertThat(financeOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1)
+            }
+          }
+        }
+        private fun verifyUpdateError(status: Int, path: String, hasMapping: Boolean) {
+          verify(telemetryClient, times(2)).trackEvent(
+            eq("scheduled-payments-synchronisation-updated-error"),
+            check {
+              assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+              assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
+              assertThat(it["error"]).contains(status.toString(), path)
+              if (hasMapping) {
+                assertThat(it["dpsScheduledPaymentId"]).isEqualTo(dpsScheduledPaymentId.toString())
+              } else {
+                assertThat(it).doesNotContainKey("dpsScheduledPaymentId")
+              }
             },
             isNull(),
           )
