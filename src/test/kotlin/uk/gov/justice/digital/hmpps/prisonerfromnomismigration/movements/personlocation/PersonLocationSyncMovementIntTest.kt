@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation
 
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -23,6 +25,7 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.CONFLICT
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
@@ -977,6 +980,130 @@ class PersonLocationSyncMovementIntTest(
     }
   }
 
+  @Nested
+  @DisplayName("EXTERNAL_MOVEMENT-CHANGED (deleted)")
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class MovementDeleted {
+    private val dpsExternalMovementId = UUID.randomUUID()
+
+    private fun deletedEvent(auditModuleName: String = "OCUCANTR") = transferMovementEvent(auditModuleName = auditModuleName, recordInserted = false, recordDeleted = true)
+
+    @Nested
+    @DisplayName("Happy path")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, response = personLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, dpsExternalMovementId = dpsExternalMovementId))
+        dpsApi.stubDeleteExternalMovement(dpsExternalMovementId)
+        mappingApi.stubDeletePersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3)
+
+        personLocationsOffenderEventsQueue.sendMessage(deletedEvent())
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should delete the DPS external movement`() {
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/external-movements/$dpsExternalMovementId")))
+      }
+
+      @Test
+      fun `should delete the mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/person-location/movement/nomis-booking-id/12345/nomis-movement-seq/3")))
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-movement-deleted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["dpsExternalMovementId"]).isEqualTo("$dpsExternalMovementId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("Ignored when raised by DPS")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDpsSyncAuditModule {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        personLocationsOffenderEventsQueue.sendMessage(deletedEvent(auditModuleName = "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete("person-location-sync-movement-deleted-ignored") }
+      }
+
+      @Test
+      fun `should NOT call DPS or delete mapping`() {
+        dpsApi.verify(0, deleteRequestedFor(anyUrl()))
+        mappingApi.verify(0, deleteRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("No mapping")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenNoMapping {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, status = NOT_FOUND)
+
+        personLocationsOffenderEventsQueue.sendMessage(deletedEvent())
+          .also { waitForAnyProcessingToComplete("person-location-sync-movement-deleted-ignored") }
+      }
+
+      @Test
+      fun `should NOT call DPS or delete mapping`() {
+        dpsApi.verify(0, deleteRequestedFor(anyUrl()))
+        mappingApi.verify(0, deleteRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("DPS delete fails")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDpsFails {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, response = personLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, dpsExternalMovementId = dpsExternalMovementId))
+        dpsApi.stubDeleteExternalMovement(dpsExternalMovementId, status = INTERNAL_SERVER_ERROR)
+
+        personLocationsOffenderEventsQueue.sendMessage(deletedEvent())
+          .also { waitForAnyProcessingToComplete("person-location-sync-movement-deleted-error", times = 2) }
+      }
+
+      @Test
+      fun `should leave the mapping in place`() {
+        mappingApi.verify(0, deleteRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `should publish error telemetry`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("person-location-sync-movement-deleted-error"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["dpsExternalMovementId"]).isEqualTo("$dpsExternalMovementId")
+            assertThat(it["error"]).contains("500")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
   private fun getRequest() = getRequestBody<SyncExternalMovementRequest>(putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
 
   private fun transferMovementOut(scheduleId: Long?) = movementOut(TRN, scheduleId)
@@ -999,14 +1126,14 @@ class PersonLocationSyncMovementIntTest(
     commentText = "some transfer movement comment",
   )
 
-  private fun movementEvent(movementType: String, directionCode: String = "OUT", recordInserted: Boolean = true) = transferMovementEvent(movementType = movementType, directionCode = directionCode, recordInserted = recordInserted)
+  private fun movementEvent(movementType: String, directionCode: String = "OUT", recordInserted: Boolean = true, recordDeleted: Boolean = false) = transferMovementEvent(movementType = movementType, directionCode = directionCode, recordInserted = recordInserted, recordDeleted = recordDeleted)
 
-  private fun transferMovementEvent(prisonerNumber: String = "A1234BC", auditModuleName: String = "OCUCANTR", movementType: String = "TRN", directionCode: String = "OUT", recordInserted: Boolean = true) = // language=JSON
+  private fun transferMovementEvent(prisonerNumber: String = "A1234BC", auditModuleName: String = "OCUCANTR", movementType: String = "TRN", directionCode: String = "OUT", recordInserted: Boolean = true, recordDeleted: Boolean = false) = // language=JSON
     """{
          "Type" : "Notification",
          "MessageId" : "83354f3f-45cb-5e8e-9266-2e0fa1e91dcc",
          "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-160f3055cc4e04c4105ee85f2ed1fccb",
-         "Message" : "{\"eventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"eventDatetime\":\"2025-09-02T13:24:01\",\"bookingId\":12345,\"offenderIdDisplay\":\"$prisonerNumber\",\"nomisEventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"movementSeq\":3,\"movementDateTime\":\"2025-09-02T13:23:00\",\"movementType\":\"$movementType\",\"movementReasonCode\":\"NOTR\",\"directionCode\":\"$directionCode\",\"fromAgencyLocationId\":\"BXI\",\"recordInserted\":$recordInserted,\"recordDeleted\":false,\"auditModuleName\":\"$auditModuleName\"}",
+         "Message" : "{\"eventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"eventDatetime\":\"2025-09-02T13:24:01\",\"bookingId\":12345,\"offenderIdDisplay\":\"$prisonerNumber\",\"nomisEventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"movementSeq\":3,\"movementDateTime\":\"2025-09-02T13:23:00\",\"movementType\":\"$movementType\",\"movementReasonCode\":\"NOTR\",\"directionCode\":\"$directionCode\",\"fromAgencyLocationId\":\"BXI\",\"recordInserted\":$recordInserted,\"recordDeleted\":$recordDeleted,\"auditModuleName\":\"$auditModuleName\"}",
          "Timestamp" : "2025-09-02T12:24:02.004Z",
          "MessageAttributes" : {
            "eventType" : {"Type":"String","Value":"EXTERNAL_MOVEMENT-CHANGED"}
