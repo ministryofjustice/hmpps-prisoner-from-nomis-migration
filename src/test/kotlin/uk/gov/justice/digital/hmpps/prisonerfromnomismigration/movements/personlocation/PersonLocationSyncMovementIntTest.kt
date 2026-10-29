@@ -14,8 +14,10 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
@@ -214,6 +216,174 @@ class PersonLocationSyncMovementIntTest(
         )
       }
     }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent(auditModuleName = "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT call DPS or create mapping`() {
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
+        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      }
+
+      @Test
+      fun `should publish ignore telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-movement-inserted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3)
+
+        personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent())
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT call DPS or create mapping`() {
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
+        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      }
+
+      @Test
+      fun `should publish ignore telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-movement-inserted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["dpsExternalMovementId"]).isNotNull
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenParentScheduleNotFound {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, status = NOT_FOUND)
+        nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = transferMovementOut(scheduleId = NOMIS_SCHEDULE_ID))
+        transferScheduleMappingApi.stubGetTransferScheduleMapping(NOMIS_SCHEDULE_ID, status = NOT_FOUND)
+
+        personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent())
+          .also { waitForAnyProcessingToComplete("person-location-sync-movement-inserted-awaiting-parent", times = 2) }
+      }
+
+      @Test
+      fun `should retry the schedule mapping lookup`() {
+        transferScheduleMappingApi.verify(2, getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/$NOMIS_SCHEDULE_ID")))
+      }
+
+      @Test
+      fun `should NOT call DPS or create mapping`() {
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
+        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      }
+
+      @Test
+      fun `should publish awaiting parent telemetry`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("person-location-sync-movement-inserted-awaiting-parent"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["nomisEventId"]).isEqualTo("$NOMIS_SCHEDULE_ID")
+            assertThat(it["error"]).isEqualTo("Expected parent entity not found, retrying")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenParentBookingNotFound {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, status = NOT_FOUND)
+        nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = transferMovementOut(scheduleId = null))
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, status = NOT_FOUND)
+
+        personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent())
+          .also { waitForAnyProcessingToComplete("person-location-sync-movement-inserted-awaiting-parent", times = 2) }
+      }
+
+      @Test
+      fun `should retry the booking mapping lookup`() {
+        mappingApi.verify(2, getRequestedFor(urlPathEqualTo("/mapping/person-location/booking/nomis-booking-id/12345")))
+      }
+
+      @Test
+      fun `should NOT call DPS or create mapping`() {
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
+        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDpsRejectsRequest {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, status = NOT_FOUND)
+        nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = transferMovementOut(scheduleId = null))
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        dpsApi.stubSyncExternalMovement("A1234BC", status = BAD_REQUEST)
+
+        personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent())
+          .also { waitForAnyProcessingToComplete("person-location-sync-movement-inserted-error", times = 2) }
+      }
+
+      @Test
+      fun `should NOT create mapping`() {
+        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      }
+
+      @Test
+      fun `should publish error telemetry`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("person-location-sync-movement-inserted-error"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["error"]).contains("400")
+          },
+          isNull(),
+        )
+      }
+    }
   }
 
   private fun getRequest() = getRequestBody<SyncExternalMovementRequest>(putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
@@ -232,12 +402,12 @@ class PersonLocationSyncMovementIntTest(
     commentText = "some transfer movement comment",
   )
 
-  private fun transferMovementEvent(prisonerNumber: String = "A1234BC") = // language=JSON
+  private fun transferMovementEvent(prisonerNumber: String = "A1234BC", auditModuleName: String = "OCUCANTR") = // language=JSON
     """{
          "Type" : "Notification",
          "MessageId" : "83354f3f-45cb-5e8e-9266-2e0fa1e91dcc",
          "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-160f3055cc4e04c4105ee85f2ed1fccb",
-         "Message" : "{\"eventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"eventDatetime\":\"2025-09-02T13:24:01\",\"bookingId\":12345,\"offenderIdDisplay\":\"$prisonerNumber\",\"nomisEventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"movementSeq\":3,\"movementDateTime\":\"2025-09-02T13:23:00\",\"movementType\":\"TRN\",\"movementReasonCode\":\"NOTR\",\"directionCode\":\"OUT\",\"fromAgencyLocationId\":\"BXI\",\"recordInserted\":true,\"recordDeleted\":false,\"auditModuleName\":\"OCUCANTR\"}",
+         "Message" : "{\"eventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"eventDatetime\":\"2025-09-02T13:24:01\",\"bookingId\":12345,\"offenderIdDisplay\":\"$prisonerNumber\",\"nomisEventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"movementSeq\":3,\"movementDateTime\":\"2025-09-02T13:23:00\",\"movementType\":\"TRN\",\"movementReasonCode\":\"NOTR\",\"directionCode\":\"OUT\",\"fromAgencyLocationId\":\"BXI\",\"recordInserted\":true,\"recordDeleted\":false,\"auditModuleName\":\"$auditModuleName\"}",
          "Timestamp" : "2025-09-02T12:24:02.004Z",
          "MessageAttributes" : {
            "eventType" : {"Type":"String","Value":"EXTERNAL_MOVEMENT-CHANGED"}
