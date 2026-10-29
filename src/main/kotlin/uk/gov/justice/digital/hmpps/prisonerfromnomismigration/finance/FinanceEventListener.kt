@@ -7,7 +7,9 @@ import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceSynchronisationMessageType.RETRY_SYNCHRONISATION_ADVANCE_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceSynchronisationMessageType.RETRY_SYNCHRONISATION_SCHEDULED_PAYMENT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances.AdvancesSynchronisationService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.scheduledpayments.ScheduledPaymentsSynchronisationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions.TransactionSynchronisationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
@@ -23,6 +25,7 @@ import java.util.concurrent.CompletableFuture
 class FinanceEventListener(
   private val transactionSynchronisationService: TransactionSynchronisationService,
   private val advancesSynchronisationService: AdvancesSynchronisationService,
+  private val scheduledPaymentsSynchronisationService: ScheduledPaymentsSynchronisationService,
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -64,6 +67,8 @@ class FinanceEventListener(
 
               "OFFENDER_DEDUCTIONS-UPDATED" -> advancesSynchronisationService.deductionUpdated(sqsMessage.Message.fromJson())
 
+              "OFFENDER_SCHEDULED_PAYMENTS-INSERTED" -> scheduledPaymentsSynchronisationService.scheduledPaymentInserted(sqsMessage.Message.fromJson())
+
               // TODO Waiting for DPS to decide whether to intercept these events
               // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)
               // "OFFENDER_TRANSACTIONS-DELETED"
@@ -78,8 +83,8 @@ class FinanceEventListener(
         }
 
         RETRY_SYNCHRONISATION_MAPPING.name -> transactionSynchronisationService.retryCreateTransactionMapping(sqsMessage.Message.fromJson())
-
         RETRY_SYNCHRONISATION_ADVANCE_MAPPING.name -> advancesSynchronisationService.retryCreateMapping(sqsMessage.Message.fromJson())
+        RETRY_SYNCHRONISATION_SCHEDULED_PAYMENT_MAPPING.name -> scheduledPaymentsSynchronisationService.retryCreateMapping(sqsMessage.Message.fromJson())
 
         PERFORM_TRANSACTION_SYNC.name -> transactionSynchronisationService.transactionUpserted(sqsMessage.Message.fromJson())
       }
@@ -91,6 +96,7 @@ class FinanceEventListener(
 
 enum class FinanceSynchronisationMessageType {
   RETRY_SYNCHRONISATION_ADVANCE_MAPPING,
+  RETRY_SYNCHRONISATION_SCHEDULED_PAYMENT_MAPPING,
 }
 
 data class TransactionEvent(
@@ -123,6 +129,12 @@ data class AdvanceEvent(
 data class DeductionEvent(
   val offenderDeductionId: Long,
   val offenderPaymentProfileId: Long,
+  val offenderIdDisplay: String,
+  override val auditModuleName: String? = null,
+) : EventAudited
+
+data class ScheduledPaymentEvent(
+  val offenderScheduledPaymentId: Long,
   val offenderIdDisplay: String,
   override val auditModuleName: String? = null,
 ) : EventAudited
