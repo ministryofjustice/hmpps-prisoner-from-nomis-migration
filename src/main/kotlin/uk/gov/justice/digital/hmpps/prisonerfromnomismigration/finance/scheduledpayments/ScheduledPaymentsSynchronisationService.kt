@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceDpsApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceSynchronisationMessageType.RETRY_SYNCHRONISATION_SCHEDULED_PAYMENT_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.ScheduledPaymentEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncUpdateSubscriptionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -18,6 +19,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.util.UUID
 
 private const val TELEMETRY_PREFIX = "scheduled-payments-synchronisation"
 
@@ -62,6 +64,25 @@ class ScheduledPaymentsSynchronisationService(
           telemetry,
         )
       }
+    }
+  }
+
+  suspend fun scheduledPaymentUpdated(event: ScheduledPaymentEvent) {
+    val nomisId = event.offenderScheduledPaymentId
+    val telemetry = telemetryOf("nomisScheduledPaymentId" to nomisId, "prisonNumber" to event.offenderIdDisplay)
+
+    if (event.originatesInDpsOrHasMissingAudit) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-updated-skipped", telemetry)
+      return
+    }
+    track("$TELEMETRY_PREFIX-updated", telemetry) {
+      val mapping = mappingService.getByNomisId(nomisId)
+      telemetry["dpsScheduledPaymentId"] = mapping.dpsId
+      val nomisScheduledPayment = nomisApiService.getScheduledPayment(nomisId)
+      // DPS only supports ending a scheduled payment
+      nomisScheduledPayment.endDate
+        ?.let { dpsApiService.updateScheduledPayment(UUID.fromString(mapping.dpsId), SyncUpdateSubscriptionRequest(endDate = it)) }
+        ?: telemetryClient.trackEvent("$TELEMETRY_PREFIX-updated-ignored-no-end-date", telemetry)
     }
   }
 

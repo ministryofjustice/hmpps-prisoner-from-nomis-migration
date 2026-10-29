@@ -68,6 +68,7 @@ class FinanceEventListener(
               "OFFENDER_DEDUCTIONS-UPDATED" -> advancesSynchronisationService.deductionUpdated(sqsMessage.Message.fromJson())
 
               "OFFENDER_SCHEDULED_PAYMENTS-INSERTED" -> scheduledPaymentsSynchronisationService.scheduledPaymentInserted(sqsMessage.Message.fromJson())
+              "OFFENDER_SCHEDULED_PAYMENTS-UPDATED" -> scheduledPaymentsSynchronisationService.scheduledPaymentUpdated(sqsMessage.Message.fromJson())
 
               // TODO Waiting for DPS to decide whether to intercept these events
               // extremely rare (only happened 61 times ever according to oms_deleted_rows, mostly by scripts)

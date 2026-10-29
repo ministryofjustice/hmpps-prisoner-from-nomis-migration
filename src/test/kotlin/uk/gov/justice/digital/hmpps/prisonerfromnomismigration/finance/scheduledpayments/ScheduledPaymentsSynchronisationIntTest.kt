@@ -22,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledPaymentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
+import java.time.LocalDate
 import java.util.UUID
 
 class ScheduledPaymentsSynchronisationIntTest(
@@ -284,6 +285,130 @@ class ScheduledPaymentsSynchronisationIntTest(
               isNull(),
             )
           }
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("OFFENDER_SCHEDULED_PAYMENTS-UPDATED")
+  inner class ScheduledPaymentUpdated {
+    private val scheduledPaymentId = 12345L
+    private val prisonNumber = "A1234BC"
+    private val dpsScheduledPaymentId = UUID.randomUUID()
+
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED", auditModuleName = "DPS_SYNCHRONISATION")
+          .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-skipped") }
+      }
+
+      @Test
+      fun `will not call NOMIS, the mapping service or DPS`() {
+        nomisApiMock.verify(0, getRequestedFor(anyUrl()))
+        mappingApiMock.verify(0, getRequestedFor(anyUrl()))
+        financeApi.verify(0, postRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("scheduled-payments-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+            assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomis {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisId(
+          scheduledPaymentId,
+          ScheduledPaymentMappingDto(
+            nomisScheduledPaymentId = scheduledPaymentId,
+            dpsId = dpsScheduledPaymentId.toString(),
+            mappingType = ScheduledPaymentMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        )
+        financeApi.stubUpdateScheduledPayment(dpsScheduledPaymentId)
+      }
+
+      @Nested
+      inner class WithEndDate {
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubGetScheduledPayment(
+            scheduledPaymentId,
+            prisonNumber,
+            prisonerScheduledPayment(prisonNumber).copy(endDate = LocalDate.parse("2024-08-06")),
+          )
+          sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED")
+            .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-success") }
+        }
+
+        @Test
+        fun `will retrieve the scheduled payment from NOMIS`() {
+          nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/scheduled-payments/$scheduledPaymentId")))
+        }
+
+        @Test
+        fun `will update the end date in DPS`() {
+          financeApi.verify(
+            postRequestedFor(urlPathEqualTo("/sync/subscriptions/$dpsScheduledPaymentId/update"))
+              .withRequestBodyJsonPath("endDate", equalTo("2024-08-06")),
+          )
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("scheduled-payments-synchronisation-updated-success"),
+            check {
+              assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+              assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
+              assertThat(it["dpsScheduledPaymentId"]).isEqualTo(dpsScheduledPaymentId.toString())
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WithoutEndDate {
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubGetScheduledPayment(
+            scheduledPaymentId,
+            prisonNumber,
+            prisonerScheduledPayment(prisonNumber).copy(endDate = null),
+          )
+          sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED")
+            .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-success") }
+        }
+
+        @Test
+        fun `will not update the scheduled payment in DPS`() {
+          financeApi.verify(0, postRequestedFor(urlPathEqualTo("/sync/subscriptions/$dpsScheduledPaymentId/update")))
+        }
+
+        @Test
+        fun `will track telemetry for the ignored update`() {
+          verify(telemetryClient).trackEvent(
+            eq("scheduled-payments-synchronisation-updated-ignored-no-end-date"),
+            check {
+              assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+              assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
+              assertThat(it["dpsScheduledPaymentId"]).isEqualTo(dpsScheduledPaymentId.toString())
+            },
+            isNull(),
+          )
         }
       }
     }
