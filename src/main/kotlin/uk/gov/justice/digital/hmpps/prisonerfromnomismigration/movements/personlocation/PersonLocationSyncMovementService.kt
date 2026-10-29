@@ -4,20 +4,29 @@ import com.microsoft.applicationinsights.TelemetryClient
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.SuccessOrDuplicate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.tryFetchParent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.ExternalMovementEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CAS_URN_PREFIX
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.RAS_URN_PREFIX
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationRetryMappingMessageTypes.RETRY_MAPPING_PERSON_LOCATION_MOVEMENT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TAP_URN_PREFIX
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.taps.TapMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TRN_URN_PREFIX
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfer.TransferScheduleMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementIdMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementIdMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.CRT
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TAP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TRN
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncUser
@@ -35,6 +44,9 @@ class PersonLocationSyncMovementService(
   private val mappingApiService: PersonLocationMappingApiService,
   private val dpsApiService: PersonLocationDpsApiService,
   private val transferScheduleMappingApiService: TransferScheduleMappingApiService,
+  private val tapMappingApiService: TapMappingApiService,
+  private val courtSchedulerMappingApiService: CourtSchedulerMappingApiService,
+  private val courtSentencingMappingApiService: CourtSentencingMappingApiService,
   private val queueService: SynchronisationQueueService,
 ) : TelemetryEnabled {
   private companion object {
@@ -46,6 +58,23 @@ class PersonLocationSyncMovementService(
     if (event.recordInserted) {
       externalMovementInserted(event)
     }
+  }
+
+  private suspend fun getDpsScheduleReference(movementType: PersonLocationMovement.MovementType, nomisScheduleId: Long): String? = when (movementType) {
+    TRN -> tryFetchParent { transferScheduleMappingApiService.getTransferScheduleMappingOrNull(nomisScheduleId) }
+      .let { "$TRN_URN_PREFIX${it.dpsTransferScheduleId}" }
+
+    TAP -> tryFetchParent { tapMappingApiService.getTapScheduleMappingOrNull(nomisScheduleId) }
+      .let { "$TAP_URN_PREFIX${it.dpsOccurrenceId}" }
+
+    CRT -> tryFetchParent {
+      courtSchedulerMappingApiService.getCourtScheduleMappingOrNull(nomisScheduleId)
+        ?.let { "$CAS_URN_PREFIX${it.dpsCourtAppearanceId}" }
+        ?: courtSentencingMappingApiService.getCourtAppearanceOrNullByNomisId(nomisScheduleId)
+          ?.let { "$RAS_URN_PREFIX${it.dpsCourtAppearanceId}" }
+    }
+
+    else -> null
   }
 
   private suspend fun externalMovementInserted(event: ExternalMovementEvent) {
@@ -70,17 +99,13 @@ class PersonLocationSyncMovementService(
     track("$TELEMETRY_PREFIX-inserted", telemetry) {
       val nomis = nomisApiService.getPersonLocationMovement(prisonerNumber, bookingId, movementSeq)
         .also { telemetry["nomisEventId"] = "${it.scheduleId}" }
-      // Schedule references for other movement types are not synchronised yet
-      val dpsScheduleId = nomis.scheduleId?.takeIf { nomis.movementType == TRN }?.let { scheduleId ->
-        tryFetchParent { transferScheduleMappingApiService.getTransferScheduleMappingOrNull(scheduleId) }
-          .dpsTransferScheduleId
-      }
+      val dpsScheduleReference = nomis.scheduleId?.let { getDpsScheduleReference(nomis.movementType, it) }
       val dpsCustodialSeriesId = tryFetchParent { mappingApiService.getBookingMappingOrNull(bookingId) }
         .dpsCustodialSeriesId
 
       val dps = dpsApiService.syncExternalMovement(
         prisonerNumber,
-        nomis.toDpsRequest(dpsCustodialSeriesId, dpsScheduleId?.let { "$TRN_URN_PREFIX$it" }),
+        nomis.toDpsRequest(dpsCustodialSeriesId, dpsScheduleReference),
       ).also { telemetry["dpsExternalMovementId"] = it.dpsId }
 
       PersonLocationMovementIdMappingDto(
@@ -94,21 +119,7 @@ class PersonLocationSyncMovementService(
 
   private suspend fun tryToCreateMapping(mapping: PersonLocationMovementIdMappingDto, telemetry: Map<String, Any>) {
     try {
-      mappingApiService.createMovementMapping(mapping).takeIf { it.isError }?.also {
-        with(it.errorResponse!!.moreInfo) {
-          telemetryClient.trackEvent(
-            "$TELEMETRY_PREFIX-inserted-duplicate",
-            mapOf(
-              "existingBookingId" to existing!!.nomisBookingId,
-              "existingMovementSeq" to existing.nomisMovementSeq,
-              "existingDpsExternalMovementId" to existing.dpsExternalMovementId,
-              "duplicateBookingId" to duplicate.nomisBookingId,
-              "duplicateMovementSeq" to duplicate.nomisMovementSeq,
-              "duplicateDpsExternalMovementId" to duplicate.dpsExternalMovementId,
-            ),
-          )
-        }
-      }
+      mappingApiService.createMovementMapping(mapping).takeIf { it.isError }?.also { trackDuplicate(it) }
     } catch (e: Exception) {
       log.error("Failed to create mapping for person location movement ${mapping.nomisBookingId}/${mapping.nomisMovementSeq}", e)
       queueService.sendMessage(
@@ -122,7 +133,27 @@ class PersonLocationSyncMovementService(
 
   suspend fun retryCreateMovementMapping(retryMessage: InternalMessage<PersonLocationMovementIdMappingDto>) {
     mappingApiService.createMovementMapping(retryMessage.body).also {
-      telemetryClient.trackEvent("$TELEMETRY_PREFIX-mapping-retry-created", retryMessage.telemetryAttributes)
+      if (it.isError) {
+        trackDuplicate(it)
+      } else {
+        telemetryClient.trackEvent("$TELEMETRY_PREFIX-mapping-retry-created", retryMessage.telemetryAttributes)
+      }
+    }
+  }
+
+  private fun trackDuplicate(result: SuccessOrDuplicate<PersonLocationMovementIdMappingDto>) {
+    with(result.errorResponse!!.moreInfo) {
+      telemetryClient.trackEvent(
+        "$TELEMETRY_PREFIX-inserted-duplicate",
+        mapOf(
+          "existingBookingId" to existing!!.nomisBookingId,
+          "existingMovementSeq" to existing.nomisMovementSeq,
+          "existingDpsExternalMovementId" to existing.dpsExternalMovementId,
+          "duplicateBookingId" to duplicate.nomisBookingId,
+          "duplicateMovementSeq" to duplicate.nomisMovementSeq,
+          "duplicateDpsExternalMovementId" to duplicate.dpsExternalMovementId,
+        ),
+      )
     }
   }
 }
