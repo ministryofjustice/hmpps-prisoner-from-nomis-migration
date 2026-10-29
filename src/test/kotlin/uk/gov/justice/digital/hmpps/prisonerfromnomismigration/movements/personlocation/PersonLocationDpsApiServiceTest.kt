@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.person
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
+import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
@@ -12,12 +13,15 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiMockServer.Companion.resyncExternalMovementsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiMockServer.Companion.syncCustodialSeriesRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiMockServer.Companion.syncExternalMovementRequest
 
 @ExtendWith(PersonLocationDpsApiExtension::class)
 @SpringAPIServiceTest
@@ -67,6 +71,58 @@ class PersonLocationDpsApiServiceTest {
       dpsPersonLocationServer.stubResyncPrisoner(status = NOT_FOUND)
 
       assertThat(apiService.resyncPerson("A1234BC", request)).isNull()
+    }
+  }
+
+  @Nested
+  inner class SyncExternalMovement {
+    @Test
+    fun `should call the sync endpoint and pass the request`() = runTest {
+      dpsPersonLocationServer.stubSyncExternalMovement("A1234BC")
+
+      apiService.syncExternalMovement("A1234BC", syncExternalMovementRequest())
+
+      dpsPersonLocationServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC"))
+          .withRequestBody(matchingJsonPath("syncUser.username", equalTo("USER")))
+          .withRequestBody(matchingJsonPath("movement.legacyBookingId", equalTo("12345")))
+          .withRequestBody(matchingJsonPath("movement.journey.type", equalTo("TRANSFER"))),
+      )
+    }
+
+    @Test
+    fun `should rethrow bad request`() = runTest {
+      dpsPersonLocationServer.stubSyncExternalMovement(status = BAD_REQUEST)
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.syncExternalMovement("A1234BC", syncExternalMovementRequest())
+      }
+    }
+  }
+
+  @Nested
+  inner class SyncCustodialSeries {
+    @Test
+    fun `should call the sync endpoint and pass the request`() = runTest {
+      dpsPersonLocationServer.stubSyncCustodialSeries("A1234BC")
+
+      apiService.syncCustodialSeries("A1234BC", syncCustodialSeriesRequest())
+
+      dpsPersonLocationServer.verify(
+        putRequestedFor(urlPathEqualTo("/sync/custodial-series/A1234BC"))
+          .withRequestBody(matchingJsonPath("syncUser.username", equalTo("USER")))
+          .withRequestBody(matchingJsonPath("custodialSeries.legacyBookingId", equalTo("12345")))
+          .withRequestBody(matchingJsonPath("custodialSeries.status", equalTo("OPEN"))),
+      )
+    }
+
+    @Test
+    fun `should rethrow bad request`() = runTest {
+      dpsPersonLocationServer.stubSyncCustodialSeries(status = BAD_REQUEST)
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.syncCustodialSeries("A1234BC", syncCustodialSeriesRequest())
+      }
     }
   }
 }
