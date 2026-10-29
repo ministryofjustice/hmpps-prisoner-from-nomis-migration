@@ -781,6 +781,95 @@ class PersonLocationSyncMovementIntTest(
     }
   }
 
+  @Nested
+  @DisplayName("EXTERNAL_MOVEMENT-CHANGED (updated)")
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class MovementUpdated {
+    private val dpsExternalMovementId = UUID.randomUUID()
+    private val dpsCustodialSeriesId = UUID.randomUUID()
+    private val dpsTransferScheduleId = UUID.randomUUID()
+
+    @Nested
+    @DisplayName("Happy path - scheduled transfer movement")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathWithSchedule {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, response = personLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, dpsExternalMovementId = dpsExternalMovementId))
+        nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = transferMovementOut(scheduleId = NOMIS_SCHEDULE_ID))
+        transferScheduleMappingApi.stubGetTransferScheduleMapping(NOMIS_SCHEDULE_ID, dpsTransferScheduleId)
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        dpsApi.stubSyncExternalMovement("A1234BC", response = ReferenceId(dpsExternalMovementId))
+
+        personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent(recordInserted = false))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should update DPS external movement using the mapped DPS id`() {
+        getRequest().apply {
+          assertThat(syncUser.username).isEqualTo("SOME_USER")
+          with(movement) {
+            assertThat(dpsId).isEqualTo(dpsExternalMovementId)
+            assertThat(dpsCustodySeriesId).isEqualTo(dpsCustodialSeriesId)
+            assertThat(legacyBookingId).isEqualTo(12345)
+            assertThat(legacySequenceNumber).isEqualTo(3)
+            assertThat(journey.scheduleReference).isEqualTo("urn:transfer-scheduler:transfer:$dpsTransferScheduleId")
+          }
+        }
+      }
+
+      @Test
+      fun `should NOT create a mapping`() {
+        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-movement-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["nomisEventId"]).isEqualTo("$NOMIS_SCHEDULE_ID")
+            assertThat(it["dpsExternalMovementId"]).isEqualTo("$dpsExternalMovementId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("Happy path - admission has no schedule")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathWithoutSchedule {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, response = personLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, dpsExternalMovementId = dpsExternalMovementId))
+        nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = movementOut(ADM, scheduleId = null, directionCode = IN))
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        dpsApi.stubSyncExternalMovement("A1234BC", response = ReferenceId(dpsExternalMovementId))
+
+        personLocationsOffenderEventsQueue.sendMessage(movementEvent("ADM", "IN", recordInserted = false))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should update DPS arrival without a schedule reference`() {
+        getRequest().movement.apply {
+          assertThat(dpsId).isEqualTo(dpsExternalMovementId)
+          assertThat(type).isEqualTo(SyncExternalMovement.Type.ARRIVAL)
+          assertThat(journey.scheduleReference).isNull()
+        }
+      }
+    }
+  }
+
   private fun getRequest() = getRequestBody<SyncExternalMovementRequest>(putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
 
   private fun transferMovementOut(scheduleId: Long?) = movementOut(TRN, scheduleId)
@@ -803,14 +892,14 @@ class PersonLocationSyncMovementIntTest(
     commentText = "some transfer movement comment",
   )
 
-  private fun movementEvent(movementType: String, directionCode: String = "OUT") = transferMovementEvent(movementType = movementType, directionCode = directionCode)
+  private fun movementEvent(movementType: String, directionCode: String = "OUT", recordInserted: Boolean = true) = transferMovementEvent(movementType = movementType, directionCode = directionCode, recordInserted = recordInserted)
 
-  private fun transferMovementEvent(prisonerNumber: String = "A1234BC", auditModuleName: String = "OCUCANTR", movementType: String = "TRN", directionCode: String = "OUT") = // language=JSON
+  private fun transferMovementEvent(prisonerNumber: String = "A1234BC", auditModuleName: String = "OCUCANTR", movementType: String = "TRN", directionCode: String = "OUT", recordInserted: Boolean = true) = // language=JSON
     """{
          "Type" : "Notification",
          "MessageId" : "83354f3f-45cb-5e8e-9266-2e0fa1e91dcc",
          "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-160f3055cc4e04c4105ee85f2ed1fccb",
-         "Message" : "{\"eventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"eventDatetime\":\"2025-09-02T13:24:01\",\"bookingId\":12345,\"offenderIdDisplay\":\"$prisonerNumber\",\"nomisEventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"movementSeq\":3,\"movementDateTime\":\"2025-09-02T13:23:00\",\"movementType\":\"$movementType\",\"movementReasonCode\":\"NOTR\",\"directionCode\":\"$directionCode\",\"fromAgencyLocationId\":\"BXI\",\"recordInserted\":true,\"recordDeleted\":false,\"auditModuleName\":\"$auditModuleName\"}",
+         "Message" : "{\"eventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"eventDatetime\":\"2025-09-02T13:24:01\",\"bookingId\":12345,\"offenderIdDisplay\":\"$prisonerNumber\",\"nomisEventType\":\"EXTERNAL_MOVEMENT-CHANGED\",\"movementSeq\":3,\"movementDateTime\":\"2025-09-02T13:23:00\",\"movementType\":\"$movementType\",\"movementReasonCode\":\"NOTR\",\"directionCode\":\"$directionCode\",\"fromAgencyLocationId\":\"BXI\",\"recordInserted\":$recordInserted,\"recordDeleted\":false,\"auditModuleName\":\"$auditModuleName\"}",
          "Timestamp" : "2025-09-02T12:24:02.004Z",
          "MessageAttributes" : {
            "eventType" : {"Type":"String","Value":"EXTERNAL_MOVEMENT-CHANGED"}
