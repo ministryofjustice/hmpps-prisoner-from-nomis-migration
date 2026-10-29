@@ -214,8 +214,8 @@ class AgencyRegistersMigrationIntTest(
           assertThat(contact).isEqualTo("JANE SMITH")
           assertThat(emailAddresses).hasSize(1)
           assertThat(emailAddresses[0].address).isEqualTo("sheffield.crown.court@test.com")
-          assertThat(phoneNumbers).hasSize(3)
-          assertThat(phoneNumbers.map { it.number }).containsExactlyInAnyOrder("0114 555 9898", "0114 555 9999", "0114 555 8888")
+          assertThat(phoneNumbers).hasSize(4)
+          assertThat(phoneNumbers.map { it.number }).containsExactlyInAnyOrder("0114 555 9898", "0114 555 9898", "0114 555 9999", "0114 555 8888")
           assertThat(addresses).hasSize(2)
           with(addresses[0]) {
             assertThat(addressLine1).isEqualTo("Sheffield Combined Crt Centre, The Law Courts")

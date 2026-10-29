@@ -18,8 +18,7 @@ fun AgencyResponse.toLegacyAgencyDto() = LegacyAgencyDto(
   active = active,
   addresses = addresses.map { it.toLegacyAgencyAddressDto() },
   emailAddresses = emailAddresses.map { it.toLegacyAgencyEmailDto() },
-  phoneNumbers = (phones.map { it.toLegacyAgencyPhoneDto() } + addresses.flatMap { it.phoneNumbers.map { phone -> phone.toLegacyAgencyPhoneDto() } })
-    .distinctBy { it.number },
+  phoneNumbers = (phones.map { it.toLegacyAgencyPhoneDto() } + addresses.flatMap { it.phoneNumbers.map { phone -> phone.toLegacyAgencyPhoneDto() } }),
   description = longDescription,
   inactiveDate = deactivationDate,
   cjitCode = cjitCode,
