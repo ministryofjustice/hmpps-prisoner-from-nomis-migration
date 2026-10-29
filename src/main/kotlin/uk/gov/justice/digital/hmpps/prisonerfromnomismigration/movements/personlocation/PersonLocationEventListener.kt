@@ -9,6 +9,7 @@ import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationRetryMappingMessageTypes.RETRY_MAPPING_PERSON_LOCATION_MOVEMENT
 import java.util.concurrent.CompletableFuture
 
 @Service
@@ -40,10 +41,18 @@ class PersonLocationEventListener(
           }
         }
 
-        else -> log.info("Received a message I wasn't expecting {}", sqsMessage.Type)
+        else -> retryMapping(sqsMessage.Type, sqsMessage.Message)
       }
     }
   }
 
+  private suspend fun retryMapping(type: String, message: String) = when (PersonLocationRetryMappingMessageTypes.valueOf(type)) {
+    RETRY_MAPPING_PERSON_LOCATION_MOVEMENT -> syncMovementService.retryCreateMovementMapping(message.fromJson())
+  }
+
   private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
+}
+
+enum class PersonLocationRetryMappingMessageTypes {
+  RETRY_MAPPING_PERSON_LOCATION_MOVEMENT,
 }

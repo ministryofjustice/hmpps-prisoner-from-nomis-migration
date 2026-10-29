@@ -93,6 +93,8 @@ class PersonLocationMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubCreatePersonLocationMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/person-location/movement")
+
   fun stubGetPersonLocationBookingMapping(
     nomisBookingId: Long = 12345L,
     response: PersonLocationBookingIdMappingDto = personLocationBookingMapping(nomisBookingId = nomisBookingId),
