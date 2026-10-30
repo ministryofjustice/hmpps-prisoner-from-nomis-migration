@@ -14,8 +14,11 @@ import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
 import org.mockito.kotlin.reset
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiMockServer.Companion.getRequestBody
@@ -60,6 +63,7 @@ class PersonLocationSyncBookingIntTest(
       fun setUp() {
         setUpTestClass()
 
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, status = NOT_FOUND)
         nomisApi.stubGetPersonLocationBooking(
           offenderNo = "A1234BC",
           bookingId = 12345,
@@ -70,6 +74,11 @@ class PersonLocationSyncBookingIntTest(
 
         personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-INSERTED"))
           .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should check booking mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/person-location/booking/nomis-booking-id/12345")))
       }
 
       @Test
@@ -113,6 +122,106 @@ class PersonLocationSyncBookingIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["bookingSeq"]).isEqualTo("1")
             assertThat(it["dpsCustodialSeriesId"]).isEqualTo("$dpsCustodialSeriesId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("Ignored when raised by DPS")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenCreatedInDps {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-INSERTED", auditModuleName = "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT call DPS or create mapping`() {
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/custodial-series/A1234BC")))
+        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/booking")))
+      }
+
+      @Test
+      fun `should publish ignore telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-booking-inserted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["bookingSeq"]).isEqualTo("1")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("Already created")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenAlreadyCreated {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-INSERTED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT call DPS or create mapping`() {
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/custodial-series/A1234BC")))
+        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/booking")))
+      }
+
+      @Test
+      fun `should publish ignore telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-booking-inserted-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["dpsCustodialSeriesId"]).isEqualTo("$dpsCustodialSeriesId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("DPS rejects the request")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDpsRejectsRequest {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, status = NOT_FOUND)
+        nomisApi.stubGetPersonLocationBooking(offenderNo = "A1234BC", bookingId = 12345)
+        dpsApi.stubSyncCustodialSeries("A1234BC", status = BAD_REQUEST)
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-INSERTED"))
+          .also { waitForAnyProcessingToComplete("person-location-sync-booking-inserted-error", times = 2) }
+      }
+
+      @Test
+      fun `should NOT create mapping`() {
+        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/booking")))
+      }
+
+      @Test
+      fun `should publish error telemetry`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("person-location-sync-booking-inserted-error"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["error"]).contains("400")
           },
           isNull(),
         )
