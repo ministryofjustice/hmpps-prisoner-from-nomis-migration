@@ -46,13 +46,24 @@ class PersonLocationSyncBookingService(
     val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
 
+  suspend fun bookingUpdated(event: BookingStatusEvent) {
+    val (bookingId, prisonerNumber) = event
+    val telemetry = event.telemetry()
+
+    // The update may have overtaken the create, so fail and retry if there is no mapping yet
+    val mapping = mappingApiService.getBookingMappingOrNull(bookingId)
+      ?.also { telemetry["dpsCustodialSeriesId"] = it.dpsCustodialSeriesId }
+      ?: throw IllegalStateException("No person location booking mapping found for booking $bookingId")
+
+    track("$TELEMETRY_PREFIX-updated", telemetry) {
+      val nomis = nomisApiService.getPersonLocationBooking(prisonerNumber, bookingId)
+      dpsApiService.syncCustodialSeries(prisonerNumber, nomis.toDpsRequest(dpsId = mapping.dpsCustodialSeriesId))
+    }
+  }
+
   suspend fun bookingInserted(event: BookingStatusEvent) {
-    val (bookingId, prisonerNumber, bookingSeq) = event
-    val telemetry = mutableMapOf<String, Any>(
-      "offenderNo" to prisonerNumber,
-      "bookingId" to bookingId,
-      "bookingSeq" to bookingSeq,
-    )
+    val (bookingId, prisonerNumber) = event
+    val telemetry = event.telemetry()
 
     if (event.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-inserted-ignored", telemetry)
@@ -116,6 +127,12 @@ class PersonLocationSyncBookingService(
     }
   }
 }
+
+private fun BookingStatusEvent.telemetry() = mutableMapOf<String, Any>(
+  "offenderNo" to offenderIdDisplay,
+  "bookingId" to bookingId,
+  "bookingSeq" to bookingSeq,
+).apply { oldBookingSeq?.also { put("oldBookingSeq", it) } }
 
 private fun PersonLocationBooking.toDpsRequest(dpsId: UUID?) = SyncCustodialSeriesRequest(
   occurredAt = audit.modifyDatetime ?: audit.createDatetime,

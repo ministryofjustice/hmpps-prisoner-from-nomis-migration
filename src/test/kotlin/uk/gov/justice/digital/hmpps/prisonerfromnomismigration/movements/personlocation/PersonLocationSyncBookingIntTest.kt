@@ -29,6 +29,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingIdMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingIdMappingDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationBooking
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ReferenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncCustodialSeries
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncCustodialSeriesRequest
@@ -376,6 +378,85 @@ class PersonLocationSyncBookingIntTest(
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["dpsCustodialSeriesId"]).isEqualTo("$dpsCustodialSeriesId")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("BOOKING_STATUS-UPDATED")
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class BookingUpdated {
+    private val dpsCustodialSeriesId = UUID.randomUUID()
+
+    @Nested
+    @DisplayName("Happy path - booking closed")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathBookingClosed {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        nomisApi.stubGetPersonLocationBooking(
+          offenderNo = "A1234BC",
+          bookingId = 12345,
+          response = personLocationBooking(bookingId = 12345).copy(
+            bookingStatus = PersonLocationBooking.BookingStatus.CLOSED,
+            activeBooking = false,
+            latestBooking = false,
+            bookingEndTime = LocalDateTime.parse("2025-10-01T11:00:00"),
+            audit = NomisAudit(
+              createDatetime = LocalDateTime.parse("2025-09-01T10:00:00"),
+              createUsername = "PRISONER_MANAGER_API",
+              modifyDatetime = LocalDateTime.parse("2025-10-01T11:00:00"),
+              modifyUserId = "SOME_USER",
+            ),
+          ),
+        )
+        dpsApi.stubSyncCustodialSeries("A1234BC", response = ReferenceId(dpsCustodialSeriesId))
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-UPDATED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should check booking mapping`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/person-location/booking/nomis-booking-id/12345")))
+      }
+
+      @Test
+      fun `should update DPS custodial series using the mapped DPS id`() {
+        getRequestBody<SyncCustodialSeriesRequest>(putRequestedFor(urlPathEqualTo("/sync/custodial-series/A1234BC"))).apply {
+          assertThat(occurredAt).isEqualTo(LocalDateTime.parse("2025-10-01T11:00:00"))
+          assertThat(syncUser.username).isEqualTo("SOME_USER")
+          with(custodialSeries) {
+            assertThat(dpsId).isEqualTo(dpsCustodialSeriesId)
+            assertThat(status).isEqualTo(SyncCustodialSeries.Status.CLOSED)
+            assertThat(isActive).isFalse()
+            assertThat(closedAt).isEqualTo(LocalDateTime.parse("2025-10-01T11:00:00"))
+            assertThat(legacyBookingId).isEqualTo(12345)
+          }
+        }
+      }
+
+      @Test
+      fun `should NOT create a mapping`() {
+        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/booking")))
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-booking-updated-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["bookingSeq"]).isEqualTo("1")
+            assertThat(it["oldBookingSeq"]).isEqualTo("2")
             assertThat(it["dpsCustodialSeriesId"]).isEqualTo("$dpsCustodialSeriesId")
           },
           isNull(),
