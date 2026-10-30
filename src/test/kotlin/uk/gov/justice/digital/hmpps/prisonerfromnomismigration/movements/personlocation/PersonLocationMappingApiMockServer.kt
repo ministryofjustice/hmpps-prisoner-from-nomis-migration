@@ -8,6 +8,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
+import com.github.tomakehurst.wiremock.stubbing.Scenario
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
@@ -94,6 +95,28 @@ class PersonLocationMappingApiMockServer(private val jsonMapper: JsonMapper) {
   }
 
   fun stubCreatePersonLocationMovementMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/person-location/movement")
+
+  fun stubCreatePersonLocationMovementMappingFailureFollowedByDuplicate(error: Any) {
+    mappingApi.stubFor(
+      post("/mapping/person-location/movement")
+        .inScenario("Retry create duplicate Scenario")
+        .whenScenarioStateIs(Scenario.STARTED)
+        .willReturn(aResponse().withStatus(500).withHeader("Content-Type", "application/json"))
+        .willSetStateTo("Cause duplicate"),
+    )
+    mappingApi.stubFor(
+      post("/mapping/person-location/movement")
+        .inScenario("Retry create duplicate Scenario")
+        .whenScenarioStateIs("Cause duplicate")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.CONFLICT.value())
+            .withBody(jsonMapper.writeValueAsString(error)),
+        )
+        .willSetStateTo(Scenario.STARTED),
+    )
+  }
 
   fun stubGetPersonLocationBookingMapping(
     nomisBookingId: Long = 12345L,
