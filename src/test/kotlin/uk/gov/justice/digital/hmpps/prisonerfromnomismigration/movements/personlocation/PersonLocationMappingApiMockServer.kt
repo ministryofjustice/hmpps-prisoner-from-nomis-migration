@@ -79,6 +79,30 @@ class PersonLocationMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubCreatePersonLocationBookingMappingFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess("/mapping/person-location/booking")
+
+  fun stubCreatePersonLocationBookingMappingFailureFollowedByDuplicate(error: Any) {
+    mappingApi.stubFor(
+      post("/mapping/person-location/booking")
+        .inScenario("Retry create booking duplicate Scenario")
+        .whenScenarioStateIs(Scenario.STARTED)
+        .willReturn(aResponse().withStatus(500).withHeader("Content-Type", "application/json"))
+        .willSetStateTo("Cause duplicate"),
+    )
+    mappingApi.stubFor(
+      post("/mapping/person-location/booking")
+        .inScenario("Retry create booking duplicate Scenario")
+        .whenScenarioStateIs("Cause duplicate")
+        .willReturn(
+          aResponse()
+            .withHeader("Content-Type", "application/json")
+            .withStatus(HttpStatus.CONFLICT.value())
+            .withBody(jsonMapper.writeValueAsString(error)),
+        )
+        .willSetStateTo(Scenario.STARTED),
+    )
+  }
+
   fun stubCreatePersonLocationMovementMapping(
     status: HttpStatus = HttpStatus.CREATED,
     error: Any = ErrorResponse(status = status.value()),

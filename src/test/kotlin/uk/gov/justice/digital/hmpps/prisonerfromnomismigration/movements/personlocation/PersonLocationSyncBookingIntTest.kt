@@ -10,18 +10,25 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.mockito.kotlin.any
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.never
 import org.mockito.kotlin.reset
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.BAD_REQUEST
+import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiMockServer.Companion.getRequestBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingIdMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingIdMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ReferenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncCustodialSeries
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncCustodialSeriesRequest
@@ -222,6 +229,154 @@ class PersonLocationSyncBookingIntTest(
           check {
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["error"]).contains("400")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    private fun duplicateMappingError() = DuplicateMappingErrorResponse(
+      moreInfo = DuplicateErrorContentObject(
+        existing = PersonLocationBookingIdMappingDto(
+          nomisBookingId = 12345,
+          dpsCustodialSeriesId = dpsCustodialSeriesId,
+          mappingType = NOMIS_CREATED,
+        ),
+        duplicate = PersonLocationBookingIdMappingDto(
+          nomisBookingId = 999,
+          dpsCustodialSeriesId = dpsCustodialSeriesId,
+          mappingType = NOMIS_CREATED,
+        ),
+      ),
+      errorCode = 1409,
+      status = DuplicateMappingErrorResponse.Status._409_CONFLICT,
+      userMessage = "Duplicate mapping",
+    )
+
+    private fun stubSuccessfulSyncBeforeMapping() {
+      mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, status = NOT_FOUND)
+      nomisApi.stubGetPersonLocationBooking(offenderNo = "A1234BC", bookingId = 12345)
+      dpsApi.stubSyncCustodialSeries("A1234BC", response = ReferenceId(dpsCustodialSeriesId))
+    }
+
+    @Nested
+    @DisplayName("Duplicate mapping")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDuplicateMapping {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        stubSuccessfulSyncBeforeMapping()
+        mappingApi.stubCreatePersonLocationBookingMapping(status = CONFLICT, error = duplicateMappingError())
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-INSERTED"))
+          .also { waitForAnyProcessingToComplete("person-location-sync-booking-inserted-duplicate") }
+      }
+
+      @Test
+      fun `should create DPS custodial series`() {
+        dpsApi.verify(putRequestedFor(urlPathEqualTo("/sync/custodial-series/A1234BC")))
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(eq("person-location-sync-booking-inserted-success"), any(), isNull())
+      }
+
+      @Test
+      fun `should publish duplicate telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-booking-inserted-duplicate"),
+          check {
+            assertThat(it["existingBookingId"]).isEqualTo("12345")
+            assertThat(it["existingDpsCustodialSeriesId"]).isEqualTo("$dpsCustodialSeriesId")
+            assertThat(it["duplicateBookingId"]).isEqualTo("999")
+            assertThat(it["duplicateDpsCustodialSeriesId"]).isEqualTo("$dpsCustodialSeriesId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("Mapping retry finds a duplicate")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenMappingRetryFindsDuplicate {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        stubSuccessfulSyncBeforeMapping()
+        mappingApi.stubCreatePersonLocationBookingMappingFailureFollowedByDuplicate(duplicateMappingError())
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-INSERTED"))
+          .also { waitForAnyProcessingToComplete("person-location-sync-booking-inserted-duplicate") }
+      }
+
+      @Test
+      fun `should publish duplicate telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-booking-inserted-duplicate"),
+          check { assertThat(it["duplicateBookingId"]).isEqualTo("999") },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should NOT publish mapping created telemetry`() {
+        verify(telemetryClient, never()).trackEvent(eq("person-location-sync-booking-mapping-retry-created"), any(), isNull())
+      }
+    }
+
+    @Nested
+    @DisplayName("Mapping create fails once")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenMappingCreateFailsOnce {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        stubSuccessfulSyncBeforeMapping()
+        mappingApi.stubCreatePersonLocationBookingMappingFailureFollowedBySuccess()
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-INSERTED"))
+          .also { waitForAnyProcessingToComplete("person-location-sync-booking-mapping-retry-created") }
+      }
+
+      @Test
+      fun `should create DPS custodial series once`() {
+        dpsApi.verify(1, putRequestedFor(urlPathEqualTo("/sync/custodial-series/A1234BC")))
+      }
+
+      @Test
+      fun `should create mapping on 2nd call`() {
+        mappingApi.verify(
+          2,
+          postRequestedFor(urlPathEqualTo("/mapping/person-location/booking"))
+            .withRequestBodyJsonPath("nomisBookingId", "12345")
+            .withRequestBodyJsonPath("dpsCustodialSeriesId", "$dpsCustodialSeriesId")
+            .withRequestBodyJsonPath("mappingType", "NOMIS_CREATED"),
+        )
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-booking-inserted-success"),
+          check { assertThat(it["dpsCustodialSeriesId"]).isEqualTo("$dpsCustodialSeriesId") },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `should publish mapping created telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-booking-mapping-retry-created"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["dpsCustodialSeriesId"]).isEqualTo("$dpsCustodialSeriesId")
           },
           isNull(),
         )
