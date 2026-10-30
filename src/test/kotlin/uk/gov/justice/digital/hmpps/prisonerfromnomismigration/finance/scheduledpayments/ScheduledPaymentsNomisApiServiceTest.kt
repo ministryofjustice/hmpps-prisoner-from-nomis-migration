@@ -6,7 +6,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -16,6 +15,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledPaymentDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import java.time.LocalDate
 
@@ -64,7 +64,9 @@ class ScheduledPaymentsNomisApiServiceTest {
         assertThat(prisonNumber).isEqualTo("A0001BC")
         assertThat(caseloadId).isEqualTo("LEI")
         assertThat(transactionType).isEqualTo("TELE")
-        assertThat(paymentAmount).isEqualTo(210)
+        assertThat(dayOfWeek).isEqualTo(ScheduledPaymentDto.DayOfWeek.WED)
+        assertThat(subAccountCode).isEqualTo(2103)
+        assertThat(amount).isEqualTo(210)
         assertThat(startDate).isEqualTo(LocalDate.parse("2024-06-18"))
         assertThat(endDate).isEqualTo(LocalDate.parse("2024-07-30"))
         assertThat(reference).isEqualTo("description of the scheduled payment")
@@ -109,7 +111,7 @@ class ScheduledPaymentsNomisApiServiceTest {
 
     @Test
     fun `will return scheduled payment details`() = runTest {
-      val scheduledPayment = prisonerScheduledPayment()
+      val scheduledPayment = scheduledPayment()
       mockServer.stubGetScheduledPayment(scheduledPayment = scheduledPayment)
 
       assertThat(apiService.getScheduledPaymentOrNull(12345)).isEqualTo(scheduledPayment)
@@ -168,7 +170,9 @@ class ScheduledPaymentsNomisApiServiceTest {
         assertThat(prisonNumber).isEqualTo("A0001BC")
         assertThat(caseloadId).isEqualTo("LEI")
         assertThat(transactionType).isEqualTo("TELE")
-        assertThat(paymentAmount).isEqualTo(210)
+        assertThat(dayOfWeek).isEqualTo(ScheduledPaymentDto.DayOfWeek.WED)
+        assertThat(subAccountCode).isEqualTo(2103)
+        assertThat(amount).isEqualTo(210)
         assertThat(startDate).isEqualTo(LocalDate.parse("2024-06-18"))
         assertThat(endDate).isEqualTo(LocalDate.parse("2024-07-30"))
         assertThat(reference).isEqualTo("description of the scheduled payment")
@@ -186,7 +190,6 @@ class ScheduledPaymentsNomisApiServiceTest {
   }
 
   @Nested
-  @Disabled("Waiting for the NOMIS active scheduled payments count endpoint")
   inner class GetActiveScheduledPaymentsCount {
     @Test
     fun `will pass oauth2 token to service`() = runTest {

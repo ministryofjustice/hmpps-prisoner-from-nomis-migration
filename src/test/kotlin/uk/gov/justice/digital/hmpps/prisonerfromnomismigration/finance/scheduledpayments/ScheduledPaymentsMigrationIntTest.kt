@@ -107,7 +107,7 @@ class ScheduledPaymentsMigrationIntTest(
       private lateinit var migrationStartedAt: LocalDateTime
       private lateinit var migrationCompletedAt: LocalDateTime
 
-      private val prisonerScheduledPayments = listOf(prisonerScheduledPayment(), prisonerScheduledPayment().copy(id = 54321))
+      private val prisonerScheduledPayments = listOf(scheduledPayment(), scheduledPayment().copy(id = 54321))
 
       @BeforeAll
       fun setUp() {
@@ -155,10 +155,10 @@ class ScheduledPaymentsMigrationIntTest(
         assertThat(migrationRequests[0].prisonNumber).isEqualTo("A0001BC")
         assertThat(migrationRequests[0].prisonId).isEqualTo("LEI")
         assertThat(migrationRequests[0].amount).isEqualTo(BigDecimal("2.10"))
-        assertThat(migrationRequests[0].dayOfPayment).isEqualTo(SyncCreateSubscriptionRequest.DayOfPayment.FRIDAY)
+        assertThat(migrationRequests[0].dayOfPayment).isEqualTo(SyncCreateSubscriptionRequest.DayOfPayment.WEDNESDAY)
         assertThat(migrationRequests[0].startDate).isEqualTo(LocalDate.parse("2024-06-18"))
         assertThat(migrationRequests[0].endDate).isEqualTo(LocalDate.parse("2024-07-30"))
-        assertThat(migrationRequests[0].subAccountCode).isEqualTo(2101)
+        assertThat(migrationRequests[0].subAccountCode).isEqualTo(2103)
         assertThat(migrationRequests[0].subscriptionType).isEqualTo("TELE")
         assertThat(migrationRequests[0].reference).isEqualTo("description of the scheduled payment")
         assertThat(migrationRequests[0].createdBy).isEqualTo("JD12345")
