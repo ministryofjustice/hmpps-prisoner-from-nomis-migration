@@ -24,7 +24,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import java.time.LocalDateTime
 
 @Service
 class AdvancesMigrationService(
@@ -35,7 +34,7 @@ class AdvancesMigrationService(
   jsonMapper: JsonMapper,
   @Value($$"${advances.page.size:1000}") pageSize: Long,
   @Value($$"${advances.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
-  @Value($$"${complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
+  @Value($$"${advances.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${advances.complete-check.count}") completeCheckCount: Int,
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
 ) : ByIdRangeMigrationService<Any, PrisonNumberAndRootOffenderId, AdvanceMappingDto>(
@@ -169,8 +168,7 @@ fun PrisonerAdvanceDto.toMigrateAdvanceDto() = SyncMigrateAdvanceRecordRequest(
   reference = reference,
   comment = comment,
   status = SyncMigrateAdvanceRecordRequest.Status.valueOf(status.name),
-  // TODO pull in from Nomis - the last transaction date for the advance (for the DED event)
-  balanceCalculationTime = LocalDateTime.parse("2024-06-18T11:33:44"),
+  balanceCalculationTime = lastTransactionTimestamp,
   createdOn = createDatetime,
   createdBy = createdBy,
 )

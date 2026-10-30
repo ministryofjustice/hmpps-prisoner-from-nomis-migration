@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-30.2330.6784a83"
+    "version" : "2026-10-30.2332.6e09204"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -46991,7 +46991,7 @@
           },
           "subAccountCode" : {
             "type" : "integer",
-            "format" : "int64",
+            "format" : "int32",
             "description" : "The sub account code the payment will be taken from",
             "example" : 2101
           },
@@ -47233,9 +47233,15 @@
             "format" : "int64",
             "description" : "The transaction id for the advance creation",
             "example" : 123456789
+          },
+          "lastTransactionTimestamp" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date time of the last transaction for the advance",
+            "example" : "2025-07-14T12:13:14"
           }
         },
-        "required" : [ "advanceAmount", "advanceCreateTransactionId", "caseloadId", "createDatetime", "createdBy", "id", "informationNumber", "outstandingBalance", "prisonNumber", "repaymentAmount", "startDate", "status" ]
+        "required" : [ "advanceAmount", "advanceCreateTransactionId", "caseloadId", "createDatetime", "createdBy", "id", "informationNumber", "lastTransactionTimestamp", "outstandingBalance", "prisonNumber", "repaymentAmount", "startDate", "status" ]
       },
       "PrisonerAggregatedAccountsDto" : {
         "type" : "object",
