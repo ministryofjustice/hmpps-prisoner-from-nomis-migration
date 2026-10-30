@@ -17,6 +17,7 @@ class PersonLocationEventListener(
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
   private val syncMovementService: PersonLocationSyncMovementService,
+  private val syncBookingService: PersonLocationSyncBookingService,
 ) {
 
   private companion object {
@@ -34,6 +35,7 @@ class PersonLocationEventListener(
           if (eventFeatureSwitch.isEnabled(eventType, "personlocations")) {
             when (eventType) {
               "EXTERNAL_MOVEMENT-CHANGED" -> syncMovementService.externalMovementChanged(sqsMessage.Message.fromJson())
+              "BOOKING_STATUS-INSERTED" -> syncBookingService.bookingInserted(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
