@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerScheduledPaymentDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledPaymentDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
 import java.time.Month
@@ -20,7 +20,7 @@ class ScheduledPaymentsNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetScheduledPayment(
     scheduledPaymentId: Long = 12345,
     prisonNumber: String = "A0001BC",
-    scheduledPayment: PrisonerScheduledPaymentDto = prisonerScheduledPayment(prisonNumber = prisonNumber),
+    scheduledPayment: ScheduledPaymentDto = scheduledPayment(prisonNumber = prisonNumber),
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/finance/scheduled-payments/$scheduledPaymentId")).willReturn(
@@ -54,7 +54,7 @@ class ScheduledPaymentsNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun stubGetActivePrisonerScheduledPayments(
     rootOffenderId: Long = 12345,
     prisonNumber: String = "A0001BC",
-    scheduledPayments: List<PrisonerScheduledPaymentDto> = listOf(prisonerScheduledPayment(prisonNumber = prisonNumber)),
+    scheduledPayments: List<ScheduledPaymentDto> = listOf(scheduledPayment(prisonNumber = prisonNumber)),
   ) {
     nomisApi.stubFor(
       get(urlPathEqualTo("/finance/prisoners/root-offender-id/$rootOffenderId/scheduled-payments"))
@@ -86,12 +86,14 @@ class ScheduledPaymentsNomisApiMockServer(private val jsonMapper: JsonMapper) {
   fun verify(count: Int, pattern: RequestPatternBuilder) = nomisApi.verify(count, pattern)
 }
 
-fun prisonerScheduledPayment(prisonNumber: String = "A0001BC"): PrisonerScheduledPaymentDto = PrisonerScheduledPaymentDto(
+fun scheduledPayment(prisonNumber: String = "A0001BC"): ScheduledPaymentDto = ScheduledPaymentDto(
   id = 12345L,
   prisonNumber = prisonNumber,
   caseloadId = "LEI",
   transactionType = "TELE",
-  paymentAmount = 210,
+  amount = 210,
+  dayOfWeek = ScheduledPaymentDto.DayOfWeek.WED,
+  subAccountCode = 2103,
   startDate = LocalDate.of(2024, Month.JUNE, 18),
   endDate = LocalDate.of(2024, Month.JULY, 30),
   reference = "description of the scheduled payment",

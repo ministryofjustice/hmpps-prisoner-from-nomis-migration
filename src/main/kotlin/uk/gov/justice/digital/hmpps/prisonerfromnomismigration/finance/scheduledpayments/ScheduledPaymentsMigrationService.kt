@@ -9,21 +9,17 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceDpsApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.MoneySupport
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateSubscriptionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledPaymentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerScheduledPaymentDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRangeMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
-import java.time.LocalDateTime
 
 @Service
 class ScheduledPaymentsMigrationService(
@@ -88,7 +84,7 @@ class ScheduledPaymentsMigrationService(
           label,
         )
       } ?: run {
-        val response = dpsApiService.createScheduledPayment(scheduledPayment.toMigrateScheduledPaymentDto())
+        val response = dpsApiService.createScheduledPayment(scheduledPayment.toCreateScheduledPaymentDto())
         val mapping = ScheduledPaymentMappingDto(
           nomisScheduledPaymentId = scheduledPayment.id,
           dpsId = response.subscriptionId.toString(),
@@ -158,20 +154,3 @@ class ScheduledPaymentsMigrationService(
 
   override fun parseContextMapping(json: String): MigrationMessage<*, ScheduledPaymentMappingDto> = jsonMapper.readValue(json)
 }
-
-fun PrisonerScheduledPaymentDto.toMigrateScheduledPaymentDto() = SyncCreateSubscriptionRequest(
-  legacyPaymentProfileId = id,
-  prisonNumber = prisonNumber,
-  prisonId = caseloadId,
-  amount = MoneySupport.penceToPounds(paymentAmount),
-  // TODO
-  dayOfPayment = SyncCreateSubscriptionRequest.DayOfPayment.FRIDAY,
-  startDate = startDate,
-  endDate = endDate,
-  // TODO
-  subAccountCode = 2101,
-  subscriptionType = transactionType,
-  reference = reference,
-  createdAt = LocalDateTime.now(),
-  createdBy = createdBy,
-)

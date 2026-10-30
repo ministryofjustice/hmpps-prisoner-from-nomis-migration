@@ -353,7 +353,7 @@ class ScheduledPaymentsSynchronisationIntTest(
           nomisApiMock.stubGetScheduledPayment(
             scheduledPaymentId,
             prisonNumber,
-            prisonerScheduledPayment(prisonNumber).copy(endDate = LocalDate.parse("2024-08-06")),
+            scheduledPayment(prisonNumber).copy(endDate = LocalDate.parse("2024-08-06")),
           )
           sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED")
             .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-success") }
@@ -393,7 +393,7 @@ class ScheduledPaymentsSynchronisationIntTest(
           nomisApiMock.stubGetScheduledPayment(
             scheduledPaymentId,
             prisonNumber,
-            prisonerScheduledPayment(prisonNumber).copy(endDate = null),
+            scheduledPayment(prisonNumber).copy(endDate = null),
           )
           sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED")
             .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-success") }
@@ -477,7 +477,7 @@ class ScheduledPaymentsSynchronisationIntTest(
             nomisApiMock.stubGetScheduledPayment(
               scheduledPaymentId,
               prisonNumber,
-              prisonerScheduledPayment(prisonNumber).copy(endDate = LocalDate.parse("2024-08-06")),
+              scheduledPayment(prisonNumber).copy(endDate = LocalDate.parse("2024-08-06")),
             )
             financeApi.stubFor(
               post("/sync/subscriptions/$dpsScheduledPaymentId/update")

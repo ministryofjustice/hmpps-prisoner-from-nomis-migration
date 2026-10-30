@@ -7,7 +7,9 @@ import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceDpsApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceSynchronisationMessageType.RETRY_SYNCHRONISATION_SCHEDULED_PAYMENT_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.MoneySupport
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.ScheduledPaymentEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateSubscriptionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncUpdateSubscriptionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
@@ -16,9 +18,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledPaymentMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledPaymentDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.time.LocalDateTime
 import java.util.UUID
 
 private const val TELEMETRY_PREFIX = "scheduled-payments-synchronisation"
@@ -52,7 +56,7 @@ class ScheduledPaymentsSynchronisationService(
     } ?: run {
       track("$TELEMETRY_PREFIX-created", telemetry) {
         val nomisScheduledPayment = nomisApiService.getScheduledPayment(nomisId)
-        val dpsScheduledPayment = dpsApiService.createScheduledPayment(nomisScheduledPayment.toMigrateScheduledPaymentDto())
+        val dpsScheduledPayment = dpsApiService.createScheduledPayment(nomisScheduledPayment.toCreateScheduledPaymentDto())
           .also { telemetry["dpsScheduledPaymentId"] = it.subscriptionId }
 
         tryToCreateMapping(
@@ -128,4 +132,29 @@ class ScheduledPaymentsSynchronisationService(
       )
     }
   }
+}
+
+fun ScheduledPaymentDto.toCreateScheduledPaymentDto() = SyncCreateSubscriptionRequest(
+  legacyPaymentProfileId = id,
+  prisonNumber = prisonNumber,
+  prisonId = caseloadId,
+  amount = MoneySupport.penceToPounds(amount),
+  dayOfPayment = dayOfWeek.toDpsDayOfPayment(),
+  startDate = startDate,
+  endDate = endDate,
+  subAccountCode = subAccountCode.toInt(),
+  subscriptionType = transactionType,
+  reference = reference,
+  createdAt = LocalDateTime.now(),
+  createdBy = createdBy,
+)
+
+fun ScheduledPaymentDto.DayOfWeek.toDpsDayOfPayment() = when (this) {
+  ScheduledPaymentDto.DayOfWeek.MON -> SyncCreateSubscriptionRequest.DayOfPayment.MONDAY
+  ScheduledPaymentDto.DayOfWeek.TUE -> SyncCreateSubscriptionRequest.DayOfPayment.TUESDAY
+  ScheduledPaymentDto.DayOfWeek.WED -> SyncCreateSubscriptionRequest.DayOfPayment.WEDNESDAY
+  ScheduledPaymentDto.DayOfWeek.THU -> SyncCreateSubscriptionRequest.DayOfPayment.THURSDAY
+  ScheduledPaymentDto.DayOfWeek.FRI -> SyncCreateSubscriptionRequest.DayOfPayment.FRIDAY
+  ScheduledPaymentDto.DayOfWeek.SAT -> SyncCreateSubscriptionRequest.DayOfPayment.SATURDAY
+  ScheduledPaymentDto.DayOfWeek.SUN -> SyncCreateSubscriptionRequest.DayOfPayment.SUNDAY
 }
