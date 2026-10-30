@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.EDIT_EXTERNAL_MOVEMENTS_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.SuccessOrDuplicate
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -49,6 +50,7 @@ class PersonLocationSyncMovementService(
   private val courtSchedulerMappingApiService: CourtSchedulerMappingApiService,
   private val courtSentencingMappingApiService: CourtSentencingMappingApiService,
   private val queueService: SynchronisationQueueService,
+  private val migrationService: PersonLocationMigrationService,
 ) : TelemetryEnabled {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -56,6 +58,7 @@ class PersonLocationSyncMovementService(
 
   suspend fun externalMovementChanged(event: ExternalMovementEvent) {
     when {
+      event.auditModuleName == EDIT_EXTERNAL_MOVEMENTS_AUDIT_MODULE -> migrationService.resyncPrisonerPersonLocations(event.offenderIdDisplay!!)
       event.recordInserted -> externalMovementInserted(event)
       event.recordDeleted -> externalMovementDeleted(event)
       else -> externalMovementUpdated(event)
