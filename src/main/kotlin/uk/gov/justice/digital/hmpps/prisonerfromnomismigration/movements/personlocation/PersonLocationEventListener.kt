@@ -9,6 +9,7 @@ import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationRetryMappingMessageTypes.RETRY_MAPPING_PERSON_LOCATION_BOOKING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationRetryMappingMessageTypes.RETRY_MAPPING_PERSON_LOCATION_MOVEMENT
 import java.util.concurrent.CompletableFuture
 
@@ -49,6 +50,7 @@ class PersonLocationEventListener(
   }
 
   private suspend fun retryMapping(type: String, message: String) = when (PersonLocationRetryMappingMessageTypes.valueOf(type)) {
+    RETRY_MAPPING_PERSON_LOCATION_BOOKING -> syncBookingService.retryCreateBookingMapping(message.fromJson())
     RETRY_MAPPING_PERSON_LOCATION_MOVEMENT -> syncMovementService.retryCreateMovementMapping(message.fromJson())
   }
 
@@ -56,5 +58,6 @@ class PersonLocationEventListener(
 }
 
 enum class PersonLocationRetryMappingMessageTypes {
+  RETRY_MAPPING_PERSON_LOCATION_BOOKING,
   RETRY_MAPPING_PERSON_LOCATION_MOVEMENT,
 }
