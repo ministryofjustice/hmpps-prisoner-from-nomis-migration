@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation
 
+import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -21,6 +23,7 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.CONFLICT
+import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
@@ -552,6 +555,128 @@ class PersonLocationSyncBookingIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["dpsCustodialSeriesId"]).isEqualTo("$dpsCustodialSeriesId")
             assertThat(it["error"]).contains("400")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("BOOKING_STATUS-DELETED")
+  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  inner class BookingDeleted {
+    private val dpsCustodialSeriesId = UUID.randomUUID()
+
+    @Nested
+    @DisplayName("Happy path")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPath {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        dpsApi.stubDeleteCustodialSeries(dpsCustodialSeriesId)
+        mappingApi.stubDeletePersonLocationBookingMapping(nomisBookingId = 12345)
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-DELETED"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should delete the DPS custodial series`() {
+        dpsApi.verify(deleteRequestedFor(urlPathEqualTo("/sync/custodial-series/$dpsCustodialSeriesId")))
+      }
+
+      @Test
+      fun `should delete the mapping`() {
+        mappingApi.verify(deleteRequestedFor(urlPathEqualTo("/mapping/person-location/booking/nomis-booking-id/12345")))
+      }
+
+      @Test
+      fun `should publish success telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-booking-deleted-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["bookingSeq"]).isEqualTo("1")
+            assertThat(it["dpsCustodialSeriesId"]).isEqualTo("$dpsCustodialSeriesId")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("Ignored when raised by DPS")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDpsSyncAuditModule {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-DELETED", auditModuleName = "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete("person-location-sync-booking-deleted-ignored") }
+      }
+
+      @Test
+      fun `should NOT call DPS or delete mapping`() {
+        dpsApi.verify(0, deleteRequestedFor(anyUrl()))
+        mappingApi.verify(0, deleteRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("No mapping")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenNoMapping {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, status = NOT_FOUND)
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-DELETED"))
+          .also { waitForAnyProcessingToComplete("person-location-sync-booking-deleted-ignored") }
+      }
+
+      @Test
+      fun `should NOT call DPS or delete mapping`() {
+        dpsApi.verify(0, deleteRequestedFor(anyUrl()))
+        mappingApi.verify(0, deleteRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    @DisplayName("DPS delete fails")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDpsFails {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        dpsApi.stubDeleteCustodialSeries(dpsCustodialSeriesId, status = INTERNAL_SERVER_ERROR)
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-DELETED"))
+          .also { waitForAnyProcessingToComplete("person-location-sync-booking-deleted-error", times = 2) }
+      }
+
+      @Test
+      fun `should leave the mapping in place`() {
+        mappingApi.verify(0, deleteRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `should publish error telemetry`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("person-location-sync-booking-deleted-error"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["dpsCustodialSeriesId"]).isEqualTo("$dpsCustodialSeriesId")
+            assertThat(it["error"]).contains("500")
           },
           isNull(),
         )

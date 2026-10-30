@@ -135,6 +135,38 @@ class PersonLocationDpsApiServiceTest {
   }
 
   @Nested
+  inner class DeleteCustodialSeries {
+    private val dpsId = UUID.randomUUID()
+
+    @Test
+    fun `should call the delete endpoint`() = runTest {
+      dpsPersonLocationServer.stubDeleteCustodialSeries(dpsId)
+
+      apiService.deleteCustodialSeries(dpsId)
+
+      dpsPersonLocationServer.verify(deleteRequestedFor(urlPathEqualTo("/sync/custodial-series/$dpsId")))
+    }
+
+    @Test
+    fun `should throw if not found`() = runTest {
+      dpsPersonLocationServer.stubDeleteCustodialSeries(dpsId, status = NOT_FOUND)
+
+      assertThrows<WebClientResponseException.NotFound> {
+        apiService.deleteCustodialSeries(dpsId)
+      }
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      dpsPersonLocationServer.stubDeleteCustodialSeries(dpsId, status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.deleteCustodialSeries(dpsId)
+      }
+    }
+  }
+
+  @Nested
   inner class SyncCustodialSeries {
     @Test
     fun `should call the sync endpoint and pass the request`() = runTest {

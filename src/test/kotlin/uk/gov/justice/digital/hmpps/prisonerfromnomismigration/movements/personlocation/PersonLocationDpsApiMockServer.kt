@@ -183,6 +183,16 @@ class PersonLocationDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubDeleteCustodialSeries(
+    dpsId: UUID,
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    dpsPersonLocationServer.stubFor(
+      delete("/sync/custodial-series/$dpsId")
+        .willReturn(aResponse().withStatus(status.value())),
+    )
+  }
+
   fun stubHealthPing(status: Int) {
     stubFor(
       get("/health/ping").willReturn(

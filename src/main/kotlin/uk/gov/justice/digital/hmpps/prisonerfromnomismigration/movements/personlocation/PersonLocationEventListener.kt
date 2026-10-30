@@ -38,6 +38,7 @@ class PersonLocationEventListener(
               "EXTERNAL_MOVEMENT-CHANGED" -> syncMovementService.externalMovementChanged(sqsMessage.Message.fromJson())
               "BOOKING_STATUS-INSERTED" -> syncBookingService.bookingInserted(sqsMessage.Message.fromJson())
               "BOOKING_STATUS-UPDATED" -> syncBookingService.bookingUpdated(sqsMessage.Message.fromJson())
+              "BOOKING_STATUS-DELETED" -> syncBookingService.bookingDeleted(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {

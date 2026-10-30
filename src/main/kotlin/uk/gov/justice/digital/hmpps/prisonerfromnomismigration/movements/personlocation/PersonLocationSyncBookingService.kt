@@ -66,6 +66,26 @@ class PersonLocationSyncBookingService(
     }
   }
 
+  suspend fun bookingDeleted(event: BookingStatusEvent) {
+    val bookingId = event.bookingId
+    val telemetry = event.telemetry()
+
+    if (event.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-deleted-ignored", telemetry)
+      return
+    }
+
+    mappingApiService.getBookingMappingOrNull(bookingId)
+      ?.also { telemetry["dpsCustodialSeriesId"] = it.dpsCustodialSeriesId }
+      ?.also { mapping ->
+        track("$TELEMETRY_PREFIX-deleted", telemetry) {
+          dpsApiService.deleteCustodialSeries(mapping.dpsCustodialSeriesId)
+          mappingApiService.deleteBookingMapping(bookingId)
+        }
+      }
+      ?: telemetryClient.trackEvent("$TELEMETRY_PREFIX-deleted-ignored", telemetry)
+  }
+
   suspend fun bookingInserted(event: BookingStatusEvent) {
     val (bookingId, prisonerNumber) = event
     val telemetry = event.telemetry()

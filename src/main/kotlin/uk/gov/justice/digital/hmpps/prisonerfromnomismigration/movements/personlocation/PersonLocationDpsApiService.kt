@@ -29,6 +29,8 @@ class PersonLocationDpsApiService(@Qualifier("personLocationDpsApiWebClient") pr
 
   suspend fun deleteExternalMovement(dpsId: UUID) = syncApi.deleteExternalMovement(dpsId).awaitSingle()
 
+  suspend fun deleteCustodialSeries(dpsId: UUID) = syncApi.deleteCustodialSeries(dpsId).awaitSingle()
+
   suspend fun syncCustodialSeries(personIdentifier: String, request: SyncCustodialSeriesRequest): ReferenceId = syncApi.prepare(syncApi.syncCustodialSeriesRequestConfig(personIdentifier, request))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
