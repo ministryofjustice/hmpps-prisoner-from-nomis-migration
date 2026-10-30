@@ -463,6 +463,100 @@ class PersonLocationSyncBookingIntTest(
         )
       }
     }
+
+    @Nested
+    @DisplayName("Update overtakes the create")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenNoMapping {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, status = NOT_FOUND)
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-UPDATED"))
+          .also { waitForAnyProcessingToComplete("person-location-sync-booking-updated-error", times = 2) }
+      }
+
+      @Test
+      fun `should NOT call DPS`() {
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/custodial-series/A1234BC")))
+      }
+
+      @Test
+      fun `should publish error telemetry`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("person-location-sync-booking-updated-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["error"]).contains("No person location booking mapping found for booking 12345")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("Ignored when raised by DPS")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDpsSyncAuditModule {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-UPDATED", auditModuleName = "DPS_SYNCHRONISATION"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT call DPS`() {
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/custodial-series/A1234BC")))
+      }
+
+      @Test
+      fun `should publish ignore telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-booking-updated-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["bookingSeq"]).isEqualTo("1")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("DPS rejects the request")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDpsRejectsRequest {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        nomisApi.stubGetPersonLocationBooking(offenderNo = "A1234BC", bookingId = 12345)
+        dpsApi.stubSyncCustodialSeries("A1234BC", status = BAD_REQUEST)
+
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-UPDATED"))
+          .also { waitForAnyProcessingToComplete("person-location-sync-booking-updated-error", times = 2) }
+      }
+
+      @Test
+      fun `should publish error telemetry`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("person-location-sync-booking-updated-error"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["dpsCustodialSeriesId"]).isEqualTo("$dpsCustodialSeriesId")
+            assertThat(it["error"]).contains("400")
+          },
+          isNull(),
+        )
+      }
+    }
   }
 
   private fun bookingStatusEvent(

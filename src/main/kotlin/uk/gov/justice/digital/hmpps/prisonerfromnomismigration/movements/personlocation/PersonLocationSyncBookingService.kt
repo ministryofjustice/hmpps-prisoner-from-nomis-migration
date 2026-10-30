@@ -50,12 +50,17 @@ class PersonLocationSyncBookingService(
     val (bookingId, prisonerNumber) = event
     val telemetry = event.telemetry()
 
-    // The update may have overtaken the create, so fail and retry if there is no mapping yet
-    val mapping = mappingApiService.getBookingMappingOrNull(bookingId)
-      ?.also { telemetry["dpsCustodialSeriesId"] = it.dpsCustodialSeriesId }
-      ?: throw IllegalStateException("No person location booking mapping found for booking $bookingId")
+    if (event.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-updated-ignored", telemetry)
+      return
+    }
 
     track("$TELEMETRY_PREFIX-updated", telemetry) {
+      // The update may have overtaken the create, so fail and retry if there is no mapping yet
+      val mapping = mappingApiService.getBookingMappingOrNull(bookingId)
+        ?.also { telemetry["dpsCustodialSeriesId"] = it.dpsCustodialSeriesId }
+        ?: throw IllegalStateException("No person location booking mapping found for booking $bookingId")
+
       val nomis = nomisApiService.getPersonLocationBooking(prisonerNumber, bookingId)
       dpsApiService.syncCustodialSeries(prisonerNumber, nomis.toDpsRequest(dpsId = mapping.dpsCustodialSeriesId))
     }
