@@ -3,8 +3,10 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.person
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited.Companion.DPS_SYNC_AUDIT_MODULE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.toDpsUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingIdMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationBookingIdMappingDto.MappingType.NOMIS_CREATED
@@ -39,6 +41,17 @@ class PersonLocationSyncBookingService(
       "bookingId" to bookingId,
       "bookingSeq" to bookingSeq,
     )
+
+    if (event.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-inserted-ignored", telemetry)
+      return
+    }
+
+    mappingApiService.getBookingMappingOrNull(bookingId)?.also {
+      telemetry["dpsCustodialSeriesId"] = it.dpsCustodialSeriesId
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-inserted-ignored", telemetry)
+      return
+    }
 
     track("$TELEMETRY_PREFIX-inserted", telemetry) {
       val nomis = nomisApiService.getPersonLocationBooking(prisonerNumber, bookingId)
