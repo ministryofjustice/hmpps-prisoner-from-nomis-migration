@@ -127,11 +127,10 @@ class PersonLocationSyncMovementService(
     }
 
     // The update may have overtaken the create, so fail and retry if there is no mapping yet
-    val mapping = mappingApiService.getMovementMappingOrNull(bookingId, movementSeq)
-      ?.also { telemetry["dpsExternalMovementId"] = it.dpsExternalMovementId }
-      ?: throw IllegalStateException("No person location movement mapping found for booking $bookingId, sequence $movementSeq")
-
     track("$TELEMETRY_PREFIX-updated", telemetry) {
+      val mapping = mappingApiService.getMovementMappingOrNull(bookingId, movementSeq)
+        ?.also { telemetry["dpsExternalMovementId"] = it.dpsExternalMovementId }
+        ?: throw IllegalStateException("No person location movement mapping found for booking $bookingId, sequence $movementSeq")
       syncMovement(event, dpsId = mapping.dpsExternalMovementId, telemetry)
     }
   }
