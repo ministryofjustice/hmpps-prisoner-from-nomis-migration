@@ -5,6 +5,8 @@ import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -23,6 +25,7 @@ import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
@@ -866,6 +869,110 @@ class PersonLocationSyncMovementIntTest(
           assertThat(type).isEqualTo(SyncExternalMovement.Type.ARRIVAL)
           assertThat(journey.scheduleReference).isNull()
         }
+      }
+    }
+
+    @Nested
+    @DisplayName("Ignored when raised by DPS")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDpsSyncAuditModule {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent(auditModuleName = "DPS_SYNCHRONISATION", recordInserted = false))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should NOT call DPS`() {
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
+      }
+
+      @Test
+      fun `should publish ignore telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-movement-updated-ignored"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    @DisplayName("Update overtakes the create")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenNoMapping {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, status = NOT_FOUND)
+
+        personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent(recordInserted = false))
+          .also { await untilAsserted { assertThat(personLocationsOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1) } }
+      }
+
+      @Test
+      fun `should NOT call DPS`() {
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenScheduleNotFound {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, response = personLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, dpsExternalMovementId = dpsExternalMovementId))
+        nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = movementOut(TAP, scheduleId = NOMIS_SCHEDULE_ID))
+        tapMappingApi.stubGetTapScheduleMapping(NOMIS_SCHEDULE_ID, status = NOT_FOUND)
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+
+        personLocationsOffenderEventsQueue.sendMessage(movementEvent("TAP", recordInserted = false))
+          .also { waitForAnyProcessingToComplete("person-location-sync-movement-updated-awaiting-parent", times = 2) }
+      }
+
+      @Test
+      fun `should NOT call DPS`() {
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
+      }
+    }
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenDpsRejectsRequest {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, response = personLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, dpsExternalMovementId = dpsExternalMovementId))
+        nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = transferMovementOut(scheduleId = null))
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        dpsApi.stubSyncExternalMovement("A1234BC", status = BAD_REQUEST)
+
+        personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent(recordInserted = false))
+          .also { waitForAnyProcessingToComplete("person-location-sync-movement-updated-error", times = 2) }
+      }
+
+      @Test
+      fun `should publish error telemetry`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("person-location-sync-movement-updated-error"),
+          check {
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["dpsExternalMovementId"]).isEqualTo("$dpsExternalMovementId")
+            assertThat(it["error"]).contains("400")
+          },
+          isNull(),
+        )
       }
     }
   }
