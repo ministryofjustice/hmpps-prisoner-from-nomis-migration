@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
@@ -22,6 +23,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personl
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiMockServer.Companion.resyncExternalMovementsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiMockServer.Companion.syncCustodialSeriesRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiMockServer.Companion.syncExternalMovementRequest
+import java.util.UUID
 
 @ExtendWith(PersonLocationDpsApiExtension::class)
 @SpringAPIServiceTest
@@ -96,6 +98,38 @@ class PersonLocationDpsApiServiceTest {
 
       assertThrows<WebClientResponseException.BadRequest> {
         apiService.syncExternalMovement("A1234BC", syncExternalMovementRequest())
+      }
+    }
+  }
+
+  @Nested
+  inner class DeleteExternalMovement {
+    private val dpsId = UUID.randomUUID()
+
+    @Test
+    fun `should call the delete endpoint`() = runTest {
+      dpsPersonLocationServer.stubDeleteExternalMovement(dpsId)
+
+      apiService.deleteExternalMovement(dpsId)
+
+      dpsPersonLocationServer.verify(deleteRequestedFor(urlPathEqualTo("/sync/external-movements/$dpsId")))
+    }
+
+    @Test
+    fun `should throw if not found`() = runTest {
+      dpsPersonLocationServer.stubDeleteExternalMovement(dpsId, status = NOT_FOUND)
+
+      assertThrows<WebClientResponseException.NotFound> {
+        apiService.deleteExternalMovement(dpsId)
+      }
+    }
+
+    @Test
+    fun `should throw if error`() = runTest {
+      dpsPersonLocationServer.stubDeleteExternalMovement(dpsId, status = INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.deleteExternalMovement(dpsId)
       }
     }
   }

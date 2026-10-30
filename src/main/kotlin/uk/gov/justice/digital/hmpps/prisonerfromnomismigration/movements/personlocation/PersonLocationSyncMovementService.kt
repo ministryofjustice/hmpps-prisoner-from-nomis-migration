@@ -57,8 +57,8 @@ class PersonLocationSyncMovementService(
   suspend fun externalMovementChanged(event: ExternalMovementEvent) {
     when {
       event.recordInserted -> externalMovementInserted(event)
-      // Deletes are not synchronised yet
-      !event.recordDeleted -> externalMovementUpdated(event)
+      event.recordDeleted -> externalMovementDeleted(event)
+      else -> externalMovementUpdated(event)
     }
   }
 
@@ -131,6 +131,30 @@ class PersonLocationSyncMovementService(
     track("$TELEMETRY_PREFIX-updated", telemetry) {
       syncMovement(event, dpsId = mapping.dpsExternalMovementId, telemetry)
     }
+  }
+
+  private suspend fun externalMovementDeleted(event: ExternalMovementEvent) {
+    val (bookingId, prisonerNumber, movementSeq) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber!!,
+      "bookingId" to bookingId,
+      "movementSeq" to movementSeq,
+    )
+
+    if (event.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-deleted-ignored", telemetry)
+      return
+    }
+
+    mappingApiService.getMovementMappingOrNull(bookingId, movementSeq)
+      ?.also { telemetry["dpsExternalMovementId"] = it.dpsExternalMovementId }
+      ?.also { mapping ->
+        track("$TELEMETRY_PREFIX-deleted", telemetry) {
+          dpsApiService.deleteExternalMovement(mapping.dpsExternalMovementId)
+          mappingApiService.deleteMovementMapping(bookingId, movementSeq)
+        }
+      }
+      ?: telemetryClient.trackEvent("$TELEMETRY_PREFIX-deleted-ignored", telemetry)
   }
 
   private suspend fun syncMovement(event: ExternalMovementEvent, dpsId: UUID?, telemetry: MutableMap<String, Any>): ReferenceId {
