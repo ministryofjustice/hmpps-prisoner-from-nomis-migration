@@ -28,6 +28,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.CRT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TAP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TRN
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.ReferenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncExternalMovementRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.model.SyncUser
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -54,9 +55,10 @@ class PersonLocationSyncMovementService(
   }
 
   suspend fun externalMovementChanged(event: ExternalMovementEvent) {
-    // Updates and deletes are not synchronised yet
-    if (event.recordInserted) {
-      externalMovementInserted(event)
+    when {
+      event.recordInserted -> externalMovementInserted(event)
+      // Deletes are not synchronised yet
+      !event.recordDeleted -> externalMovementUpdated(event)
     }
   }
 
@@ -97,16 +99,7 @@ class PersonLocationSyncMovementService(
     }
 
     track("$TELEMETRY_PREFIX-inserted", telemetry) {
-      val nomis = nomisApiService.getPersonLocationMovement(prisonerNumber, bookingId, movementSeq)
-        .also { telemetry["nomisEventId"] = "${it.scheduleId}" }
-      val dpsScheduleReference = nomis.scheduleId?.let { getDpsScheduleReference(nomis.movementType, it) }
-      val dpsCustodialSeriesId = tryFetchParent { mappingApiService.getBookingMappingOrNull(bookingId) }
-        .dpsCustodialSeriesId
-
-      val dps = dpsApiService.syncExternalMovement(
-        prisonerNumber,
-        nomis.toDpsRequest(dpsCustodialSeriesId, dpsScheduleReference),
-      ).also { telemetry["dpsExternalMovementId"] = it.dpsId }
+      val dps = syncMovement(event, dpsId = null, telemetry)
 
       PersonLocationMovementIdMappingDto(
         nomisBookingId = bookingId,
@@ -115,6 +108,37 @@ class PersonLocationSyncMovementService(
         mappingType = NOMIS_CREATED,
       ).also { tryToCreateMapping(it, telemetry) }
     }
+  }
+
+  private suspend fun externalMovementUpdated(event: ExternalMovementEvent) {
+    val (bookingId, prisonerNumber, movementSeq) = event
+    val telemetry = mutableMapOf<String, Any>(
+      "offenderNo" to prisonerNumber!!,
+      "bookingId" to bookingId,
+      "movementSeq" to movementSeq,
+    )
+
+    // The update may have overtaken the create, so fail and retry if there is no mapping yet
+    val mapping = mappingApiService.getMovementMappingOrNull(bookingId, movementSeq)
+      ?: throw IllegalStateException("No person location movement mapping found for booking $bookingId, sequence $movementSeq")
+
+    track("$TELEMETRY_PREFIX-updated", telemetry) {
+      syncMovement(event, dpsId = mapping.dpsExternalMovementId, telemetry)
+    }
+  }
+
+  private suspend fun syncMovement(event: ExternalMovementEvent, dpsId: UUID?, telemetry: MutableMap<String, Any>): ReferenceId {
+    val (bookingId, prisonerNumber, movementSeq) = event
+    val nomis = nomisApiService.getPersonLocationMovement(prisonerNumber!!, bookingId, movementSeq)
+      .also { telemetry["nomisEventId"] = "${it.scheduleId}" }
+    val dpsScheduleReference = nomis.scheduleId?.let { getDpsScheduleReference(nomis.movementType, it) }
+    val dpsCustodialSeriesId = tryFetchParent { mappingApiService.getBookingMappingOrNull(bookingId) }
+      .dpsCustodialSeriesId
+
+    return dpsApiService.syncExternalMovement(
+      prisonerNumber,
+      nomis.toDpsRequest(dpsId, dpsCustodialSeriesId, dpsScheduleReference),
+    ).also { telemetry["dpsExternalMovementId"] = it.dpsId }
   }
 
   private suspend fun tryToCreateMapping(mapping: PersonLocationMovementIdMappingDto, telemetry: Map<String, Any>) {
@@ -158,8 +182,8 @@ class PersonLocationSyncMovementService(
   }
 }
 
-private fun PersonLocationMovement.toDpsRequest(dpsCustodialSeriesId: UUID, scheduleReference: String?) = SyncExternalMovementRequest(
+private fun PersonLocationMovement.toDpsRequest(dpsId: UUID?, dpsCustodialSeriesId: UUID, scheduleReference: String?) = SyncExternalMovementRequest(
   occurredAt = audit.modifyDatetime ?: audit.createDatetime,
   syncUser = SyncUser(username = (audit.modifyUserId ?: audit.createUsername).toDpsUser()),
-  movement = toSyncExternalMovement(dpsId = null, dpsCustodySeriesId = dpsCustodialSeriesId, scheduleReference = scheduleReference),
+  movement = toSyncExternalMovement(dpsId = dpsId, dpsCustodySeriesId = dpsCustodialSeriesId, scheduleReference = scheduleReference),
 )
