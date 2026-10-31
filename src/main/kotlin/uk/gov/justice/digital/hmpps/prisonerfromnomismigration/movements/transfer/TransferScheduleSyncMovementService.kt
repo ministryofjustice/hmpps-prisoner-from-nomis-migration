@@ -89,13 +89,11 @@ class TransferScheduleSyncMovementService(
       return
     }
 
-    mappingApiService.getTransferMovementMappingOrNull(bookingId, movementSeq)
-      ?. run {
-        track("${TELEMETRY_PREFIX}-updated", telemetry) {
-          syncTransferMovement(prisonerNumber, bookingId, movementSeq, telemetry, dpsId = dpsTransferMovementId)
-        }
-      }
-      ?: throw IllegalStateException("No mapping found when handling an update event for movement $bookingId/$movementSeq - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
+    track("${TELEMETRY_PREFIX}-updated", telemetry) {
+      val mapping = mappingApiService.getTransferMovementMappingOrNull(bookingId, movementSeq)
+        ?: throw IllegalStateException("No mapping found when handling an update event for movement $bookingId/$movementSeq - hopefully messages are being processed out of order and this event will succeed on a retry once the create event is processed. Otherwise we need to understand why the original create event was never processed.")
+      syncTransferMovement(prisonerNumber, bookingId, movementSeq, telemetry, dpsId = mapping.dpsTransferMovementId)
+    }
   }
 
   suspend fun transferMovementDeleted(event: ExternalMovementEvent) {
