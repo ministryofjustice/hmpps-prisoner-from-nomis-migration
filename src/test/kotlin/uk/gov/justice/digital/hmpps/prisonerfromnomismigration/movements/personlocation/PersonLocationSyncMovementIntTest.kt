@@ -7,8 +7,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
-import org.awaitility.kotlin.await
-import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -28,7 +26,6 @@ import org.springframework.http.HttpStatus.CONFLICT
 import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.http.HttpStatus.NOT_FOUND
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiMockServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.court.CourtSchedulerMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.personlocation.PersonLocationDpsApiExtension.Companion.dpsPersonLocationServer
@@ -917,12 +914,26 @@ class PersonLocationSyncMovementIntTest(
         mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, status = NOT_FOUND)
 
         personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent(recordInserted = false))
-          .also { await untilAsserted { assertThat(personLocationsOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1) } }
+          .also { waitForAnyProcessingToComplete("person-location-sync-movement-updated-error", times = 2) }
       }
 
       @Test
       fun `should NOT call DPS`() {
         dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
+      }
+
+      @Test
+      fun `should publish error telemetry`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("person-location-sync-movement-updated-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["error"]).contains("No person location movement mapping found for booking 12345, sequence 3")
+          },
+          isNull(),
+        )
       }
     }
 

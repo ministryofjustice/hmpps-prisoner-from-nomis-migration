@@ -650,6 +650,40 @@ class TransferScheduleSyncMovementIntTest(
     }
 
     @Nested
+    @DisplayName("Update overtakes the create")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class WhenNoMapping {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetTransferMovementMapping(status = NOT_FOUND)
+
+        sendMessage(transferMovementEvent(inserted = false))
+          .also { waitForAnyProcessingToComplete("transfer-scheduler-sync-movement-updated-error", times = 2) }
+      }
+
+      @Test
+      fun `should NOT call DPS`() {
+        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/transfer-movements/A1234BC")))
+      }
+
+      @Test
+      fun `should publish error telemetry`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("transfer-scheduler-sync-movement-updated-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo("A1234BC")
+            assertThat(it["bookingId"]).isEqualTo("12345")
+            assertThat(it["movementSeq"]).isEqualTo("3")
+            assertThat(it["error"]).contains("No mapping found when handling an update event for movement 12345/3")
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class WhenScheduleDoesNotExist {
 
