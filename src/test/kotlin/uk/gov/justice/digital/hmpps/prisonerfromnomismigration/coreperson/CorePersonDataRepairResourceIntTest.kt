@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.github.tomakehurst.wiremock.client.WireMock
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -13,16 +14,27 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AddressUsageByNomisIdRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactByNomisIdRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderEmailAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -157,6 +169,7 @@ class CorePersonDataRepairResourceIntTest(
       @BeforeEach
       fun setUp() {
         nomisApiMockServer.stubGetAddressesAndContacts(prisonNumber, addressesAndContacts = addressesAndContacts)
+        mappingApiMockServer.stubGetMappingsFromNomisIds()
         cprApiMock.stubMigrateAddressesAndContacts(
           nomisPrisonNumber = prisonNumber,
           response = SysconAddressesAndContactsResponseBody(
@@ -219,6 +232,207 @@ class CorePersonDataRepairResourceIntTest(
           },
           isNull(),
         )
+      }
+    }
+
+    @Nested
+    inner class HappyPathWithExistingMappings {
+      private val prisonNumber = "A1234KT"
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMockServer.stubGetAddressesAndContacts(prisonNumber = prisonNumber)
+        mappingApiMockServer.stubGetMappingsFromNomisIds(
+          CorePersonMappingsResult(
+            addresses = listOf(
+              CorePersonAddressMappingDto(
+                cprId = "cpr-address-12345",
+                nomisId = 12345,
+                nomisPrisonNumber = prisonNumber,
+                mappingType = CorePersonAddressMappingDto.MappingType.MIGRATED,
+              ),
+            ),
+            addressUsages = listOf(
+              CorePersonAddressUsageMappingDto(
+                cprId = "cpr-usage-10000",
+                nomisId = 10000,
+                addressUsageCode = "HOME",
+                nomisPrisonNumber = prisonNumber,
+                mappingType = CorePersonAddressUsageMappingDto.MappingType.MIGRATED,
+              ),
+            ),
+            contacts = listOf(
+              CorePersonContactMappingDto(
+                cprId = "cpr-phone-20000",
+                nomisId = 20000,
+                nomisContactType = CorePersonContactMappingDto.NomisContactType.PHONE,
+                nomisPrisonNumber = prisonNumber,
+                mappingType = CorePersonContactMappingDto.MappingType.MIGRATED,
+              ),
+              CorePersonContactMappingDto(
+                cprId = "cpr-phone-30000",
+                nomisId = 30000,
+                nomisContactType = CorePersonContactMappingDto.NomisContactType.PHONE,
+                nomisPrisonNumber = prisonNumber,
+                mappingType = CorePersonContactMappingDto.MappingType.MIGRATED,
+              ),
+              CorePersonContactMappingDto(
+                cprId = "cpr-email-40000",
+                nomisId = 40000,
+                nomisContactType = CorePersonContactMappingDto.NomisContactType.EMAIL,
+                nomisPrisonNumber = prisonNumber,
+                mappingType = CorePersonContactMappingDto.MappingType.MIGRATED,
+              ),
+            ),
+          ),
+        )
+        cprApiMock.stubMigrateAddressesAndContacts(
+          nomisPrisonNumber = prisonNumber,
+          response = SysconAddressesAndContactsResponseBody(
+            prisonNumber = prisonNumber,
+            addressesMappings = listOf(
+              SysconAddressMapping(
+                nomisAddressId = 12345,
+                cprAddressId = "cpr-address-12345",
+                addressUsageMappings = listOf(
+                  SysconAddressUsageMapping(
+                    nomisAddressUsageId = 10000,
+                    nomisAddressUsageCode = SysconAddressUsageMapping.NomisAddressUsageCode.HOME,
+                    cprAddressUsageId = "cpr-usage-10000",
+                  ),
+                ),
+                contactMappings = listOf(
+                  SysconContactMapping(
+                    nomisContactId = 20000,
+                    nomisContactType = SysconContactMapping.NomisContactType.HOME,
+                    cprContactId = "cpr-phone-20000",
+                  ),
+                ),
+              ),
+            ),
+            contactMappings = listOf(
+              SysconContactMapping(
+                nomisContactId = 30000,
+                nomisContactType = SysconContactMapping.NomisContactType.MOBILE,
+                cprContactId = "cpr-phone-30000",
+              ),
+              SysconContactMapping(
+                nomisContactId = 40000,
+                nomisContactType = SysconContactMapping.NomisContactType.EMAIL,
+                cprContactId = "cpr-email-40000",
+              ),
+            ),
+          ),
+        )
+        mappingApiMockServer.stubReplaceMappings()
+
+        webTestClient.post().uri("/prisoners/$prisonNumber/core-person/addresses-contacts/repair")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .exchange()
+          .expectStatus().isNoContent
+      }
+
+      @Test
+      fun `will request existing mappings for all the NOMIS ids`() {
+        val request: CorePersonMappingsByNomisIdsRequest =
+          MappingApiExtension.getRequestBody(WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/core-person/mappings/by-nomis-ids")))
+
+        assertThat(request.addresses).containsExactly(12345L)
+        assertThat(request.addressUsages).containsExactly(AddressUsageByNomisIdRequest(10000, "HOME"))
+        assertThat(request.contacts).containsExactlyInAnyOrder(
+          ContactByNomisIdRequest(20000, ContactByNomisIdRequest.NomisContactType.PHONE),
+          ContactByNomisIdRequest(30000, ContactByNomisIdRequest.NomisContactType.PHONE),
+          ContactByNomisIdRequest(40000, ContactByNomisIdRequest.NomisContactType.EMAIL),
+        )
+      }
+
+      @Test
+      fun `will add existing CPR ids to the request sent to CPR`() {
+        val request: PrisonAddressesAndContactsRequest =
+          CorePersonCprApiExtension.getRequestBody(WireMock.postRequestedFor(WireMock.urlPathEqualTo("/syscon-sync/addresses-contacts/$prisonNumber")))
+
+        with(request.addresses.first()) {
+          assertThat(nomisAddressId).isEqualTo(12345L)
+          assertThat(cprAddressId).isEqualTo("cpr-address-12345")
+          with(addressUsage.first()) {
+            assertThat(nomisAddressUsageId).isEqualTo(10000L)
+            assertThat(cprAddressUsageId).isEqualTo("cpr-usage-10000")
+          }
+          with(contacts.first()) {
+            assertThat(nomisContactId).isEqualTo(20000L)
+            assertThat(cprContactId).isEqualTo("cpr-phone-20000")
+          }
+        }
+        val phoneContact = request.contacts.first { it.nomisContactId == 30000L }
+        assertThat(phoneContact.type).isEqualTo(PrisonContact.Type.MOBILE)
+        assertThat(phoneContact.cprContactId).isEqualTo("cpr-phone-30000")
+        val emailContact = request.contacts.first { it.nomisContactId == 40000L }
+        assertThat(emailContact.type).isEqualTo(PrisonContact.Type.EMAIL)
+        assertThat(emailContact.cprContactId).isEqualTo("cpr-email-40000")
+      }
+
+      @Test
+      fun `will replace the mappings returned from CPR`() {
+        val request: CorePersonMappingsDto =
+          MappingApiExtension.getRequestBody(WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/core-person/replace")))
+
+        assertThat(request.mappingType).isEqualTo(CorePersonMappingsDto.MappingType.NOMIS_CREATED)
+        assertThat(request.personMapping.nomisPrisonNumber).isEqualTo(prisonNumber)
+        with(request.addresses.first()) {
+          assertThat(nomisId).isEqualTo(12345L)
+          assertThat(cprId).isEqualTo("cpr-address-12345")
+          assertThat(nomisPrisonNumber).isEqualTo(prisonNumber)
+          assertThat(mappingType).isEqualTo(CorePersonAddressMappingDto.MappingType.NOMIS_CREATED)
+        }
+        with(request.addressUsages.first()) {
+          assertThat(nomisId).isEqualTo(10000L)
+          assertThat(addressUsageCode).isEqualTo("HOME")
+          assertThat(cprId).isEqualTo("cpr-usage-10000")
+          assertThat(mappingType).isEqualTo(CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED)
+        }
+        val contacts = request.contacts
+        assertThat(contacts.filter { it.nomisId == 20000L && it.nomisContactType == CorePersonContactMappingDto.NomisContactType.PHONE && it.cprId == "cpr-phone-20000" }).isNotEmpty()
+        assertThat(contacts.filter { it.nomisId == 30000L && it.nomisContactType == CorePersonContactMappingDto.NomisContactType.PHONE && it.cprId == "cpr-phone-30000" }).isNotEmpty()
+        assertThat(contacts.filter { it.nomisId == 40000L && it.nomisContactType == CorePersonContactMappingDto.NomisContactType.EMAIL && it.cprId == "cpr-email-40000" }).isNotEmpty()
+      }
+    }
+
+    @Nested
+    inner class HappyPathWithNoExistingMappings {
+      private val prisonNumber = "A1234KT"
+
+      @BeforeEach
+      fun setUp() {
+        nomisApiMockServer.stubGetAddressesAndContacts(prisonNumber = prisonNumber)
+        mappingApiMockServer.stubGetMappingsFromNomisIds()
+        cprApiMock.stubMigrateAddressesAndContacts(nomisPrisonNumber = prisonNumber)
+        mappingApiMockServer.stubReplaceMappings()
+
+        webTestClient.post().uri("/prisoners/$prisonNumber/core-person/addresses-contacts/repair")
+          .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
+          .exchange()
+          .expectStatus().isNoContent
+      }
+
+      @Test
+      fun `will send the request to CPR without any CPR ids`() {
+        val request: PrisonAddressesAndContactsRequest =
+          CorePersonCprApiExtension.getRequestBody(WireMock.postRequestedFor(WireMock.urlPathEqualTo("/syscon-sync/addresses-contacts/$prisonNumber")))
+
+        with(request.addresses.single()) {
+          assertThat(nomisAddressId).isEqualTo(12345L)
+          assertThat(cprAddressId).isNull()
+          with(addressUsage.single()) {
+            assertThat(nomisAddressUsageId).isEqualTo(10000L)
+            assertThat(cprAddressUsageId).isNull()
+          }
+          with(contacts.single()) {
+            assertThat(nomisContactId).isEqualTo(20000L)
+            assertThat(cprContactId).isNull()
+          }
+        }
+        assertThat(request.contacts.map { it.nomisContactId }).containsExactlyInAnyOrder(30000L, 40000L)
+        assertThat(request.contacts.map { it.cprContactId }).containsOnlyNulls()
       }
     }
 
