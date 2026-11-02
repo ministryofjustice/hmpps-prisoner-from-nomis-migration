@@ -125,7 +125,7 @@ class MigrateDeadLetterQueueResource(
       ),
     ],
   )
-  suspend fun deleteDlqMessages(
+  suspend fun deleteAllDlqMessages(
     @PathVariable @Schema(description = "Migration Type") migrationType: MigrationType,
   ) = migrationType.getQueue().run {
     hmppsQueueService.purgeQueue(PurgeQueueRequest(this.dlqName!!, this.sqsDlqClient!!, this.dlqUrl!!))
