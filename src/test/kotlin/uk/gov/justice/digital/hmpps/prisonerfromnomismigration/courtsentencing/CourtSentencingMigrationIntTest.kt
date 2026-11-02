@@ -17,6 +17,7 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
+import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -428,6 +429,47 @@ class CourtSentencingMigrationIntTest(
           isNull(),
         )
         dpsCourtSentencingServer.verify(0, putRequestedFor(anyUrl()))
+      }
+    }
+
+    @Nested
+    inner class DpsUpdateFailure {
+      @BeforeEach
+      internal fun setUp() {
+        courtSentencingNomisApiMockServer.stubGetCourtEventChargeIds(
+          listOf(CourtEventChargeIdResponse(eventId = NOMIS_APPEARANCE_1_ID, offenderChargeId = NOMIS_CHARGE_1_ID)),
+        )
+        courtSentencingNomisApiMockServer.stubGetCourtEventChargeForMigration(
+          eventId = NOMIS_APPEARANCE_1_ID,
+          offenderChargeId = NOMIS_CHARGE_1_ID,
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(NOMIS_APPEARANCE_1_ID, DPS_APPEARANCE_1_ID)
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(NOMIS_CHARGE_1_ID, DPS_CHARGE_1_ID)
+        dpsCourtSentencingServer.stubPutAppearanceChargeForUpdateError(DPS_CHARGE_1_ID, DPS_APPEARANCE_1_ID)
+      }
+
+      @Test
+      internal fun `will track a failure with a reason when DPS rejects the update`() {
+        webTestClient.performMigration()
+
+        // the message is retried by SQS until it is moved to the DLQ, so the failure telemetry
+        // is tracked at least once (potentially several times across retries)
+        verify(telemetryClient, atLeastOnce()).trackEvent(
+          eq("court-event-charge-migration-entity-failed"),
+          check {
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_APPEARANCE_1_ID.toString())
+            assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_CHARGE_1_ID.toString())
+            assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_1_ID)
+            assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_APPEARANCE_1_ID)
+            assertThat(it["reason"]).isNotBlank()
+          },
+          isNull(),
+        )
+        verify(telemetryClient, times(0)).trackEvent(
+          eq("court-event-charge-migration-entity-migrated"),
+          any(),
+          isNull(),
+        )
       }
     }
   }

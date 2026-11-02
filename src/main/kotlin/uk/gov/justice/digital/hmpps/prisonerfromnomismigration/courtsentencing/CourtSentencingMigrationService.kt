@@ -63,11 +63,24 @@ class CourtSentencingMigrationService(
       eventId = eventId,
       offenderChargeId = offenderChargeId,
     )
-    courtSentencingDpsService.updateCourtCharge(
-      chargeId = chargeMapping.dpsCourtChargeId,
-      appearanceId = appearanceMapping.dpsCourtAppearanceId,
-      charge = nomisCharge.toDpsCharge(),
-    )
+    try {
+      courtSentencingDpsService.updateCourtCharge(
+        chargeId = chargeMapping.dpsCourtChargeId,
+        appearanceId = appearanceMapping.dpsCourtAppearanceId,
+        charge = nomisCharge.toDpsCharge(),
+      )
+    } catch (e: Exception) {
+      telemetryClient.trackEvent(
+        "court-event-charge-migration-entity-failed",
+        telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("dpsCourtAppearanceId" to appearanceMapping.dpsCourtAppearanceId) + (
+          "reason" to (
+            e.message
+              ?: e.javaClass.name
+            )
+          ),
+      )
+      throw e
+    }
     telemetryClient.trackEvent(
       "court-event-charge-migration-entity-migrated",
       telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("dpsCourtAppearanceId" to appearanceMapping.dpsCourtAppearanceId),
