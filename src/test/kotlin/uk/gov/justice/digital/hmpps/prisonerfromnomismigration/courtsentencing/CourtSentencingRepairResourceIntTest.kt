@@ -7,7 +7,6 @@ import com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
-import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.untilAsserted
@@ -35,7 +34,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateSentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationSentenceId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtOrderResponse
 import java.time.LocalDate
@@ -58,112 +56,6 @@ class CourtSentencingRepairResourceIntTest(
   @Autowired private val courtSentencingMappingApiMockServer: CourtSentencingMappingApiMockServer,
   @Autowired private val courtSentencingNomisApiMockServer: CourtSentencingNomisApiMockServer,
 ) : CourtSentencingIntegrationTestBase() {
-
-  @Nested
-  @DisplayName("POST /prisoners/{offenderNo}/court-sentencing/court-cases/repair")
-  inner class RepairCourtCases {
-    val offenderNo = "A1234KT"
-
-    @Nested
-    inner class Security {
-
-      @Test
-      internal fun `must have valid token`() {
-        webTestClient.post().uri("/prisoners/{offenderNo}/court-sentencing/court-cases/repair", offenderNo)
-          .header("Content-Type", "application/json")
-          .exchange()
-          .expectStatus().isUnauthorized
-      }
-
-      @Test
-      internal fun `must have correct role`() {
-        webTestClient.post().uri("/prisoners/{offenderNo}/court-sentencing/court-cases/repair", offenderNo)
-          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
-          .header("Content-Type", "application/json")
-          .exchange()
-          .expectStatus().isForbidden
-      }
-    }
-
-    @Nested
-    inner class HappyPath {
-
-      @BeforeEach
-      internal fun setup() {
-        courtSentencingNomisApiMockServer.stubGetCourtCasesByOffender(offenderNo)
-        dpsCourtSentencingServer.stubPostCourtCasesForCreateMigration(response = dpsMigrationCreateResponse())
-        courtSentencingMappingApiMockServer.stubPostMigrationMapping()
-
-        webTestClient.post().uri("/prisoners/{offenderNo}/court-sentencing/court-cases/repair", offenderNo)
-          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
-          .header("Content-Type", "application/json")
-          .exchange()
-          .expectStatus().isOk
-      }
-
-      @Test
-      fun `will re-migrate case to DPS`() {
-        dpsCourtSentencingServer.verify(
-          postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam(
-            "deleteExisting",
-            equalTo("true"),
-          ),
-        )
-      }
-
-      @Test
-      fun `will recreate mappings`() {
-        val mapping: CourtCaseBatchMappingDto =
-          CourtSentencingMappingApiMockServer.getRequestBody(postRequestedFor(urlPathMatching("/mapping/court-sentencing/prisoner/$offenderNo/court-cases")))
-        assertThat(mapping.label).hasSize(19)
-      }
-    }
-
-    @Nested
-    inner class HappyPathWithTransientError {
-
-      @BeforeEach
-      internal fun setup() {
-        courtSentencingNomisApiMockServer.stubGetCourtCasesByOffender(offenderNo)
-        dpsCourtSentencingServer.stubPostCourtCasesForCreateMigration(response = dpsMigrationCreateResponse())
-        courtSentencingMappingApiMockServer.stubPostMigrationMappingFailureFollowedBySuccess()
-
-        webTestClient.post().uri("/prisoners/{offenderNo}/court-sentencing/court-cases/repair", offenderNo)
-          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
-          .header("Content-Type", "application/json")
-          .exchange()
-          .expectStatus().isOk
-
-        await untilAsserted {
-          courtSentencingMappingApiMockServer.verify(
-            2,
-            postRequestedFor(urlPathMatching("/mapping/court-sentencing/prisoner/$offenderNo/court-cases")),
-
-          )
-        }
-      }
-
-      @Test
-      fun `will re-migrate case to DPS`() {
-        dpsCourtSentencingServer.verify(
-          1,
-          postRequestedFor(urlPathEqualTo("/legacy/court-case/migration")).withQueryParam(
-            "deleteExisting",
-            equalTo("true"),
-          ),
-        )
-      }
-
-      @Test
-      fun `will recreate mappings retying twice`() {
-        courtSentencingMappingApiMockServer.verify(
-          2,
-          postRequestedFor(urlPathMatching("/mapping/court-sentencing/prisoner/$offenderNo/court-cases")),
-
-        )
-      }
-    }
-  }
 
   @Nested
   @DisplayName("PUT /prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/court-cases/{caseId}/status/repair")

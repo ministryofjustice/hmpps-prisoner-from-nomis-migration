@@ -293,6 +293,7 @@ fun CourtEventChargeResponse.toDpsCharge() = LegacyUpdateCharge(
   performedByUser = this.modifiedByUsername ?: this.createdByUsername,
   // offenceCode has been added here - it cannot change as part of an court_event_charge update but race conditions make the latest value necessary
   offenceCode = this.offenderCharge.offence.offenceCode,
+  value = this.propertyValue,
 )
 
 fun CourtEventChargeResponse.toDpsMigrationCharge(
