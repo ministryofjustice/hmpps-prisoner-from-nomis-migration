@@ -5,17 +5,24 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.ParentEntityNotFoundRetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AddressUsageByNomisIdRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactByNomisIdRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactByNomisIdRequest.NomisContactType.EMAIL
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactByNomisIdRequest.NomisContactType.PHONE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -32,13 +39,18 @@ class CorePersonSynchronisationAddressContactService(
   private companion object {
     private val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
+  suspend fun prisonAddressesAndContactsRequest(prisonNumber: String): PrisonAddressesAndContactsRequest {
+    val nomisAddressesAndContacts = corePersonNomisApiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = prisonNumber)
+    val existingMappingsRequest = mappingsRequest(nomisAddressesAndContacts)
+    val existingMappings = corePersonMappingService.getMappingsFromNomisIds(existingMappingsRequest)
+    return nomisAddressesAndContacts.toMigrateAddressesAndContactsRequest(existingMappings)
+  }
 
   suspend fun resynchroniseAddressesAndContacts(prisonNumber: String) {
-    val addressesAndContacts = corePersonNomisApiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = prisonNumber)
     val mapping = corePersonCprApiService.migrateCorePersonAddressesAndContacts(
       prisonNumber,
-      addressesAndContacts.toMigrateAddressesAndContactsRequest(),
-    ).toCorePersonMappingsDto(migrationType = CorePersonMappingsDto.MappingType.NOMIS_CREATED)
+      prisonAddressesAndContactsRequest(prisonNumber),
+    ).toCorePersonMappingsDto(migrationType = NOMIS_CREATED)
     corePersonMappingService.replaceMappings(mapping)
   }
 
@@ -557,7 +569,6 @@ class CorePersonSynchronisationAddressContactService(
         telemetryClient.trackEvent("coreperson-address-usage-mapping-synchronisation-created", retryMessage.telemetryAttributes)
       }
   }
-
   private suspend fun createAddressUsageMapping(mapping: CorePersonAddressUsageMappingDto) {
     corePersonMappingService.createAddressUsageMapping(mapping).takeIf { it.isError }?.also {
       with(it.errorResponse!!.moreInfo) {
@@ -576,5 +587,23 @@ class CorePersonSynchronisationAddressContactService(
         )
       }
     }
+  }
+
+  private fun mappingsRequest(addressContact: CorePersonAddressContact): CorePersonMappingsByNomisIdsRequest {
+    val addresses = addressContact.addresses ?: emptyList()
+    val addressByNomisIdRequest = addresses.map { it.addressId }
+    val addressUsages = addresses.flatMap { address -> address.usages ?: emptyList() }
+    val addressUsageByNomisIdRequests = addressUsages.map { AddressUsageByNomisIdRequest(it.addressId, it.usage) }
+    val addressPhoneNumbers = addresses.flatMap { address -> address.phoneNumbers ?: emptyList() }
+    val phoneNumbers = addressContact.phoneNumbers ?: emptyList()
+    val emailAddresses = addressContact.emailAddresses ?: emptyList()
+    val contactByNomisIdRequests = addressPhoneNumbers.map { ContactByNomisIdRequest(it.phoneId, PHONE) } +
+      phoneNumbers.map { ContactByNomisIdRequest(it.phoneId, PHONE) } +
+      emailAddresses.map { ContactByNomisIdRequest(it.emailAddressId, EMAIL) }
+    return CorePersonMappingsByNomisIdsRequest(
+      addresses = addressByNomisIdRequest,
+      addressUsages = addressUsageByNomisIdRequests,
+      contacts = contactByNomisIdRequests,
+    )
   }
 }
