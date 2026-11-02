@@ -1,27 +1,8 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import com.microsoft.applicationinsights.TelemetryClient
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateChargeResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearanceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCases
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCasesResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreatePeriodLengthResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateSentenceResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtAppearanceMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseBatchMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtCaseMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CourtChargeMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.SentenceTermMappingDto
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @Service
 class CourtSentencingRepairService(
@@ -31,21 +12,6 @@ class CourtSentencingRepairService(
   private val mappingApiService: CourtSentencingMappingApiService,
   private val telemetryClient: TelemetryClient,
 ) {
-  suspend fun resynchronisePrisonerCourtCases(offenderNo: String) {
-    synchronisePrisonerCases(
-      offenderNo = offenderNo,
-      migrationId = LocalDateTime.now().withNano(0).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-    ) {
-      telemetryClient.trackEvent(
-        "court-sentencing-prisoner-cases-repaired",
-        mapOf(
-          "offenderNo" to offenderNo,
-        ),
-        null,
-      )
-    }
-  }
-
   suspend fun resynchronisePrisonerCourtCaseStatus(offenderNo: String, bookingId: Long, caseId: Long) {
     courtSentencingSynchronisationService.nomisCourtCaseUpdated(
       CourtCaseEvent(
@@ -377,108 +343,4 @@ class CourtSentencingRepairService(
       null,
     )
   }
-
-  suspend fun synchronisePrisonerCases(offenderNo: String, migrationId: String, onSuccess: () -> Unit) {
-    val nomisCourtCases = nomisApiService.getCourtCasesForMigration(offenderNo = offenderNo)
-    val dpsCases = nomisCourtCases.map { it.toMigrationDpsCourtCase() }
-    dpsApiService.createCourtCaseMigration(
-      MigrationCreateCourtCases(
-        prisonerId = offenderNo,
-        courtCases = dpsCases,
-      ),
-      deleteExisting = true,
-    )
-      .also { dpsCourtCaseCreateResponse ->
-        createMigrationMapping(
-          offenderNo = offenderNo,
-          dpsCourtCasesCreateResponse = dpsCourtCaseCreateResponse,
-          migrationId = migrationId,
-        )
-        onSuccess()
-      }
-  }
-
-  private suspend fun createMigrationMapping(
-    offenderNo: String,
-    dpsCourtCasesCreateResponse: MigrationCreateCourtCasesResponse,
-    migrationId: String,
-  ) {
-    val mapping = CourtCaseBatchMappingDto(
-      courtCases = buildCourtCaseMapping(dpsCourtCasesCreateResponse.courtCases),
-      courtCharges = buildCourtChargeMapping(dpsCourtCasesCreateResponse.charges),
-      courtAppearances = buildCourtAppearanceMapping(dpsCourtCasesCreateResponse.appearances),
-      sentences = buildSentenceMapping(dpsCourtCasesCreateResponse.sentences),
-      sentenceTerms = buildSentenceTermMapping(dpsCourtCasesCreateResponse.sentenceTerms),
-      label = migrationId,
-      mappingType = CourtCaseBatchMappingDto.MappingType.MIGRATED,
-    )
-
-    try {
-      mappingApiService.createMapping(
-        offenderNo = offenderNo,
-        mapping,
-        object : ParameterizedTypeReference<DuplicateErrorResponse<CourtCaseBatchMappingDto>>() {},
-      ).also {
-        if (it.isError) {
-          telemetryClient.trackEvent(
-            "nomis-migration-court-sentencing-duplicate",
-            mapOf<String, String>(
-              "migrationId" to migrationId,
-              "offenderId" to offenderNo,
-            ),
-            null,
-          )
-        }
-      }
-    } catch (e: Exception) {
-      log.error("Failed to create mapping for Offender No: $offenderNo", e)
-      throw e
-    }
-  }
-
-  // dependent on court appearance order back from dps to match nomis
-  private fun buildCourtAppearanceMapping(responseMappings: List<MigrationCreateCourtAppearanceResponse>): List<CourtAppearanceMappingDto> = responseMappings.map {
-    CourtAppearanceMappingDto(
-      nomisCourtAppearanceId = it.eventId,
-      dpsCourtAppearanceId = it.appearanceUuid.toString(),
-      mappingType = CourtAppearanceMappingDto.MappingType.MIGRATED,
-    )
-  }
-
-  private fun buildCourtChargeMapping(responseMappings: List<MigrationCreateChargeResponse>): List<CourtChargeMappingDto> = responseMappings.map {
-    CourtChargeMappingDto(
-      nomisCourtChargeId = it.chargeNOMISId,
-      dpsCourtChargeId = it.chargeUuid.toString(),
-      mappingType = CourtChargeMappingDto.MappingType.MIGRATED,
-    )
-  }
-
-  private fun buildSentenceMapping(responseMappings: List<MigrationCreateSentenceResponse>): List<SentenceMappingDto> = responseMappings.map {
-    SentenceMappingDto(
-      nomisSentenceSequence = it.sentenceNOMISId.sequence,
-      nomisBookingId = it.sentenceNOMISId.offenderBookingId,
-      dpsSentenceId = it.sentenceUuid.toString(),
-      mappingType = SentenceMappingDto.MappingType.MIGRATED,
-    )
-  }
-
-  private fun buildSentenceTermMapping(responseMappings: List<MigrationCreatePeriodLengthResponse>): List<SentenceTermMappingDto> = responseMappings.map {
-    SentenceTermMappingDto(
-      nomisSentenceSequence = it.sentenceTermNOMISId.sentenceSequence,
-      nomisBookingId = it.sentenceTermNOMISId.offenderBookingId,
-      dpsTermId = it.periodLengthUuid.toString(),
-      nomisTermSequence = it.sentenceTermNOMISId.termSequence,
-      mappingType = SentenceTermMappingDto.MappingType.MIGRATED,
-    )
-  }
-
-  private fun buildCourtCaseMapping(responseMappings: List<MigrationCreateCourtCaseResponse>): List<CourtCaseMappingDto> = responseMappings.map {
-    CourtCaseMappingDto(
-      nomisCourtCaseId = it.caseId,
-      dpsCourtCaseId = it.courtCaseUuid,
-      mappingType = CourtCaseMappingDto.MappingType.MIGRATED,
-    )
-  }
 }
-
-private val log: Logger = LoggerFactory.getLogger(CourtSentencingRepairService::class.java)
