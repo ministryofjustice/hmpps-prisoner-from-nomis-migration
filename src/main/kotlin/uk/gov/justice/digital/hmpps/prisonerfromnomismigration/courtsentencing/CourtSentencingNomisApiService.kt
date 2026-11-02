@@ -11,10 +11,12 @@ import org.springframework.web.reactive.function.client.awaitBody
 import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.CourtSentencingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageCourtEventChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PostPrisonerMergeCaseChanges
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
@@ -25,6 +27,8 @@ import java.time.LocalDate
 
 @Service
 class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
+  private val api = CourtSentencingResourceApi(webClient)
+
   suspend fun getCourtCase(offenderNo: String, courtCaseId: Long): CourtCaseResponse = webClient.get()
     .uri(
       "/prisoners/{offenderNo}/sentencing/court-cases/{courtCaseId}",
@@ -223,4 +227,16 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     )
     .retrieve()
     .awaitBody()
+
+  suspend fun getCourtEventChargeIdsWithPropertyValue(
+    page: Int = 0,
+    size: Int = 20,
+    sort: List<String>? = null,
+  ): PageCourtEventChargeIdResponse = api
+    .getCourtEventChargeIdsWithPropertyValue(page = page, size = size, sort = sort)
+    .awaitSingle()
+
+  suspend fun getCourtEventChargeForMigration(eventId: Long, offenderChargeId: Long): CourtEventChargeResponse = api
+    .getCourtEventChargeForMigration(chargeId = offenderChargeId, eventId = eventId)
+    .awaitSingle()
 }

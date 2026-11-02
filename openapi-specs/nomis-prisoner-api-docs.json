@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-10-30.2338.6238d58"
+    "version": "2026-11-02.2341.b0a2e6b"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -25171,12 +25171,12 @@
         }, {
           "name" : "activeOnly",
           "in" : "query",
-          "description" : "whether to return just active advances",
+          "description": "whether to return just active scheduled payments",
           "required" : false,
           "schema" : {
             "type" : "boolean",
             "default" : false,
-            "description" : "whether to return just active advances",
+            "description": "whether to return just active scheduled payments",
             "example" : true
           },
           "example" : true
@@ -25653,12 +25653,12 @@
         }, {
           "name" : "activeOnly",
           "in" : "query",
-          "description" : "whether to return just active advances",
+          "description": "whether to return just active scheduled payments",
           "required" : false,
           "schema" : {
             "type" : "boolean",
             "default" : false,
-            "description" : "whether to return just active advances",
+            "description": "whether to return just active scheduled payments",
             "example" : true
           },
           "example" : true
@@ -47697,6 +47697,14 @@
             "type" : [ "integer", "null" ],
             "format" : "int64"
           },
+          "txnId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "txnEntrySeq": {
+            "type": "integer",
+            "format": "int32"
+          },
           "txnEntryDate" : {
             "type" : "string",
             "format" : "date-time"
@@ -47709,14 +47717,6 @@
           },
           "txnEntryAmount" : {
             "type" : "number"
-          },
-          "txnId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "txnEntrySeq" : {
-            "type" : "integer",
-            "format" : "int32"
           }
         },
         "required" : [ "txnEntryAmount", "txnEntryDate", "txnEntrySeq", "txnId" ]

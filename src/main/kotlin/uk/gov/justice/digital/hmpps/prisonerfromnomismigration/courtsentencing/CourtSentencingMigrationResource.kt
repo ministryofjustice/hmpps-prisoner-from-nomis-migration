@@ -5,7 +5,6 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.tags.Tag
-import jakarta.validation.Valid
 import org.springframework.http.HttpStatus.ACCEPTED
 import org.springframework.http.HttpStatus.OK
 import org.springframework.http.MediaType
@@ -13,7 +12,6 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
@@ -30,16 +28,8 @@ class CourtSentencingMigrationResource(
   @PostMapping("/court-sentencing")
   @ResponseStatus(value = ACCEPTED)
   @Operation(
-    summary = "Starts a court case migration",
+    summary = "Starts a court charge migration",
     description = "Starts an asynchronous migration process. This operation will return immediately and the migration will be performed asynchronously. Requires role <b>PRISONER_FROM_NOMIS__MIGRATION__RW</b>",
-    requestBody = io.swagger.v3.oas.annotations.parameters.RequestBody(
-      content = [
-        Content(
-          mediaType = "application/json",
-          schema = Schema(implementation = CourtSentencingMigrationFilter::class),
-        ),
-      ],
-    ),
     responses = [
       ApiResponse(
         responseCode = "202",
@@ -62,10 +52,7 @@ class CourtSentencingMigrationResource(
       ),
     ],
   )
-  suspend fun migrateCourtSentencing(
-    @RequestBody @Valid
-    migrationFilter: CourtSentencingMigrationFilter,
-  ) = courtSentencingMigrationService.startMigration(migrationFilter)
+  suspend fun migrateCourtSentencing() = courtSentencingMigrationService.startMigration(Any())
 
   @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW')")
   @GetMapping("/court-sentencing/offender-payload/{offenderNo}")
