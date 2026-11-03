@@ -61,10 +61,7 @@ class CourtSentencingMigrationService(
     migrationFilter: Any,
     pageSize: Long,
     pageNumber: Long,
-  ): List<CourtEventChargeIdResponse> = courtSentencingNomisApiService.getCourtEventChargeIdsWithPropertyValue(
-    page = pageNumber.toInt(),
-    size = pageSize.toInt(),
-  ).content ?: emptyList()
+  ): List<CourtEventChargeIdResponse> = throw UnsupportedOperationException("Parallel id ranges are not used by this migration")
 
   override suspend fun getTotalNumberOfIds(migrationFilter: Any): Long = 0
 
