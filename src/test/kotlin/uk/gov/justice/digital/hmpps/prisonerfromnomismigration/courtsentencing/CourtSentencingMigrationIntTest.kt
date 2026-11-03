@@ -17,7 +17,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -32,7 +31,6 @@ import org.springframework.test.web.reactive.server.returnResult
 import org.springframework.web.reactive.function.BodyInserter
 import org.springframework.web.reactive.function.BodyInserters
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension.Companion.dpsCourtSentencingServer
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.LegacyUpdateCharge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtAppearanceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCaseResponse
@@ -116,8 +114,6 @@ class CourtSentencingMigrationIntTest(
       )
     }
 
-    private fun updateChargeUrl(dpsChargeId: String, dpsAppearanceId: String) = "/legacy/charge/$dpsChargeId/appearance/$dpsAppearanceId"
-
     @Nested
     inner class Security {
       @Test
@@ -156,7 +152,6 @@ class CourtSentencingMigrationIntTest(
         )
         courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(NOMIS_APPEARANCE_1_ID, DPS_APPEARANCE_1_ID)
         courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(NOMIS_CHARGE_1_ID, DPS_CHARGE_1_ID)
-        dpsCourtSentencingServer.stubPutAppearanceChargeForUpdate(DPS_CHARGE_1_ID, DPS_APPEARANCE_1_ID)
       }
 
       @Test
@@ -175,17 +170,10 @@ class CourtSentencingMigrationIntTest(
       }
 
       @Test
-      internal fun `will update the charge in DPS including the property value`() {
+      internal fun `will not update DPS while the migration is a dry run`() {
         webTestClient.performMigration()
 
-        dpsCourtSentencingServer.verify(
-          1,
-          putRequestedFor(urlEqualTo(updateChargeUrl(DPS_CHARGE_1_ID, DPS_APPEARANCE_1_ID))),
-        )
-        val request: LegacyUpdateCharge = CourtSentencingDpsApiExtension.getRequestBody(
-          putRequestedFor(urlEqualTo(updateChargeUrl(DPS_CHARGE_1_ID, DPS_APPEARANCE_1_ID))),
-        )
-        assertThat(request.value).isEqualByComparingTo(BigDecimal("123.45"))
+        dpsCourtSentencingServer.verify(0, putRequestedFor(anyUrl()))
       }
 
       @Test
@@ -244,30 +232,14 @@ class CourtSentencingMigrationIntTest(
             it.offenderChargeId,
             "a04f7a8d-61aa-${it.offenderChargeId}c-9395-f4dc62f36ab0",
           )
-          dpsCourtSentencingServer.stubPutAppearanceChargeForUpdate(
-            "a04f7a8d-61aa-${it.offenderChargeId}c-9395-f4dc62f36ab0",
-            "a04f7a8d-61aa-${it.eventId}a-9395-f4dc62f36ab0",
-          )
         }
       }
 
       @Test
-      internal fun `will update every charge in DPS`() {
+      internal fun `will migrate every charge without updating DPS`() {
         webTestClient.performMigration()
 
-        charges.forEach {
-          dpsCourtSentencingServer.verify(
-            1,
-            putRequestedFor(
-              urlEqualTo(
-                updateChargeUrl(
-                  "a04f7a8d-61aa-${it.offenderChargeId}c-9395-f4dc62f36ab0",
-                  "a04f7a8d-61aa-${it.eventId}a-9395-f4dc62f36ab0",
-                ),
-              ),
-            ),
-          )
-        }
+        dpsCourtSentencingServer.verify(0, putRequestedFor(anyUrl()))
         verify(telemetryClient, times(charges.size)).trackEvent(
           eq("court-event-charge-migration-entity-migrated"),
           any(),
@@ -299,10 +271,6 @@ class CourtSentencingMigrationIntTest(
             it.offenderChargeId,
             "a04f7a8d-61aa-${it.offenderChargeId}c-9395-f4dc62f36ab0",
           )
-          dpsCourtSentencingServer.stubPutAppearanceChargeForUpdate(
-            "a04f7a8d-61aa-${it.offenderChargeId}c-9395-f4dc62f36ab0",
-            "a04f7a8d-61aa-${it.eventId}a-9395-f4dc62f36ab0",
-          )
         }
       }
 
@@ -320,19 +288,7 @@ class CourtSentencingMigrationIntTest(
         nomisApi.verify(1, idsFrom(charges[13].offenderChargeId, charges[13].eventId))
         nomisApi.verify(3, getRequestedFor(urlPathEqualTo("/court-event-charges/ids/all-from-id")))
 
-        charges.forEach {
-          dpsCourtSentencingServer.verify(
-            1,
-            putRequestedFor(
-              urlEqualTo(
-                updateChargeUrl(
-                  "a04f7a8d-61aa-${it.offenderChargeId}c-9395-f4dc62f36ab0",
-                  "a04f7a8d-61aa-${it.eventId}a-9395-f4dc62f36ab0",
-                ),
-              ),
-            ),
-          )
-        }
+        dpsCourtSentencingServer.verify(0, putRequestedFor(anyUrl()))
         verify(telemetryClient, times(charges.size)).trackEvent(
           eq("court-event-charge-migration-entity-migrated"),
           any(),
@@ -418,47 +374,6 @@ class CourtSentencingMigrationIntTest(
           isNull(),
         )
         dpsCourtSentencingServer.verify(0, putRequestedFor(anyUrl()))
-      }
-    }
-
-    @Nested
-    inner class DpsUpdateFailure {
-      @BeforeEach
-      internal fun setUp() {
-        courtSentencingNomisApiMockServer.stubGetCourtEventChargeIds(
-          listOf(CourtEventChargeIdResponse(eventId = NOMIS_APPEARANCE_1_ID, offenderChargeId = NOMIS_CHARGE_1_ID)),
-        )
-        courtSentencingNomisApiMockServer.stubGetCourtEventChargeForMigration(
-          eventId = NOMIS_APPEARANCE_1_ID,
-          offenderChargeId = NOMIS_CHARGE_1_ID,
-        )
-        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(NOMIS_APPEARANCE_1_ID, DPS_APPEARANCE_1_ID)
-        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(NOMIS_CHARGE_1_ID, DPS_CHARGE_1_ID)
-        dpsCourtSentencingServer.stubPutAppearanceChargeForUpdateError(DPS_CHARGE_1_ID, DPS_APPEARANCE_1_ID)
-      }
-
-      @Test
-      internal fun `will track a failure with a reason when DPS rejects the update`() {
-        webTestClient.performMigration()
-
-        // the message is retried by SQS until it is moved to the DLQ, so the failure telemetry
-        // is tracked at least once (potentially several times across retries)
-        verify(telemetryClient, atLeastOnce()).trackEvent(
-          eq("court-event-charge-migration-entity-failed"),
-          check {
-            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_APPEARANCE_1_ID.toString())
-            assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_CHARGE_1_ID.toString())
-            assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_1_ID)
-            assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_APPEARANCE_1_ID)
-            assertThat(it["reason"]).isNotBlank()
-          },
-          isNull(),
-        )
-        verify(telemetryClient, times(0)).trackEvent(
-          eq("court-event-charge-migration-entity-migrated"),
-          any(),
-          isNull(),
-        )
       }
     }
   }
