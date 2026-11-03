@@ -9,10 +9,13 @@ import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.MigrationCreateCourtCases
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastIdMigrationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.PaginatedSimpleMigrationService
 
 @Service
 class CourtSentencingMigrationService(
@@ -22,23 +25,53 @@ class CourtSentencingMigrationService(
   private val courtSentencingDpsService: CourtSentencingDpsApiService,
   jsonMapper: JsonMapper,
   @Value("\${courtsentencing.page.size:1000}") pageSize: Long,
+  @Value("\${courtsentencing.parallel.count:0}") getIdsParallelCount: Int,
   @Value("\${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value("\${complete-check.count}") completeCheckCount: Int,
-) : PaginatedSimpleMigrationService<CourtEventChargeIdResponse>(
-  mappingApiWebClient = mappingApiWebClient,
+) : ByLastIdMigrationService<Any, CourtEventChargeIdResponse, Any>(
+  // no mapping api is used for this type of migration - placeholder implementation
+  mappingService = object : MigrationMapping<Any>(domainUrl = "", webClient = mappingApiWebClient) {},
   migrationType = MigrationType.COURT_SENTENCING,
   pageSize = pageSize,
+  getIdsParallelCount = getIdsParallelCount,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
   completeCheckCount = completeCheckCount,
   jsonMapper = jsonMapper,
 ) {
 
-  override suspend fun getIds(pageSize: Long, pageNumber: Long): List<CourtEventChargeIdResponse> = courtSentencingNomisApiService.getCourtEventChargeIdsWithPropertyValue(
+  override suspend fun getPageOfIdsFromId(
+    lastId: CourtEventChargeIdResponse?,
+    migrationFilter: Any,
+    pageSize: Long,
+  ): List<CourtEventChargeIdResponse> = courtSentencingNomisApiService.getCourtEventChargeIdsWithPropertyValueFromId(
+    lastOffenderChargeId = lastId?.offenderChargeId ?: 0,
+    lastEventId = lastId?.eventId ?: 0,
+    pageSize = pageSize.toInt(),
+  ).courtEventChargeIds
+
+  // ids are returned in ascending offenderChargeId/eventId order; a null second id is the open-ended end of the range
+  override fun compare(first: CourtEventChargeIdResponse, second: CourtEventChargeIdResponse?): Int = if (second == null) {
+    -1
+  } else {
+    compareValuesBy(first, second, { it.offenderChargeId }, { it.eventId })
+  }
+
+  // only used to seed parallel ranges (parallel count > 1)
+  override suspend fun getPageOfIds(
+    migrationFilter: Any,
+    pageSize: Long,
+    pageNumber: Long,
+  ): List<CourtEventChargeIdResponse> = courtSentencingNomisApiService.getCourtEventChargeIdsWithPropertyValue(
     page = pageNumber.toInt(),
     size = pageSize.toInt(),
   ).content ?: emptyList()
 
-  override suspend fun getTotalCount(): Long = courtSentencingNomisApiService.getCourtEventChargeIdsWithPropertyValue(page = 0, size = 1).totalElements ?: 0
+  override suspend fun getTotalNumberOfIds(migrationFilter: Any): Long = 0
+
+  // uses mapping service in super class - will prevent that call
+  override suspend fun getMigrationCount(migrationId: String): Long = 0
+
+  override suspend fun retryCreateMapping(context: MigrationContext<Any>) {}
 
   override suspend fun migrateNomisEntity(context: MigrationContext<CourtEventChargeIdResponse>) {
     val eventId = context.body.eventId
@@ -95,6 +128,12 @@ class CourtSentencingMigrationService(
       courtCases = dpsCases,
     )
   }
+
+  override fun parseContextFilter(json: String): MigrationMessage<*, Any> = jsonMapper.readValue(json)
+
+  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<Any, ByLastId<CourtEventChargeIdResponse>>> = jsonMapper.readValue(json)
+
+  override fun parseContextMapping(json: String): MigrationMessage<*, Any> = jsonMapper.readValue(json)
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, CourtEventChargeIdResponse> = jsonMapper.readValue(json)
 }

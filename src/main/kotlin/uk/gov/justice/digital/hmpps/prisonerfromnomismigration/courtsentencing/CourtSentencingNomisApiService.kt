@@ -13,6 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.CourtSentencingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeIdsWithLast
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
@@ -234,6 +235,18 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     sort: List<String>? = null,
   ): PageCourtEventChargeIdResponse = api
     .getCourtEventChargeIdsWithPropertyValue(page = page, size = size, sort = sort)
+    .awaitSingle()
+
+  suspend fun getCourtEventChargeIdsWithPropertyValueFromId(
+    lastOffenderChargeId: Long = 0,
+    lastEventId: Long = 0,
+    pageSize: Int = 20,
+  ): CourtEventChargeIdsWithLast = api
+    .getCourtEventChargeIdsWithPropertyValueFromId(
+      offenderChargeId = lastOffenderChargeId,
+      eventId = lastEventId,
+      pageSize = pageSize,
+    )
     .awaitSingle()
 
   suspend fun getCourtEventChargeForMigration(eventId: Long, offenderChargeId: Long): CourtEventChargeResponse = api

@@ -15,6 +15,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeIdResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeIdsWithLast
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtOrderResponse
@@ -578,62 +579,44 @@ class CourtSentencingNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  // stubs a sequence of keyset pages: each request is matched on the last (offenderChargeId, eventId) seen
   fun stubGetCourtEventChargeIds(
     ids: List<CourtEventChargeIdResponse>,
-    totalElements: Long = ids.size.toLong(),
+    pageSize: Int = 1000,
   ) {
-    nomisApi.stubFor(
-      get(urlPathEqualTo("/court-event-charges/ids")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value())
-          .withBody(
-            pageContent(
-              jsonMapper = jsonMapper,
-              content = ids,
-              pageSize = 1000,
-              pageNumber = 0,
-              totalElements = totalElements,
-              size = ids.size,
-            ),
-          ),
-      ),
-    )
+    var last = CourtEventChargeIdResponse(eventId = 0, offenderChargeId = 0)
+    ids.sortedWith(compareBy({ it.offenderChargeId }, { it.eventId })).chunked(pageSize).forEach { pageIds ->
+      stubGetCourtEventChargeIdsFromId(from = last, ids = pageIds)
+      last = pageIds.last()
+    }
+    // the migration always asks for one more page after the last full or partial page
+    stubGetCourtEventChargeIdsFromId(from = last, ids = emptyList())
   }
 
   fun courtEventChargeIds(count: Int) = (1L..count).map { CourtEventChargeIdResponse(eventId = it * 10, offenderChargeId = it * 100) }
 
-  fun stubMultipleGetCourtEventChargeIds(totalElements: Int, pageSize: Int) {
-    val ids = courtEventChargeIds(totalElements)
-    // single element page used to get the total count - registered first so the paged stubs take precedence when sizes match
-    stubGetCourtEventChargeIdsPage(ids.take(1), totalElements, pageNumber = 0, pageSize = 1)
-    ids.chunked(pageSize).forEachIndexed { page, pageIds ->
-      stubGetCourtEventChargeIdsPage(pageIds, totalElements, pageNumber = page, pageSize = pageSize)
-    }
-  }
+  fun stubMultipleGetCourtEventChargeIds(totalElements: Int, pageSize: Int) = stubGetCourtEventChargeIds(courtEventChargeIds(totalElements), pageSize)
 
-  private fun stubGetCourtEventChargeIdsPage(
+  private fun stubGetCourtEventChargeIdsFromId(
+    from: CourtEventChargeIdResponse,
     ids: List<CourtEventChargeIdResponse>,
-    totalElements: Int,
-    pageNumber: Int,
-    pageSize: Int,
   ) {
+    val last = ids.lastOrNull() ?: from
     nomisApi.stubFor(
-      get(urlPathEqualTo("/court-event-charges/ids"))
-        .withQueryParam("page", WireMock.equalTo(pageNumber.toString()))
-        .withQueryParam("size", WireMock.equalTo(pageSize.toString()))
+      get(urlPathEqualTo("/court-event-charges/ids/all-from-id"))
+        .withQueryParam("offenderChargeId", WireMock.equalTo(from.offenderChargeId.toString()))
+        .withQueryParam("eventId", WireMock.equalTo(from.eventId.toString()))
         .willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
             .withBody(
-              pageContent(
-                jsonMapper = jsonMapper,
-                content = ids,
-                pageSize = pageSize.toLong(),
-                pageNumber = pageNumber.toLong(),
-                totalElements = totalElements.toLong(),
-                size = ids.size,
+              jsonMapper.writeValueAsString(
+                CourtEventChargeIdsWithLast(
+                  courtEventChargeIds = ids,
+                  lastOffenderChargeId = last.offenderChargeId,
+                  lastEventId = last.eventId,
+                ),
               ),
             ),
         ),

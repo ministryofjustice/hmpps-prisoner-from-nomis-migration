@@ -163,7 +163,7 @@ class CourtSentencingMigrationIntTest(
       internal fun `will retrieve the court event charge ids and each charge from NOMIS`() {
         webTestClient.performMigration()
 
-        nomisApi.verify(getRequestedFor(urlPathEqualTo("/court-event-charges/ids")))
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/court-event-charges/ids/all-from-id")))
         nomisApi.verify(getRequestedFor(urlEqualTo("/court-event-charges/$NOMIS_APPEARANCE_1_ID/charges/$NOMIS_CHARGE_1_ID")))
       }
 
@@ -218,7 +218,7 @@ class CourtSentencingMigrationIntTest(
             .expectBody()
             .jsonPath("$.migrationId").isEqualTo(result.migrationId)
             .jsonPath("$.migrationType").isEqualTo(COURT_SENTENCING.name)
-            .jsonPath("$.estimatedRecordCount").isEqualTo(1)
+            .jsonPath("$.estimatedRecordCount").isEqualTo(0)
             .jsonPath("$.status").isEqualTo("COMPLETED")
         }
       }
@@ -310,26 +310,15 @@ class CourtSentencingMigrationIntTest(
       internal fun `will start processing pages of court event charges`() {
         webTestClient.performMigration()
 
-        // 1 request for the count, then one per page
-        nomisApi.verify(
-          1,
-          getRequestedFor(urlPathEqualTo("/court-event-charges/ids")).withQueryParam("page", equalTo("0"))
-            .withQueryParam("size", equalTo("1")),
-        )
-        nomisApi.verify(
-          1,
-          getRequestedFor(urlPathEqualTo("/court-event-charges/ids")).withQueryParam("page", equalTo("0"))
-            .withQueryParam("size", equalTo("$PAGE_SIZE")),
-        )
-        nomisApi.verify(
-          1,
-          getRequestedFor(urlPathEqualTo("/court-event-charges/ids")).withQueryParam("page", equalTo("1"))
-            .withQueryParam("size", equalTo("$PAGE_SIZE")),
-        )
-        nomisApi.verify(
-          0,
-          getRequestedFor(urlPathEqualTo("/court-event-charges/ids")).withQueryParam("page", equalTo("2")),
-        )
+        // 14 charges with a page size of 10: a full page, a partial page, then an empty page to finish
+        fun idsFrom(offenderChargeId: Long, eventId: Long) = getRequestedFor(urlPathEqualTo("/court-event-charges/ids/all-from-id"))
+          .withQueryParam("offenderChargeId", equalTo(offenderChargeId.toString()))
+          .withQueryParam("eventId", equalTo(eventId.toString()))
+          .withQueryParam("pageSize", equalTo("$PAGE_SIZE"))
+        nomisApi.verify(1, idsFrom(0, 0))
+        nomisApi.verify(1, idsFrom(charges[9].offenderChargeId, charges[9].eventId))
+        nomisApi.verify(1, idsFrom(charges[13].offenderChargeId, charges[13].eventId))
+        nomisApi.verify(3, getRequestedFor(urlPathEqualTo("/court-event-charges/ids/all-from-id")))
 
         charges.forEach {
           dpsCourtSentencingServer.verify(
