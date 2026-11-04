@@ -2902,7 +2902,8 @@ class CourtSentencingSynchronisationIntTest(
               .withRequestBody(matchingJsonPath("offenceStartDate", equalTo("2024-03-03")))
               .withRequestBody(matchingJsonPath("legacyData.nomisOutcomeCode", equalTo("1002")))
               .withRequestBody(matchingJsonPath("legacyData.outcomeDispositionCode", equalTo("F")))
-              .withRequestBody(matchingJsonPath("legacyData.offenceDescription", equalTo("Offender description"))),
+              .withRequestBody(matchingJsonPath("legacyData.offenceDescription", equalTo("Offender description")))
+              .withRequestBody(matchingJsonPath("value", equalTo("123.45"))),
           )
         }
 

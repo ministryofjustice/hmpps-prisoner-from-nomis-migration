@@ -394,6 +394,7 @@ class CourtSentencingNomisApiMockServer(private val jsonMapper: JsonMapper) {
       eventId = courtAppearanceId,
       resultCode1 = OffenceResultCodeResponse(chargeStatus = "A", code = "1002", description = "Imprisonment", dispositionCode = "F", conviction = false),
       createdByUsername = "msmith",
+      propertyValue = BigDecimal("123.45"),
     ),
   ) {
     nomisApi.stubFor(

@@ -276,6 +276,7 @@ fun CourtEventChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCha
   offenceEndDate = this.offenceEndDate,
   appearanceLifetimeUuid = UUID.fromString(appearanceId),
   performedByUser = this.modifiedByUsername ?: this.createdByUsername,
+  value = this.propertyValue,
 )
 
 fun CourtEventChargeResponse.toDpsCharge() = LegacyUpdateCharge(
