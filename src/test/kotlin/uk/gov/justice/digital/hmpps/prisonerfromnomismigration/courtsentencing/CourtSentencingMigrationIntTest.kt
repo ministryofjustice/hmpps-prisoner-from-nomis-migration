@@ -439,7 +439,15 @@ class CourtSentencingMigrationIntTest(
 
       @Test
       internal fun `will track a failure with a reason when DPS rejects the update`() {
-        webTestClient.performMigration()
+        val result = webTestClient.performMigration()
+        await untilAsserted {
+          webTestClient.get().uri("/migrate/history/{migrationId}", result.migrationId)
+            .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.recordsFailed").isEqualTo(1)
+        }
 
         // the message is retried by SQS until it is moved to the DLQ, so the failure telemetry
         // is tracked at least once (potentially several times across retries)
