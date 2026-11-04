@@ -24,14 +24,29 @@ class AgencyRegistersSynchronisationService(
     if (event.originatesInDpsOrHasMissingAudit) {
       telemetryClient.trackEvent("$TELEMETRY_PREFIX-updated-skipped", telemetry)
     } else {
-      val agency = agencyNomisApiService.getAgency(event.agencyCode)
-      track("$TELEMETRY_PREFIX-updated", telemetry) {
-        val legacyAgencyDto = agency.toLegacyAgencyDto()
-        if (agency.isPrison()) {
-          agencyRegistersDpsApiService.syncPrison(event.agencyCode, legacyAgencyDto)
-        } else {
-          agencyRegistersDpsApiService.syncAgency(event.agencyCode, legacyAgencyDto)
-        }
+      synchronise(event.agencyCode, telemetry)
+    }
+  }
+
+  suspend fun resyncAgency(agencyId: String) {
+    val telemetry = telemetryOf(
+      "agencyId" to agencyId,
+      "reason" to "repair",
+    )
+
+    synchronise(agencyId, telemetry)
+  }
+  private suspend fun synchronise(
+    agencyId: String,
+    telemetry: MutableMap<String, Any>,
+  ) {
+    val agency = agencyNomisApiService.getAgency(agencyId)
+    track("$TELEMETRY_PREFIX-updated", telemetry) {
+      val legacyAgencyDto = agency.toLegacyAgencyDto()
+      if (agency.isPrison()) {
+        agencyRegistersDpsApiService.syncPrison(agencyId, legacyAgencyDto)
+      } else {
+        agencyRegistersDpsApiService.syncAgency(agencyId, legacyAgencyDto)
       }
     }
   }
