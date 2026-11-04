@@ -1,7 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -40,10 +38,6 @@ class CourtSentencingMigrationService(
   completeCheckCount = completeCheckCount,
   jsonMapper = jsonMapper,
 ) {
-
-  private companion object {
-    val log: Logger = LoggerFactory.getLogger(CourtSentencingMigrationService::class.java)
-  }
 
   override suspend fun getPageOfIdsFromId(
     lastId: CourtEventChargeIdResponse?,
@@ -99,13 +93,24 @@ class CourtSentencingMigrationService(
       eventId = eventId,
       offenderChargeId = offenderChargeId,
     )
-    // dry run: the DPS update is deliberately not called in this version of the migration
-    log.info(
-      "Would update DPS charge {} for appearance {} with {}",
-      chargeMapping.dpsCourtChargeId,
-      appearanceMapping.dpsCourtAppearanceId,
-      nomisCharge.toDpsCharge(),
-    )
+    try {
+      courtSentencingDpsService.updateCourtCharge(
+        chargeId = chargeMapping.dpsCourtChargeId,
+        appearanceId = appearanceMapping.dpsCourtAppearanceId,
+        charge = nomisCharge.toDpsCharge(),
+      )
+    } catch (e: Exception) {
+      telemetryClient.trackEvent(
+        "court-event-charge-migration-entity-failed",
+        telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("dpsCourtAppearanceId" to appearanceMapping.dpsCourtAppearanceId) + (
+          "reason" to (
+            e.message
+              ?: e.javaClass.name
+            )
+          ),
+      )
+      throw e
+    }
     telemetryClient.trackEvent(
       "court-event-charge-migration-entity-migrated",
       telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("dpsCourtAppearanceId" to appearanceMapping.dpsCourtAppearanceId),
