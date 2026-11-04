@@ -17,4 +17,5 @@ class AgencyRegistersDpsApiService(
   suspend fun migrateAgency(agencyId: String, request: LegacyAgencyDto): LegacyAgencyResponse = api.migrateAgency(agencyId, request).awaitSingle()
 
   suspend fun syncAgency(agencyId: String, request: LegacyAgencyDto): LegacyAgencyResponse = api.createOrUpdateAgency(agencyId, request).awaitSingle()
+  suspend fun syncPrison(agencyId: String, request: LegacyAgencyDto): LegacyAgencyResponse = api.createOrUpdatePrison(agencyId, request).awaitSingle()
 }

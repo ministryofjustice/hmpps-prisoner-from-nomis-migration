@@ -140,11 +140,12 @@ class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase
         nomisApiMock.stubGetAgency(
           agencyId = agencyId,
           response = agencyResponse().copy(
+            description = "Moorland (HMP)",
             agencyId = agencyId,
             type = CodeDescription(code = "INST", description = "Institution"),
           ),
         )
-        dpsApiMock.stubSyncAgency(agencyId = agencyId)
+        dpsApiMock.stubSyncPrison(agencyId = agencyId)
 
         agencyRegistersOffenderEventsQueue.sendMessage(
           agencyRegisterEvent(
@@ -163,6 +164,23 @@ class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase
           },
           isNull(),
         )
+      }
+
+      @Test
+      fun `will retrieve agency details from nomis`() {
+        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/agency/$agencyId")))
+      }
+
+      @Test
+      fun `will sync the prison into DPS`() {
+        dpsApiMock.verify(postRequestedFor(urlPathEqualTo("/legacy/sync/prison/id/$agencyId")))
+      }
+
+      @Test
+      fun `will transform the prison data correctly`() {
+        val request: LegacyAgencyDto =
+          AgencyRegistersDpsApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/legacy/sync/prison/id/$agencyId")))
+        assertThat(request.name).isEqualTo("Moorland (HMP)")
       }
     }
   }
