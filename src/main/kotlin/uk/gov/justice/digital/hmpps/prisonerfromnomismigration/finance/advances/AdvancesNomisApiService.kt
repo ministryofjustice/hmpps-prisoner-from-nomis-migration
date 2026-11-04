@@ -25,6 +25,10 @@ class AdvancesNomisApiService(@Qualifier("nomisApiWebClient") private val webCli
     .getActiveAdvancesCount()
     .awaitSingle()
 
+  suspend fun getAdvanceByDeductionId(deductionId: Long): PrisonerAdvanceDto = api
+    .getAdvanceByDeductionId(deductionId)
+    .awaitSingle()
+
   // TODO this may no longer be needed - remove if not required
   suspend fun getPrisonerAdvances(rootOffenderId: Long): List<PrisonerAdvanceDto> = api
     .getPrisonerAdvancesById(rootOffenderId)

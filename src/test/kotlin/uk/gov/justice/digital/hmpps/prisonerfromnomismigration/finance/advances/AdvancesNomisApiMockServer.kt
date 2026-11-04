@@ -22,6 +22,25 @@ import kotlin.String
 @Component
 class AdvancesNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
+  fun stubGetAdvanceByDeductionId(
+    deductionId: Long = 23456,
+    prisonerAdvance: PrisonerAdvanceDto = prisonerAdvance(),
+    status: HttpStatus = HttpStatus.OK,
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/finance/advances/deduction-id/$deductionId")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(
+            jsonMapper.writeValueAsString(
+              if (status.is2xxSuccessful) prisonerAdvance else ErrorResponse(status = status.value()),
+            ),
+          ),
+      ),
+    )
+  }
+
   fun stubGetAdvance(
     advanceId: Long = 12345,
     prisonNumber: String = "A0001BC",
