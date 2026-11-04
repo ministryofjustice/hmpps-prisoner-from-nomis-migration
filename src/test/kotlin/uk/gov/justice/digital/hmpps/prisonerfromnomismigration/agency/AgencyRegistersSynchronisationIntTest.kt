@@ -8,6 +8,9 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.Parameter
+import org.junit.jupiter.params.ParameterizedClass
+import org.junit.jupiter.params.provider.ValueSource
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -28,15 +31,37 @@ class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase
   private val dpsApiMock = agencyRegistersApi
 
   @Nested
-  @DisplayName("ADDRESSES_AGENCY-UPDATED")
+  @DisplayName("Agency updated events")
+  @ParameterizedClass
+  @ValueSource(
+    strings = [
+      "ADDRESSES_AGENCY-INSERTED",
+      "ADDRESSES_AGENCY-UPDATED",
+      "ADDRESSES_AGENCY-DELETED",
+      "AGENCY_LOCATIONS-INSERTED",
+      "AGENCY_LOCATIONS-UPDATED",
+      "AGENCY_LOCATION-AUTHORITIES-INSERTED",
+      "AGENCY_LOCATION-AUTHORITIES-UPDATED",
+      "AGENCY_LOCATION-AUTHORITIES-DELETED",
+      "PHONES_AGENCY-INSERTED",
+      "PHONES_AGENCY-UPDATED",
+      "PHONES_AGENCY-DELETED",
+      "INTERNET_ADDRESSES_AGENCY-INSERTED",
+      "INTERNET_ADDRESSES_AGENCY-UPDATED",
+      "INTERNET_ADDRESSES_AGENCY-DELETED",
+    ],
+  )
   inner class AgencyUpdated {
+    @Parameter
+    lateinit var eventType: String
+
     @Nested
     inner class WhenUpdatedInDps {
       @BeforeEach
       fun setUp() {
         agencyRegistersOffenderEventsQueue.sendMessage(
           agencyRegisterEvent(
-            eventType = "ADDRESSES_AGENCY-UPDATED",
+            eventType = eventType,
             agencyCode = agencyId,
             auditModuleName = "DPS_SYNCHRONISATION",
           ),
@@ -73,7 +98,7 @@ class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase
 
         agencyRegistersOffenderEventsQueue.sendMessage(
           agencyRegisterEvent(
-            eventType = "ADDRESSES_AGENCY-UPDATED",
+            eventType = eventType,
             agencyCode = agencyId,
           ),
         ).also { waitForAnyProcessingToComplete() }
@@ -109,7 +134,7 @@ class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase
     }
 
     @Nested
-    inner class WhenAgencyIsAnInstitution {
+    inner class WhenAgencyIsAPrison {
       @BeforeEach
       fun setUp() {
         nomisApiMock.stubGetAgency(
@@ -123,7 +148,7 @@ class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase
 
         agencyRegistersOffenderEventsQueue.sendMessage(
           agencyRegisterEvent(
-            eventType = "ADDRESSES_AGENCY-UPDATED",
+            eventType = eventType,
             agencyCode = agencyId,
           ),
         ).also { waitForAnyProcessingToComplete() }
@@ -132,23 +157,12 @@ class AgencyRegistersSynchronisationIntTest : AgencyRegistersIntegrationTestBase
       @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("agency-synchronisation-updated-ignored"),
+          eq("agency-synchronisation-updated-success"),
           check {
             assertThat(it["agencyId"]).isEqualTo(agencyId)
-            assertThat(it["reason"]).isEqualTo("agency is of type INST")
           },
           isNull(),
         )
-      }
-
-      @Test
-      fun `will retrieve agency details from nomis`() {
-        nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/agency/$agencyId")))
-      }
-
-      @Test
-      fun `will not sync the agency into DPS`() {
-        dpsApiMock.verify(0, postRequestedFor(urlPathEqualTo("/legacy/sync/agency/id/$agencyId")))
       }
     }
   }
