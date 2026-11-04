@@ -6,6 +6,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.Telemetry
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyResponse
 
 private const val TELEMETRY_PREFIX = "agency-synchronisation"
 
@@ -26,8 +27,14 @@ class AgencyRegistersSynchronisationService(
       val agency = agencyNomisApiService.getAgency(event.agencyCode)
       track("$TELEMETRY_PREFIX-updated", telemetry) {
         val legacyAgencyDto = agency.toLegacyAgencyDto()
-        agencyRegistersDpsApiService.syncAgency(event.agencyCode, legacyAgencyDto)
+        if (agency.isPrison()) {
+          agencyRegistersDpsApiService.syncPrison(event.agencyCode, legacyAgencyDto)
+        } else {
+          agencyRegistersDpsApiService.syncAgency(event.agencyCode, legacyAgencyDto)
+        }
       }
     }
   }
 }
+
+private fun AgencyResponse.isPrison() = type.code == "INST"
