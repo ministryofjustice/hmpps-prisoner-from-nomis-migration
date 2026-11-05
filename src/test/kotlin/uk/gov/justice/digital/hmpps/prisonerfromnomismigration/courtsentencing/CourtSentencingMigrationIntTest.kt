@@ -200,6 +200,8 @@ class CourtSentencingMigrationIntTest(
             assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_CHARGE_1_ID.toString())
             assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_1_ID)
             assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_APPEARANCE_1_ID)
+            assertThat(it["nomisPropertyValue"]).isEqualTo("123.45")
+            assertThat(it["dpsPropertyValue"]).isEqualTo("123.45")
           },
           isNull(),
         )

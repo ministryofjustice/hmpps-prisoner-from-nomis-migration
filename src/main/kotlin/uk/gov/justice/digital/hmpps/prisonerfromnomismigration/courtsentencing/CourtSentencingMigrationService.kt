@@ -93,11 +93,12 @@ class CourtSentencingMigrationService(
       eventId = eventId,
       offenderChargeId = offenderChargeId,
     )
+    val dpsCharge = nomisCharge.toDpsCharge()
     try {
       courtSentencingDpsService.updateCourtCharge(
         chargeId = chargeMapping.dpsCourtChargeId,
         appearanceId = appearanceMapping.dpsCourtAppearanceId,
-        charge = nomisCharge.toDpsCharge(),
+        charge = dpsCharge,
       )
     } catch (e: Exception) {
       telemetryClient.trackEvent(
@@ -113,7 +114,9 @@ class CourtSentencingMigrationService(
     }
     telemetryClient.trackEvent(
       "court-event-charge-migration-entity-migrated",
-      telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("dpsCourtAppearanceId" to appearanceMapping.dpsCourtAppearanceId),
+      telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) + ("dpsCourtAppearanceId" to appearanceMapping.dpsCourtAppearanceId) +
+        ("nomisPropertyValue" to nomisCharge.propertyValue?.toPlainString().orEmpty()) +
+        ("dpsPropertyValue" to dpsCharge.value?.toPlainString().orEmpty()),
     )
   }
 
