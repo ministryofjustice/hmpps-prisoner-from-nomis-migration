@@ -125,7 +125,7 @@ class AdvancesMigrationService(
       if (it.isError) {
         val duplicateErrorDetails = it.errorResponse!!.moreInfo
         telemetryClient.trackEvent(
-          "advances-migration-duplicate",
+          "finance-advances-migration-duplicate",
           mapOf(
             "duplicateDpsAdvanceId" to duplicateErrorDetails.duplicate.dpsId,
             "duplicateNomisAdvanceId" to duplicateErrorDetails.duplicate.nomisAdvanceId,
@@ -136,7 +136,7 @@ class AdvancesMigrationService(
         )
       } else {
         telemetryClient.trackEvent(
-          "advances-migration-entity-migrated",
+          "finance-advances-migration-entity-migrated",
           mapOf(
             "nomisAdvanceId" to mapping.nomisAdvanceId,
             "dpsId" to mapping.dpsId,

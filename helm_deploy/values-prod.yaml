@@ -36,6 +36,7 @@ generic-service:
     API_BASE_URL_AGENCYREGISTERS: https://prison-register.hmpps.service.justice.gov.uk
     API_BASE_URL_PERSON_LOCATION: https://person-location-api.hmpps.service.justice.gov.uk
     OFFENDER_TRANSACTIONS_PROCESS_HOLD: false
+    OFFENDER_TRANSACTIONS_PROCESS_ADVANCES: false
     FEATURE_EVENT_ASSESSMENT-INSERTED: true
     FEATURE_EVENT_ASSESSMENT-UPDATED: true
     FEATURE_EVENT_ASSESSMENT-DELETED: true

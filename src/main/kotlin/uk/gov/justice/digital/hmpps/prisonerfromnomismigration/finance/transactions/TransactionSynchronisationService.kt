@@ -11,6 +11,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceDp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceNomisApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.GLTransactionEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.TransactionEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances.AdvancesSynchronisationService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncOffenderTransactionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -23,11 +24,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.math.BigDecimal
 import java.util.UUID
 
 @Service
 class TransactionSynchronisationService(
   private val nomisApiService: FinanceNomisApiService,
+  private val advancesSynchronisationService: AdvancesSynchronisationService,
   private val transactionMappingService: TransactionMappingApiService,
   private val financeService: FinanceDpsApiService,
   private val telemetryClient: TelemetryClient,
@@ -36,6 +39,7 @@ class TransactionSynchronisationService(
   @Value($$"${finance.transactions.forwardingDelaySeconds}")
   private val forwardingDelaySeconds: Int,
   @Value($$"${offender_transactions.process.hold:false}") private val processHoldTransaction: Boolean,
+  @Value($$"${offender_transactions.process.advances:false}") private val processAdvanceTransaction: Boolean,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -148,12 +152,16 @@ class TransactionSynchronisationService(
               ),
             )
           }
-
-          val transaction = nomisTransactions.first()
-          if (processHoldTransaction && transaction.isHoldTransaction()) {
-            sendHoldTransactionToDps(transaction, dpsTransactionId, event, eventType)
-          }
+          additionalOffenderTransactionProcessing(nomisTransactions.first(), dpsTransactionId, event, eventType)
         }
+    }
+  }
+
+  suspend fun additionalOffenderTransactionProcessing(transaction: OffenderTransactionDto, dpsTransactionId: UUID, event: TransactionEvent, eventType: String) {
+    if (processHoldTransaction && transaction.isHoldTransaction()) {
+      sendHoldTransactionToDps(transaction, dpsTransactionId, event, eventType)
+    } else if (processAdvanceTransaction && transaction.isRepaymentTransaction()) {
+      advancesSynchronisationService.sendRepaymentToDps(transaction)
     }
   }
 
@@ -312,5 +320,6 @@ private fun TransactionEvent.toTelemetryProperties(
 fun OffenderTransactionDto.isHoldTransaction() = isAddHoldTransaction() || isReleaseHoldTransaction()
 fun OffenderTransactionDto.isAddHoldTransaction() = type == "HOA" || type == "WHF"
 fun OffenderTransactionDto.isReleaseHoldTransaction() = type == "HOR" || type == "WFR"
+fun OffenderTransactionDto.isRepaymentTransaction() = type == "DED" && amount != BigDecimal.ZERO
 
 data class EncapsulatedTransaction(val transactionEvent: TransactionEvent, val requestId: UUID, val eventType: String)
