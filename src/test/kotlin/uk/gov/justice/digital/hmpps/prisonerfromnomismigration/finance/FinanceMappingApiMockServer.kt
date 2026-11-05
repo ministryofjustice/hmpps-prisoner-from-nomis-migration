@@ -16,6 +16,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
@@ -60,6 +61,14 @@ class FinanceMappingApiMockServer(private val jsonMapper: JsonMapper) {
     mappingApi.stubFor(
       post("/mapping/transactions").willReturn(
         status(201),
+      ),
+    )
+  }
+
+  fun stubPostMapping(error: DuplicateErrorResponse<TransactionMappingDto>) {
+    mappingApi.stubFor(
+      post("/mapping/transactions").willReturn(
+        jsonResponse(error, HttpStatus.CONFLICT.value()),
       ),
     )
   }
