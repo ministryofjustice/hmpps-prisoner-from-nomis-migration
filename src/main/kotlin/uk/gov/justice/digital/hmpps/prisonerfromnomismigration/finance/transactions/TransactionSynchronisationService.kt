@@ -320,6 +320,6 @@ private fun TransactionEvent.toTelemetryProperties(
 fun OffenderTransactionDto.isHoldTransaction() = isAddHoldTransaction() || isReleaseHoldTransaction()
 fun OffenderTransactionDto.isAddHoldTransaction() = type == "HOA" || type == "WHF"
 fun OffenderTransactionDto.isReleaseHoldTransaction() = type == "HOR" || type == "WFR"
-fun OffenderTransactionDto.isRepaymentTransaction() = type == "DED" && amount != BigDecimal.ZERO
+fun OffenderTransactionDto.isRepaymentTransaction() = type == "DED" && amount.compareTo(BigDecimal.ZERO) != 0
 
 data class EncapsulatedTransaction(val transactionEvent: TransactionEvent, val requestId: UUID, val eventType: String)
