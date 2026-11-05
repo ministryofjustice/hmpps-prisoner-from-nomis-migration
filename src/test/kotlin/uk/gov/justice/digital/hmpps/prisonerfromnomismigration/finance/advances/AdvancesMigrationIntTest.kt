@@ -329,7 +329,7 @@ class AdvancesMigrationIntTest(
       @Test
       fun `will track telemetry for each offender migrated`() {
         verify(telemetryClient).trackEvent(
-          eq("advances-migration-duplicate"),
+          eq("finance-advances-migration-duplicate"),
           check {
             assertThat(it["duplicateNomisAdvanceId"]).isEqualTo("12345")
             assertThat(it["duplicateDpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
