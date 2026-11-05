@@ -48,7 +48,7 @@ class AdvancesSynchronisationIntTest(
 
     private fun verifySuccessTelemetry() {
       verify(telemetryClient).trackEvent(
-        eq("prisoneradvance-synchronisation-created-success"),
+        eq("finance-advances-synchronisation-created-success"),
         check {
           assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
           assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
@@ -63,7 +63,7 @@ class AdvancesSynchronisationIntTest(
       @BeforeEach
       fun setUp() {
         sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED", auditModuleName = "DPS_SYNCHRONISATION")
-          .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-created-skipped") }
+          .also { waitForAnyProcessingToComplete("finance-advances-synchronisation-created-skipped") }
       }
 
       @Test
@@ -85,7 +85,7 @@ class AdvancesSynchronisationIntTest(
       @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("prisoneradvance-synchronisation-created-skipped"),
+          eq("finance-advances-synchronisation-created-skipped"),
           check {
             assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
             assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
@@ -112,7 +112,7 @@ class AdvancesSynchronisationIntTest(
           @BeforeEach
           fun setUp() {
             sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
-              .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-created-success") }
+              .also { waitForAnyProcessingToComplete("finance-advances-synchronisation-created-success") }
           }
 
           @Test
@@ -166,7 +166,7 @@ class AdvancesSynchronisationIntTest(
               fun setUp() {
                 mappingApiMock.stubCreateMappingFailureFollowedBySuccess()
                 sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
-                  .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-mapping-created") }
+                  .also { waitForAnyProcessingToComplete("finance-advances-synchronisation-mapping-created") }
               }
 
               @Test
@@ -184,7 +184,7 @@ class AdvancesSynchronisationIntTest(
               fun `will track telemetry`() {
                 verifySuccessTelemetry()
                 verify(telemetryClient).trackEvent(
-                  eq("prisoneradvance-synchronisation-mapping-created"),
+                  eq("finance-advances-synchronisation-mapping-created"),
                   check {
                     assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
                     assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
@@ -221,7 +221,7 @@ class AdvancesSynchronisationIntTest(
                   ),
                 )
                 sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
-                  .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-created-success") }
+                  .also { waitForAnyProcessingToComplete("finance-advances-synchronisation-created-success") }
               }
 
               @Test
@@ -238,7 +238,7 @@ class AdvancesSynchronisationIntTest(
               fun `will track telemetry`() {
                 verifySuccessTelemetry()
                 verify(telemetryClient).trackEvent(
-                  eq("prisoneradvance-synchronisation-duplicate"),
+                  eq("finance-advances-synchronisation-duplicate"),
                   check {
                     assertThat(it["existingNomisAdvanceId"]).isEqualTo(advanceId.toString())
                     assertThat(it["existingDpsAdvanceId"]).isEqualTo(existingDpsId)
@@ -261,7 +261,7 @@ class AdvancesSynchronisationIntTest(
           fun setUp() {
             mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = advanceId, dpsId = dpsAdvanceId.toString())
             sendAdvanceEvent("OFFENDER_ADVANCES-INSERTED")
-              .also { waitForAnyProcessingToComplete("prisoneradvance-synchronisation-created-ignored") }
+              .also { waitForAnyProcessingToComplete("finance-advances-synchronisation-created-ignored") }
           }
 
           @Test
@@ -282,7 +282,7 @@ class AdvancesSynchronisationIntTest(
           @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
-              eq("prisoneradvance-synchronisation-created-ignored"),
+              eq("finance-advances-synchronisation-created-ignored"),
               check {
                 assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
                 assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
