@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-02.5594.958e26d"
+    "version" : "2026-11-04.5640.547fd36"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -2528,6 +2528,35 @@
         }
       }
     },
+    "/external-movements/person-locations/{offenderNo}/reconciliation" : {
+      "get" : {
+        "tags" : [ "External Movements Reconciliation Resource" ],
+        "operationId" : "personLocationsReconciliation",
+        "parameters" : [ {
+          "name" : "offenderNo",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/MismatchedPrisonerLocations"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/external-movements/court/{offenderNo}/reconciliation" : {
       "get" : {
         "tags" : [ "External Movements Reconciliation Resource" ],
@@ -4051,6 +4080,18 @@
         "required" : [ "nomisId", "verdict" ]
       },
       "MismatchedPrisonerTransfer" : {
+        "type" : "object",
+        "properties" : {
+          "offenderNo" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "offenderNo", "type" ]
+      },
+      "MismatchedPrisonerLocations" : {
         "type" : "object",
         "properties" : {
           "offenderNo" : {
