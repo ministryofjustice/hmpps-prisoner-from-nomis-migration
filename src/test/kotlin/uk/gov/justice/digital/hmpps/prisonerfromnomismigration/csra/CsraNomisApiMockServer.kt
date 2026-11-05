@@ -128,6 +128,7 @@ fun csraGetDto(bookingId: Long): CsraGetDto = CsraGetDto(
   agencyId = "MDI",
   calculatedLevel = AssessmentLevel.STANDARD,
   overrideLevel = AssessmentLevel.HI,
+  overrideReasonCode = "SECURITY",
   committeeCode = AssessmentCommittee.GOV,
   nextReviewDate = LocalDate.parse("2021-02-03"),
   comment = "comment",

@@ -4,6 +4,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraAs
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraCommitteeCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraEvaluationResultCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraLevel
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraOverrideReasonCode
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraQuestionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraResponseDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.model.CsraReviewDetailDto
@@ -27,6 +28,7 @@ fun CsraGetDto.toDPSCsra() = NomisCsraReview(
   assessmentType = convertType(),
   calculatedLevel = convertLevel(calculatedLevel),
   overrideLevel = convertLevel(overrideLevel),
+  overrideReasonCode = convertOverrideReason(overrideReasonCode),
   score = score!!,
   status = convertStatus(),
   committeeCode = convertCommitteeCode(committeeCode),
@@ -97,6 +99,12 @@ private fun convertCommitteeCode(committeeCode: AssessmentCommittee?): CsraCommi
   AssessmentCommittee.REVIEW -> CsraCommitteeCode.REVIEW
   AssessmentCommittee.SECSTATE -> CsraCommitteeCode.SECSTATE
   AssessmentCommittee.SECUR -> CsraCommitteeCode.SECUR
+  else -> null
+}
+
+private fun convertOverrideReason(overrideReasonCode: String?): CsraOverrideReasonCode? = when (overrideReasonCode) {
+  "PREVIOUS" -> CsraOverrideReasonCode.PREVIOUS
+  "SECURITY" -> CsraOverrideReasonCode.SECURITY
   else -> null
 }
 
