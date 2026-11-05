@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-04.665.ea824b7"
+    "version" : "2026-11-05.668.f06fb64"
   },
   "servers" : [ {
     "url" : "/",
@@ -3252,6 +3252,11 @@
         "description" : "A CSRA level (used for calculated, review and approved levels)",
         "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ]
       },
+      "CsraOverrideReasonCode" : {
+        "type" : "string",
+        "description" : "Override reason code (NOMIS reference domain OVERRIDE_RSN)",
+        "enum" : [ "PREVIOUS", "SECURITY" ]
+      },
       "CsraQuestionDto" : {
         "type" : "object",
         "description" : "A question and its responses within a CSRA review section",
@@ -3386,6 +3391,15 @@
             "example" : "STANDARD",
             "oneOf" : [ {
               "$ref" : "#/components/schemas/CsraLevel"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "overrideReasonCode" : {
+            "description" : "The reason for the override (NOMIS OVERRIDE_REASON)",
+            "example" : "SECURITY",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraOverrideReasonCode"
             }, {
               "type" : "null"
             } ]
@@ -3700,6 +3714,14 @@
             "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
             "example" : "STANDARD"
           },
+          "overrideReason" : {
+            "description" : "Why the assessor overrode the calculated level. Absent where there is no override or no reason was entered.",
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CsraOverrideReason"
+            }, {
+              "type" : "null"
+            } ]
+          },
           "approvedResult" : {
             "type" : [ "string", "null" ],
             "description" : "The level approved for this review — NOMIS's reviewed level, which is what it displays as the approved result",
@@ -3755,6 +3777,23 @@
           }
         },
         "required" : [ "levelChangedAtApproval", "questions" ]
+      },
+      "CsraOverrideReason" : {
+        "type" : "object",
+        "description" : "The reason an assessor gave for overriding the calculated level",
+        "properties" : {
+          "code" : {
+            "$ref" : "#/components/schemas/CsraOverrideReasonCode",
+            "description" : "The NOMIS override reason code",
+            "example" : "SECURITY"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "The reason as worded in NOMIS",
+            "example" : "Security/Intelligence Information"
+          }
+        },
+        "required" : [ "code", "name" ]
       },
       "CsraReviewDetail" : {
         "type" : "object",
