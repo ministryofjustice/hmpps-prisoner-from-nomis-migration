@@ -186,7 +186,7 @@ class AdvancesMigrationIntTest(
       @Test
       fun `will track telemetry for each advance migrated`() {
         verify(telemetryClient).trackEvent(
-          eq("advances-migration-entity-migrated"),
+          eq("finance-advances-migration-entity-migrated"),
           check {
             assertThat(it["nomisAdvanceId"]).isEqualTo("12345")
             assertThat(it["dpsId"]).isEqualTo(dpsAdvanceId.toString())
@@ -194,7 +194,7 @@ class AdvancesMigrationIntTest(
           isNull(),
         )
         verify(telemetryClient).trackEvent(
-          eq("advances-migration-entity-migrated"),
+          eq("finance-advances-migration-entity-migrated"),
           check {
             assertThat(it["nomisAdvanceId"]).isEqualTo("54321")
             assertThat(it["dpsId"]).isEqualTo(dpsAdvanceId.toString())
@@ -329,7 +329,7 @@ class AdvancesMigrationIntTest(
       @Test
       fun `will track telemetry for each offender migrated`() {
         verify(telemetryClient).trackEvent(
-          eq("advances-migration-duplicate"),
+          eq("finance-advances-migration-duplicate"),
           check {
             assertThat(it["duplicateNomisAdvanceId"]).isEqualTo("12345")
             assertThat(it["duplicateDpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())

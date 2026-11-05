@@ -11,6 +11,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceDp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceSynchronisationMessageType.RETRY_SYNCHRONISATION_ADVANCE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.MoneySupport
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRepayRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions.transactionTimestamp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -18,13 +20,16 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdvanceMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAdvanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.util.UUID
+import kotlin.collections.set
 
-private const val TELEMETRY_PREFIX = "prisoneradvance-synchronisation"
+private const val TELEMETRY_PREFIX = "finance-advances-synchronisation"
 
 @Service
 class AdvancesSynchronisationService(
@@ -40,6 +45,7 @@ class AdvancesSynchronisationService(
   }
 
   suspend fun resynchroniseAdvance(advanceId: Long) {
+    // TODO fix this - it needs to add/replace mapping during resync
     val advance = nomisApiService.getAdvance(advanceId)
       ?: throw NotFoundException("advanceId $advanceId not found")
     dpsApiService.createAdvance(advance.toSyncAdvanceDto())
@@ -79,8 +85,39 @@ class AdvancesSynchronisationService(
       }
     }
   }
+
   suspend fun deductionUpdated(event: AdvanceEvent) {
     log.info("Deduction updated event received")
+  }
+
+  suspend fun sendRepaymentToDps(nomisTransaction: OffenderTransactionDto) {
+    val telemetry = telemetryOf(
+      "prisonNumber" to nomisTransaction.offenderNo,
+      "nomisTransactionId" to nomisTransaction.transactionId,
+      "nomisTransactionEntrySequence" to nomisTransaction.transactionEntrySequence,
+      "nomisTransactionAmount" to nomisTransaction.amount,
+      "nomisTransactionType" to nomisTransaction.type,
+    )
+    val deductionId = nomisTransaction.generalLedgerTransactions.first().offenderDeductionId!!
+    telemetry["offenderDeductionId"] = deductionId
+    track("$TELEMETRY_PREFIX-updated", telemetry) {
+      val advance = nomisApiService.getAdvanceByDeductionId(deductionId)
+      val mapping = mappingService.getByNomisId(advance.id)
+      telemetry["dpsAdvanceId"] = mapping.dpsId
+
+      dpsApiService.repayAdvance(
+        UUID.fromString(mapping.dpsId),
+        SyncCreateAdvanceRepayRequest(
+          transactionId = nomisTransaction.transactionId,
+          entrySequence = nomisTransaction.transactionEntrySequence,
+          amount = nomisTransaction.amount,
+          caseloadId = nomisTransaction.caseloadId,
+          description = nomisTransaction.description,
+          createdBy = nomisTransaction.createdBy,
+          createdAt = nomisTransaction.transactionTimestamp,
+        ),
+      )
+    }
   }
 
   private suspend fun tryToCreateMapping(

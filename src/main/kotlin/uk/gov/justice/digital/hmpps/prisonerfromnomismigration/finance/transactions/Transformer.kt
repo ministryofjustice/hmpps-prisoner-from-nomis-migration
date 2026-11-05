@@ -15,8 +15,7 @@ fun List<OffenderTransactionDto>.toSyncOffenderTransactionRequest(requestId: UUI
       transactionId = transactionId,
       requestId = requestId,
       caseloadId = caseloadId,
-      transactionTimestamp = generalLedgerTransactions.firstOrNull()?.transactionTimestamp
-        ?: createdAt,
+      transactionTimestamp = transactionTimestamp,
       createdAt = createdAt,
       createdBy = createdBy,
       createdByDisplayName = createdByDisplayName,
@@ -28,6 +27,9 @@ fun List<OffenderTransactionDto>.toSyncOffenderTransactionRequest(requestId: UUI
       },
     )
   }
+
+val OffenderTransactionDto.transactionTimestamp get() = generalLedgerTransactions.firstOrNull()?.transactionTimestamp
+  ?: createdAt
 
 fun OffenderTransactionDto.toDPSSyncTransaction(): OffenderTransaction = OffenderTransaction(
   entrySequence = transactionEntrySequence,
@@ -59,7 +61,7 @@ fun OffenderTransactionDto.toSyncAddHoldRequest(): SyncCreateHoldRequest = SyncC
   holdUntilDate = holdDetails.holdUntilDate?.atStartOfDay(),
   isReleased = holdDetails.holdCleared,
   holdTransactionId = transactionId,
-  holdFromDate = generalLedgerTransactions.firstOrNull()?.transactionTimestamp ?: createdAt,
+  holdFromDate = transactionTimestamp,
   holdType = type,
   holdLocation = caseloadId,
   amount = amount,
@@ -69,7 +71,7 @@ fun OffenderTransactionDto.toSyncAddHoldRequest(): SyncCreateHoldRequest = SyncC
 )
 
 fun OffenderTransactionDto.toSyncReleaseHoldRequest(): SyncReleaseHoldRequest = SyncReleaseHoldRequest(
-  releaseDateTime = generalLedgerTransactions.firstOrNull()?.transactionTimestamp ?: createdAt,
+  releaseDateTime = transactionTimestamp,
   releaseTransactionId = transactionId,
 )
 
