@@ -22,11 +22,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AddressUsageByNomisIdRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactByNomisIdRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
@@ -219,7 +219,7 @@ class CorePersonDataRepairResourceIntTest(
         mappingApiMockServer.verify(
           WireMock.postRequestedFor(
             WireMock.urlPathEqualTo("/mapping/core-person/replace"),
-          ).withRequestBodyJsonPath("mappingType", CorePersonMappingsDto.MappingType.NOMIS_CREATED.toString()),
+          ).withRequestBodyJsonPath("mappingType", CorePersonAddressContactMappingsDto.MappingType.NOMIS_CREATED.toString()),
         )
       }
 
@@ -373,10 +373,10 @@ class CorePersonDataRepairResourceIntTest(
 
       @Test
       fun `will replace the mappings returned from CPR`() {
-        val request: CorePersonMappingsDto =
+        val request: CorePersonAddressContactMappingsDto =
           MappingApiExtension.getRequestBody(WireMock.postRequestedFor(WireMock.urlPathEqualTo("/mapping/core-person/replace")))
 
-        assertThat(request.mappingType).isEqualTo(CorePersonMappingsDto.MappingType.NOMIS_CREATED)
+        assertThat(request.mappingType).isEqualTo(CorePersonAddressContactMappingsDto.MappingType.NOMIS_CREATED)
         assertThat(request.personMapping.nomisPrisonNumber).isEqualTo(prisonNumber)
         with(request.addresses.first()) {
           assertThat(nomisId).isEqualTo(12345L)

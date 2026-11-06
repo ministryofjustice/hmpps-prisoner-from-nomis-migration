@@ -18,12 +18,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationCon
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
@@ -51,7 +51,7 @@ class CorePersonAddressContactMigrationService(
   @Value($$"${coreperson.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${coreperson.complete-check.count}") completeCheckCount: Int,
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
-) : ByIdRangeMigrationService<Any, PrisonNumberAndRootOffenderId, CorePersonMappingsDto>(
+) : ByIdRangeMigrationService<Any, PrisonNumberAndRootOffenderId, CorePersonAddressContactMappingsDto>(
   mappingService = corePersonMappingService,
   migrationType = CORE_PERSON_ADDRESS_CONTACT,
   pageSize = pageSize,
@@ -99,7 +99,7 @@ class CorePersonAddressContactMigrationService(
         prisonNumber,
         addressesAndContacts.toMigrateAddressesAndContactsRequest(),
       )
-      val mapping = response.toCorePersonMappingsDto(migrationId = context.migrationId)
+      val mapping = response.toCorePersonAddressContactMappingsDto(migrationId = context.migrationId)
       createMappingOrOnFailureDo(context, mapping) {
         queueService.sendMessage(
           MigrationMessageType.RETRY_MIGRATION_MAPPING,
@@ -114,13 +114,13 @@ class CorePersonAddressContactMigrationService(
 
   suspend fun createMappingOrOnFailureDo(
     context: MigrationContext<*>,
-    mapping: CorePersonMappingsDto,
+    mapping: CorePersonAddressContactMappingsDto,
     failureHandler: suspend (error: Throwable) -> Unit,
   ) {
     runCatching {
       mappingService.createMapping(
         mapping,
-        object : ParameterizedTypeReference<DuplicateErrorResponse<CorePersonMappingsDto>>() {},
+        object : ParameterizedTypeReference<DuplicateErrorResponse<CorePersonAddressContactMappingsDto>>() {},
       )
     }.onFailure {
       failureHandler(it)
@@ -150,7 +150,7 @@ class CorePersonAddressContactMigrationService(
     }
   }
 
-  override suspend fun retryCreateMapping(context: MigrationContext<CorePersonMappingsDto>) = createMappingOrOnFailureDo(context, context.body) {
+  override suspend fun retryCreateMapping(context: MigrationContext<CorePersonAddressContactMappingsDto>) = createMappingOrOnFailureDo(context, context.body) {
     throw it
   }
 
@@ -159,7 +159,7 @@ class CorePersonAddressContactMigrationService(
 
   override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonNumberAndRootOffenderId> = jsonMapper.readValue(json)
 
-  override fun parseContextMapping(json: String): MigrationMessage<*, CorePersonMappingsDto> = jsonMapper.readValue(json)
+  override fun parseContextMapping(json: String): MigrationMessage<*, CorePersonAddressContactMappingsDto> = jsonMapper.readValue(json)
 }
 
 internal fun CorePersonAddressContact.toMigrateAddressesAndContactsRequest(existingMappings: CorePersonMappingsResult = emptyCorePersonMappingResult()): PrisonAddressesAndContactsRequest = PrisonAddressesAndContactsRequest(
@@ -239,28 +239,28 @@ internal fun OffenderEmailAddress.toPrisonEmailAddressRequest(existingMappings: 
   modifyUserId = lastUpdatedByUsername,
 )
 
-fun SysconAddressesAndContactsResponseBody.toCorePersonMappingsDto(
+fun SysconAddressesAndContactsResponseBody.toCorePersonAddressContactMappingsDto(
   migrationId: String? = null,
-  migrationType: CorePersonMappingsDto.MappingType = CorePersonMappingsDto.MappingType.MIGRATED,
-): CorePersonMappingsDto {
+  migrationType: CorePersonAddressContactMappingsDto.MappingType = CorePersonAddressContactMappingsDto.MappingType.MIGRATED,
+): CorePersonAddressContactMappingsDto {
   val migrationTypes = when (migrationType) {
-    CorePersonMappingsDto.MappingType.MIGRATED -> MigrationTypes(
+    CorePersonAddressContactMappingsDto.MappingType.MIGRATED -> MigrationTypes(
       CorePersonAddressMappingDto.MappingType.MIGRATED,
       CorePersonAddressUsageMappingDto.MappingType.MIGRATED,
       CorePersonContactMappingDto.MappingType.MIGRATED,
     )
-    CorePersonMappingsDto.MappingType.CPR_CREATED -> MigrationTypes(
+    CorePersonAddressContactMappingsDto.MappingType.CPR_CREATED -> MigrationTypes(
       CorePersonAddressMappingDto.MappingType.CPR_CREATED,
       CorePersonAddressUsageMappingDto.MappingType.CPR_CREATED,
       CorePersonContactMappingDto.MappingType.CPR_CREATED,
     )
-    CorePersonMappingsDto.MappingType.NOMIS_CREATED -> MigrationTypes(
+    CorePersonAddressContactMappingsDto.MappingType.NOMIS_CREATED -> MigrationTypes(
       CorePersonAddressMappingDto.MappingType.NOMIS_CREATED,
       CorePersonAddressUsageMappingDto.MappingType.NOMIS_CREATED,
       CorePersonContactMappingDto.MappingType.NOMIS_CREATED,
     )
   }
-  return CorePersonMappingsDto(
+  return CorePersonAddressContactMappingsDto(
     mappingType = migrationType,
     label = migrationId,
     personMapping = CorePersonMappingIdDto(
