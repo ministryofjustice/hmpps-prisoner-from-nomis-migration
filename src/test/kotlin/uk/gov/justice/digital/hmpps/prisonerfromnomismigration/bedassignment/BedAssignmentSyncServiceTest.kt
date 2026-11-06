@@ -1,14 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.bedassignment
 
 import com.microsoft.applicationinsights.TelemetryClient
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.coVerifyOrder
-import io.mockk.just
-import io.mockk.mockk
-import io.mockk.runs
-import io.mockk.slot
-import io.mockk.verify
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -16,6 +8,17 @@ import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.argThat
+import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.isNull
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
+import org.mockito.kotlin.whenever
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.bedassignment.model.BedAssignmentNomisMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.bedassignment.model.BedAssignmentSyncResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
@@ -30,11 +33,11 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 class BedAssignmentSyncServiceTest {
-  private val historyService = mockk<TranslatorService>()
-  private val dpsApiService = mockk<BedAssignmentDpsApiService>()
-  private val mappingApiService = mockk<BedAssignmentMappingApiService>()
-  private val telemetryClient = mockk<TelemetryClient>(relaxed = true)
-  private val queueService = mockk<SynchronisationQueueService>()
+  private val historyService = mock<TranslatorService>()
+  private val dpsApiService = mock<BedAssignmentDpsApiService>()
+  private val mappingApiService = mock<BedAssignmentMappingApiService>()
+  private val telemetryClient = mock<TelemetryClient>()
+  private val queueService = mock<SynchronisationQueueService>()
   private val service = BedAssignmentSyncService(
     historyService,
     dpsApiService,
@@ -59,12 +62,14 @@ class BedAssignmentSyncServiceTest {
     mappingType = BedAssignmentMappingDto.MappingType.NOMIS_CREATED,
   )
 
-  private fun stubSyncResponse() {
-    coEvery { historyService.getHistory(event.offenderIdDisplay) } returns emptyList()
-    coEvery { dpsApiService.sync(event.offenderIdDisplay, emptyList()) } returns BedAssignmentSyncResponse(
-      created = listOf(BedAssignmentNomisMapping(dpsId, 123, 1)),
-      updated = emptyList(),
-      deleted = listOf(BedAssignmentNomisMapping(UUID.fromString(deletedDpsId), 123, 2)),
+  private suspend fun stubSyncResponse() {
+    whenever(historyService.getHistory(event.offenderIdDisplay)).thenReturn(emptyList())
+    whenever(dpsApiService.sync(event.offenderIdDisplay, emptyList())).thenReturn(
+      BedAssignmentSyncResponse(
+        created = listOf(BedAssignmentNomisMapping(dpsId, 123, 1)),
+        updated = emptyList(),
+        deleted = listOf(BedAssignmentNomisMapping(UUID.fromString(deletedDpsId), 123, 2)),
+      ),
     )
   }
 
@@ -73,74 +78,62 @@ class BedAssignmentSyncServiceTest {
     @Test
     fun `queues the original response when a mapping lookup fails`() = runTest {
       stubSyncResponse()
-      coEvery { mappingApiService.deleteMappingByDpsId(deletedDpsId) } just runs
-      coEvery {
-        mappingApiService.getMappingByNomisIdOrNull(
-          123,
-          1,
-        )
-      } throws IllegalStateException("mapping lookup failed")
-      val retry = slot<BedAssignmentMappingRetry>()
-      coEvery {
-        queueService.sendMessage(
-          RETRY_SYNCHRONISATION_MAPPING.name,
-          SynchronisationType.BED_ASSIGNMENTS,
-          capture(retry),
-          any(),
-          any(),
-        )
-      } just runs
+      whenever(mappingApiService.getMappingByNomisIdOrNull(123, 1)).thenThrow(IllegalStateException("mapping lookup failed"))
+      val retry = argumentCaptor<BedAssignmentMappingRetry>()
 
       service.create(event)
 
-      assertThat(retry.captured.mappings).containsExactly(mapping)
-      assertThat(retry.captured.deletedDpsIds).containsExactly(deletedDpsId)
-      coVerify(exactly = 1) { dpsApiService.sync(any(), any()) }
-      verify {
-        telemetryClient.trackEvent(
-          "bedassignment-synchronisation-created-success",
-          match { it["mapping"] == "initial-failure" && it["original-error"] == "mapping lookup failed" },
-          null,
-        )
-      }
+      verify(queueService).sendMessage(
+        eq(RETRY_SYNCHRONISATION_MAPPING.name),
+        eq(SynchronisationType.BED_ASSIGNMENTS),
+        retry.capture(),
+        any(),
+        any(),
+      )
+      assertThat(retry.firstValue.mappings).containsExactly(mapping)
+      assertThat(retry.firstValue.deletedDpsIds).containsExactly(deletedDpsId)
+      verify(dpsApiService).sync(any(), any())
+      verify(telemetryClient).trackEvent(
+        eq("bedassignment-synchronisation-created-success"),
+        argThat { this["mapping"] == "initial-failure" && this["original-error"] == "mapping lookup failed" },
+        isNull(),
+      )
     }
 
     @Test
     fun `does not acknowledge a failed retry publication`() = runTest {
       stubSyncResponse()
-      coEvery { mappingApiService.deleteMappingByDpsId(deletedDpsId) } throws IllegalStateException("mapping delete failed")
-      coEvery {
+      whenever(mappingApiService.deleteMappingByDpsId(deletedDpsId)).thenThrow(IllegalStateException("mapping delete failed"))
+      whenever(
         queueService.sendMessage(
           any(),
           any(),
           any(),
           any(),
           any(),
-        )
-      } throws IllegalStateException("queue publication failed")
+        ),
+      ).thenThrow(IllegalStateException("queue publication failed"))
 
       assertThatThrownBy { runBlocking { service.create(event) } }
         .isInstanceOf(IllegalStateException::class.java)
         .hasMessage("queue publication failed")
 
-      verify(exactly = 0) { telemetryClient.trackEvent("bedassignment-synchronisation-created-success", any(), any()) }
-      verify {
-        telemetryClient.trackEvent(
-          "bedassignment-synchronisation-created-error",
-          match { it["error"] == "queue publication failed" },
-          null,
-        )
-      }
+      verify(telemetryClient, never()).trackEvent(eq("bedassignment-synchronisation-created-success"), any(), anyOrNull())
+      verify(telemetryClient).trackEvent(
+        eq("bedassignment-synchronisation-created-error"),
+        argThat { this["error"] == "queue publication failed" },
+        isNull(),
+      )
     }
 
     @Test
     fun `does not enqueue mapping work when the coroutine is cancelled`() = runTest {
       stubSyncResponse()
-      coEvery { mappingApiService.deleteMappingByDpsId(deletedDpsId) } throws CancellationException("cancelled")
+      whenever(mappingApiService.deleteMappingByDpsId(deletedDpsId)).thenThrow(CancellationException("cancelled"))
 
       assertThatThrownBy { runBlocking { service.create(event) } }.isInstanceOf(CancellationException::class.java)
 
-      coVerify(exactly = 0) { queueService.sendMessage(any(), any(), any(), any(), any()) }
+      verify(queueService, never()).sendMessage(any(), any(), any(), any(), any())
     }
   }
 
@@ -153,125 +146,108 @@ class BedAssignmentSyncServiceTest {
 
     @Test
     fun `retries original delete IDs before missing mappings without calling DPS or NOMIS`() = runTest {
-      coEvery { mappingApiService.deleteMappingByDpsId(deletedDpsId) } just runs
-      coEvery { mappingApiService.getMappingByNomisIdOrNull(123, 1) } returns null
-      coEvery { mappingApiService.createMapping(mapping, any()) } returns CreateMappingResult()
+      whenever(mappingApiService.getMappingByNomisIdOrNull(123, 1)).thenReturn(null)
+      whenever(mappingApiService.createMapping(eq(mapping), any())).thenReturn(CreateMappingResult())
 
       service.retryCreateMapping(retry)
 
-      coVerifyOrder {
-        mappingApiService.deleteMappingByDpsId(deletedDpsId)
-        mappingApiService.getMappingByNomisIdOrNull(123, 1)
-        mappingApiService.createMapping(mapping, any())
+      inOrder(mappingApiService) {
+        verify(mappingApiService).deleteMappingByDpsId(deletedDpsId)
+        verify(mappingApiService).getMappingByNomisIdOrNull(123, 1)
+        verify(mappingApiService).createMapping(eq(mapping), any())
       }
-      coVerify(exactly = 0) { dpsApiService.sync(any(), any()) }
-      coVerify(exactly = 0) { historyService.getHistory(any()) }
-      verify { telemetryClient.trackEvent("bedassignment-mapping-created-success", retry.telemetryAttributes, null) }
+      verify(dpsApiService, never()).sync(any(), any())
+      verify(historyService, never()).getHistory(any())
+      verify(telemetryClient).trackEvent("bedassignment-mapping-created-success", retry.telemetryAttributes, null)
     }
 
     @Test
     fun `leaves a matching mapping unchanged on retry after partial progress`() = runTest {
-      coEvery { mappingApiService.deleteMappingByDpsId(deletedDpsId) } just runs
-      coEvery {
-        mappingApiService.getMappingByNomisIdOrNull(
-          123,
-          1,
-        )
-      } returns mapping.copy(mappingType = BedAssignmentMappingDto.MappingType.MIGRATED)
+      whenever(mappingApiService.getMappingByNomisIdOrNull(123, 1)).thenReturn(
+        mapping.copy(mappingType = BedAssignmentMappingDto.MappingType.MIGRATED),
+      )
 
       service.retryCreateMapping(retry)
 
-      coVerify(exactly = 0) { mappingApiService.createMapping(any(), any()) }
+      verify(mappingApiService, never()).createMapping(any(), any())
     }
 
     @Test
     fun `accepts an identical mapping created concurrently`() = runTest {
-      coEvery { mappingApiService.deleteMappingByDpsId(deletedDpsId) } just runs
-      coEvery { mappingApiService.getMappingByNomisIdOrNull(123, 1) } returns null
-      coEvery { mappingApiService.createMapping(mapping, any()) } returns CreateMappingResult(
-        DuplicateErrorResponse(DuplicateErrorContent(mapping, mapping)),
+      whenever(mappingApiService.getMappingByNomisIdOrNull(123, 1)).thenReturn(null)
+      whenever(mappingApiService.createMapping(eq(mapping), any())).thenReturn(
+        CreateMappingResult(DuplicateErrorResponse(DuplicateErrorContent(mapping, mapping))),
       )
 
       service.retryCreateMapping(retry)
 
-      verify { telemetryClient.trackEvent("bedassignment-from-nomis-sync-duplicate", any(), null) }
-      verify { telemetryClient.trackEvent("bedassignment-mapping-created-success", retry.telemetryAttributes, null) }
+      verify(telemetryClient).trackEvent(eq("bedassignment-from-nomis-sync-duplicate"), any(), isNull())
+      verify(telemetryClient).trackEvent("bedassignment-mapping-created-success", retry.telemetryAttributes, null)
     }
 
     @Test
     fun `reports and rejects a conflicting lookup mapping`() = runTest {
-      coEvery { mappingApiService.deleteMappingByDpsId(deletedDpsId) } just runs
-      coEvery {
-        mappingApiService.getMappingByNomisIdOrNull(
-          123,
-          1,
-        )
-      } returns mapping.copy(dpsBedAssignmentId = deletedDpsId)
+      whenever(mappingApiService.getMappingByNomisIdOrNull(123, 1)).thenReturn(mapping.copy(dpsBedAssignmentId = deletedDpsId))
 
       assertThatThrownBy { runBlocking { service.retryCreateMapping(retry) } }
         .isInstanceOf(IllegalStateException::class.java)
         .hasMessageContaining("Conflicting bed-assignment mapping")
 
-      coVerify(exactly = 0) { mappingApiService.createMapping(any(), any()) }
-      verify {
-        telemetryClient.trackEvent(
-          "bedassignment-from-nomis-sync-duplicate",
-          match { it["existingDpsBedAssignmentId"] == deletedDpsId && it["duplicateDpsBedAssignmentId"] == dpsId.toString() },
-          null,
-        )
-      }
-      verify { telemetryClient.trackEvent("bedassignment-mapping-created-failure", any(), null) }
+      verify(mappingApiService, never()).createMapping(any(), any())
+      verify(telemetryClient).trackEvent(
+        eq("bedassignment-from-nomis-sync-duplicate"),
+        argThat { this["existingDpsBedAssignmentId"] == deletedDpsId && this["duplicateDpsBedAssignmentId"] == dpsId.toString() },
+        isNull(),
+      )
+      verify(telemetryClient).trackEvent(eq("bedassignment-mapping-created-failure"), any(), isNull())
     }
 
     @Test
     fun `reports and rejects a conflict from mapping creation`() = runTest {
-      coEvery { mappingApiService.deleteMappingByDpsId(deletedDpsId) } just runs
-      coEvery { mappingApiService.getMappingByNomisIdOrNull(123, 1) } returns null
-      coEvery { mappingApiService.createMapping(mapping, any()) } returns CreateMappingResult(
-        DuplicateErrorResponse(DuplicateErrorContent(mapping, mapping.copy(dpsBedAssignmentId = deletedDpsId))),
+      whenever(mappingApiService.getMappingByNomisIdOrNull(123, 1)).thenReturn(null)
+      whenever(mappingApiService.createMapping(eq(mapping), any())).thenReturn(
+        CreateMappingResult(DuplicateErrorResponse(DuplicateErrorContent(mapping, mapping.copy(dpsBedAssignmentId = deletedDpsId)))),
       )
 
       assertThatThrownBy { runBlocking { service.retryCreateMapping(retry) } }
         .isInstanceOf(IllegalStateException::class.java)
         .hasMessageContaining("Conflicting bed-assignment mapping")
 
-      verify { telemetryClient.trackEvent("bedassignment-from-nomis-sync-duplicate", any(), null) }
-      verify(exactly = 0) { telemetryClient.trackEvent("bedassignment-mapping-created-success", any(), null) }
+      verify(telemetryClient).trackEvent(eq("bedassignment-from-nomis-sync-duplicate"), any(), isNull())
+      verify(telemetryClient, never()).trackEvent(eq("bedassignment-mapping-created-success"), any(), isNull())
     }
 
     @Test
     fun `propagates a persistent delete failure to the queue retry`() = runTest {
-      coEvery { mappingApiService.deleteMappingByDpsId(deletedDpsId) } throws IllegalStateException("mapping delete failed")
+      whenever(mappingApiService.deleteMappingByDpsId(deletedDpsId)).thenThrow(IllegalStateException("mapping delete failed"))
 
       assertThatThrownBy { runBlocking { service.retryCreateMapping(retry) } }.hasMessage("mapping delete failed")
 
-      verify {
-        telemetryClient.trackEvent(
-          "bedassignment-mapping-created-failure",
-          retry.telemetryAttributes + ("error" to "mapping delete failed"),
-          null,
-        )
-      }
-      coVerify(exactly = 0) { mappingApiService.getMappingByNomisIdOrNull(any(), any()) }
+      verify(telemetryClient).trackEvent(
+        "bedassignment-mapping-created-failure",
+        retry.telemetryAttributes + ("error" to "mapping delete failed"),
+        null,
+      )
+      verify(mappingApiService, never()).getMappingByNomisIdOrNull(any(), any())
     }
 
     @Test
     fun `propagates cancellation without reporting retry success or failure`() = runTest {
-      coEvery { mappingApiService.deleteMappingByDpsId(deletedDpsId) } throws CancellationException("cancelled")
+      whenever(mappingApiService.deleteMappingByDpsId(deletedDpsId)).thenThrow(CancellationException("cancelled"))
 
       assertThatThrownBy { runBlocking { service.retryCreateMapping(retry) } }.isInstanceOf(CancellationException::class.java)
 
-      verify(exactly = 0) { telemetryClient.trackEvent("bedassignment-mapping-created-success", any(), any()) }
-      verify(exactly = 0) { telemetryClient.trackEvent("bedassignment-mapping-created-failure", any(), any()) }
+      verify(telemetryClient, never()).trackEvent(eq("bedassignment-mapping-created-success"), any(), anyOrNull())
+      verify(telemetryClient, never()).trackEvent(eq("bedassignment-mapping-created-failure"), any(), anyOrNull())
     }
 
     @Test
     fun `empty retry has no downstream effects`() = runTest {
       service.retryCreateMapping(InternalMessage(BedAssignmentMappingRetry(emptyList(), emptyList()), emptyMap()))
 
-      coVerify(exactly = 0) { mappingApiService.deleteMappingByDpsId(any()) }
-      coVerify(exactly = 0) { mappingApiService.getMappingByNomisIdOrNull(any(), any()) }
-      coVerify(exactly = 0) { mappingApiService.createMapping(any(), any()) }
+      verify(mappingApiService, never()).deleteMappingByDpsId(any())
+      verify(mappingApiService, never()).getMappingByNomisIdOrNull(any(), any())
+      verify(mappingApiService, never()).createMapping(any(), any())
     }
   }
 }
