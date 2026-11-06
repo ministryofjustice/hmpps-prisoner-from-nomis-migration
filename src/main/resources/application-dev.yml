@@ -22,6 +22,7 @@ api.base.url:
   movements-taps: http://localhost:8103
   officialvisits: http://localhost:8104
   csra: http://localhost:8105
+  bedassignment: http://localhost:8112
   movements-court: http://localhost:8106
   property: http://localhost:8107
   movements-transfer: http://localhost:8108

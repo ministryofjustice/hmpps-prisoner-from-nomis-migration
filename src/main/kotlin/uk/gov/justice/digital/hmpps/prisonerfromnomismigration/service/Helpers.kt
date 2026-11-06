@@ -21,6 +21,7 @@ const val ADVANCES_QUEUE_ID = "migrationadvances"
 const val AGENCY_REGISTERS_QUEUE_ID = "migrationagencyregisters"
 const val ALLOCATIONS_QUEUE_ID = "migrationallocations"
 const val APPOINTMENTS_QUEUE_ID = "migrationappointments"
+const val BED_ASSIGNMENT_QUEUE_ID = "migrationbedassignment"
 const val CORE_PERSON_QUEUE_ID = "migrationcoreperson"
 const val CSRA_QUEUE_ID = "migrationcsra"
 const val COURT_SCHEDULER_QUEUE_ID = "migrationcourtmovements"
@@ -38,6 +39,7 @@ const val VISITS_QUEUE_ID = "migrationvisits"
 
 const val AGENCY_REGISTERS_SYNC_QUEUE_ID = "eventagencyregisters"
 const val ALERTS_SYNC_QUEUE_ID = "eventalerts"
+const val BED_ASSIGNMENT_SYNC_QUEUE_ID = "eventbedassignment"
 const val CASENOTES_SYNC_QUEUE_ID = "eventcasenotes"
 const val CORE_PERSON_SYNC_QUEUE_ID = "eventcoreperson"
 const val COURTSCHEDULER_SYNC_QUEUE_ID = "eventcourtmovements"
@@ -66,6 +68,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   AGENCY_REGISTERS(AGENCY_REGISTERS_QUEUE_ID, "agencyregisters"),
   ALLOCATIONS(ALLOCATIONS_QUEUE_ID, "activity-allocation"),
   APPOINTMENTS(APPOINTMENTS_QUEUE_ID, "appointments"),
+  BED_ASSIGNMENT(BED_ASSIGNMENT_QUEUE_ID, "bedassignment"),
   CORE_PERSON_ADDRESS_CONTACT(CORE_PERSON_QUEUE_ID, "coreperson-address-contact"),
   CSRA(CSRA_QUEUE_ID, "csra"),
   COURT_SCHEDULER(COURT_SCHEDULER_QUEUE_ID, "court-scheduler"),
@@ -84,6 +87,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
 
 enum class SynchronisationType(val queueId: String) {
   ALERTS(ALERTS_SYNC_QUEUE_ID),
+  BED_ASSIGNMENTS(BED_ASSIGNMENT_SYNC_QUEUE_ID),
   CASENOTES(CASENOTES_SYNC_QUEUE_ID),
   CORE_PERSON(CORE_PERSON_SYNC_QUEUE_ID),
   COURT_SCHEDULER(COURTSCHEDULER_SYNC_QUEUE_ID),

@@ -279,6 +279,57 @@ Authorization: Bearer {{$auth.token("hmpps-auth")}}
 
 The is currently not a repair that pushes data from DPS to NOMIS. There maybe a requirement for this in the future.
 
+## Bed-assignments
+
+`POST /migrate/bed-assignments` starts an asynchronous, prisoner-by-prisoner migration
+and requires `PRISONER_FROM_NOMIS__MIGRATION__RW`. Send `{}` for all prisoners, or
+`{"offenderNos":["A1234AA","B1234BB"]}` for an explicit selection. A supplied list
+must be nonempty and every number must match `[A-Z][0-9]{4}[A-Z]{2}`.
+Duplicate prisoner numbers are deduplicated before counting and pagination.
+`bedassignment.page.size` controls pagination (default 1000).
+
+Migration sends each prisoner's complete current NOMIS bed-assignment history,
+across all bookings, to Change Someone's Cell. Location mappings are resolved once
+per distinct living-unit ID; missing mappings become null, while lookup failures
+and invalid UUIDs fail the operation. Historical negative IDs, nullable fields,
+raw reason codes and the NOMIS creation username are preserved.
+
+`BED_ASSIGNMENT_HISTORY-INSERTED`, `BED_ASSIGNMENT_HISTORY-UPDATED` and
+`BED_ASSIGNMENT_HISTORY-DELETED` all re-read and synchronise the whole current
+history. An empty history removes remaining DPS assignments. Mapping-only retries
+retain created/updated keys and original deleted DPS IDs without repeating the DPS
+call. Events explicitly originating in DPS are skipped; legacy events without audit
+are processed. Concurrent snapshots have no additional ordering guarantee.
+
+Configure `API_BASE_URL_BEDASSIGNMENT`, `BEDASSIGNMENT_CLIENT_ID` and
+`BEDASSIGNMENT_CLIENT_SECRET`; the client needs `CELL_MOVEMENTS__SYNC__RW`.
+Local/test DPS uses port 8112. Queues are `migrationbedassignment` and
+`eventbedassignment`, each with a DLQ. Before deployment, provision the referenced
+credential keys, queue secrets and all three SNS event subscriptions, and verify
+actual queue names against the Helm monitoring lists. Verify update/delete producer
+payloads include prisoner identity, booking ID and `bedAssignmentSeq`: published
+legacy insert examples are verified, but update/delete producer contracts are not.
+The three `feature.event.bedassignment.BED_ASSIGNMENT_HISTORY-*` switches remain
+disabled in deployed environments and are enabled in tests; only enable them once
+these prerequisites are satisfied.
+
+Migration status counts local `BED_ASSIGNMENT_MIGRATION_COMPLETION` markers,
+scoped to the migration ID. Each prisoner counts once, including successful empty
+histories, only after mapping persistence succeeds. Mapping-only retries also
+persist the marker; its composite primary key prevents repeated entities or retries
+from double counting. Marker-write failures retry mapping persistence, not DPS.
+After a bulk mapping conflict, every requested key is checked and missing mappings
+are created individually. Only identical NOMIS-key/DPS-ID mappings are accepted;
+genuine conflicts remain failures and cannot mark the prisoner complete.
+
+The upstream mapping service's `BedAssignmentMappingService.getCountByMigrationIdGroupedByPrisoner`
+currently returns `repository.count() / averageBedAssignmentsPerPrisoner`, ignoring
+the migration ID. Its count endpoint is deliberately not used for status or refresh.
+
+Generate the committed contract/client with
+`./gradlew writeBedassignmentJson buildBedassignmentApiModel`; focused tests use
+`./gradlew testBedassignment`.
+
 ## Finance
 ### Transactions - Prison (GL_TRANSACTIONS) and Prisoner (OFFENDER_TRANSACTIONS)
 

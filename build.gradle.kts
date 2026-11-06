@@ -141,6 +141,12 @@ data class ModelConfiguration(val name: String, val packageName: String, val tes
 val packagePrefix = "uk.gov.justice.digital.hmpps.prisonerfromnomismigration"
 val models = listOf(
   ModelConfiguration(
+    name = "bedassignment",
+    packageName = "bedassignment",
+    testPackageName = "bedassignment",
+    url = "https://change-someones-cell-api-dev.hmpps.service.justice.gov.uk/v3/api-docs",
+  ),
+  ModelConfiguration(
     name = "activities",
     packageName = "activities",
     testPackageName = "activities",

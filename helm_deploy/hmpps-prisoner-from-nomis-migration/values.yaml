@@ -34,6 +34,9 @@ generic-service:
     SPRING_PROFILES_ACTIVE: "logstash"
     APPLICATIONINSIGHTS_CONFIGURATION_FILE: applicationinsights.json
     FEATURE_ADJUDICATIONS_REPORT_MODE: false
+    FEATURE_EVENT_BEDASSIGNMENT_BED_ASSIGNMENT_HISTORY-INSERTED: false
+    FEATURE_EVENT_BEDASSIGNMENT_BED_ASSIGNMENT_HISTORY-UPDATED: false
+    FEATURE_EVENT_BEDASSIGNMENT_BED_ASSIGNMENT_HISTORY-DELETED: false
 
   # Pre-existing kubernetes secrets to load as environment variables in the deployment.
   # namespace_secrets:
@@ -54,6 +57,8 @@ generic-service:
       CORE_PERSON_CLIENT_SECRET: "CORE_PERSON_CLIENT_SECRET"
       CSRA_CLIENT_ID: "CSRA_CLIENT_ID"
       CSRA_CLIENT_SECRET: "CSRA_CLIENT_SECRET"
+      BEDASSIGNMENT_CLIENT_ID: "BEDASSIGNMENT_CLIENT_ID"
+      BEDASSIGNMENT_CLIENT_SECRET: "BEDASSIGNMENT_CLIENT_SECRET"
       COURT_SENTENCING_CLIENT_ID: "COURT_SENTENCING_CLIENT_ID"
       COURT_SENTENCING_CLIENT_SECRET: "COURT_SENTENCING_CLIENT_SECRET"
       DRUG_TESTING_CLIENT_ID: "DRUG_TESTING_CLIENT_ID"
@@ -126,6 +131,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONCSRA_QUEUE_NAME: "sqs_name"
     sqs-migration-csra-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONCSRA_DLQ_NAME: "sqs_name"
+    sqs-migration-bedassignment-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONBEDASSIGNMENT_QUEUE_NAME: "sqs_name"
+    sqs-migration-bedassignment-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONBEDASSIGNMENT_DLQ_NAME: "sqs_name"
     sqs-migration-drugtesting-queue:
       HMPPS_SQS_QUEUES_MIGRATIONDRUGTESTING_QUEUE_NAME: "sqs_name"
     sqs-migration-drugtesting-dlq:
@@ -206,6 +215,10 @@ generic-service:
       HMPPS_SQS_QUEUES_EVENTCSRA_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-csra-dl-queue:
       HMPPS_SQS_QUEUES_EVENTCSRA_DLQ_NAME: "sqs_name"
+    prisoner-from-nomis-bedassignment-queue:
+      HMPPS_SQS_QUEUES_EVENTBEDASSIGNMENT_QUEUE_NAME: "sqs_name"
+    prisoner-from-nomis-bedassignment-dl-queue:
+      HMPPS_SQS_QUEUES_EVENTBEDASSIGNMENT_DLQ_NAME: "sqs_name"
     prisoner-from-nomis-property-queue:
       HMPPS_SQS_QUEUES_EVENTPROPERTY_QUEUE_NAME: "sqs_name"
     prisoner-from-nomis-property-dl-queue:

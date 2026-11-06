@@ -25,6 +25,9 @@ hmpps.sqs:
     migrationcsra:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    migrationbedassignment:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     migrationdrugtesting:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
@@ -68,6 +71,9 @@ hmpps.sqs:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     eventcsra:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
+    eventbedassignment:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
     eventlocations:
