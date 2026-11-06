@@ -27,12 +27,18 @@ api.base.url:
   movements-taps: http://localhost:8103
   officialvisits: http://localhost:8104
   csra: http://localhost:8105
+  bedassignment: http://localhost:8112
   movements-court: http://localhost:8106
   property: http://localhost:8107
   movements-transfer: http://localhost:8108
   agencyregisters: http://localhost:8109
   drug.testing: http://localhost:8110
   person-location: http://localhost:8111
+
+#feature.event.bedassignment:
+#  BED_ASSIGNMENT_HISTORY-INSERTED: true
+#  BED_ASSIGNMENT_HISTORY-UPDATED: true
+#  BED_ASSIGNMENT_HISTORY-DELETED: true
 
 visits:
   page:
@@ -160,12 +166,17 @@ agencyregisters:
     delay-seconds: 0
     retry-seconds: 0
     count: 1
-
 drugtesting:
   complete-check:
     delay-seconds: 0
     retry-seconds: 0
     count: 1
+bedassignment:
+  client:
+    id: bedassignment-client
+    secret: clientsecret
+  page:
+    size: 10
 
 spring:
   r2dbc:
@@ -211,6 +222,9 @@ hmpps.sqs:
       dlqMaxReceiveCount: 2
     eventcsra:
       dlqMaxReceiveCount: 2
+    eventbedassignment:
+      dlqMaxReceiveCount: 2
+      errorVisibilityTimeout: 0
     eventfinance:
       dlqMaxReceiveCount: 2
     eventcourtsentencing:
@@ -254,6 +268,9 @@ hmpps.sqs:
     migrationcoreperson:
       errorVisibilityTimeout: 0
     migrationcsra:
+      errorVisibilityTimeout: 0
+      dlqMaxReceiveCount: 2
+    migrationbedassignment:
       errorVisibilityTimeout: 0
       dlqMaxReceiveCount: 2
     migrationdrugtesting:
