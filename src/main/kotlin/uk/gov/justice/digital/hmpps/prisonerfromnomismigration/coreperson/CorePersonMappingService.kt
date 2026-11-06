@@ -18,17 +18,17 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonContactMappingResourceApi.NomisContactTypeDeleteCorePersonContactMappingByNomisId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonContactMappingResourceApi.NomisContactTypeGetCorePersonContactMappingByNomisId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonMappingResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMergeMappingsDto
 
 @Service
-class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorePersonMappingsDto>("/mapping/core-person", webClient) {
+class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorePersonAddressContactMappingsDto>("/mapping/core-person", webClient) {
   private val api = CorePersonMappingResourceApi(webClient)
   private val addressApi = CorePersonAddressMappingResourceApi(webClient)
   private val contactApi = CorePersonContactMappingResourceApi(webClient)
@@ -127,7 +127,7 @@ class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     }
     .awaitFirstOrDefault(CreateMappingResult())
 
-  suspend fun replaceMappings(mappings: CorePersonMappingsDto) {
+  suspend fun replaceMappings(mappings: CorePersonAddressContactMappingsDto) {
     api.replaceCorePersonMappings(mappings).awaitSingle()
   }
 

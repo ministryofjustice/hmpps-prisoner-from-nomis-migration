@@ -31,11 +31,11 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType.EMAIL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType.PHONE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse.Status
@@ -219,13 +219,13 @@ class CorePersonMigrationIntTest(
 
       @Test
       fun `will create mappings for address and contacts`() {
-        val mappingRequests: List<CorePersonMappingsDto> =
+        val mappingRequests: List<CorePersonAddressContactMappingsDto> =
           MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person")))
 
         assertThat(mappingRequests).hasSize(1)
 
         with(mappingRequests.first()) {
-          assertThat(mappingType).isEqualTo(CorePersonMappingsDto.MappingType.MIGRATED)
+          assertThat(mappingType).isEqualTo(CorePersonAddressContactMappingsDto.MappingType.MIGRATED)
           assertThat(label).isEqualTo(migrationResult.migrationId)
           assertThat(personMapping.cprId).isEqualTo(nomisPrisonNumber)
           assertThat(personMapping.nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
@@ -307,13 +307,13 @@ class CorePersonMigrationIntTest(
 
       @Test
       fun `will create mappings for addresses and contacts`() {
-        val mappingRequests: List<CorePersonMappingsDto> =
+        val mappingRequests: List<CorePersonAddressContactMappingsDto> =
           MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person")))
 
         assertThat(mappingRequests).hasSize(1)
 
         with(mappingRequests.first()) {
-          assertThat(mappingType).isEqualTo(CorePersonMappingsDto.MappingType.MIGRATED)
+          assertThat(mappingType).isEqualTo(CorePersonAddressContactMappingsDto.MappingType.MIGRATED)
           assertThat(label).isEqualTo(migrationResult.migrationId)
           assertThat(personMapping.cprId).isEqualTo(nomisPrisonNumber)
           assertThat(personMapping.nomisPrisonNumber).isEqualTo(nomisPrisonNumber)
@@ -441,7 +441,7 @@ class CorePersonMigrationIntTest(
 
       @Test
       fun `will eventually create mappings for addresses and contacts`() {
-        val mappingRequests: List<CorePersonMappingsDto> =
+        val mappingRequests: List<CorePersonAddressContactMappingsDto> =
           MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person")))
 
         await untilAsserted {
@@ -507,8 +507,8 @@ class CorePersonMigrationIntTest(
         mappingApiMock.stubCreateMappingsForMigration(
           DuplicateMappingErrorResponse(
             moreInfo = DuplicateErrorContentObject(
-              duplicate = CorePersonMappingsDto(
-                mappingType = CorePersonMappingsDto.MappingType.MIGRATED,
+              duplicate = CorePersonAddressContactMappingsDto(
+                mappingType = CorePersonAddressContactMappingsDto.MappingType.MIGRATED,
                 personMapping = CorePersonMappingIdDto(
                   cprId = nomisPrisonNumber,
                   nomisPrisonNumber = nomisPrisonNumber,
@@ -517,8 +517,8 @@ class CorePersonMigrationIntTest(
                 contacts = emptyList(),
                 addressUsages = emptyList(),
               ),
-              existing = CorePersonMappingsDto(
-                mappingType = CorePersonMappingsDto.MappingType.MIGRATED,
+              existing = CorePersonAddressContactMappingsDto(
+                mappingType = CorePersonAddressContactMappingsDto.MappingType.MIGRATED,
                 personMapping = CorePersonMappingIdDto(
                   cprId = nomisPrisonNumber,
                   nomisPrisonNumber = nomisPrisonNumber,
@@ -548,7 +548,7 @@ class CorePersonMigrationIntTest(
 
       @Test
       fun `will only try create mappings once`() {
-        val mappingRequests: List<CorePersonMappingsDto> =
+        val mappingRequests: List<CorePersonAddressContactMappingsDto> =
           MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person")))
 
         await untilAsserted {
