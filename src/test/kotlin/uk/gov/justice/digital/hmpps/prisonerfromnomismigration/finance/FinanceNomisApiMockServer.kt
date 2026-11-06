@@ -10,10 +10,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.ErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions.PrisonerTransactionSynchronisationIntTest.Companion.BOOKING_ID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions.PrisonerTransactionSynchronisationIntTest.Companion.NOMIS_TRANSACTION_ID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions.PrisonerTransactionSynchronisationIntTest.Companion.OFFENDER_ID
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions.PrisonerTransactionSynchronisationIntTest.Companion.OFFENDER_ID_DISPLAY
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonAccountBalanceDto
@@ -33,6 +29,17 @@ class FinanceNomisApiMockServer(private val jsonMapper: JsonMapper) {
   ) {
     nomisApi.stubFor(
       get(urlEqualTo("/transactions/$transactionId")).willReturn(
+        okJson(jsonMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
+  fun stubGetPrisonTransaction(
+    transactionId: Long = 1001,
+    response: List<GeneralLedgerTransactionDto> = nomisGLTransactions(transactionId),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/transactions/$transactionId/general-ledger")).willReturn(
         okJson(jsonMapper.writeValueAsString(response)),
       ),
     )
@@ -126,7 +133,7 @@ fun prisonBalance(prisonId: String = "MDI"): PrisonBalanceDto = PrisonBalanceDto
   ),
 )
 
-fun nomisGLTransactions(transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
+fun nomisGLTransactions(transactionId: Long = 1001) = listOf(
   GeneralLedgerTransactionDto(
     transactionId = transactionId,
     transactionEntrySequence = 1,
@@ -148,14 +155,14 @@ fun nomisGLTransactions(transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
   ),
 )
 
-fun nomisTransactions(bookingId: Long = BOOKING_ID, transactionId: Long = NOMIS_TRANSACTION_ID) = listOf(
+fun nomisTransactions(bookingId: Long = 1234L, transactionId: Long = 1001) = listOf(
   offenderTransactionDto(bookingId = bookingId, transactionId = transactionId),
 )
-fun offenderTransactionDto(bookingId: Long = BOOKING_ID, transactionId: Long = NOMIS_TRANSACTION_ID) = OffenderTransactionDto(
+fun offenderTransactionDto(bookingId: Long = 1234L, transactionId: Long = 1001) = OffenderTransactionDto(
   transactionId = transactionId,
   transactionEntrySequence = 1,
-  offenderId = OFFENDER_ID,
-  offenderNo = OFFENDER_ID_DISPLAY,
+  offenderId = 9876,
+  offenderNo = "A3864DZ",
   caseloadId = "SWI",
   bookingId = bookingId,
   amount = BigDecimal.valueOf(5.42),

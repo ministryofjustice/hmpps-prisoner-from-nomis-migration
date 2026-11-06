@@ -46,7 +46,7 @@ class PrisonTransactionSynchronisationIntTest : FinanceIntegrationTestBase() {
     internal const val BOOKING_ID = 1234L
     internal const val NOMIS_TRANSACTION_ID = 2345678L
     internal const val OFFENDER_ID_DISPLAY = "A3864DZ"
-    internal const val OFFENDER_ID = 101L
+    internal const val OFFENDER_ID = 9876L
     internal const val DPS_TRANSACTION_ID = "a04f7a8d-61aa-400c-9395-000011112222"
     internal const val MESSAGE_ID = "abcdef01-0000-1111-2222-000011112222"
     val dpsTransactionUuid: UUID = UUID.fromString(DPS_TRANSACTION_ID)
