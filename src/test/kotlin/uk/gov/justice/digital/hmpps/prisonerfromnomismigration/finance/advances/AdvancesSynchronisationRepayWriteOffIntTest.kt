@@ -699,7 +699,7 @@ class AdvancesSynchronisationRepayWriteOffIntTest(
       @BeforeEach
       fun setUp() {
         sendWriteOffEvent()
-        waitForAnyProcessingToComplete("PERFORM_TRANSACTION_SYNC")
+        waitForAnyProcessingToComplete("transactions-synchronisation-gl-updated-ignored")
       }
 
       @Test
