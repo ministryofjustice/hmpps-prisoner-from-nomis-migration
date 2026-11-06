@@ -65,8 +65,6 @@ class FinanceEventListener(
               )
               "OFFENDER_ADVANCES-INSERTED" -> advancesSynchronisationService.advanceInserted(sqsMessage.Message.fromJson())
 
-              "OFFENDER_DEDUCTIONS-UPDATED" -> advancesSynchronisationService.deductionUpdated(sqsMessage.Message.fromJson())
-
               "OFFENDER_SCHEDULED_PAYMENTS-INSERTED" -> scheduledPaymentsSynchronisationService.scheduledPaymentInserted(sqsMessage.Message.fromJson())
               "OFFENDER_SCHEDULED_PAYMENTS-UPDATED" -> scheduledPaymentsSynchronisationService.scheduledPaymentUpdated(sqsMessage.Message.fromJson())
 

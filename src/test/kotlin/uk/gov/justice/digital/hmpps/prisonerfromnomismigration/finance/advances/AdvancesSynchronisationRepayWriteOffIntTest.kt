@@ -31,8 +31,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceAp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceIntegrationTestBase
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceMappingApiMockServer
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceNomisApiMockServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.GLTransactionEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.TransactionEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.nomisGLTransactions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.offenderTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorContent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
@@ -64,9 +66,7 @@ class AdvancesSynchronisationRepayWriteOffIntTest(
     internal const val OFFENDER_ID = 9876L
     internal const val OFFENDER_ID_DISPLAY = "A3864DZ"
     internal const val DPS_TRANSACTION_ID = "abcdef01-0000-1111-2222-000011112222"
-    internal const val MESSAGE_ID = "abcdef01-1111-2222-3333-111122223333"
     val dpsTransactionUuid: UUID = UUID.fromString(DPS_TRANSACTION_ID)
-    val messageUuid: UUID = UUID.fromString(MESSAGE_ID)
   }
 
   @BeforeEach
@@ -118,7 +118,7 @@ class AdvancesSynchronisationRepayWriteOffIntTest(
       @BeforeEach
       fun setUp() {
         financeOffenderEventsQueue.sendMessage(
-          offenderTransactionEvent(messageId = messageUuid, auditModuleName = "DPS_SYNCHRONISATION"),
+          offenderTransactionEvent(auditModuleName = "DPS_SYNCHRONISATION"),
         )
         waitForAnyProcessingToComplete("transactions-synchronisation-created-skipped")
       }
@@ -147,7 +147,7 @@ class AdvancesSynchronisationRepayWriteOffIntTest(
           1,
           postRequestedFor(urlPathEqualTo("/sync/offender-transactions"))
             .withRequestBodyJsonPath("transactionId", NOMIS_TRANSACTION_ID)
-            .withRequestBodyJsonPath("requestId", MESSAGE_ID)
+            .withRequestBodyJsonPath("requestId", "abcdef01-1111-2222-3333-111122223333")
             .withRequestBodyJsonPath("caseloadId", "SWI")
             .withRequestBodyJsonPath("transactionTimestamp", g1.transactionTimestamp)
             .withRequestBodyJsonPath("createdAt", t1.createdAt)
@@ -474,14 +474,7 @@ class AdvancesSynchronisationRepayWriteOffIntTest(
     }
 
     fun sendRepaymentEvent() {
-      financeOffenderEventsQueue.sendMessage(
-        offenderTransactionEvent(
-          messageId = messageUuid,
-          bookingId = BOOKING_ID,
-          transactionId = NOMIS_TRANSACTION_ID,
-          offenderNo = OFFENDER_ID_DISPLAY,
-        ),
-      )
+      financeOffenderEventsQueue.sendMessage(offenderTransactionEvent())
     }
 
     fun verifyRepayment() {
@@ -526,29 +519,282 @@ class AdvancesSynchronisationRepayWriteOffIntTest(
   @Nested
   @DisplayName("Write off advance transaction")
   inner class WriteOffAdvance {
-    // TODO add write off tests
+    val dpsAdvanceId: UUID = UUID.randomUUID()
+    val deductionId = 65432L
+    val advance = prisonerAdvance(prisonNumber = OFFENDER_ID_DISPLAY)
+    val writeOffTransaction = nomisGLTransactions(transactionId = NOMIS_TRANSACTION_ID).first().copy(
+      type = "WRT",
+      offenderDeductionId = deductionId,
+    )
+
+    @BeforeEach
+    fun setUp() {
+      financeNomisApiMockServer.stubGetPrisonerTransaction(
+        bookingId = BOOKING_ID,
+        transactionId = NOMIS_TRANSACTION_ID,
+        response = emptyList(),
+      )
+      financeNomisApiMockServer.stubGetPrisonTransaction(
+        transactionId = NOMIS_TRANSACTION_ID,
+        response = listOf(writeOffTransaction),
+      )
+      financeMappingApiMockServer.stubGetByNomisId(NOMIS_TRANSACTION_ID, mapping = null)
+      advancesNomisApiMockServer.stubGetAdvanceByDeductionId(deductionId, advance)
+      advancesMappingApiMockServer.stubGetAdvanceByNomisIdOrNull(
+        nomisAdvanceId = advance.id,
+        dpsId = dpsAdvanceId.toString(),
+      )
+      financeApi.stubWriteOffAdvance(advanceUuid = dpsAdvanceId)
+    }
+
+    @Nested
+    @DisplayName("When the write-off originates in DPS")
+    inner class DpsCreated {
+      @BeforeEach
+      fun setUp() {
+        sendWriteOffEvent(auditModuleName = "DPS_SYNCHRONISATION")
+        waitForAnyProcessingToComplete("transactions-synchronisation-updated-skipped")
+      }
+
+      @Test
+      fun `will not look up or write off the advance`() {
+        financeNomisApiMockServer.verify(0, getRequestedFor(urlPathEqualTo("/transactions/$NOMIS_TRANSACTION_ID/general-ledger")))
+        advancesNomisApiMockServer.verify(0, getRequestedFor(urlPathEqualTo("/finance/advances/deduction-id/$deductionId")))
+        financeApi.verify(0, postRequestedFor(urlPathMatching("/sync/advances/.*/write-off")))
+      }
+    }
+
+    @Nested
+    @DisplayName("Happy path for advance write-off")
+    inner class HappyPathWriteOffAdvance {
+      @BeforeEach
+      fun setUp() {
+        sendWriteOffEvent()
+        waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-success")
+      }
+
+      @Test
+      fun `will look up the advance by deduction id and write it off in DPS`() {
+        advancesNomisApiMockServer.verify(
+          1,
+          getRequestedFor(urlPathEqualTo("/finance/advances/deduction-id/$deductionId")),
+        )
+        advancesMappingApiMockServer.verify(
+          1,
+          getRequestedFor(urlPathEqualTo("/mapping/advances/nomis-id/${advance.id}")),
+        )
+        financeApi.verify(
+          1,
+          postRequestedFor(urlPathEqualTo("/sync/advances/$dpsAdvanceId/write-off"))
+            .withRequestBodyJsonPath("writeOffDateTime", writeOffTransaction.transactionTimestamp)
+            .withRequestBodyJsonPath("writtenOffBy", writeOffTransaction.lastModifiedBy ?: writeOffTransaction.createdBy)
+            .withRequestBodyJsonPath("writtenOffAmount", writeOffTransaction.amount),
+        )
+      }
+
+      @Test
+      fun `will track a write-off telemetry event for success`() {
+        verify(telemetryClient).trackEvent(
+          eq("finance-advances-synchronisation-updated-success"),
+          check {
+            assertThat(it["nomisTransactionId"]).isEqualTo(NOMIS_TRANSACTION_ID.toString())
+            assertThat(it["nomisTransactionEntrySequence"]).isEqualTo(writeOffTransaction.transactionEntrySequence.toString())
+            assertThat(it["nomisGLEntrySequence"]).isEqualTo(writeOffTransaction.generalLedgerEntrySequence.toString())
+            assertThat(it["amount"]).isEqualTo(writeOffTransaction.amount.toString())
+            assertThat(it["transactionType"]).isEqualTo("WRT")
+            assertThat(it["offenderDeductionId"]).isEqualTo(deductionId.toString())
+            assertThat(it["dpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will not create an offender transaction or transaction mapping`() {
+        financeApi.verify(0, postRequestedFor(urlPathEqualTo("/sync/offender-transactions")))
+        financeMappingApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/mapping/transactions")))
+      }
+    }
+
+    @Nested
+    @DisplayName("When the advance mapping is missing")
+    inner class AdvanceMappingMissing {
+      @BeforeEach
+      fun setUp() {
+        advancesMappingApiMockServer.stubGetAdvanceByNomisIdOrNull(
+          nomisAdvanceId = advance.id,
+          mapping = null,
+        )
+        sendWriteOffEvent()
+      }
+
+      @Test
+      fun `will fail synchronisation without writing off the advance`() {
+        verifyWriteOffFailure("/mapping/advances/nomis-id/${advance.id}")
+        financeApi.verify(0, postRequestedFor(urlPathMatching("/sync/advances/.*/write-off")))
+      }
+    }
+
+    @Nested
+    @DisplayName("When the advance mapping lookup fails")
+    inner class AdvanceMappingFailure {
+      @BeforeEach
+      fun setUp() {
+        advancesMappingApiMockServer.stubGetByNomisIdFailure(advance.id)
+        sendWriteOffEvent()
+      }
+
+      @Test
+      fun `will retry and fail synchronisation without writing off the advance`() {
+        verifyWriteOffFailure("/mapping/advances/nomis-id/${advance.id}")
+        advancesMappingApiMockServer.verify(
+          exactly(2),
+          getRequestedFor(urlPathEqualTo("/mapping/advances/nomis-id/${advance.id}")),
+        )
+        financeApi.verify(0, postRequestedFor(urlPathMatching("/sync/advances/.*/write-off")))
+      }
+    }
+
+    @Nested
+    @DisplayName("When the advance is missing in NOMIS")
+    inner class AdvanceMissing {
+      @BeforeEach
+      fun setUp() {
+        advancesNomisApiMockServer.stubGetAdvanceByDeductionId(
+          deductionId,
+          prisonerAdvance = advance,
+          status = HttpStatus.NOT_FOUND,
+        )
+        sendWriteOffEvent()
+      }
+
+      @Test
+      fun `will fail synchronisation without looking up the mapping or writing off the advance`() {
+        verifyWriteOffFailure("/finance/advances/deduction-id/$deductionId")
+        advancesMappingApiMockServer.verify(0, getRequestedFor(urlPathEqualTo("/mapping/advances/nomis-id/${advance.id}")))
+        financeApi.verify(0, postRequestedFor(urlPathMatching("/sync/advances/.*/write-off")))
+      }
+    }
+
+    @Nested
+    @DisplayName("When the DPS write-off fails")
+    inner class WriteOffFailure {
+      @BeforeEach
+      fun setUp() {
+        financeApi.stubFor(post("/sync/advances/$dpsAdvanceId/write-off").willReturn(serverError()))
+        sendWriteOffEvent()
+      }
+
+      @Test
+      fun `will retry the write-off and track failure`() {
+        verifyWriteOffFailure("/sync/advances/$dpsAdvanceId/write-off")
+        financeApi.verify(2, postRequestedFor(urlPathEqualTo("/sync/advances/$dpsAdvanceId/write-off")))
+      }
+    }
+
+    @Nested
+    @DisplayName("When advance processing is disabled")
+    @TestPropertySource(properties = ["offender_transactions.process.advances=false"])
+    inner class AdvanceProcessingDisabled {
+      @BeforeEach
+      fun setUp() {
+        sendWriteOffEvent()
+        waitForAnyProcessingToComplete("transactions-synchronisation-gl-updated-ignored")
+      }
+
+      @Test
+      fun `will not look up or write off the advance`() {
+        advancesNomisApiMockServer.verify(0, getRequestedFor(urlPathEqualTo("/finance/advances/deduction-id/$deductionId")))
+        financeApi.verify(0, postRequestedFor(urlPathMatching("/sync/advances/.*/write-off")))
+      }
+    }
+
+    @Nested
+    @DisplayName("When the transaction is not a write-off")
+    inner class NotAWriteOff {
+      @BeforeEach
+      fun setUp() {
+        financeNomisApiMockServer.stubGetPrisonTransaction(
+          transactionId = NOMIS_TRANSACTION_ID,
+          response = listOf(writeOffTransaction.copy(type = "DED")),
+        )
+        sendWriteOffEvent(transactionType = "DED")
+        waitForAnyProcessingToComplete("transactions-synchronisation-gl-updated-ignored")
+      }
+
+      @Test
+      fun `will not look up or write off the advance`() {
+        advancesNomisApiMockServer.verify(0, getRequestedFor(urlPathEqualTo("/finance/advances/deduction-id/$deductionId")))
+        financeApi.verify(0, postRequestedFor(urlPathMatching("/sync/advances/.*/write-off")))
+      }
+    }
+
+    private fun sendWriteOffEvent(
+      auditModuleName: String = "OTDSUBAT",
+      transactionType: String = "WRT",
+    ) {
+      financeOffenderEventsQueue.sendMessage(glTransactionEvent(transactionType = transactionType, auditModuleName = auditModuleName))
+    }
+
+    private fun verifyWriteOffFailure(errorPath: String) {
+      await untilCallTo {
+        awsSqsFinanceOffenderEventsDlqClient.countAllMessagesOnQueue(financeQueueOffenderEventsDlqUrl).get()
+      } matches { it == 1 }
+      verify(telemetryClient, atLeastOnce()).trackEvent(
+        eq("finance-advances-synchronisation-updated-error"),
+        check {
+          assertThat(it["nomisTransactionId"]).isEqualTo(NOMIS_TRANSACTION_ID.toString())
+          assertThat(it["offenderDeductionId"]).isEqualTo(deductionId.toString())
+          assertThat(it["error"]).endsWith(errorPath)
+        },
+        isNull(),
+      )
+      verify(telemetryClient, atLeastOnce()).trackEvent(
+        eq("transactions-synchronisation-updated-failed"),
+        check {
+          assertThat(it["nomisTransactionId"]).isEqualTo(NOMIS_TRANSACTION_ID.toString())
+          assertThat(it["error"]).endsWith(errorPath)
+        },
+        isNull(),
+      )
+    }
   }
 
   private fun Any.toJson(): String = jsonMapper.writeValueAsString(this)
 
   private fun offenderTransactionEvent(
-    messageId: UUID,
-    bookingId: Long = BOOKING_ID,
-    transactionId: Long = NOMIS_TRANSACTION_ID,
-    offenderNo: String = OFFENDER_ID_DISPLAY,
     auditModuleName: String = "OTIDTACC",
   ) = SQSMessage(
-    MessageId = "$messageId",
+    MessageId = "abcdef01-1111-2222-3333-111122223333",
     Type = "Notification",
     Message = TransactionEvent(
-      transactionId = transactionId,
+      transactionId = NOMIS_TRANSACTION_ID,
       entrySequence = 1,
       caseload = "SWI",
-      offenderIdDisplay = offenderNo,
-      bookingId = bookingId,
+      offenderIdDisplay = OFFENDER_ID_DISPLAY,
+      bookingId = BOOKING_ID,
       transactionType = "DED",
       auditModuleName = auditModuleName,
     ).toJson(),
     MessageAttributes = MessageAttributes(EventType("OFFENDER_TRANSACTIONS-INSERTED", "String")),
+  ).toJson()
+
+  private fun glTransactionEvent(
+    transactionType: String,
+    auditModuleName: String,
+  ) = SQSMessage(
+    MessageId = "abcdef01-1111-2222-3333-111122223333",
+    Type = "Notification",
+    Message = GLTransactionEvent(
+      transactionId = NOMIS_TRANSACTION_ID,
+      entrySequence = 1,
+      gLEntrySequence = 1,
+      caseload = "SWI",
+      offenderIdDisplay = OFFENDER_ID_DISPLAY,
+      bookingId = BOOKING_ID,
+      transactionType = transactionType,
+      auditModuleName = auditModuleName,
+    ).toJson(),
+    MessageAttributes = MessageAttributes(EventType("GL_TRANSACTIONS-UPDATED", "String")),
   ).toJson()
 }

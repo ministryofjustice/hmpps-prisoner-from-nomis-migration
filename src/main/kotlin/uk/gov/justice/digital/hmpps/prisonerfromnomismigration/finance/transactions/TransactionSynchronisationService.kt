@@ -120,13 +120,8 @@ class TransactionSynchronisationService(
     val mapping = transactionMappingService.getMappingGivenNomisIdOrNull(nomisTransactionId)
     val nomisTransactions = nomisApiService.getPrisonerTransactions(nomisTransactionId)
     if (nomisTransactions.isEmpty()) {
-      // We just have gl_transactions, with no associated offender_transaction - so ignore
-      telemetryClient.trackEvent(
-        "transactions-synchronisation-gl-$eventType-ignored",
-        event.toTelemetryProperties(
-          mappingFailed = false,
-        ),
-      )
+      // We just have gl_transactions, with no associated offender_transaction
+      glTransactionOnlyProcessing(event, eventType)
     } else {
       financeService.syncPrisonerTransactions(
         nomisTransactions.toSyncOffenderTransactionRequest(requestId),
@@ -162,6 +157,21 @@ class TransactionSynchronisationService(
       sendHoldTransactionToDps(transaction, dpsTransactionId, event, eventType)
     } else if (processAdvanceTransaction && transaction.isRepaymentTransaction()) {
       advancesSynchronisationService.sendRepaymentToDps(transaction)
+    }
+  }
+
+  suspend fun glTransactionOnlyProcessing(event: TransactionEvent, eventType: String) {
+    if (processAdvanceTransaction && event.isWrittenOffTransaction()) {
+      val nomisGLTransactionDto = nomisApiService.getPrisonTransactions(event.transactionId).firstOrNull()
+        ?: throw NotFoundException("No GL transaction found in nomis for transactionId=${event.transactionId}")
+      advancesSynchronisationService.sendWriteOffAdvanceToDps(nomisGLTransactionDto)
+    } else {
+      telemetryClient.trackEvent(
+        "transactions-synchronisation-gl-$eventType-ignored",
+        event.toTelemetryProperties(
+          mappingFailed = false,
+        ),
+      )
     }
   }
 
@@ -321,5 +331,6 @@ fun OffenderTransactionDto.isHoldTransaction() = isAddHoldTransaction() || isRel
 fun OffenderTransactionDto.isAddHoldTransaction() = type == "HOA" || type == "WHF"
 fun OffenderTransactionDto.isReleaseHoldTransaction() = type == "HOR" || type == "WFR"
 fun OffenderTransactionDto.isRepaymentTransaction() = type == "DED" && amount.compareTo(BigDecimal.ZERO) != 0
+fun TransactionEvent.isWrittenOffTransaction() = transactionType == "WRT"
 
 data class EncapsulatedTransaction(val transactionEvent: TransactionEvent, val requestId: UUID, val eventType: String)
