@@ -22,6 +22,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequ
 
 class AdvancesDataRepairResourceIntTest(
   @Autowired private val nomisApiMockServer: AdvancesNomisApiMockServer,
+  @Autowired private val mappingApiMockServer: AdvancesMappingApiMockServer,
 ) : FinanceIntegrationTestBase() {
 
   @DisplayName("POST /prisoners/advances/{advanceId}/repair")
@@ -61,6 +62,7 @@ class AdvancesDataRepairResourceIntTest(
       fun setUp() {
         nomisApiMockServer.stubGetAdvance()
         financeApi.stubCreateAdvance()
+        mappingApiMockServer.stubReplaceMapping()
 
         webTestClient.post().uri("/prisoners/advances/$advanceId/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
@@ -90,6 +92,16 @@ class AdvancesDataRepairResourceIntTest(
             .withRequestBodyJsonPath("reference", equalTo("description of the advance"))
             .withRequestBodyJsonPath("createdBy", equalTo("JD12345"))
             .withRequestBodyJsonPath("createdOn", equalTo("2024-06-18T12:30:45")),
+        )
+      }
+
+      @Test
+      fun `will replace advance mapping`() {
+        mappingApiMockServer.verify(
+          postRequestedFor(urlPathEqualTo("/mapping/advances/replace"))
+            .withRequestBodyJsonPath("nomisAdvanceId", equalTo(advanceId.toString()))
+            .withRequestBodyJsonPath("dpsId", equalTo("1234"))
+            .withRequestBodyJsonPath("mappingType", equalTo("NOMIS_CREATED")),
         )
       }
 
@@ -127,6 +139,11 @@ class AdvancesDataRepairResourceIntTest(
       @Test
       fun `will not send prisonerAdvance to DPS`() {
         financeApi.verify(0, postRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will not replace advance mapping`() {
+        mappingApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/mapping/advances/replace")))
       }
 
       @Test

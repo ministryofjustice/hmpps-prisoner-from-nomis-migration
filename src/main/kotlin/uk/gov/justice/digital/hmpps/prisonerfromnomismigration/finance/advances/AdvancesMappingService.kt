@@ -21,4 +21,8 @@ class AdvancesMappingService(@Qualifier("mappingApiWebClient") webClient: WebCli
   suspend fun getByNomisId(nomisId: Long): AdvanceMappingDto = api
     .getAdvanceMappingByNomisId(nomisId)
     .awaitSingle()
+
+  suspend fun replaceOrCreateMapping(mapping: AdvanceMappingDto) = api
+    .replaceAdvanceMapping(mapping)
+    .awaitSingle()
 }
