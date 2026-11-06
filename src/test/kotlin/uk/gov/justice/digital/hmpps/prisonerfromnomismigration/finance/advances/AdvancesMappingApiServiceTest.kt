@@ -371,4 +371,95 @@ class AdvancesMappingApiServiceTest {
       assertThat(result.errorResponse.moreInfo.existing.nomisAdvanceId).isEqualTo(nomisId)
     }
   }
+
+  @Nested
+  inner class ReplaceMapping {
+    private val mapping = AdvanceMappingDto(
+      mappingType = MIGRATED,
+      label = "2020-01-01T10:00",
+      dpsId = "de2bc56c-ea73-4f3c-8a37-5a46fdb2d79a",
+      nomisAdvanceId = 12345L,
+    )
+
+    @Test
+    internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
+      mockServer.stubReplaceMapping()
+
+      apiService.replaceOrCreateMapping(mapping)
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/advances/replace")).withHeader(
+          "Authorization",
+          equalTo("Bearer ABCDE"),
+        ),
+      )
+    }
+
+    @Test
+    fun `will send the advance mapping to the service`() = runTest {
+      mockServer.stubReplaceMapping()
+
+      apiService.replaceOrCreateMapping(mapping)
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/advances/replace"))
+          .withRequestBody(
+            equalToJson(
+              """
+                {
+                  "nomisAdvanceId": 12345,
+                  "dpsId": "de2bc56c-ea73-4f3c-8a37-5a46fdb2d79a",
+                  "mappingType": "MIGRATED",
+                  "label": "2020-01-01T10:00",
+                  "whenCreated": null
+                }
+              """.trimIndent(),
+            ),
+          ),
+      )
+    }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val dpsId = "A4321BC"
+      val nomisId = 12345L
+      val existingDpsId = "existing-advance-id"
+
+      mockServer.stubCreateMapping(
+        error = DuplicateMappingErrorResponse(
+          moreInfo = DuplicateErrorContentObject(
+            duplicate = AdvanceMappingDto(
+              dpsId = dpsId,
+              nomisAdvanceId = nomisId,
+              mappingType = NOMIS_CREATED,
+            ),
+            existing = AdvanceMappingDto(
+              dpsId = existingDpsId,
+              nomisAdvanceId = nomisId,
+              mappingType = NOMIS_CREATED,
+            ),
+          ),
+          errorCode = 1409,
+          status = _409_CONFLICT,
+          userMessage = "Duplicate mapping",
+        ),
+      )
+
+      val result = apiService.createMapping(
+        AdvanceMappingDto(
+          mappingType = MIGRATED,
+          label = "2020-01-01T10:00",
+          dpsId = "A1234KT",
+          nomisAdvanceId = 12345L,
+        ),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<AdvanceMappingDto>>() {},
+      )
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
+      assertThat(result.errorResponse.moreInfo.duplicate.nomisAdvanceId).isEqualTo(nomisId)
+      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+      assertThat(result.errorResponse.moreInfo.existing.nomisAdvanceId).isEqualTo(nomisId)
+    }
+  }
 }
