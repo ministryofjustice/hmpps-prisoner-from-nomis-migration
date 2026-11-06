@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceSy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.MoneySupport
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRepayRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceWriteOffRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.transactions.transactionTimestamp
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
@@ -20,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdvanceMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerAdvanceDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -86,8 +88,31 @@ class AdvancesSynchronisationService(
     }
   }
 
-  suspend fun deductionUpdated(event: AdvanceEvent) {
-    log.info("Deduction updated event received")
+  suspend fun sendWriteOffAdvanceToDps(nomisTransaction: GeneralLedgerTransactionDto) {
+    val telemetry = telemetryOf(
+      "nomisTransactionId" to nomisTransaction.transactionId,
+      "nomisTransactionEntrySequence" to nomisTransaction.transactionEntrySequence,
+      "nomisGLEntrySequence" to nomisTransaction.generalLedgerEntrySequence,
+      "amount" to nomisTransaction.amount,
+      "transactionType" to nomisTransaction.type,
+    )
+    val deductionId = nomisTransaction.offenderDeductionId!!
+    telemetry["offenderDeductionId"] = deductionId
+
+    track("$TELEMETRY_PREFIX-updated", telemetry) {
+      val advance = nomisApiService.getAdvanceByDeductionId(deductionId)
+      val mapping = mappingService.getByNomisId(advance.id)
+      telemetry["dpsAdvanceId"] = mapping.dpsId
+
+      dpsApiService.writeOffAdvance(
+        UUID.fromString(mapping.dpsId),
+        request = SyncCreateAdvanceWriteOffRequest(
+          writeOffDateTime = nomisTransaction.transactionTimestamp,
+          writtenOffBy = nomisTransaction.lastModifiedBy ?: nomisTransaction.createdBy,
+          writtenOffAmount = nomisTransaction.amount,
+        ),
+      )
+    }
   }
 
   suspend fun sendRepaymentToDps(nomisTransaction: OffenderTransactionDto) {
