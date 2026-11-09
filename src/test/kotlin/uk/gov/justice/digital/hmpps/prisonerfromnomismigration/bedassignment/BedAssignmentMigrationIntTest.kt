@@ -25,7 +25,6 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
-import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.reactive.server.returnResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.bedassignment.BedAssignmentDpsApiExtension.Companion.bedAssignmentApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.MigrationResult
@@ -43,7 +42,6 @@ private const val MIGRATION_DPS_ID_1 = "00000000-0000-0000-0000-000000000001"
 private const val MIGRATION_DPS_ID_2 = "00000000-0000-0000-0000-000000000002"
 private const val MIGRATION_LOCATION_ID = "abcdef12-1234-5678-9012-abcdef123456"
 
-@TestPropertySource(properties = ["bedassignment.page.size=2"])
 class BedAssignmentMigrationIntTest(
   @Autowired private val nomisMockServer: BedAssignmentNomisApiMockServer,
   @Autowired private val mappingMockServer: BedAssignmentMappingApiMockServer,

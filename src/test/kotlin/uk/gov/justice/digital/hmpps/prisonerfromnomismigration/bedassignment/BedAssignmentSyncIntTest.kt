@@ -10,14 +10,12 @@ import com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.awaitility.kotlin.matches
-import org.awaitility.kotlin.untilAsserted
 import org.awaitility.kotlin.untilCallTo
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyMap
-import org.mockito.ArgumentMatchers.matches
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
@@ -55,7 +53,7 @@ class BedAssignmentSyncIntTest(
       @BeforeEach
       fun setUp() {
         send(eventType, auditModuleName = "DPS_SYNCHRONISATION")
-        waitForTelemetry("bedassignment-synchronisation-created-skipped")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-created-skipped")
       }
 
       @Test
@@ -96,7 +94,7 @@ class BedAssignmentSyncIntTest(
         )
         mappingMockServer.stubDeleteMapping()
         send(eventType)
-        waitForTelemetry("bedassignment-synchronisation-created-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-created-success")
       }
 
       @Test
@@ -159,9 +157,9 @@ class BedAssignmentSyncIntTest(
         bedAssignmentApi.stubSync(SYNC_OFFENDER_NO)
 
         send("BED_ASSIGNMENT_HISTORY-UPDATED", sequence = 2)
-        waitForTelemetry("bedassignment-synchronisation-updated-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-updated-success")
         send("BED_ASSIGNMENT_HISTORY-DELETED", sequence = 1)
-        waitForTelemetry("bedassignment-synchronisation-deleted-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-deleted-success")
 
         nomisApi.verify(2, getRequestedFor(urlEqualTo("/prisoners/$SYNC_OFFENDER_NO/bed-assignments")))
         bedAssignmentApi.verify(
@@ -185,7 +183,7 @@ class BedAssignmentSyncIntTest(
         mappingMockServer.stubDeleteMapping()
 
         send(eventType)
-        waitForTelemetry("bedassignment-synchronisation-created-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-created-success")
 
         bedAssignmentApi.verify(
           putRequestedFor(urlEqualTo("/nomis-sync/bed-assignments/sync/$SYNC_OFFENDER_NO"))
@@ -208,8 +206,8 @@ class BedAssignmentSyncIntTest(
         mappingMockServer.stubCreateMappingFailureFollowedBySuccess()
 
         send(eventType)
-        waitForTelemetry("bedassignment-synchronisation-created-success")
-        waitForTelemetry("bedassignment-mapping-created-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-created-success")
+        waitForAnyProcessingToComplete("bedassignment-mapping-created-success")
       }
 
       @Test
@@ -244,7 +242,7 @@ class BedAssignmentSyncIntTest(
         )
 
         send(eventType)
-        waitForTelemetry("bedassignment-synchronisation-created-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-created-success")
 
         await untilCallTo { bedAssignmentEventQueue.countAllMessagesOnDLQQueue() } matches { it == 1 }
         verify(telemetryClient, times(3)).trackEvent(eq("bedassignment-from-nomis-sync-duplicate"), anyMap(), isNull())
@@ -324,7 +322,7 @@ class BedAssignmentSyncIntTest(
       @Test
       fun `skips an explicitly DPS-originated update`() {
         send(eventType, auditModuleName = "DPS_SYNCHRONISATION")
-        waitForTelemetry("bedassignment-synchronisation-updated-skipped")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-updated-skipped")
 
         nomisApi.verify(0, getRequestedFor(urlPathMatching("/prisoners/.*")))
         bedAssignmentApi.verify(0, putRequestedFor(urlPathMatching("/nomis-sync/bed-assignments/sync/.*")))
@@ -343,7 +341,7 @@ class BedAssignmentSyncIntTest(
         mappingMockServer.stubGetByNomisId(SYNC_BOOKING_ID, SYNC_SEQUENCE, bedAssignmentMappingJson())
 
         send(eventType)
-        waitForTelemetry("bedassignment-synchronisation-updated-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-updated-success")
 
         nomisApi.verify(1, getRequestedFor(urlEqualTo("/prisoners/$SYNC_OFFENDER_NO/bed-assignments")))
         bedAssignmentApi.verify(
@@ -360,7 +358,7 @@ class BedAssignmentSyncIntTest(
         bedAssignmentApi.stubSync(SYNC_OFFENDER_NO)
 
         send(eventType)
-        waitForTelemetry("bedassignment-synchronisation-updated-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-updated-success")
 
         bedAssignmentApi.verify(
           putRequestedFor(urlEqualTo("/nomis-sync/bed-assignments/sync/$SYNC_OFFENDER_NO"))
@@ -382,7 +380,7 @@ class BedAssignmentSyncIntTest(
         mappingMockServer.stubCreateMapping()
 
         send(eventType)
-        waitForTelemetry("bedassignment-synchronisation-updated-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-updated-success")
 
         mappingApi.verify(
           postRequestedFor(urlEqualTo("/mapping/bed-assignments"))
@@ -405,7 +403,7 @@ class BedAssignmentSyncIntTest(
         )
 
         send(eventType)
-        waitForTelemetry("bedassignment-synchronisation-updated-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-updated-success")
 
         await untilCallTo { bedAssignmentEventQueue.countAllMessagesOnDLQQueue() } matches { it == 1 }
         verify(telemetryClient, times(3)).trackEvent(eq("bedassignment-from-nomis-sync-duplicate"), anyMap(), isNull())
@@ -426,7 +424,7 @@ class BedAssignmentSyncIntTest(
         mappingMockServer.stubCreateMappingFailureFollowedBySuccess()
 
         send(eventType)
-        waitForTelemetry("bedassignment-mapping-created-success")
+        waitForAnyProcessingToComplete("bedassignment-mapping-created-success")
 
         bedAssignmentApi.verify(1, putRequestedFor(urlEqualTo("/nomis-sync/bed-assignments/sync/$SYNC_OFFENDER_NO")))
         mappingApi.verify(2, postRequestedFor(urlEqualTo("/mapping/bed-assignments")))
@@ -491,7 +489,7 @@ class BedAssignmentSyncIntTest(
       @Test
       fun `skips an explicitly DPS-originated deletion`() {
         send(eventType, auditModuleName = "DPS_SYNCHRONISATION")
-        waitForTelemetry("bedassignment-synchronisation-deleted-skipped")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-deleted-skipped")
 
         nomisApi.verify(0, getRequestedFor(urlPathMatching("/prisoners/.*")))
         bedAssignmentApi.verify(0, putRequestedFor(urlPathMatching("/nomis-sync/bed-assignments/sync/.*")))
@@ -500,7 +498,7 @@ class BedAssignmentSyncIntTest(
       @Test
       fun `skips a deletion with no audit module`() {
         send(eventType, auditModuleName = null)
-        waitForTelemetry("bedassignment-synchronisation-deleted-skipped")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-deleted-skipped")
 
         nomisApi.verify(0, getRequestedFor(urlPathMatching("/prisoners/.*")))
         bedAssignmentApi.verify(0, putRequestedFor(urlPathMatching("/nomis-sync/bed-assignments/sync/.*")))
@@ -515,7 +513,7 @@ class BedAssignmentSyncIntTest(
         bedAssignmentApi.stubSync(SYNC_OFFENDER_NO)
 
         send(eventType, sequence = 3)
-        waitForTelemetry("bedassignment-synchronisation-deleted-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-deleted-success")
 
         bedAssignmentApi.verify(
           putRequestedFor(urlEqualTo("/nomis-sync/bed-assignments/sync/$SYNC_OFFENDER_NO"))
@@ -534,7 +532,7 @@ class BedAssignmentSyncIntTest(
         mappingMockServer.stubDeleteMapping()
 
         send(eventType)
-        waitForTelemetry("bedassignment-synchronisation-deleted-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-deleted-success")
 
         bedAssignmentApi.verify(
           putRequestedFor(urlEqualTo("/nomis-sync/bed-assignments/sync/$SYNC_OFFENDER_NO"))
@@ -561,7 +559,7 @@ class BedAssignmentSyncIntTest(
         mappingMockServer.stubCreateMapping()
 
         send(eventType)
-        waitForTelemetry("bedassignment-synchronisation-deleted-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-deleted-success")
 
         mappingApi.verify(deleteRequestedFor(urlEqualTo("/mapping/bed-assignments/dps-bed-assignment-id/$SYNC_DPS_ID_2")))
         mappingApi.verify(postRequestedFor(urlEqualTo("/mapping/bed-assignments")))
@@ -577,7 +575,7 @@ class BedAssignmentSyncIntTest(
         mappingMockServer.stubGetByNomisId(SYNC_BOOKING_ID, SYNC_SEQUENCE, bedAssignmentMappingJson())
 
         send(eventType)
-        waitForTelemetry("bedassignment-synchronisation-deleted-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-deleted-success")
 
         mappingApi.verify(0, postRequestedFor(urlEqualTo("/mapping/bed-assignments")))
       }
@@ -595,7 +593,7 @@ class BedAssignmentSyncIntTest(
         mappingMockServer.stubDeleteMappingFailureFollowedBySuccess(SYNC_DPS_ID)
 
         send(eventType)
-        waitForTelemetry("bedassignment-mapping-created-success")
+        waitForAnyProcessingToComplete("bedassignment-mapping-created-success")
 
         bedAssignmentApi.verify(1, putRequestedFor(urlEqualTo("/nomis-sync/bed-assignments/sync/$SYNC_OFFENDER_NO")))
         mappingApi.verify(
@@ -709,12 +707,6 @@ class BedAssignmentSyncIntTest(
       com.github.tomakehurst.wiremock.client.WireMock.get(urlPathMatching("/mapping/locations/nomis/.*"))
         .willReturn(aResponse().withStatus(500)),
     )
-  }
-
-  private fun waitForTelemetry(namePattern: String) {
-    await untilAsserted {
-      verify(telemetryClient).trackEvent(matches(namePattern), anyMap(), isNull())
-    }
   }
 }
 

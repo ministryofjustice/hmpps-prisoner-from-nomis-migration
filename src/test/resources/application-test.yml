@@ -172,9 +172,6 @@ drugtesting:
     retry-seconds: 0
     count: 1
 bedassignment:
-  client:
-    id: bedassignment-client
-    secret: clientsecret
   page:
     size: 10
 
