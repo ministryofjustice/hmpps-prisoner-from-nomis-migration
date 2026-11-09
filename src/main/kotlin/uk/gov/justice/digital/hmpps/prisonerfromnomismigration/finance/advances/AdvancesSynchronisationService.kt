@@ -47,10 +47,17 @@ class AdvancesSynchronisationService(
   }
 
   suspend fun resynchroniseAdvance(advanceId: Long) {
-    // TODO fix this - it needs to add/replace mapping during resync
-    val advance = nomisApiService.getAdvance(advanceId)
+    val nomisAdvance = nomisApiService.getAdvance(advanceId)
       ?: throw NotFoundException("advanceId $advanceId not found")
-    dpsApiService.createAdvance(advance.toSyncAdvanceDto())
+
+    val dpsAdvance = dpsApiService.createAdvance(nomisAdvance.toSyncAdvanceDto())
+    mappingService.replaceOrCreateMapping(
+      AdvanceMappingDto(
+        nomisAdvanceId = nomisAdvance.id,
+        dpsId = dpsAdvance.advanceId.toString(),
+        mappingType = AdvanceMappingDto.MappingType.NOMIS_CREATED,
+      ),
+    )
   }
 
   suspend fun advanceInserted(event: AdvanceEvent) {
