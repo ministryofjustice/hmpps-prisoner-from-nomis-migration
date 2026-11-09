@@ -55,6 +55,16 @@ class AdvancesMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubReplaceMapping() {
+    mappingApi.stubFor(
+      post("/mapping/advances/replace").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value()),
+      ),
+    )
+  }
+
   fun stubGetMigrationCount(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/advances/migration-id/.*")).willReturn(

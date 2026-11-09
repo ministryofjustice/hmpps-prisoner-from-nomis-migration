@@ -24,7 +24,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.Syn
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncUpdateSubscriptionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncUpdateSubscriptionResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrLogAndRethrowBadRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitOrLogAndRethrowBadRequest
 import java.util.UUID
 
@@ -57,12 +56,8 @@ class FinanceDpsApiService(@Qualifier("financeApiWebClient") private val webClie
   suspend fun syncReleaseHoldTransaction(holdNumber: Long, request: SyncReleaseHoldRequest): SyncReleasedHoldResponse = holdsApi.releaseHold(holdNumber, request)
     .awaitOrLogAndRethrowBadRequest()
 
-  // TODO update when Finance API is updated to return a response
-  suspend fun migrateAdvance(request: SyncMigrateAdvanceRecordRequest): SyncCreateAdvanceRecordResponse = webClient.post()
-    .uri("/migrate/advances")
-    .bodyValue(request)
-    .retrieve()
-    .awaitBodyOrLogAndRethrowBadRequest()
+  suspend fun migrateAdvance(request: SyncMigrateAdvanceRecordRequest): SyncCreateAdvanceRecordResponse = advancesApi.migrateAdvance(request)
+    .awaitOrLogAndRethrowBadRequest()
 
   suspend fun createAdvance(request: SyncCreateAdvanceRecordRequest): SyncCreateAdvanceRecordResponse = advancesApi.postAdvance(request)
     .awaitOrLogAndRethrowBadRequest()
