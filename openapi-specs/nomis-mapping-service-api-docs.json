@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-06.963.650fe16"
+    "version" : "2026-11-06.966.c042eba"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -7896,6 +7896,50 @@
         "responses" : {
           "204" : {
             "description" : "Mappings deleted",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access forbidden for this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/advances/replace" : {
+      "post" : {
+        "tags" : [ "advance-mapping-resource" ],
+        "summary" : "Replaces an advance mapping.",
+        "description" : "Creates a new advance mapping and removes the previously supplied one (if one exists).\n      Requires ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "operationId" : "replaceAdvanceMapping",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AdvanceMappingDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Mapping replaced",
             "content" : { }
           },
           "401" : {
@@ -22445,8 +22489,8 @@
       },
       "delete" : {
         "tags" : [ "advance-mapping-resource" ],
-        "summary" : "Deletes a Advance mapping",
-        "description" : "Deletes a Advance mapping by DPS id. Requires role NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "summary" : "Deletes an Advance mapping",
+        "description" : "Deletes an Advance mapping by DPS id. Requires role NOMIS_MAPPING_API__SYNCHRONISATION__RW",
         "operationId" : "deleteAdvanceMappingByDpsId",
         "parameters" : [ {
           "name" : "dpsId",
