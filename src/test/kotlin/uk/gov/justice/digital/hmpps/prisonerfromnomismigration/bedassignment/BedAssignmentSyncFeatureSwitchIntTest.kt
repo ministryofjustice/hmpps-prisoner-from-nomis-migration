@@ -55,7 +55,7 @@ private fun disabledSwitchEvent(eventType: String) = """
 {
   "MessageId":"ae06c49e-1f41-4b9f-b2f2-dcca610d02cd",
   "Type":"Notification",
-  "Message":"{\"eventType\":\"$eventType\",\"eventDatetime\":\"2024-07-10T15:00:25.489964\",\"bookingId\":123456,\"offenderIdDisplay\":\"A1234KT\",\"bedAssignmentSeq\":1}",
+  "Message":"{\"eventType\":\"$eventType\",\"eventDatetime\":\"2024-07-10T15:00:25.489964\",\"auditModuleName\":\"ODSCREEN\",\"bookingId\":123456,\"offenderIdDisplay\":\"A1234KT\",\"bedAssignmentSeq\":1}",
   "MessageAttributes":{"eventType":{"Type":"String","Value":"$eventType"}}
 }
 """.trimIndent()

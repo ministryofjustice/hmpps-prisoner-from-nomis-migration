@@ -4,7 +4,7 @@ import kotlinx.coroutines.CancellationException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
-import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
@@ -50,11 +50,9 @@ class BedAssignmentMigrationService(
     pageSize: Long,
     pageNumber: Long,
   ) = migrationFilter.offenderNos?.distinct()?.let { offenderNos ->
-    val fromIndex = (pageNumber * pageSize).toInt()
-    val toIndex = (fromIndex + pageSize).toInt()
     PageImpl(
-      offenderNos.subList(fromIndex, toIndex).map { PrisonerId(it) },
-      PageRequest.of(pageNumber.toInt(), pageSize.toInt()),
+      offenderNos.map { PrisonerId(it) },
+      Pageable.ofSize(offenderNos.size),
       offenderNos.size.toLong(),
     )
   } ?: nomisApiService.getPrisonerIds(pageNumber, pageSize)
