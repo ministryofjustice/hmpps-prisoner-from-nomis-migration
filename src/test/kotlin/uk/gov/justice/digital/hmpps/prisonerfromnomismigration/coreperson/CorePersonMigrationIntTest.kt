@@ -220,7 +220,7 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will create mappings for address and contacts`() {
         val mappingRequests: List<CorePersonAddressContactMappingsDto> =
-          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person")))
+          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person/address-contact-migration")))
 
         assertThat(mappingRequests).hasSize(1)
 
@@ -308,7 +308,7 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will create mappings for addresses and contacts`() {
         val mappingRequests: List<CorePersonAddressContactMappingsDto> =
-          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person")))
+          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person/address-contact-migration")))
 
         assertThat(mappingRequests).hasSize(1)
 
@@ -442,7 +442,7 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will eventually create mappings for addresses and contacts`() {
         val mappingRequests: List<CorePersonAddressContactMappingsDto> =
-          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person")))
+          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person/address-contact-migration")))
 
         await untilAsserted {
           assertThat(mappingRequests).hasSize(2)
@@ -549,7 +549,7 @@ class CorePersonMigrationIntTest(
       @Test
       fun `will only try create mappings once`() {
         val mappingRequests: List<CorePersonAddressContactMappingsDto> =
-          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person")))
+          MappingApiExtension.getRequestBodies(postRequestedFor(urlPathEqualTo("/mapping/core-person/address-contact-migration")))
 
         await untilAsserted {
           assertThat(mappingRequests).hasSize(1)

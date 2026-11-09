@@ -16,12 +16,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactByNomisIdRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactByNomisIdRequest.NomisContactType.EMAIL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactByNomisIdRequest.NomisContactType.PHONE
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -589,7 +589,7 @@ class CorePersonSynchronisationAddressContactService(
     }
   }
 
-  private fun mappingsRequest(addressContact: CorePersonAddressContact): CorePersonMappingsByNomisIdsRequest {
+  private fun mappingsRequest(addressContact: CorePersonAddressContact): CorePersonAddressContactMappingsByNomisIdsRequest {
     val addresses = addressContact.addresses ?: emptyList()
     val addressByNomisIdRequest = addresses.map { it.addressId }
     val addressUsages = addresses.flatMap { address -> address.usages ?: emptyList() }
@@ -600,7 +600,7 @@ class CorePersonSynchronisationAddressContactService(
     val contactByNomisIdRequests = addressPhoneNumbers.map { ContactByNomisIdRequest(it.phoneId, PHONE) } +
       phoneNumbers.map { ContactByNomisIdRequest(it.phoneId, PHONE) } +
       emailAddresses.map { ContactByNomisIdRequest(it.emailAddressId, EMAIL) }
-    return CorePersonMappingsByNomisIdsRequest(
+    return CorePersonAddressContactMappingsByNomisIdsRequest(
       addresses = addressByNomisIdRequest,
       addressUsages = addressUsageByNomisIdRequests,
       contacts = contactByNomisIdRequests,
