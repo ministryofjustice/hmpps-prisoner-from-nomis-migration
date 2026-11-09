@@ -28,7 +28,7 @@ abstract class ByPageNumberMigrationService<FILTER : Any, NOMIS_ID : Any, MAPPIN
       .map {
         MigrationContext(
           context = context,
-          body = MigrationPage(filter = context.body, ByPageNumber(pageNumber = (it - 1) / pageSize), pageSize = pageSize),
+          body = MigrationPage(filter = context.body, ByPageNumber(pageNumber = it / pageSize), pageSize = pageSize),
         )
       }
       .forEach {

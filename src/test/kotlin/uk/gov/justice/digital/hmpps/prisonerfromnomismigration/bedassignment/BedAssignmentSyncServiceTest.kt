@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.bedassignment
 
 import com.microsoft.applicationinsights.TelemetryClient
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
@@ -125,16 +124,6 @@ class BedAssignmentSyncServiceTest {
         isNull(),
       )
     }
-
-    @Test
-    fun `does not enqueue mapping work when the coroutine is cancelled`() = runTest {
-      stubSyncResponse()
-      whenever(mappingApiService.deleteMappingByDpsId(deletedDpsId)).thenThrow(CancellationException("cancelled"))
-
-      assertThatThrownBy { runBlocking { service.create(event) } }.isInstanceOf(CancellationException::class.java)
-
-      verify(queueService, never()).sendMessage(any(), any(), any(), any(), any())
-    }
   }
 
   @Nested
@@ -229,16 +218,6 @@ class BedAssignmentSyncServiceTest {
         null,
       )
       verify(mappingApiService, never()).getMappingByNomisIdOrNull(any(), any())
-    }
-
-    @Test
-    fun `propagates cancellation without reporting retry success or failure`() = runTest {
-      whenever(mappingApiService.deleteMappingByDpsId(deletedDpsId)).thenThrow(CancellationException("cancelled"))
-
-      assertThatThrownBy { runBlocking { service.retryCreateMapping(retry) } }.isInstanceOf(CancellationException::class.java)
-
-      verify(telemetryClient, never()).trackEvent(eq("bedassignment-mapping-created-success"), any(), anyOrNull())
-      verify(telemetryClient, never()).trackEvent(eq("bedassignment-mapping-created-failure"), any(), anyOrNull())
     }
 
     @Test

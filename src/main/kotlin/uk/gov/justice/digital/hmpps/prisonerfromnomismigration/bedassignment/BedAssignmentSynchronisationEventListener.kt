@@ -31,12 +31,9 @@ class BedAssignmentSynchronisationEventListener(
     val sqsMessage = jsonMapper.readValue<SQSMessage>(message)
     when (sqsMessage.Type) {
       "Notification" -> {
-        val eventType = requireNotNull(sqsMessage.MessageAttributes) { "Bed-assignment event has no message attributes" }.eventType.Value
-        if (!eventFeatureSwitch.isEnabled(eventType, "bedassignment")) {
-          log.info("Feature switch is disabled for bedassignment event {}", eventType)
-        } else {
+        val eventType = sqsMessage.MessageAttributes!!.eventType.Value
+        if (eventFeatureSwitch.isEnabled(eventType, "bedassignment")) {
           val event = jsonMapper.readValue<BedAssignmentEvent>(sqsMessage.Message)
-          require(event.eventType == eventType) { "Bed-assignment event type does not match its message attribute" }
           when (eventType) {
             "BED_ASSIGNMENT_HISTORY-INSERTED" -> syncService.create(event)
             "BED_ASSIGNMENT_HISTORY-UPDATED" -> syncService.update(event)
@@ -44,6 +41,8 @@ class BedAssignmentSynchronisationEventListener(
 
             else -> log.info("Received an unexpected bed-assignment event {}", eventType)
           }
+        } else {
+          log.info("Feature switch is disabled for bedassignment event {}", eventType)
         }
       }
 

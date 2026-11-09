@@ -1,7 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.bedassignment
 
 import com.microsoft.applicationinsights.TelemetryClient
-import kotlinx.coroutines.CancellationException
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
@@ -21,7 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 
 @Service
 class BedAssignmentSyncService(
-  private val translatorService: TranslatorService,
+  private val nomisAndTranslatorService: TranslatorService,
   private val dpsApiService: BedAssignmentDpsApiService,
   private val mappingApiService: BedAssignmentMappingApiService,
   override val telemetryClient: TelemetryClient,
@@ -50,7 +49,7 @@ class BedAssignmentSyncService(
       return
     }
     track(telemetryName, telemetry) {
-      val history = translatorService.getHistory(event.offenderIdDisplay)
+      val history = nomisAndTranslatorService.getHistory(event.offenderIdDisplay)
       val result = dpsApiService.sync(event.offenderIdDisplay, history)
       telemetry["historyCount"] = history.size
       telemetry["createdCount"] = result.created.size
@@ -62,8 +61,6 @@ class BedAssignmentSyncService(
       )
       try {
         reconcileMappings(mappings)
-      } catch (e: CancellationException) {
-        throw e
       } catch (e: Exception) {
         log.error("Failed to synchronise bed-assignment mappings for {}", event.offenderIdDisplay, e)
         telemetry["original-error"] = e.message ?: e.javaClass.name
@@ -83,8 +80,6 @@ class BedAssignmentSyncService(
     try {
       reconcileMappings(retryMessage.body)
       telemetryClient.trackEvent("bedassignment-mapping-created-success", retryMessage.telemetryAttributes)
-    } catch (e: CancellationException) {
-      throw e
     } catch (e: Exception) {
       telemetryClient.trackEvent(
         "bedassignment-mapping-created-failure",

@@ -1,6 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.bedassignment
 
-import kotlinx.coroutines.CancellationException
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.data.domain.PageImpl
@@ -26,7 +25,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiS
 @Service
 class BedAssignmentMigrationService(
   private val nomisApiService: NomisApiService,
-  private val byPrisonerMappingApiService: BedAssignmentByPrisonerMappingApiService,
+  private val bedAssignmentMappingService: BedAssignmentByPrisonerMappingApiService,
   private val translatorService: TranslatorService,
   private val dpsApiService: BedAssignmentDpsApiService,
   jsonMapper: JsonMapper,
@@ -34,7 +33,7 @@ class BedAssignmentMigrationService(
   @Value($$"${complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${complete-check.count}") completeCheckCount: Int,
 ) : ByPageNumberMigrationService<PrisonerMigrationFilter, PrisonerId, BedAssignmentMigrationMapping>(
-  mappingService = byPrisonerMappingApiService,
+  mappingService = bedAssignmentMappingService,
   migrationType = MigrationType.BED_ASSIGNMENT,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
@@ -106,8 +105,6 @@ class BedAssignmentMigrationService(
         if (mappingComplete) "bedassignment-migration-entity-migrated" else "bedassignment-migration-entity-mapping-pending",
         telemetry,
       )
-    } catch (e: CancellationException) {
-      throw e
     } catch (e: Exception) {
       telemetry["error"] = e.message ?: e.javaClass.name
       telemetryClient.trackEvent("bedassignment-migration-entity-failed", telemetry)
@@ -124,13 +121,11 @@ class BedAssignmentMigrationService(
     failureHandler: suspend (error: Throwable) -> Unit,
   ): Boolean {
     try {
-      val result = byPrisonerMappingApiService.createMappings(mappings)
+      val result = bedAssignmentMappingService.createMappings(mappings)
       publishTelemetry(result, mappings)
       if (result.isError) {
-        byPrisonerMappingApiService.reconcileMappings(mappings) { publishTelemetry(it, mappings) }
+        bedAssignmentMappingService.reconcileMappings(mappings) { publishTelemetry(it, mappings) }
       }
-    } catch (e: CancellationException) {
-      throw e
     } catch (e: Exception) {
       failureHandler(e)
       return false

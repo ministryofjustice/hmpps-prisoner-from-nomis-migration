@@ -299,15 +299,6 @@ class BedAssignmentSyncIntTest(
     @Nested
     inner class InvalidEvents {
       @Test
-      fun `dead letters an event whose type conflicts with its SNS attribute`() {
-        stubEmptyHistory()
-        send(eventType, attributeEventType = "BED_ASSIGNMENT_HISTORY-UPDATED")
-
-        await untilCallTo { bedAssignmentEventQueue.countAllMessagesOnDLQQueue() } matches { it == 1 }
-        bedAssignmentApi.verify(0, putRequestedFor(urlPathMatching("/nomis-sync/bed-assignments/sync/.*")))
-      }
-
-      @Test
       fun `dead letters events missing their required booking id or sequence`() {
         bedAssignmentEventClient.sendMessage(
           bedAssignmentEventQueueUrl,

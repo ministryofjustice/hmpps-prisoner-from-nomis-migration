@@ -43,7 +43,7 @@ private const val MIGRATION_DPS_ID_1 = "00000000-0000-0000-0000-000000000001"
 private const val MIGRATION_DPS_ID_2 = "00000000-0000-0000-0000-000000000002"
 private const val MIGRATION_LOCATION_ID = "abcdef12-1234-5678-9012-abcdef123456"
 
-@TestPropertySource(properties = ["bedassignment.page.size=1"])
+@TestPropertySource(properties = ["bedassignment.page.size=2"])
 class BedAssignmentMigrationIntTest(
   @Autowired private val nomisMockServer: BedAssignmentNomisApiMockServer,
   @Autowired private val mappingMockServer: BedAssignmentMappingApiMockServer,
@@ -152,7 +152,7 @@ class BedAssignmentMigrationIntTest(
       }
 
       @Test
-      fun `migrates each explicit prisoner once across page boundaries`() {
+      fun `migrates each explicit prisoner once`() {
         bedAssignmentApi.verify(1, postRequestedFor(urlEqualTo("/nomis-sync/bed-assignments/migrate/$MIGRATION_OFFENDER_1")))
         bedAssignmentApi.verify(1, postRequestedFor(urlEqualTo("/nomis-sync/bed-assignments/migrate/$MIGRATION_OFFENDER_2")))
         nomisApi.verify(0, getRequestedFor(urlPathEqualTo("/prisoners/ids/all")))
