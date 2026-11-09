@@ -26,15 +26,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomai
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AddressUsageByNomisIdRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactByNomisIdRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsByNomisIdsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMergeMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.MappingType.MIGRATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType.EMAIL
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType.PHONE
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMergeMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 
@@ -119,7 +119,7 @@ class CorePersonSynchronisationIntTest(
       fun setUp() {
         corePersonNomisApiMock.stubGetAddressesAndContacts(prisonNumber = offenderNo)
         corePersonMappingApiMock.stubGetMappingsFromNomisIds(
-          CorePersonMappingsResult(
+          CorePersonAddressContactMappingsResult(
             addresses = listOf(
               CorePersonAddressMappingDto(
                 cprId = "cpr-address-12345",
@@ -217,7 +217,7 @@ class CorePersonSynchronisationIntTest(
 
       @Test
       fun `will merge the mappings returned from CPR`() {
-        val request: CorePersonMergeMappingsDto =
+        val request: CorePersonAddressContactMergeMappingsDto =
           MappingApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/core-person/merge")))
 
         assertThat(request.toNomisPrisonNumber).isEqualTo(offenderNo)
@@ -242,8 +242,8 @@ class CorePersonSynchronisationIntTest(
 
       @Test
       fun `will request existing mappings for all the NOMIS ids`() {
-        val request: CorePersonMappingsByNomisIdsRequest =
-          MappingApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/core-person/mappings/by-nomis-ids")))
+        val request: CorePersonAddressContactMappingsByNomisIdsRequest =
+          MappingApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/core-person/merge/mappings/by-nomis-ids")))
 
         assertThat(request.addresses).containsExactly(12345L)
         assertThat(request.addressUsages).containsExactly(AddressUsageByNomisIdRequest(10000, "HOME"))

@@ -1,30 +1,20 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 
 import kotlinx.coroutines.reactive.awaitSingle
-import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.data.domain.PageImpl
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.awaitBody
-import reactor.core.publisher.Mono
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBodyOrNullWhenNotFound
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.CourtSentencingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeIdsWithLast
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PageCourtEventChargeIdResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PostPrisonerMergeCaseChanges
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceTermResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.RestResponsePage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.typeReference
-import java.time.LocalDate
 
 @Service
 class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
@@ -123,19 +113,6 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun getOffenderChargeOrNull(offenderNo: String, offenderChargeId: Long): OffenderChargeResponse? = webClient.get()
-    .uri(
-      "/prisoners/{offenderNo}/sentencing/offender-charges/{offenderChargeId}",
-      offenderNo,
-      offenderChargeId,
-    )
-    .retrieve()
-    .bodyToMono(OffenderChargeResponse::class.java)
-    .onErrorResume(WebClientResponseException.NotFound::class.java) {
-      Mono.empty()
-    }
-    .awaitSingleOrNull()
-
   suspend fun getOffenderSentence(offenderNo: String, caseId: Long, sentenceSequence: Int): SentenceResponse = webClient.get()
     .uri(
       "/prisoners/{offenderNo}/court-cases/{caseId}/sentences/{sentenceSequence}",
@@ -175,22 +152,6 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .retrieve()
     .awaitBody()
 
-  suspend fun getPrisonerIds(
-    fromDate: LocalDate?,
-    toDate: LocalDate?,
-    pageNumber: Long,
-    pageSize: Long,
-  ): PageImpl<PrisonerId> = webClient.get()
-    .uri {
-      it.path("/prisoners/ids")
-        .queryParam("page", pageNumber)
-        .queryParam("size", pageSize)
-        .build()
-    }
-    .retrieve()
-    .bodyToMono(typeReference<RestResponsePage<PrisonerId>>())
-    .awaitSingle()
-
   suspend fun getOffenderSentenceTerm(offenderNo: String, bookingId: Long, sentenceSequence: Int, termSequence: Int): SentenceTermResponse = webClient.get()
     .uri(
       "/prisoners/{offenderNo}/sentence-terms/booking-id/{bookingId}/sentence-sequence/{sentenceSequence}/term-sequence/{termSequence}",
@@ -213,14 +174,6 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun getByNomisPrisonNumberOrNull(nomisPrisonNumber: String): CorePersonMappingDto? = webClient.get()
-    .uri(
-      "/mapping/core-person/person/nomis-prison-number/{nomisPrisonNumber}",
-      nomisPrisonNumber,
-    )
-    .retrieve()
-    .awaitBodyOrNullWhenNotFound()
-
   suspend fun getOffenderActiveRecallSentences(bookingId: Long): List<SentenceResponse> = webClient.get()
     .uri(
       "/prisoners/booking-id/{bookingId}/sentences/recall",
@@ -228,14 +181,6 @@ class CourtSentencingNomisApiService(@Qualifier("nomisApiWebClient") private val
     )
     .retrieve()
     .awaitBody()
-
-  suspend fun getCourtEventChargeIdsWithPropertyValue(
-    page: Int = 0,
-    size: Int = 20,
-    sort: List<String>? = null,
-  ): PageCourtEventChargeIdResponse = api
-    .getCourtEventChargeIdsWithPropertyValue(page = page, size = size, sort = sort)
-    .awaitSingle()
 
   suspend fun getCourtEventChargeIdsWithPropertyValueFromId(
     lastOffenderChargeId: Long = 0,

@@ -19,12 +19,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEven
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
@@ -162,18 +162,18 @@ class CorePersonAddressContactMigrationService(
   override fun parseContextMapping(json: String): MigrationMessage<*, CorePersonAddressContactMappingsDto> = jsonMapper.readValue(json)
 }
 
-internal fun CorePersonAddressContact.toMigrateAddressesAndContactsRequest(existingMappings: CorePersonMappingsResult = emptyCorePersonMappingResult()): PrisonAddressesAndContactsRequest = PrisonAddressesAndContactsRequest(
+internal fun CorePersonAddressContact.toMigrateAddressesAndContactsRequest(existingMappings: CorePersonAddressContactMappingsResult = emptyCorePersonMappingResult()): PrisonAddressesAndContactsRequest = PrisonAddressesAndContactsRequest(
   addresses = addresses?.map { it.toPrisonAddressRequest(existingMappings) } ?: emptyList(),
   contacts = (phoneNumbers?.map { it.toPrisonPhoneNumberRequest(existingMappings) } ?: emptyList()) + (emailAddresses?.map { it.toPrisonEmailAddressRequest(existingMappings) } ?: emptyList()),
 )
 
-internal fun emptyCorePersonMappingResult(): CorePersonMappingsResult = CorePersonMappingsResult(
+internal fun emptyCorePersonMappingResult(): CorePersonAddressContactMappingsResult = CorePersonAddressContactMappingsResult(
   addresses = emptyList(),
   contacts = emptyList(),
   addressUsages = emptyList(),
 )
 
-internal fun OffenderAddress.toPrisonAddressRequest(existingMappings: CorePersonMappingsResult = emptyCorePersonMappingResult()): PrisonAddress = PrisonAddress(
+internal fun OffenderAddress.toPrisonAddressRequest(existingMappings: CorePersonAddressContactMappingsResult = emptyCorePersonMappingResult()): PrisonAddress = PrisonAddress(
   cprAddressId = existingMappings.addresses.firstOrNull { it.nomisId == addressId }?.cprId,
   nomisAddressId = addressId,
   subBuildingName = flat,
@@ -205,7 +205,7 @@ private fun CodeDescription?.mapCountryCode(): PrisonAddress.CountryCode? = when
   else -> PrisonAddress.CountryCode.valueOf(code)
 }
 
-internal fun OffenderAddressUsage.toPrisonAddressUsageRequest(existingMappings: CorePersonMappingsResult = emptyCorePersonMappingResult()): PrisonAddressUsage = PrisonAddressUsage(
+internal fun OffenderAddressUsage.toPrisonAddressUsageRequest(existingMappings: CorePersonAddressContactMappingsResult = emptyCorePersonMappingResult()): PrisonAddressUsage = PrisonAddressUsage(
   cprAddressUsageId = existingMappings.addressUsages.firstOrNull { it.nomisId == addressId && it.addressUsageCode == usage }?.cprId,
   nomisAddressUsageId = addressId,
   addressUsageCode = AddressUsageCode.valueOf(usage),
@@ -216,7 +216,7 @@ internal fun OffenderAddressUsage.toPrisonAddressUsageRequest(existingMappings: 
   modifyUserId = lastUpdatedByUsername,
 )
 
-internal fun OffenderPhoneNumber.toPrisonPhoneNumberRequest(existingMappings: CorePersonMappingsResult = emptyCorePersonMappingResult()): PrisonContact = PrisonContact(
+internal fun OffenderPhoneNumber.toPrisonPhoneNumberRequest(existingMappings: CorePersonAddressContactMappingsResult = emptyCorePersonMappingResult()): PrisonContact = PrisonContact(
   cprContactId = existingMappings.contacts.filter { it.nomisContactType == NomisContactType.PHONE }.firstOrNull { it.nomisId == phoneId }?.cprId,
   type = if (type.code == "MOB") PrisonContact.Type.MOBILE else PrisonContact.Type.valueOf(type.code),
   createDateTime = createdDateTime,
@@ -228,7 +228,7 @@ internal fun OffenderPhoneNumber.toPrisonPhoneNumberRequest(existingMappings: Co
   modifyUserId = lastUpdatedByUsername,
 )
 
-internal fun OffenderEmailAddress.toPrisonEmailAddressRequest(existingMappings: CorePersonMappingsResult = emptyCorePersonMappingResult()): PrisonContact = PrisonContact(
+internal fun OffenderEmailAddress.toPrisonEmailAddressRequest(existingMappings: CorePersonAddressContactMappingsResult = emptyCorePersonMappingResult()): PrisonContact = PrisonContact(
   cprContactId = existingMappings.contacts.filter { it.nomisContactType == NomisContactType.EMAIL }.firstOrNull { it.nomisId == emailAddressId }?.cprId,
   type = PrisonContact.Type.EMAIL,
   createDateTime = createdDateTime,

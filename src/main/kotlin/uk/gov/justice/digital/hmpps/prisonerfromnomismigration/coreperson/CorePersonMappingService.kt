@@ -13,28 +13,32 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.awaitBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.CreateMappingResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.MigrationMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonAddressContactRepairResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonAddressMappingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonContactMappingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonContactMappingResourceApi.NomisContactTypeDeleteCorePersonContactMappingByNomisId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonContactMappingResourceApi.NomisContactTypeGetCorePersonContactMappingByNomisId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonMappingResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonMergeMappingResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonMigrationAddressContactResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMergeMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMergeMappingsDto
 
 @Service
-class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorePersonAddressContactMappingsDto>("/mapping/core-person", webClient) {
-  private val api = CorePersonMappingResourceApi(webClient)
+class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorePersonAddressContactMappingsDto>("/mapping/core-person/address-contact-migration", webClient) {
+  private val migrationApi = CorePersonMigrationAddressContactResourceApi(webClient)
+  private val mergeApi = CorePersonMergeMappingResourceApi(webClient)
+  private val repairApi = CorePersonAddressContactRepairResourceApi(webClient)
   private val addressApi = CorePersonAddressMappingResourceApi(webClient)
   private val contactApi = CorePersonContactMappingResourceApi(webClient)
 
-  suspend fun getCorePersonByPrisonNumberOrNull(prisonNumber: String): CorePersonMappingDto? = api
-    .prepare(api.getPersonMappingByNomisPrisonNumberRequestConfig(prisonNumber))
+  suspend fun getCorePersonByPrisonNumberOrNull(prisonNumber: String): CorePersonMappingDto? = migrationApi
+    .prepare(migrationApi.getAddressContactMappingByNomisPrisonNumberRequestConfig(prisonNumber))
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
@@ -85,8 +89,8 @@ class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun getMappingsFromNomisIds(request: CorePersonMappingsByNomisIdsRequest): CorePersonMappingsResult = api
-    .prepare(api.getMappingsFromNomisIdsRequestConfig(request))
+  suspend fun getMappingsFromNomisIds(request: CorePersonAddressContactMappingsByNomisIdsRequest): CorePersonAddressContactMappingsResult = mergeApi
+    .prepare(mergeApi.getMappingsFromNomisIdsRequestConfig(request))
     .retrieve()
     .awaitBody()
 
@@ -128,10 +132,10 @@ class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebC
     .awaitFirstOrDefault(CreateMappingResult())
 
   suspend fun replaceMappings(mappings: CorePersonAddressContactMappingsDto) {
-    api.replaceCorePersonMappings(mappings).awaitSingle()
+    repairApi.replaceCorePersonAddressContactMappings(mappings).awaitSingle()
   }
 
-  suspend fun merge(mappings: CorePersonMergeMappingsDto) {
-    api.merge(mappings).awaitSingle()
+  suspend fun merge(mappings: CorePersonAddressContactMergeMappingsDto) {
+    mergeApi.merge(mappings).awaitSingle()
   }
 }

@@ -10,12 +10,12 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
@@ -25,7 +25,7 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateMappingsForMigration() {
     mappingApi.stubFor(
-      post("/mapping/core-person").willReturn(
+      post("/mapping/core-person/address-contact-migration").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(201),
@@ -34,7 +34,7 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
   }
   fun stubCreateMappingsForMigration(error: DuplicateMappingErrorResponse) {
     mappingApi.stubFor(
-      post("/mapping/core-person").willReturn(
+      post("/mapping/core-person/address-contact-migration").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(409)
@@ -43,11 +43,11 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person")
+  fun stubCreateMappingsForMigrationFailureFollowedBySuccess() = mappingApi.stubMappingCreateFailureFollowedBySuccess(url = "/mapping/core-person/address-contact-migration")
 
   fun stubGetMigrationCount(count: Int = 1, corePersonMappingDto: List<CorePersonMappingDto>? = null) {
     mappingApi.stubFor(
-      get(urlPathMatching("/mapping/core-person/migration-id/.*")).willReturn(
+      get(urlPathMatching("/mapping/core-person/address-contact-migration/migration-id/.*")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(
@@ -66,7 +66,7 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubReplaceMappings() {
     mappingApi.stubFor(
-      post("/mapping/core-person/replace").willReturn(
+      post("/mapping/core-person/address-contact/replace").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(200),
@@ -75,14 +75,14 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
   }
 
   fun stubGetMappingsFromNomisIds(
-    result: CorePersonMappingsResult = CorePersonMappingsResult(
+    result: CorePersonAddressContactMappingsResult = CorePersonAddressContactMappingsResult(
       addresses = emptyList(),
       contacts = emptyList(),
       addressUsages = emptyList(),
     ),
   ) {
     mappingApi.stubFor(
-      post("/mapping/core-person/mappings/by-nomis-ids").willReturn(
+      post("/mapping/core-person/merge/mappings/by-nomis-ids").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(HttpStatus.OK.value())
@@ -107,7 +107,7 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
   ) {
     mapping.apply {
       mappingApi.stubFor(
-        get(urlEqualTo("/mapping/core-person/person/nomis-prison-number/$nomisPrisonNumber")).willReturn(
+        get(urlEqualTo("/mapping/core-person/address-contact-migration/person/nomis-prison-number/$nomisPrisonNumber")).willReturn(
           aResponse()
             .withHeader("Content-Type", "application/json")
             .withStatus(HttpStatus.OK.value())
