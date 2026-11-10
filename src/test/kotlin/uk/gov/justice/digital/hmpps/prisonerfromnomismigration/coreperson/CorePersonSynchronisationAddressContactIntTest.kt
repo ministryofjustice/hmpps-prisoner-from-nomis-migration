@@ -43,7 +43,7 @@ import java.time.LocalDateTime
 
 class CorePersonSynchronisationAddressContactIntTest(
   @Autowired private val nomisApiMock: CorePersonNomisApiMockServer,
-  @Autowired private val mappingApiMock: CorePersonMappingApiMockServer,
+  @Autowired private val mappingApiMock: CorePersonAddressContactMappingApiMockServer,
 ) : CorePersonIntegrationTestBase() {
 
   @Nested

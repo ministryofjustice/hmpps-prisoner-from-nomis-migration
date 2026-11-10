@@ -5,7 +5,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.Activi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.activities.AllocationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.appointments.AppointmentsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.bedassignment.BedAssignmentByPrisonerMappingApiService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonMappingService
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonAddressContactMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraMappingApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances.AdvancesMappingService
@@ -24,7 +24,7 @@ class GeneralMappingService(
   private val allocationsMappingService: AllocationsMappingService,
   private val appointmentsMappingService: AppointmentsMappingService,
   private val bedAssignmentMappingApiService: BedAssignmentByPrisonerMappingApiService,
-  private val corePersonMappingService: CorePersonMappingService,
+  private val corePersonAddressContactMappingService: CorePersonAddressContactMappingService,
   private val courtSchedulerMappingService: CourtSchedulerMappingApiService,
   private val courtSentencingMappingService: CourtSentencingMappingApiService,
   private val csraMappingApiService: CsraMappingApiService,
@@ -42,7 +42,7 @@ class GeneralMappingService(
     MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
     MigrationType.BED_ASSIGNMENT -> bedAssignmentMappingApiService.getMigrationCount(migrationId)
-    MigrationType.CORE_PERSON_ADDRESS_CONTACT -> corePersonMappingService.getMigrationCount(migrationId)
+    MigrationType.CORE_PERSON_ADDRESS_CONTACT -> corePersonAddressContactMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SCHEDULER -> courtSchedulerMappingService.getMigrationCount(migrationId)
     MigrationType.COURT_SENTENCING -> courtSentencingMappingService.getMigrationCount(migrationId)
     MigrationType.CSRA -> csraMappingApiService.getMigrationCount(migrationId)

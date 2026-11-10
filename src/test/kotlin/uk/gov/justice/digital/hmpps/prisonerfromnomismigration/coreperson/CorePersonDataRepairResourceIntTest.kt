@@ -41,7 +41,7 @@ import java.time.LocalDateTime
 
 class CorePersonDataRepairResourceIntTest(
   @Autowired private val nomisApiMockServer: CorePersonNomisApiMockServer,
-  @Autowired private val mappingApiMockServer: CorePersonMappingApiMockServer,
+  @Autowired private val mappingApiMockServer: CorePersonAddressContactMappingApiMockServer,
 ) : CorePersonIntegrationTestBase() {
 
   private val cprApiMock = CorePersonCprApiExtension.cprCorePersonServer

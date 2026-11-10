@@ -21,7 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.pageContent
 
 @Component
-class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
+class CorePersonAddressContactMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubCreateMappingsForMigration() {
     mappingApi.stubFor(
