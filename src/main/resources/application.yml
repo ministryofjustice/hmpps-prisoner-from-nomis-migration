@@ -71,8 +71,8 @@ spring:
             authorization-grant-type: client_credentials
           bedassignment-api:
             provider: hmpps-auth
-            client-id: ${bedassignment.client.id}
-            client-secret: ${bedassignment.client.secret}
+            client-id: ${cell.move.client.id}
+            client-secret: ${cell.move.client.secret}
             authorization-grant-type: client_credentials
           locations-api:
             provider: hmpps-auth
