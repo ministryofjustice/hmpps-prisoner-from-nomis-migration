@@ -33,6 +33,7 @@ class CorePersonSynchronisationAddressContactService(
   private val corePersonCprApiService: CorePersonCprApiService,
   private val corePersonNomisApiService: CorePersonNomisApiService,
   private val corePersonAddressContactMappingService: CorePersonAddressContactMappingService,
+  private val corePersonMappingService: CorePersonMappingService,
   private val queueService: SynchronisationQueueService,
 ) : TelemetryEnabled {
 
@@ -42,7 +43,7 @@ class CorePersonSynchronisationAddressContactService(
   suspend fun prisonAddressesAndContactsRequest(prisonNumber: String): PrisonAddressesAndContactsRequest {
     val nomisAddressesAndContacts = corePersonNomisApiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = prisonNumber)
     val existingMappingsRequest = mappingsRequest(nomisAddressesAndContacts)
-    val existingMappings = corePersonAddressContactMappingService.getMappingsFromNomisIds(existingMappingsRequest)
+    val existingMappings = corePersonMappingService.getMappingsFromNomisIds(existingMappingsRequest)
     return nomisAddressesAndContacts.toMigrateAddressesAndContactsRequest(existingMappings)
   }
 

@@ -13,7 +13,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 class CorePersonSynchronisationService(
   override val telemetryClient: TelemetryClient,
   private val corePersonCprApiService: CorePersonCprApiService,
-  private val corePersonAddressContactMappingService: CorePersonAddressContactMappingService,
+  private val corePersonMappingService: CorePersonMappingService,
   private val corePersonSynchronisationAddressContactService: CorePersonSynchronisationAddressContactService,
 ) : TelemetryEnabled {
   suspend fun synchronisePrisonerMerge(prisonerMergeEvent: PrisonerMergeDomainEvent) {
@@ -28,7 +28,7 @@ class CorePersonSynchronisationService(
     val prisonAddressesAndContactsRequest = corePersonSynchronisationAddressContactService.prisonAddressesAndContactsRequest(offenderNo)
     val cprMergeResponse = corePersonCprApiService.processPrisonMerge(offenderNo, PrisonMerge(removedOffenderNo, prisonAddressesAndContactsRequest))
     val newAddressAndContactsMappings = cprMergeResponse.sysconAddressesAndContactsResponseBody.toCorePersonAddressContactMappingsDto(migrationType = NOMIS_CREATED)
-    corePersonAddressContactMappingService.merge(
+    corePersonMappingService.merge(
       CorePersonAddressContactMergeMappingsDto(
         offenderNo,
         removedOffenderNo,

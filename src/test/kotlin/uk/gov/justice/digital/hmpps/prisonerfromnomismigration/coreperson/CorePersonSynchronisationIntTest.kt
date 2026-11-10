@@ -40,7 +40,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingA
 
 class CorePersonSynchronisationIntTest(
   @Autowired private val corePersonNomisApiMock: CorePersonNomisApiMockServer,
-  @Autowired private val corePersonMappingApiMock: CorePersonAddressContactMappingApiMockServer,
+  @Autowired private val corePersonMappingApiMock: CorePersonMappingApiMockServer,
 ) : CorePersonIntegrationTestBase() {
   @Nested
   @DisplayName("prison-offender-events.prisoner.merged")

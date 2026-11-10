@@ -42,6 +42,7 @@ import java.time.LocalDateTime
 class CorePersonDataRepairResourceIntTest(
   @Autowired private val nomisApiMockServer: CorePersonNomisApiMockServer,
   @Autowired private val mappingApiMockServer: CorePersonAddressContactMappingApiMockServer,
+  @Autowired private val corePersonMappingApiMockServer: CorePersonMappingApiMockServer,
 ) : CorePersonIntegrationTestBase() {
 
   private val cprApiMock = CorePersonCprApiExtension.cprCorePersonServer
@@ -169,7 +170,7 @@ class CorePersonDataRepairResourceIntTest(
       @BeforeEach
       fun setUp() {
         nomisApiMockServer.stubGetAddressesAndContacts(prisonNumber, addressesAndContacts = addressesAndContacts)
-        mappingApiMockServer.stubGetMappingsFromNomisIds()
+        corePersonMappingApiMockServer.stubGetMappingsFromNomisIds()
         cprApiMock.stubMigrateAddressesAndContacts(
           nomisPrisonNumber = prisonNumber,
           response = SysconAddressesAndContactsResponseBody(
@@ -242,7 +243,7 @@ class CorePersonDataRepairResourceIntTest(
       @BeforeEach
       fun setUp() {
         nomisApiMockServer.stubGetAddressesAndContacts(prisonNumber = prisonNumber)
-        mappingApiMockServer.stubGetMappingsFromNomisIds(
+        corePersonMappingApiMockServer.stubGetMappingsFromNomisIds(
           CorePersonAddressContactMappingsResult(
             addresses = listOf(
               CorePersonAddressMappingDto(
@@ -404,7 +405,7 @@ class CorePersonDataRepairResourceIntTest(
       @BeforeEach
       fun setUp() {
         nomisApiMockServer.stubGetAddressesAndContacts(prisonNumber = prisonNumber)
-        mappingApiMockServer.stubGetMappingsFromNomisIds()
+        corePersonMappingApiMockServer.stubGetMappingsFromNomisIds()
         cprApiMock.stubMigrateAddressesAndContacts(nomisPrisonNumber = prisonNumber)
         mappingApiMockServer.stubReplaceMappings()
 
