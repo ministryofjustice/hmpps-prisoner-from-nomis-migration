@@ -23,29 +23,6 @@ class CorePersonNomisApiServiceTest(
   @Autowired private val mockServer: CorePersonNomisApiMockServer,
 ) {
   @Nested
-  inner class GetPerson {
-    @Test
-    fun `will pass NOMIS id to service`() = runTest {
-      mockServer.stubGetCorePerson(prisonNumber = "A12345BC")
-
-      apiService.getCorePerson(nomisPrisonNumber = "A12345BC")
-
-      mockServer.verify(
-        getRequestedFor(urlPathEqualTo("/core-person/A12345BC")),
-      )
-    }
-
-    @Test
-    fun `will return the core person`() = runTest {
-      mockServer.stubGetCorePerson(prisonNumber = "A12345BC", corePerson = corePerson().copy(offenders = listOf(corePerson().offenders!![0].copy(lastName = "Smith"))))
-
-      val corePerson = apiService.getCorePerson(nomisPrisonNumber = "A12345BC")
-
-      assertThat(corePerson.offenders!![0].lastName).isEqualTo("Smith")
-    }
-  }
-
-  @Nested
   inner class GetPersonAddressesAndContacts {
     @Test
     fun `will pass NOMIS id to service`() = runTest {
@@ -232,6 +209,96 @@ class CorePersonNomisApiServiceTest(
       assertThat(usage.addressId).isEqualTo(23456)
       assertThat(usage.usage).isEqualTo("CURFEW")
       assertThat(usage.active).isFalse()
+    }
+  }
+
+  @Nested
+  inner class GetOffenderAliasesAndIdentifiers {
+    @Test
+    fun `will pass NOMIS prison number to service`() = runTest {
+      mockServer.stubGetAliasesAndIdentifiers(prisonNumber = "A12345BC")
+
+      apiService.getOffenderAliasesAndIdentifiers(nomisPrisonNumber = "A12345BC")
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/core-person/A12345BC/aliases-identifiers")),
+      )
+    }
+
+    @Test
+    fun `will return the aliases and identifiers`() = runTest {
+      val offender = corePerson().offenders!!.first()
+      mockServer.stubGetAliasesAndIdentifiers(
+        prisonNumber = "A12345BC",
+        aliasesAndIdentifiers = listOf(offender, offender.copy(offenderId = 2, lastName = "JONES", workingName = false, identifiers = emptyList())),
+      )
+
+      val aliases = apiService.getOffenderAliasesAndIdentifiers(nomisPrisonNumber = "A12345BC")
+
+      assertThat(aliases).hasSize(2)
+      with(aliases[0]) {
+        assertThat(offenderId).isEqualTo(1)
+        assertThat(lastName).isEqualTo("SMITH")
+        assertThat(identifiers.single().identifier).isEqualTo("20/0071818T")
+      }
+      with(aliases[1]) {
+        assertThat(offenderId).isEqualTo(2)
+        assertThat(lastName).isEqualTo("JONES")
+        assertThat(identifiers).isEmpty()
+      }
+    }
+  }
+
+  @Nested
+  inner class GetOffenderAlias {
+    @Test
+    fun `will pass NOMIS offender id to service`() = runTest {
+      mockServer.stubGetOffenderAlias(offenderId = 12345)
+
+      apiService.getOffenderAlias(offenderId = 12345)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/core-person/12345/alias")),
+      )
+    }
+
+    @Test
+    fun `will return the alias`() = runTest {
+      mockServer.stubGetOffenderAlias(
+        offenderId = 12345,
+        alias = corePerson().offenders!!.first().copy(offenderId = 12345, lastName = "JONES"),
+      )
+
+      val alias = apiService.getOffenderAlias(offenderId = 12345)
+
+      assertThat(alias.offenderId).isEqualTo(12345)
+      assertThat(alias.lastName).isEqualTo("JONES")
+    }
+  }
+
+  @Nested
+  inner class GetOffenderIdentifier {
+    @Test
+    fun `will pass NOMIS offender id and sequence to service`() = runTest {
+      mockServer.stubGetOffenderIdentifier(offenderId = 12345, sequenceNumber = 3)
+
+      apiService.getOffenderIdentifier(offenderId = 12345, sequenceNumber = 3)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/core-person/12345/identifier/3")),
+      )
+    }
+
+    @Test
+    fun `will return the identifier`() = runTest {
+      mockServer.stubGetOffenderIdentifier(offenderId = 12345, sequenceNumber = 3)
+
+      val identifier = apiService.getOffenderIdentifier(offenderId = 12345, sequenceNumber = 3)
+
+      assertThat(identifier.offenderId).isEqualTo(12345)
+      assertThat(identifier.sequence).isEqualTo(3)
+      assertThat(identifier.type.code).isEqualTo("PNC")
+      assertThat(identifier.identifier).isEqualTo("20/0071818T")
     }
   }
 }

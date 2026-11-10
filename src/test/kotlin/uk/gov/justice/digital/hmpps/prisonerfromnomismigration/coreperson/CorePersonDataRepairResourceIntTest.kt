@@ -13,7 +13,6 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressMapping
@@ -443,8 +442,6 @@ class CorePersonDataRepairResourceIntTest(
 
       @BeforeEach
       fun setUp() {
-        nomisApiMockServer.stubGetCorePerson(prisonNumber, status = HttpStatus.NOT_FOUND)
-
         webTestClient.post().uri("/prisoners/$prisonNumber/core-person/addresses-contacts/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()

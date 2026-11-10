@@ -153,18 +153,51 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubGetAliasesAndIdentifiers(
     prisonNumber: String = "A1234BC",
-    aliasesAndIdentifiers: List<CoreOffender>,
+    aliasesAndIdentifiers: List<CoreOffender> = corePerson(prisonNumber).offenders!!,
     status: HttpStatus = HttpStatus.OK,
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     nomisApi.stubFor(
-      get(urlEqualTo("/core-person/$prisonNumber")).willReturn(
+      get(urlEqualTo("/core-person/$prisonNumber/aliases-identifiers")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withStatus(status.value())
           .withBody(
-            jsonMapper.writeValueAsString(if (status == HttpStatus.OK) corePerson(prisonNumber, aliasesAndIdentifiers) else error),
+            jsonMapper.writeValueAsString(if (status == HttpStatus.OK) aliasesAndIdentifiers else error),
           ),
+      ),
+    )
+  }
+
+  fun stubGetOffenderAlias(
+    offenderId: Long = 1,
+    alias: CoreOffender = corePerson().offenders!!.first().copy(offenderId = offenderId),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$offenderId/alias")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) alias else error)),
+      ),
+    )
+  }
+
+  fun stubGetOffenderIdentifier(
+    offenderId: Long = 1,
+    sequenceNumber: Int = 1,
+    identifier: Identifier = corePerson().offenders!!.first().identifiers.first().copy(offenderId = offenderId, sequence = sequenceNumber.toLong()),
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$offenderId/identifier/$sequenceNumber")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) identifier else error)),
       ),
     )
   }

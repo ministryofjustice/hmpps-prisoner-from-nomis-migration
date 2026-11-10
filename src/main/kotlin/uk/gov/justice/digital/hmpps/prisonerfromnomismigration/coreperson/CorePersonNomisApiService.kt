@@ -5,8 +5,9 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.CorePersonResourceApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePerson
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderEmailAddress
@@ -15,10 +16,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 @Service
 class CorePersonNomisApiService(@Qualifier("nomisApiWebClient") private val webClient: WebClient) {
   private val api = CorePersonResourceApi(webClient)
-
-  suspend fun getCorePerson(nomisPrisonNumber: String): CorePerson = api
-    .getOffender(prisonNumber = nomisPrisonNumber)
-    .awaitSingle()
 
   suspend fun getCorePersonAddressesAndContacts(nomisPrisonNumber: String): CorePersonAddressContact = api
     .getOffenderAddressesAndContactsByPrisonNumber(prisonNumber = nomisPrisonNumber)
@@ -45,5 +42,17 @@ class CorePersonNomisApiService(@Qualifier("nomisApiWebClient") private val webC
 
   suspend fun getOffenderEmail(offenderId: Long, emailAddressId: Long): OffenderEmailAddress = api
     .getOffenderEmail(offenderId, emailAddressId)
+    .awaitSingle()
+
+  suspend fun getOffenderAliasesAndIdentifiers(nomisPrisonNumber: String): List<CoreOffender> = api
+    .getOffenderAliasesAndIdentifiers(prisonNumber = nomisPrisonNumber)
+    .awaitSingle()
+
+  suspend fun getOffenderAlias(offenderId: Long): CoreOffender = api
+    .getAlias(offenderId)
+    .awaitSingle()
+
+  suspend fun getOffenderIdentifier(offenderId: Long, sequenceNumber: Int): Identifier = api
+    .getIdentifier(offenderId, sequenceNumber)
     .awaitSingle()
 }

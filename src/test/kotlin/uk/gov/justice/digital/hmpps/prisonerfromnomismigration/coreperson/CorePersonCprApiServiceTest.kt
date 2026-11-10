@@ -16,14 +16,20 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.cprCorePersonServer
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.NomisIdentifierId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAliasesAndIdentifiersRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconIdentifierMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import java.time.LocalDate
@@ -54,6 +60,56 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
 
       assertThrows<WebClientResponseException.BadRequest> {
         apiService.migrateCorePersonAddressesAndContacts("A1234BC", prisonAddressesRequest())
+      }
+    }
+  }
+
+  @Nested
+  inner class MigrateCorePersonAliasesAndIdentifiers {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubMigrateAliasesAndIdentifiers("A1234BC")
+
+      apiService.migrateCorePersonAliasesAndIdentifiers("A1234BC", prisonAliasesRequest())
+
+      cprCorePersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/syscon-sync/aliases-identifiers/A1234BC"))
+          .withRequestBodyJsonPath("aliases[0].nomisOffenderId", equalTo("12345"))
+          .withRequestBodyJsonPath("aliases[0].isPrimary", equalTo("true"))
+          .withRequestBodyJsonPath("aliases[0].identifiers[0].nomisIdentifierId.nomisOffenderId", equalTo("12345"))
+          .withRequestBodyJsonPath("aliases[0].identifiers[0].nomisIdentifierId.nomisSequence", equalTo("1"))
+          .withRequestBodyJsonPath("aliases[0].identifiers[0].type", equalTo("PNC"))
+          .withRequestBodyJsonPath("aliases[0].identifiers[0].value", equalTo("20/0071818T")),
+      )
+    }
+
+    @Test
+    fun `will return the mappings`() = runTest {
+      cprCorePersonServer.stubMigrateAliasesAndIdentifiers(
+        "A1234BC",
+        aliasMappings = listOf(SysconAliasMapping(nomisOffenderId = 12345, cprAliasId = "cpr-alias-1")),
+        identifierMappings = listOf(
+          SysconIdentifierMapping(
+            nomisIdentifierId = NomisIdentifierId(nomisOffenderId = 12345, nomisSequence = 1),
+            cprIdentifierId = "cpr-identifier-1",
+          ),
+        ),
+      )
+
+      val response = apiService.migrateCorePersonAliasesAndIdentifiers("A1234BC", prisonAliasesRequest())
+
+      assertThat(response.prisonNumber).isEqualTo("A1234BC")
+      assertThat(response.aliasesMappings.single().cprAliasId).isEqualTo("cpr-alias-1")
+      assertThat(response.identifiersMappings.single().cprIdentifierId).isEqualTo("cpr-identifier-1")
+      assertThat(response.identifiersMappings.single().nomisIdentifierId.nomisSequence).isEqualTo(1)
+    }
+
+    @Test
+    fun `should throw if bad request`() = runTest {
+      cprCorePersonServer.stubMigrateAliasesAndIdentifiers("A1234BC", status = BAD_REQUEST)
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.migrateCorePersonAliasesAndIdentifiers("A1234BC", prisonAliasesRequest())
       }
     }
   }
@@ -383,6 +439,30 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
     createUserId = "FRED_GEN",
     modifyDateTime = LocalDateTime.parse("2020-11-01T04:05:00"),
     modifyUserId = "FRED_ADM",
+  )
+
+  fun prisonAliasesRequest() = PrisonAliasesAndIdentifiersRequest(
+    aliases = listOf(
+      PrisonAlias(
+        nomisOffenderId = 12345,
+        isPrimary = true,
+        firstName = "JOHN",
+        lastName = "SMITH",
+        dateOfBirth = LocalDate.parse("1980-01-01"),
+        createDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
+        createUserId = "JANE_ADM",
+        identifiers = listOf(
+          PrisonIdentifier(
+            nomisIdentifierId = NomisIdentifierId(nomisOffenderId = 12345, nomisSequence = 1),
+            type = PrisonIdentifier.Type.PNC,
+            `value` = "20/0071818T",
+            verified = true,
+            createDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
+            createUserId = "JANE_ADM",
+          ),
+        ),
+      ),
+    ),
   )
 
   fun prisonAddressesRequest() = PrisonAddressesAndContactsRequest(
