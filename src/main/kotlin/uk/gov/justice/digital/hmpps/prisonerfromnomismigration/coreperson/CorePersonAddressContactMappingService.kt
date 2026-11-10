@@ -18,12 +18,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonContactMappingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonContactMappingResourceApi.NomisContactTypeDeleteCorePersonContactMappingByNomisId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonContactMappingResourceApi.NomisContactTypeGetCorePersonContactMappingByNomisId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonMergeMappingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonMigrationAddressContactResourceApi
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMergeMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
@@ -32,7 +28,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 @Service
 class CorePersonAddressContactMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorePersonAddressContactMappingsDto>("/mapping/core-person/address-contact-migration", webClient) {
   private val migrationApi = CorePersonMigrationAddressContactResourceApi(webClient)
-  private val mergeApi = CorePersonMergeMappingResourceApi(webClient)
   private val repairApi = CorePersonAddressContactRepairResourceApi(webClient)
   private val addressApi = CorePersonAddressMappingResourceApi(webClient)
   private val contactApi = CorePersonContactMappingResourceApi(webClient)
@@ -89,11 +84,6 @@ class CorePersonAddressContactMappingService(@Qualifier("mappingApiWebClient") w
     .retrieve()
     .awaitBodyOrNullWhenNotFound()
 
-  suspend fun getMappingsFromNomisIds(request: CorePersonAddressContactMappingsByNomisIdsRequest): CorePersonAddressContactMappingsResult = mergeApi
-    .prepare(mergeApi.getMappingsFromNomisIdsRequestConfig(request))
-    .retrieve()
-    .awaitBody()
-
   suspend fun getByNomisEmailId(nomisInternetAddressId: Long): CorePersonContactMappingDto = contactApi
     .prepare(contactApi.getCorePersonContactMappingByNomisIdRequestConfig(nomisInternetAddressId, NomisContactTypeGetCorePersonContactMappingByNomisId.EMAIL))
     .retrieve()
@@ -133,9 +123,5 @@ class CorePersonAddressContactMappingService(@Qualifier("mappingApiWebClient") w
 
   suspend fun replaceMappings(mappings: CorePersonAddressContactMappingsDto) {
     repairApi.replaceCorePersonAddressContactMappings(mappings).awaitSingle()
-  }
-
-  suspend fun merge(mappings: CorePersonAddressContactMergeMappingsDto) {
-    mergeApi.merge(mappings).awaitSingle()
   }
 }
