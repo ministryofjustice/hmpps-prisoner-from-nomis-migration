@@ -54,7 +54,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalM
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.util.UUID
-import kotlin.collections.plus
 
 @Service
 class CourtSentencingSynchronisationService(
@@ -200,7 +199,8 @@ class CourtSentencingSynchronisationService(
         )
         telemetryClient.trackEvent(
           "court-case-synchronisation-updated-success",
-          telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId),
+          telemetry + ("dpsCourtCaseId" to mapping.dpsCourtCaseId) +
+            ("status" to nomisCourtCase.caseStatus.description),
         )
       }
     }
