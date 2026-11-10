@@ -58,7 +58,7 @@ import kotlin.collections.forEach
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CorePersonMigrationIntTest(
   @Autowired private val corePersonNomisApiMock: CorePersonNomisApiMockServer,
-  @Autowired private val mappingApiMock: CorePersonMappingApiMockServer,
+  @Autowired private val mappingApiMock: CorePersonAddressContactMappingApiMockServer,
   @Autowired private val migrationHistoryRepository: MigrationHistoryRepository,
 ) : CorePersonIntegrationTestBase() {
   private val nomisApiMock = NomisApiExtension.nomisApi

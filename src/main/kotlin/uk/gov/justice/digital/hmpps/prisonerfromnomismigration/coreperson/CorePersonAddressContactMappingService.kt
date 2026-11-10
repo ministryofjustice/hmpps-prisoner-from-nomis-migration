@@ -30,7 +30,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 
 @Service
-class CorePersonMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorePersonAddressContactMappingsDto>("/mapping/core-person/address-contact-migration", webClient) {
+class CorePersonAddressContactMappingService(@Qualifier("mappingApiWebClient") webClient: WebClient) : MigrationMapping<CorePersonAddressContactMappingsDto>("/mapping/core-person/address-contact-migration", webClient) {
   private val migrationApi = CorePersonMigrationAddressContactResourceApi(webClient)
   private val mergeApi = CorePersonMergeMappingResourceApi(webClient)
   private val repairApi = CorePersonAddressContactRepairResourceApi(webClient)

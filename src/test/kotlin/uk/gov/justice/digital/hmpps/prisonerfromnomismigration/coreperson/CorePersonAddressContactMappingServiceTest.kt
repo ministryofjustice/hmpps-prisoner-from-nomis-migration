@@ -24,10 +24,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequ
 
 @ExtendWith(MappingApiExtension::class)
 @SpringAPIServiceTest
-@Import(CorePersonMappingService::class, CorePersonMappingApiMockServer::class)
-class CorePersonMappingServiceTest(
-  @Autowired private val apiService: CorePersonMappingService,
-  @Autowired private val mockServer: CorePersonMappingApiMockServer,
+@Import(CorePersonAddressContactMappingService::class, CorePersonAddressContactMappingApiMockServer::class)
+class CorePersonAddressContactMappingServiceTest(
+  @Autowired private val apiService: CorePersonAddressContactMappingService,
+  @Autowired private val mockServer: CorePersonAddressContactMappingApiMockServer,
 ) {
   @Nested
   inner class GetByNomisAddressIdOrNull {

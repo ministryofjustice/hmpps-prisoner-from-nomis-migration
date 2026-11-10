@@ -41,7 +41,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiS
 
 @Service
 class CorePersonAddressContactMigrationService(
-  private val corePersonMappingService: CorePersonMappingService,
+  private val corePersonAddressContactMappingService: CorePersonAddressContactMappingService,
   private val corePersonNomisApiService: CorePersonNomisApiService,
   private val cprApiService: CorePersonCprApiService,
   private val nomisApiService: NomisApiService,
@@ -52,7 +52,7 @@ class CorePersonAddressContactMigrationService(
   @Value($$"${coreperson.complete-check.count}") completeCheckCount: Int,
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
 ) : ByIdRangeMigrationService<Any, PrisonNumberAndRootOffenderId, CorePersonAddressContactMappingsDto>(
-  mappingService = corePersonMappingService,
+  mappingService = corePersonAddressContactMappingService,
   migrationType = CORE_PERSON_ADDRESS_CONTACT,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
@@ -87,7 +87,7 @@ class CorePersonAddressContactMigrationService(
 
   override suspend fun migrateNomisEntity(context: MigrationContext<PrisonNumberAndRootOffenderId>) {
     val prisonNumber = context.body.prisonNumber
-    val alreadyMigratedMapping = corePersonMappingService.getCorePersonByPrisonNumberOrNull(
+    val alreadyMigratedMapping = corePersonAddressContactMappingService.getCorePersonByPrisonNumberOrNull(
       prisonNumber = prisonNumber,
     )
 
