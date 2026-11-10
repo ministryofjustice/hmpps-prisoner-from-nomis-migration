@@ -3264,7 +3264,7 @@
       "CsraLevel" : {
         "type" : "string",
         "description" : "A CSRA level (used for calculated, review and approved levels)",
-        "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ]
+        "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI", "HI_GEN", "HI_SPFC" ]
       },
       "CsraOverrideReasonCode" : {
         "type" : "string",
@@ -3703,7 +3703,7 @@
           "level" : {
             "type" : [ "string", "null" ],
             "description" : "The raw NOMIS level this review resolved to. Renders legacy 'Low risk'/'Medium risk' records, which both collapse to STANDARD in the review's result.",
-            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI", "HI_GEN", "HI_SPFC" ],
             "example" : "LOW"
           },
           "approvalStatus" : {
@@ -3719,13 +3719,13 @@
           "calculatedResult" : {
             "type" : [ "string", "null" ],
             "description" : "The level NOMIS calculated from the answers given",
-            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI", "HI_GEN", "HI_SPFC" ],
             "example" : "STANDARD"
           },
           "overrideResult" : {
             "type" : [ "string", "null" ],
             "description" : "The level the assessor chose in place of the calculated level, where they overrode it",
-            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI", "HI_GEN", "HI_SPFC" ],
             "example" : "STANDARD"
           },
           "overrideReason" : {
@@ -3739,7 +3739,7 @@
           "approvedResult" : {
             "type" : [ "string", "null" ],
             "description" : "The level approved for this review — NOMIS's reviewed level, which is what it displays as the approved result",
-            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI", "HI_GEN", "HI_SPFC" ],
             "example" : "STANDARD"
           },
           "assessmentComment" : {
@@ -3963,19 +3963,19 @@
           "level" : {
             "type" : [ "string", "null" ],
             "description" : "The raw NOMIS level this review resolved to. Renders legacy 'Low risk'/'Medium risk' rows, which both collapse to STANDARD in the row's rating.",
-            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI", "HI_GEN", "HI_SPFC" ],
             "example" : "LOW"
           },
           "calculatedLevel" : {
             "type" : [ "string", "null" ],
             "description" : "The calculated NOMIS level before any review or approval level overrode it.",
-            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI", "HI_GEN", "HI_SPFC" ],
             "example" : "LOW"
           },
           "overrideLevel" : {
             "type" : [ "string", "null" ],
             "description" : "The level the assessor chose in place of the calculated level, where they overrode it.",
-            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI" ],
+            "enum" : [ "STANDARD", "PEND", "LOW", "MED", "HI", "HI_GEN", "HI_SPFC" ],
             "example" : "STANDARD"
           },
           "assessmentComment" : {

@@ -25,6 +25,7 @@ import org.springframework.http.HttpStatus
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.csra.CsraApiExtension.Companion.csraApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AssessmentLevel
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.HmppsQueue
 import org.awaitility.kotlin.matches as awaitMatches
@@ -285,6 +286,49 @@ class CsraSyncIntTest(
               assertThat(it["offenderNo"]).isEqualTo(OFFENDER_ID_DISPLAY)
             },
             isNull(),
+          )
+        }
+      }
+
+      @Nested
+      @DisplayName("Nomis, No Mapping, with High General and High Specific levels")
+      inner class HighGeneralAndSpecificLevels {
+        @BeforeEach
+        fun setUp() {
+          csraNomisApiMockServer.stubGetCsra(
+            bookingId = BOOKING_ID,
+            sequence = SEQUENCE,
+            body = csraGetDto(BOOKING_ID).copy(
+              calculatedLevel = AssessmentLevel.HI,
+              overrideLevel = AssessmentLevel.HI_GEN,
+              reviewLevel = AssessmentLevel.HI_SPFC,
+              approvedLevel = null,
+            ),
+          )
+          csraMappingApiMockServer.stubGetByNomisId(HttpStatus.NOT_FOUND)
+          csraApi.stubSyncCsraCreate(OFFENDER_ID_DISPLAY, DPS_ID)
+          csraMappingApiMockServer.stubPostMapping()
+
+          awsSqsCsraEventClient.sendMessage(
+            csraEventQueueUrl,
+            csraEvent(
+              eventType = "ASSESSMENT-INSERTED",
+              bookingId = BOOKING_ID,
+              assessmentSeq = SEQUENCE,
+              offenderNo = OFFENDER_ID_DISPLAY,
+            ),
+          )
+          waitForCompletion()
+        }
+
+        @Test
+        fun `will POST the High General and High Specific levels to DPS`() {
+          csraApi.verify(
+            1,
+            postRequestedFor(anyUrl())
+              .withRequestBodyJsonPath("review.calculatedLevel", "HI")
+              .withRequestBodyJsonPath("review.overrideLevel", "HI_GEN")
+              .withRequestBodyJsonPath("review.reviewLevel", "HI_SPFC"),
           )
         }
       }
