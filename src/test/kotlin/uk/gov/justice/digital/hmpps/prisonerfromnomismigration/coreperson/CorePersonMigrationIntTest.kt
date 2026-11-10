@@ -85,7 +85,7 @@ class CorePersonMigrationIntTest(
     inner class Security {
       @Test
       fun `access forbidden when no role`() {
-        webTestClient.post().uri("/migrate/core-person")
+        webTestClient.post().uri("/migrate/core-person?migrationType=CORE_PERSON_ADDRESS_CONTACT")
           .headers(setAuthorisation(roles = listOf()))
           .contentType(MediaType.APPLICATION_JSON)
           .exchange()
@@ -94,7 +94,7 @@ class CorePersonMigrationIntTest(
 
       @Test
       fun `access forbidden with wrong role`() {
-        webTestClient.post().uri("/migrate/core-person")
+        webTestClient.post().uri("/migrate/core-person?migrationType=CORE_PERSON_ADDRESS_CONTACT")
           .headers(setAuthorisation(roles = listOf("BANANAS")))
           .contentType(MediaType.APPLICATION_JSON)
           .exchange()
@@ -103,10 +103,42 @@ class CorePersonMigrationIntTest(
 
       @Test
       fun `access unauthorised with no auth token`() {
-        webTestClient.post().uri("/migrate/core-person")
+        webTestClient.post().uri("/migrate/core-person?migrationType=CORE_PERSON_ADDRESS_CONTACT")
           .contentType(MediaType.APPLICATION_JSON)
           .exchange()
           .expectStatus().isUnauthorized
+      }
+    }
+
+    @Nested
+    inner class Validation {
+      @Test
+      fun `will reject a missing migration type`() {
+        webTestClient.post().uri("/migrate/core-person")
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isBadRequest
+      }
+
+      @Test
+      fun `will reject an unknown migration type`() {
+        webTestClient.post().uri("/migrate/core-person?migrationType=BANANAS")
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isBadRequest
+      }
+
+      @Test
+      fun `will reject a migration type that is not a core person migration`() {
+        webTestClient.post().uri("/migrate/core-person?migrationType=VISITS")
+          .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
+          .contentType(MediaType.APPLICATION_JSON)
+          .exchange()
+          .expectStatus().isBadRequest
+          .expectBody()
+          .jsonPath("$.userMessage").value<String> { assertThat(it).contains("VISITS is not a core person migration") }
       }
     }
 
@@ -581,7 +613,7 @@ class CorePersonMigrationIntTest(
 
   private fun performMigration(
     waitUntilVerify: () -> Unit = { },
-  ): MigrationResult = webTestClient.post().uri("/migrate/core-person")
+  ): MigrationResult = webTestClient.post().uri("/migrate/core-person?migrationType=CORE_PERSON_ADDRESS_CONTACT")
     .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__MIGRATION__RW")))
     .contentType(MediaType.APPLICATION_JSON)
     .exchange()
