@@ -110,22 +110,21 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     nomisPrisonNumber: String = "A1234BC",
     aliasMappings: List<SysconAliasMapping> = emptyList(),
     identifierMappings: List<SysconIdentifierMapping> = emptyList(),
+    status: HttpStatus = HttpStatus.CREATED,
+    response: SysconAliasesAndIdentifiersResponseBody = SysconAliasesAndIdentifiersResponseBody(
+      prisonNumber = nomisPrisonNumber,
+      aliasesMappings = aliasMappings,
+      identifiersMappings = identifierMappings,
+    ),
+    error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     stubFor(
       post("/syscon-sync/aliases-identifiers/$nomisPrisonNumber")
         .willReturn(
           aResponse()
-            .withStatus(201)
+            .withStatus(status.value())
             .withHeader("Content-Type", "application/json")
-            .withBody(
-              jsonMapper.writeValueAsString(
-                SysconAliasesAndIdentifiersResponseBody(
-                  prisonNumber = nomisPrisonNumber,
-                  aliasesMappings = aliasMappings,
-                  identifiersMappings = identifierMappings,
-                ),
-              ),
-            ),
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.CREATED) response else error)),
         ),
     )
   }
