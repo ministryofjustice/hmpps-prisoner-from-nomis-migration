@@ -18,12 +18,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactByNomisIdRequest.NomisContactType.PHONE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto.MappingType.NOMIS_CREATED
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -35,41 +33,15 @@ class CorePersonSynchronisationAddressContactService(
   private val corePersonCprApiService: CorePersonCprApiService,
   private val corePersonNomisApiService: CorePersonNomisApiService,
   private val corePersonAddressContactMappingService: CorePersonAddressContactMappingService,
-  private val corePersonMappingService: CorePersonMappingService,
   private val queueService: SynchronisationQueueService,
 ) : TelemetryEnabled {
 
   private companion object {
     private val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
-  suspend fun prisonAddressesAndContactsRequest(prisonNumber: String): PrisonAddressesAndContactsRequest = prisonAddressesAndContactsRequest(prisonNumber) {
-    corePersonAddressContactMappingService.getMappingsFromNomisIds(it)
-  }
-
-  suspend fun prisonAddressesAndContactsRequestForMerge(prisonNumber: String): PrisonAddressesAndContactsRequest = prisonAddressesAndContactsRequest(prisonNumber) { request ->
-    corePersonMappingService.getMappingsFromNomisIds(
-      CorePersonMappingsByNomisIdsRequest(
-        aliases = emptyList(),
-        identifiers = emptyList(),
-        addresses = request.addresses,
-        contacts = request.contacts,
-        addressUsages = request.addressUsages,
-      ),
-    ).let {
-      CorePersonAddressContactMappingsResult(
-        addresses = it.addresses,
-        contacts = it.contacts,
-        addressUsages = it.addressUsages,
-      )
-    }
-  }
-
-  private suspend fun prisonAddressesAndContactsRequest(
-    prisonNumber: String,
-    getExistingMappings: suspend (CorePersonAddressContactMappingsByNomisIdsRequest) -> CorePersonAddressContactMappingsResult,
-  ): PrisonAddressesAndContactsRequest {
+  private suspend fun prisonAddressesAndContactsRequest(prisonNumber: String): PrisonAddressesAndContactsRequest {
     val nomisAddressesAndContacts = corePersonNomisApiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = prisonNumber)
-    val existingMappings = getExistingMappings(mappingsRequest(nomisAddressesAndContacts))
+    val existingMappings = corePersonAddressContactMappingService.getMappingsFromNomisIds(nomisAddressesAndContacts.toMappingsByNomisIdsRequest())
     return nomisAddressesAndContacts.toMigrateAddressesAndContactsRequest(existingMappings)
   }
 
@@ -615,22 +587,22 @@ class CorePersonSynchronisationAddressContactService(
       }
     }
   }
+}
 
-  private fun mappingsRequest(addressContact: CorePersonAddressContact): CorePersonAddressContactMappingsByNomisIdsRequest {
-    val addresses = addressContact.addresses ?: emptyList()
-    val addressByNomisIdRequest = addresses.map { it.addressId }
-    val addressUsages = addresses.flatMap { address -> address.usages ?: emptyList() }
-    val addressUsageByNomisIdRequests = addressUsages.map { AddressUsageByNomisIdRequest(it.addressId, it.usage) }
-    val addressPhoneNumbers = addresses.flatMap { address -> address.phoneNumbers ?: emptyList() }
-    val phoneNumbers = addressContact.phoneNumbers ?: emptyList()
-    val emailAddresses = addressContact.emailAddresses ?: emptyList()
-    val contactByNomisIdRequests = addressPhoneNumbers.map { ContactByNomisIdRequest(it.phoneId, PHONE) } +
-      phoneNumbers.map { ContactByNomisIdRequest(it.phoneId, PHONE) } +
-      emailAddresses.map { ContactByNomisIdRequest(it.emailAddressId, EMAIL) }
-    return CorePersonAddressContactMappingsByNomisIdsRequest(
-      addresses = addressByNomisIdRequest,
-      addressUsages = addressUsageByNomisIdRequests,
-      contacts = contactByNomisIdRequests,
-    )
-  }
+internal fun CorePersonAddressContact.toMappingsByNomisIdsRequest(): CorePersonAddressContactMappingsByNomisIdsRequest {
+  val addresses = addresses ?: emptyList()
+  val addressByNomisIdRequest = addresses.map { it.addressId }
+  val addressUsages = addresses.flatMap { address -> address.usages ?: emptyList() }
+  val addressUsageByNomisIdRequests = addressUsages.map { AddressUsageByNomisIdRequest(it.addressId, it.usage) }
+  val addressPhoneNumbers = addresses.flatMap { address -> address.phoneNumbers ?: emptyList() }
+  val phoneNumbers = phoneNumbers ?: emptyList()
+  val emailAddresses = emailAddresses ?: emptyList()
+  val contactByNomisIdRequests = addressPhoneNumbers.map { ContactByNomisIdRequest(it.phoneId, PHONE) } +
+    phoneNumbers.map { ContactByNomisIdRequest(it.phoneId, PHONE) } +
+    emailAddresses.map { ContactByNomisIdRequest(it.emailAddressId, EMAIL) }
+  return CorePersonAddressContactMappingsByNomisIdsRequest(
+    addresses = addressByNomisIdRequest,
+    addressUsages = addressUsageByNomisIdRequests,
+    contacts = contactByNomisIdRequests,
+  )
 }
