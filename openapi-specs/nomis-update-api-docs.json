@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-04.5640.547fd36"
+    "version" : "2026-11-10.5733.968b842"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -2022,6 +2022,33 @@
         }
       }
     },
+    "/prisons/{agencyId}/reconciliation" : {
+      "get" : {
+        "tags" : [ "Agency Registers Reconciliation Resource" ],
+        "description" : "Returns a mismatch with the partial NOMIS and DPS prison payloads, where available, or an empty response when the prisons match.",
+        "operationId" : "getPrisonReconciliation",
+        "parameters" : [ {
+          "name" : "agencyId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MismatchAgency"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/prisoners/{offenderNo}/official-visits/reconciliation" : {
       "get" : {
         "tags" : [ "Official Visits Reconciliation Resource" ],
@@ -3148,6 +3175,9 @@
           },
           "mappedId" : {
             "type" : [ "string", "null" ]
+          },
+          "chargeValue" : {
+            "type" : [ "number", "null" ]
           }
         },
         "required" : [ "id", "offenceCode" ]
@@ -3548,6 +3578,399 @@
           }
         },
         "required" : [ "messages", "messagesFoundCount", "messagesReturnedCount" ]
+      },
+      "AgencyAddress" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "phoneNumbers" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AgencyPhoneNumber"
+            }
+          },
+          "validatedPAF" : {
+            "type" : "boolean"
+          },
+          "primaryAddress" : {
+            "type" : "boolean"
+          },
+          "mailAddress" : {
+            "type" : "boolean"
+          },
+          "type" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "flat" : {
+            "type" : [ "string", "null" ]
+          },
+          "premise" : {
+            "type" : [ "string", "null" ]
+          },
+          "street" : {
+            "type" : [ "string", "null" ]
+          },
+          "locality" : {
+            "type" : [ "string", "null" ]
+          },
+          "postcode" : {
+            "type" : [ "string", "null" ]
+          },
+          "city" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "county" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "country" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "noFixedAddress" : {
+            "type" : [ "boolean", "null" ]
+          },
+          "comment" : {
+            "type" : [ "string", "null" ]
+          },
+          "startDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          }
+        },
+        "required" : [ "id", "mailAddress", "phoneNumbers", "primaryAddress", "validatedPAF" ]
+      },
+      "AgencyEmailAddress" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "emailAddress" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "emailAddress", "id" ]
+      },
+      "AgencyPhoneNumber" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "number" : {
+            "type" : "string"
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/CodeDescription"
+          },
+          "extension" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "id", "number", "type" ]
+      },
+      "AgencyResponse" : {
+        "type" : "object",
+        "properties" : {
+          "agencyId" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "type" : {
+            "$ref" : "#/components/schemas/CodeDescription"
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "updateAllowed" : {
+            "type" : "boolean"
+          },
+          "localAuthorities" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }
+          },
+          "addresses" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AgencyAddress"
+            }
+          },
+          "phones" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AgencyPhoneNumber"
+            }
+          },
+          "emailAddresses" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AgencyEmailAddress"
+            }
+          },
+          "longDescription" : {
+            "type" : [ "string", "null" ]
+          },
+          "district" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "deactivationDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "contactName" : {
+            "type" : [ "string", "null" ]
+          },
+          "courtType" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "disabilityAccessCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "area" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "subArea" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "region" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "nomsRegion" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "payrollRegion" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/CodeDescription"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "cjitCode" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "active", "addresses", "agencyId", "description", "emailAddresses", "localAuthorities", "phones", "type", "updateAllowed" ]
+      },
+      "CodeDescription" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "description" ]
+      },
+      "LegacyAgencyAddressDto" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "addressLine1" : {
+            "type" : [ "string", "null" ]
+          },
+          "addressLine2" : {
+            "type" : [ "string", "null" ]
+          },
+          "town" : {
+            "type" : [ "string", "null" ]
+          },
+          "county" : {
+            "type" : [ "string", "null" ]
+          },
+          "postcode" : {
+            "type" : [ "string", "null" ]
+          },
+          "country" : {
+            "type" : [ "string", "null" ]
+          }
+        }
+      },
+      "LegacyAgencyDto" : {
+        "type" : "object",
+        "properties" : {
+          "agencyType" : {
+            "type" : "string",
+            "enum" : [ "PRISON", "COURT", "HOSPITAL", "SECURE_HOSPITAL", "PROBATION_OFFICE", "POLICE_CUSTODY_SUITE", "APPROVED_PREMISES", "AIRPORT", "PROBATION_CRC", "FOREIGN_NATIONAL_PRISON", "VOLUNTARY_HOSTEL", "IMMIGRATION_DETENTION_CENTRE", "OUTSIDE", "PECS", "PSYCHIATRIC_CARE", "CHILDREN_SECURE_HOME", "SECURE_TRAINING_CENTRE", "YOT" ]
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "active" : {
+            "type" : "boolean"
+          },
+          "addresses" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LegacyAgencyAddressDto"
+            }
+          },
+          "emailAddresses" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LegacyAgencyEmailDto"
+            }
+          },
+          "phoneNumbers" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/LegacyAgencyPhoneDto"
+            }
+          },
+          "description" : {
+            "type" : [ "string", "null" ]
+          },
+          "inactiveDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          },
+          "cjitCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "areaCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "subareaCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "regionCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "geographicalAreaCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "payrollRegionCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "localAuthorityCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "courtTypeCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "accessibleAccess" : {
+            "type" : [ "string", "null" ],
+            "enum" : [ "NONE", "ACCESSIBLE", "BY_ARRANGEMENT_ONLY", "WHEELCHAIR_ACCESS" ]
+          },
+          "contact" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "active", "addresses", "agencyType", "emailAddresses", "name", "phoneNumbers" ]
+      },
+      "LegacyAgencyEmailDto" : {
+        "type" : "object",
+        "properties" : {
+          "address" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          }
+        },
+        "required" : [ "address" ]
+      },
+      "LegacyAgencyPhoneDto" : {
+        "type" : "object",
+        "properties" : {
+          "number" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          }
+        },
+        "required" : [ "number" ]
+      },
+      "MismatchAgency" : {
+        "type" : "object",
+        "properties" : {
+          "agencyId" : {
+            "type" : "string"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "nomis" : {
+            "type" : [ "string", "null" ]
+          },
+          "dps" : {
+            "type" : [ "string", "null" ]
+          },
+          "nomisAgency" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/AgencyResponse"
+            }, {
+              "type" : "null"
+            } ]
+          },
+          "dpsAgency" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/LegacyAgencyDto"
+            }, {
+              "type" : "null"
+            } ]
+          }
+        },
+        "required" : [ "agencyId", "reason" ]
       },
       "MismatchVisit" : {
         "type" : "object",
@@ -4314,399 +4737,6 @@
           }
         },
         "required" : [ "diffsForDps", "diffsForNomis", "notes", "offenderNo" ]
-      },
-      "AgencyAddress" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "phoneNumbers" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/AgencyPhoneNumber"
-            }
-          },
-          "validatedPAF" : {
-            "type" : "boolean"
-          },
-          "primaryAddress" : {
-            "type" : "boolean"
-          },
-          "mailAddress" : {
-            "type" : "boolean"
-          },
-          "type" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "flat" : {
-            "type" : [ "string", "null" ]
-          },
-          "premise" : {
-            "type" : [ "string", "null" ]
-          },
-          "street" : {
-            "type" : [ "string", "null" ]
-          },
-          "locality" : {
-            "type" : [ "string", "null" ]
-          },
-          "postcode" : {
-            "type" : [ "string", "null" ]
-          },
-          "city" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "county" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "country" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "noFixedAddress" : {
-            "type" : [ "boolean", "null" ]
-          },
-          "comment" : {
-            "type" : [ "string", "null" ]
-          },
-          "startDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date"
-          },
-          "endDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date"
-          }
-        },
-        "required" : [ "id", "mailAddress", "phoneNumbers", "primaryAddress", "validatedPAF" ]
-      },
-      "AgencyEmailAddress" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "emailAddress" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "emailAddress", "id" ]
-      },
-      "AgencyPhoneNumber" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "number" : {
-            "type" : "string"
-          },
-          "type" : {
-            "$ref" : "#/components/schemas/CodeDescription"
-          },
-          "extension" : {
-            "type" : [ "string", "null" ]
-          }
-        },
-        "required" : [ "id", "number", "type" ]
-      },
-      "AgencyResponse" : {
-        "type" : "object",
-        "properties" : {
-          "agencyId" : {
-            "type" : "string"
-          },
-          "description" : {
-            "type" : "string"
-          },
-          "type" : {
-            "$ref" : "#/components/schemas/CodeDescription"
-          },
-          "active" : {
-            "type" : "boolean"
-          },
-          "updateAllowed" : {
-            "type" : "boolean"
-          },
-          "localAuthorities" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }
-          },
-          "addresses" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/AgencyAddress"
-            }
-          },
-          "phones" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/AgencyPhoneNumber"
-            }
-          },
-          "emailAddresses" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/AgencyEmailAddress"
-            }
-          },
-          "longDescription" : {
-            "type" : [ "string", "null" ]
-          },
-          "district" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "deactivationDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date"
-          },
-          "contactName" : {
-            "type" : [ "string", "null" ]
-          },
-          "courtType" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "disabilityAccessCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "area" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "subArea" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "region" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "nomsRegion" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "payrollRegion" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/CodeDescription"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "cjitCode" : {
-            "type" : [ "string", "null" ]
-          }
-        },
-        "required" : [ "active", "addresses", "agencyId", "description", "emailAddresses", "localAuthorities", "phones", "type", "updateAllowed" ]
-      },
-      "CodeDescription" : {
-        "type" : "object",
-        "properties" : {
-          "code" : {
-            "type" : "string"
-          },
-          "description" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "code", "description" ]
-      },
-      "LegacyAgencyAddressDto" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          },
-          "addressLine1" : {
-            "type" : [ "string", "null" ]
-          },
-          "addressLine2" : {
-            "type" : [ "string", "null" ]
-          },
-          "town" : {
-            "type" : [ "string", "null" ]
-          },
-          "county" : {
-            "type" : [ "string", "null" ]
-          },
-          "postcode" : {
-            "type" : [ "string", "null" ]
-          },
-          "country" : {
-            "type" : [ "string", "null" ]
-          }
-        }
-      },
-      "LegacyAgencyDto" : {
-        "type" : "object",
-        "properties" : {
-          "agencyType" : {
-            "type" : "string",
-            "enum" : [ "PRISON", "COURT", "HOSPITAL", "SECURE_HOSPITAL", "PROBATION_OFFICE", "POLICE_CUSTODY_SUITE", "APPROVED_PREMISES", "AIRPORT", "PROBATION_CRC", "FOREIGN_NATIONAL_PRISON", "VOLUNTARY_HOSTEL", "IMMIGRATION_DETENTION_CENTRE", "OUTSIDE", "PECS", "PSYCHIATRIC_CARE", "CHILDREN_SECURE_HOME", "SECURE_TRAINING_CENTRE", "YOT" ]
-          },
-          "name" : {
-            "type" : "string"
-          },
-          "active" : {
-            "type" : "boolean"
-          },
-          "addresses" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/LegacyAgencyAddressDto"
-            }
-          },
-          "emailAddresses" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/LegacyAgencyEmailDto"
-            }
-          },
-          "phoneNumbers" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/LegacyAgencyPhoneDto"
-            }
-          },
-          "description" : {
-            "type" : [ "string", "null" ]
-          },
-          "inactiveDate" : {
-            "type" : [ "string", "null" ],
-            "format" : "date"
-          },
-          "cjitCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "areaCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "subareaCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "regionCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "geographicalAreaCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "payrollRegionCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "localAuthorityCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "courtTypeCode" : {
-            "type" : [ "string", "null" ]
-          },
-          "accessibleAccess" : {
-            "type" : [ "string", "null" ],
-            "enum" : [ "NONE", "ACCESSIBLE", "BY_ARRANGEMENT_ONLY", "WHEELCHAIR_ACCESS" ]
-          },
-          "contact" : {
-            "type" : [ "string", "null" ]
-          }
-        },
-        "required" : [ "active", "addresses", "agencyType", "emailAddresses", "name", "phoneNumbers" ]
-      },
-      "LegacyAgencyEmailDto" : {
-        "type" : "object",
-        "properties" : {
-          "address" : {
-            "type" : "string"
-          },
-          "id" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          }
-        },
-        "required" : [ "address" ]
-      },
-      "LegacyAgencyPhoneDto" : {
-        "type" : "object",
-        "properties" : {
-          "number" : {
-            "type" : "string"
-          },
-          "id" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          }
-        },
-        "required" : [ "number" ]
-      },
-      "MismatchAgency" : {
-        "type" : "object",
-        "properties" : {
-          "agencyId" : {
-            "type" : "string"
-          },
-          "reason" : {
-            "type" : "string"
-          },
-          "nomis" : {
-            "type" : [ "string", "null" ]
-          },
-          "dps" : {
-            "type" : [ "string", "null" ]
-          },
-          "nomisAgency" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/AgencyResponse"
-            }, {
-              "type" : "null"
-            } ]
-          },
-          "dpsAgency" : {
-            "oneOf" : [ {
-              "$ref" : "#/components/schemas/LegacyAgencyDto"
-            }, {
-              "type" : "null"
-            } ]
-          }
-        },
-        "required" : [ "agencyId", "reason" ]
       }
     },
     "securitySchemes" : {
