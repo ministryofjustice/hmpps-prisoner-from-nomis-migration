@@ -82,7 +82,9 @@ private fun convertLevel(level: AssessmentLevel?): CsraLevel? = when (level) {
   AssessmentLevel.LOW -> CsraLevel.LOW
   AssessmentLevel.MED -> CsraLevel.MED
   AssessmentLevel.HI -> CsraLevel.HI
-  else -> null
+  AssessmentLevel.HI_GEN -> CsraLevel.HI_GEN
+  AssessmentLevel.HI_SPFC -> CsraLevel.HI_SPFC
+  null -> null
 }
 
 private fun CsraGetDto.convertStatus(): CsraStatus = when (status) {
