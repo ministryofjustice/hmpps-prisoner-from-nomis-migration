@@ -1,7 +1,5 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
@@ -17,13 +15,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MigrationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
@@ -31,11 +29,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderEmailAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPhoneNumber
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonNumberAndRootOffenderId
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByIdRangeMigrationService
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.ByLastId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationMessage
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationPage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType.CORE_PERSON_ADDRESS_CONTACT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
@@ -44,75 +38,36 @@ class CorePersonAddressContactMigrationService(
   private val corePersonAddressContactMappingService: CorePersonAddressContactMappingService,
   private val corePersonNomisApiService: CorePersonNomisApiService,
   private val cprApiService: CorePersonCprApiService,
-  private val nomisApiService: NomisApiService,
+  nomisApiService: NomisApiService,
   jsonMapper: JsonMapper,
   @Value($$"${coreperson.page.size:1000}") pageSize: Long,
   @Value($$"${coreperson.complete-check.delay-seconds}") completeCheckDelaySeconds: Int,
   @Value($$"${coreperson.complete-check.retry-seconds:1}") completeCheckRetrySeconds: Int,
   @Value($$"${coreperson.complete-check.count}") completeCheckCount: Int,
   @Value($$"${complete-check.scheduled-retry-seconds}") completeCheckScheduledRetrySeconds: Int,
-) : ByIdRangeMigrationService<Any, PrisonNumberAndRootOffenderId, CorePersonAddressContactMappingsDto>(
+) : CorePersonMigrationService<CorePersonAddressContactMappingsDto>(
   mappingService = corePersonAddressContactMappingService,
   migrationType = CORE_PERSON_ADDRESS_CONTACT,
+  nomisApiService = nomisApiService,
+  jsonMapper = jsonMapper,
   pageSize = pageSize,
   completeCheckDelaySeconds = completeCheckDelaySeconds,
-  completeCheckCount = completeCheckCount,
   completeCheckRetrySeconds = completeCheckRetrySeconds,
+  completeCheckCount = completeCheckCount,
   completeCheckScheduledRetrySeconds = completeCheckScheduledRetrySeconds,
-  jsonMapper = jsonMapper,
 ) {
 
-  private companion object {
-    private val log: Logger = LoggerFactory.getLogger(this::class.java)
+  override suspend fun getExistingMapping(prisonNumber: String): CorePersonMappingDto? = corePersonAddressContactMappingService.getCorePersonByPrisonNumberOrNull(prisonNumber = prisonNumber)
+
+  override suspend fun migratePrisoner(prisonNumber: String, migrationId: String): CorePersonAddressContactMappingsDto {
+    val addressesAndContacts = corePersonNomisApiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = prisonNumber)
+    return cprApiService.migrateCorePersonAddressesAndContacts(
+      prisonNumber,
+      addressesAndContacts.toMigrateAddressesAndContactsRequest(),
+    ).toCorePersonAddressContactMappingsDto(migrationId = migrationId)
   }
 
-  override suspend fun getTotalNumberOfIds(migrationFilter: Any): Long = nomisApiService.getPrisonerIds(0, 1).totalElements
-
-  override suspend fun getRangeOfIds(
-    body: Any,
-    pageSize: Long,
-  ): List<Pair<PrisonNumberAndRootOffenderId, PrisonNumberAndRootOffenderId>> = nomisApiService.getAllPrisonersIdRanges(pageSize)
-    .map {
-      Pair(
-        PrisonNumberAndRootOffenderId(it.fromId, ""),
-        PrisonNumberAndRootOffenderId(it.toId, ""),
-      )
-    }
-
-  override suspend fun getPageOfIdsFromIdRange(
-    firstId: PrisonNumberAndRootOffenderId?,
-    lastId: PrisonNumberAndRootOffenderId?,
-    migrationFilter: Any,
-  ): List<PrisonNumberAndRootOffenderId> = nomisApiService.getAllPrisonersInRange(firstId!!.rootOffenderId, lastId!!.rootOffenderId)
-
-  override suspend fun migrateNomisEntity(context: MigrationContext<PrisonNumberAndRootOffenderId>) {
-    val prisonNumber = context.body.prisonNumber
-    val alreadyMigratedMapping = corePersonAddressContactMappingService.getCorePersonByPrisonNumberOrNull(
-      prisonNumber = prisonNumber,
-    )
-
-    alreadyMigratedMapping?.run {
-      log.info("Will not migrate the prisoner=$nomisPrisonNumber since it was already mapped to CPR $cprId during migration $label")
-    } ?: run {
-      val addressesAndContacts = corePersonNomisApiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = prisonNumber)
-      val response = cprApiService.migrateCorePersonAddressesAndContacts(
-        prisonNumber,
-        addressesAndContacts.toMigrateAddressesAndContactsRequest(),
-      )
-      val mapping = response.toCorePersonAddressContactMappingsDto(migrationId = context.migrationId)
-      createMappingOrOnFailureDo(context, mapping) {
-        queueService.sendMessage(
-          MigrationMessageType.RETRY_MIGRATION_MAPPING,
-          MigrationContext(
-            context = context,
-            body = mapping,
-          ),
-        )
-      }
-    }
-  }
-
-  suspend fun createMappingOrOnFailureDo(
+  override suspend fun createMappingOrOnFailureDo(
     context: MigrationContext<*>,
     mapping: CorePersonAddressContactMappingsDto,
     failureHandler: suspend (error: Throwable) -> Unit,
@@ -149,15 +104,6 @@ class CorePersonAddressContactMigrationService(
       }
     }
   }
-
-  override suspend fun retryCreateMapping(context: MigrationContext<CorePersonAddressContactMappingsDto>) = createMappingOrOnFailureDo(context, context.body) {
-    throw it
-  }
-
-  override fun parseContextFilter(json: String): MigrationMessage<*, Any> = jsonMapper.readValue(json)
-  override fun parseContextPageFilter(json: String): MigrationMessage<*, MigrationPage<Any, ByLastId<PrisonNumberAndRootOffenderId>>> = jsonMapper.readValue(json)
-
-  override fun parseContextNomisId(json: String): MigrationMessage<*, PrisonNumberAndRootOffenderId> = jsonMapper.readValue(json)
 
   override fun parseContextMapping(json: String): MigrationMessage<*, CorePersonAddressContactMappingsDto> = jsonMapper.readValue(json)
 }

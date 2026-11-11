@@ -70,6 +70,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   APPOINTMENTS(APPOINTMENTS_QUEUE_ID, "appointments"),
   BED_ASSIGNMENT(BED_ASSIGNMENT_QUEUE_ID, "bedassignment"),
   CORE_PERSON_ADDRESS_CONTACT(CORE_PERSON_QUEUE_ID, "coreperson-address-contact"),
+  CORE_PERSON_ALIAS_IDENTIFIER(CORE_PERSON_QUEUE_ID, "coreperson-alias-identifier"),
   CSRA(CSRA_QUEUE_ID, "csra"),
   COURT_SCHEDULER(COURT_SCHEDULER_QUEUE_ID, "court-scheduler"),
   COURT_SENTENCING(COURT_SENTENCING_QUEUE_ID, "court-sentencing"),
