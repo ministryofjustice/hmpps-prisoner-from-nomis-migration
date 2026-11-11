@@ -78,6 +78,6 @@ data class MoveBookingForPrisoner(
 
 class AwaitParentEntityRetry(message: String) : ParentEntityNotFoundRetry(message)
 
-suspend fun <T> tryFetchParent(get: suspend () -> T?): T = get() ?: throw AwaitParentEntityRetry(
-  "Expected parent entity not found, retrying",
+suspend fun <T> tryFetchParent(parentDetailText: String? = null, get: suspend () -> T?): T = get() ?: throw AwaitParentEntityRetry(
+  "Expected parent entity not found, retrying" + (parentDetailText?.let { ": $parentDetailText" } ?: ""),
 )
