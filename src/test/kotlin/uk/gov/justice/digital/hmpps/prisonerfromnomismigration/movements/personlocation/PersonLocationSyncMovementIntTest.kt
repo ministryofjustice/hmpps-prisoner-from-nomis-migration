@@ -341,7 +341,7 @@ class PersonLocationSyncMovementIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["movementSeq"]).isEqualTo("3")
             assertThat(it["nomisEventId"]).isEqualTo("$NOMIS_SCHEDULE_ID")
-            assertThat(it["error"]).isEqualTo("Expected parent entity not found, retrying")
+            assertThat(it["error"]).isEqualTo("Expected parent entity not found, retrying: transfer schedule mapping for nomisScheduleId=$NOMIS_SCHEDULE_ID")
           },
           isNull(),
         )

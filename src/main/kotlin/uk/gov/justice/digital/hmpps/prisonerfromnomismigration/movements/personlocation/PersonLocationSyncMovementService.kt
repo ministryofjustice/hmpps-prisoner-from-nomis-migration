@@ -67,13 +67,15 @@ class PersonLocationSyncMovementService(
   }
 
   private suspend fun getDpsScheduleReference(movementType: PersonLocationMovement.MovementType, nomisScheduleId: Long): String? = when (movementType) {
-    TRN -> tryFetchParent { transferScheduleMappingApiService.getTransferScheduleMappingOrNull(nomisScheduleId) }
-      .let { "$TRN_URN_PREFIX${it.dpsTransferScheduleId}" }
+    TRN -> tryFetchParent("transfer schedule mapping for nomisScheduleId=$nomisScheduleId") {
+      transferScheduleMappingApiService.getTransferScheduleMappingOrNull(nomisScheduleId)
+    }.let { "$TRN_URN_PREFIX${it.dpsTransferScheduleId}" }
 
-    TAP -> tryFetchParent { tapMappingApiService.getTapScheduleMappingOrNull(nomisScheduleId) }
-      .let { "$TAP_URN_PREFIX${it.dpsOccurrenceId}" }
+    TAP -> tryFetchParent("tap schedule mapping for nomisScheduleId=$nomisScheduleId") {
+      tapMappingApiService.getTapScheduleMappingOrNull(nomisScheduleId)
+    }.let { "$TAP_URN_PREFIX${it.dpsOccurrenceId}" }
 
-    CRT -> tryFetchParent {
+    CRT -> tryFetchParent("court schedule mapping for $nomisScheduleId") {
       courtSchedulerMappingApiService.getCourtScheduleMappingOrNull(nomisScheduleId)
         ?.let { "$CAS_URN_PREFIX${it.dpsCourtAppearanceId}" }
         ?: courtSentencingMappingApiService.getCourtAppearanceOrNullByNomisId(nomisScheduleId)
@@ -169,8 +171,9 @@ class PersonLocationSyncMovementService(
     } else {
       null
     }
-    val dpsCustodialSeriesId = tryFetchParent { mappingApiService.getBookingMappingOrNull(bookingId) }
-      .dpsCustodialSeriesId
+    val dpsCustodialSeriesId = tryFetchParent("mapping for bookingId=$bookingId") {
+      mappingApiService.getBookingMappingOrNull(bookingId)
+    }.dpsCustodialSeriesId
 
     return dpsApiService.syncExternalMovement(
       prisonerNumber,
