@@ -693,7 +693,7 @@ class PersonLocationSyncBookingIntTest(
          "Type" : "Notification",
          "MessageId" : "83354f3f-45cb-5e8e-9266-2e0fa1e91dcc",
          "TopicArn" : "arn:aws:sns:eu-west-2:754256621582:cloud-platform-Digital-Prison-Services-160f3055cc4e04c4105ee85f2ed1fccb",
-         "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2025-09-01T10:00:01\",\"bookingId\":12345,\"offenderIdDisplay\":\"$prisonerNumber\",\"nomisEventType\":\"$eventType\",\"bookingSeq\":1,\"oldBookingSeq\":2,\"auditModuleName\":\"$auditModuleName\"}",
+         "Message" : "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2025-09-01T10:00:01\",\"bookingId\":12345,\"offenderIdDisplay\":\"$prisonerNumber\",\"nomisEventType\":\"$eventType\",\"bookingSequence\":1,\"oldBookingSequence\":2,\"auditModuleName\":\"$auditModuleName\"}",
          "Timestamp" : "2025-09-01T09:00:02.004Z",
          "MessageAttributes" : {
            "eventType" : {"Type":"String","Value":"$eventType"}

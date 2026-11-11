@@ -29,8 +29,8 @@ private const val TELEMETRY_PREFIX = "person-location-sync-booking"
 data class BookingStatusEvent(
   val bookingId: Long,
   val offenderIdDisplay: String,
-  val bookingSeq: Int,
-  val oldBookingSeq: Int?,
+  val bookingSequence: Int,
+  val oldBookingSequence: Int?,
   override val auditModuleName: String?,
 ) : EventAudited
 
@@ -156,8 +156,8 @@ class PersonLocationSyncBookingService(
 private fun BookingStatusEvent.telemetry() = mutableMapOf<String, Any>(
   "offenderNo" to offenderIdDisplay,
   "bookingId" to bookingId,
-  "bookingSeq" to bookingSeq,
-).apply { oldBookingSeq?.also { put("oldBookingSeq", it) } }
+  "bookingSeq" to bookingSequence,
+).apply { oldBookingSequence?.also { put("oldBookingSeq", it) } }
 
 private fun PersonLocationBooking.toDpsRequest(dpsId: UUID?) = SyncCustodialSeriesRequest(
   occurredAt = audit.modifyDatetime ?: audit.createDatetime,
