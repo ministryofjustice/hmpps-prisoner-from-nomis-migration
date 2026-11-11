@@ -26,6 +26,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.movements.transfe
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementIdMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PersonLocationMovementIdMappingDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.DirectionCode.OUT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.CRT
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TAP
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PersonLocationMovement.MovementType.TRN
@@ -35,7 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.personlocation.mo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
-import java.util.UUID
+import java.util.*
 
 private const val TELEMETRY_PREFIX = "person-location-sync-movement"
 
@@ -163,7 +164,11 @@ class PersonLocationSyncMovementService(
     val (bookingId, prisonerNumber, movementSeq) = event
     val nomis = nomisApiService.getPersonLocationMovement(prisonerNumber!!, bookingId, movementSeq)
       .also { telemetry["nomisEventId"] = "${it.scheduleId}" }
-    val dpsScheduleReference = nomis.scheduleId?.let { getDpsScheduleReference(nomis.movementType, it) }
+    val dpsScheduleReference = if (nomis.directionCode == OUT) {
+      nomis.scheduleId?.let { getDpsScheduleReference(nomis.movementType, it) }
+    } else {
+      null
+    }
     val dpsCustodialSeriesId = tryFetchParent { mappingApiService.getBookingMappingOrNull(bookingId) }
       .dpsCustodialSeriesId
 

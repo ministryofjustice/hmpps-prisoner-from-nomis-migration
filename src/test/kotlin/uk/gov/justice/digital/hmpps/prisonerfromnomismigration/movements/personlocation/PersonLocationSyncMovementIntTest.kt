@@ -694,6 +694,40 @@ class PersonLocationSyncMovementIntTest(
     }
 
     @Nested
+    @DisplayName("Happy path - inbound movement with a schedule")
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPathInboundWithSchedule {
+      @BeforeEach
+      fun setUp() {
+        setUpTestClass()
+
+        mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, status = NOT_FOUND)
+        // the movement is inbound
+        nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = movementOut(TAP, directionCode = IN, scheduleId = NOMIS_SCHEDULE_ID))
+        tapMappingApi.stubGetTapScheduleMapping(status = NOT_FOUND)
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        dpsApi.stubSyncExternalMovement("A1234BC", response = ReferenceId(dpsExternalMovementId))
+        mappingApi.stubCreatePersonLocationMovementMapping()
+
+        personLocationsOffenderEventsQueue.sendMessage(movementEvent("TAP"))
+          .also { waitForAnyProcessingToComplete() }
+      }
+
+      @Test
+      fun `should create DPS external movement without the schedule reference`() {
+        getRequest().movement.apply {
+          assertThat(type).isEqualTo(SyncExternalMovement.Type.ARRIVAL)
+          assertThat(journey.scheduleReference).isNull()
+        }
+      }
+
+      @Test
+      fun `should create mapping`() {
+        mappingApi.verify(postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      }
+    }
+
+    @Nested
     @DisplayName("Happy path - admission has no schedule")
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class HappyPathAdmission {
