@@ -10,6 +10,7 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAliasIdentifierMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderAliasMappingDto
@@ -58,6 +59,19 @@ class CorePersonAliasIdentifierMappingApiMockServer(private val jsonMapper: Json
               size = 1,
             ),
           ),
+      ),
+    )
+  }
+
+  fun stubGetMappingsFromNomisIds(
+    result: CorePersonAliasIdentifierMappingsResult = CorePersonAliasIdentifierMappingsResult(aliases = emptyList(), identifiers = emptyList()),
+  ) {
+    mappingApi.stubFor(
+      post("/mapping/core-person/alias-identifier/mappings/by-nomis-ids").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(jsonMapper.writeValueAsString(result)),
       ),
     )
   }

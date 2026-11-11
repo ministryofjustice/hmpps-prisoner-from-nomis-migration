@@ -13,9 +13,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.MigrationContext
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAliasIdentifierMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAliasIdentifierMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAliasIdentifierMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IdentifierByNomisIdRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderAliasMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
@@ -99,10 +102,18 @@ class CorePersonAliasIdentifierMigrationService(
   override fun parseContextMapping(json: String): MigrationMessage<*, CorePersonAliasIdentifierMappingsDto> = jsonMapper.readValue(json)
 }
 
-internal fun List<CoreOffender>.toMigrateAliasesAndIdentifiersRequest(): PrisonAliasesAndIdentifiersRequest = PrisonAliasesAndIdentifiersRequest(aliases = map { it.toPrisonAlias() })
+internal fun List<CoreOffender>.toMigrateAliasesAndIdentifiersRequest(existingMappings: CorePersonAliasIdentifierMappingsResult = emptyAliasIdentifierMappingsResult()): PrisonAliasesAndIdentifiersRequest = PrisonAliasesAndIdentifiersRequest(aliases = map { it.toPrisonAlias(existingMappings) })
 
-internal fun CoreOffender.toPrisonAlias(): PrisonAlias = PrisonAlias(
+internal fun emptyAliasIdentifierMappingsResult(): CorePersonAliasIdentifierMappingsResult = CorePersonAliasIdentifierMappingsResult(aliases = emptyList(), identifiers = emptyList())
+
+internal fun List<CoreOffender>.toMappingsByNomisIdsRequest(): CorePersonAliasIdentifierMappingsByNomisIdsRequest = CorePersonAliasIdentifierMappingsByNomisIdsRequest(
+  aliases = map { it.offenderId },
+  identifiers = flatMap { alias -> alias.identifiers.map { IdentifierByNomisIdRequest(nomisId = it.offenderId, nomisSequence = it.sequence.toInt()) } },
+)
+
+internal fun CoreOffender.toPrisonAlias(existingMappings: CorePersonAliasIdentifierMappingsResult = emptyAliasIdentifierMappingsResult()): PrisonAlias = PrisonAlias(
   nomisOffenderId = offenderId,
+  cprAliasId = existingMappings.aliases.firstOrNull { it.nomisOffenderId == offenderId }?.cprId,
   isPrimary = workingName,
   titleCode = title?.let { PrisonAlias.TitleCode.entries.fromCode(it.code.mapTitleCode(), "title") },
   firstName = firstName,
@@ -115,15 +126,16 @@ internal fun CoreOffender.toPrisonAlias(): PrisonAlias = PrisonAlias(
   ethnicity = ethnicity?.let { PrisonAlias.Ethnicity.entries.fromCode(it.code.mapEthnicityCode(), "ethnicity") },
   suffix = suffix?.let { PrisonAlias.Suffix.entries.fromCode(it.code.mapSuffixCode(), "suffix") },
   nameType = nameType?.let { PrisonAlias.NameType.entries.fromCode(it.code, "name type") },
-  identifiers = identifiers.map { it.toPrisonIdentifier() },
+  identifiers = identifiers.map { it.toPrisonIdentifier(existingMappings) },
   createDateTime = createdDateTime,
   createUserId = createdByUsername,
   modifyDateTime = lastUpdatedDateTime,
   modifyUserId = lastUpdatedByUsername,
 )
 
-internal fun Identifier.toPrisonIdentifier(): PrisonIdentifier = PrisonIdentifier(
+internal fun Identifier.toPrisonIdentifier(existingMappings: CorePersonAliasIdentifierMappingsResult = emptyAliasIdentifierMappingsResult()): PrisonIdentifier = PrisonIdentifier(
   nomisIdentifierId = NomisIdentifierId(nomisOffenderId = offenderId, nomisSequence = sequence.toInt()),
+  cprIdentifierId = existingMappings.identifiers.firstOrNull { it.nomisOffenderId == offenderId && it.nomisIdentifierSequence == sequence.toInt() }?.cprId,
   type = PrisonIdentifier.Type.entries.fromCode(type.code.mapIdentifierTypeCode(), "identifier type"),
   `value` = identifier,
   verified = verified,

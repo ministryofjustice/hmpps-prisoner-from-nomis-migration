@@ -12,6 +12,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AddressUsageByNomisIdRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactByNomisIdRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsByNomisIdsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
@@ -29,6 +33,54 @@ class CorePersonAddressContactMappingServiceTest(
   @Autowired private val apiService: CorePersonAddressContactMappingService,
   @Autowired private val mockServer: CorePersonAddressContactMappingApiMockServer,
 ) {
+  @Nested
+  inner class GetMappingsFromNomisIds {
+    private val request = CorePersonAddressContactMappingsByNomisIdsRequest(
+      addresses = listOf(12345),
+      contacts = listOf(ContactByNomisIdRequest(nomisId = 67890, nomisContactType = ContactByNomisIdRequest.NomisContactType.PHONE)),
+      addressUsages = listOf(AddressUsageByNomisIdRequest(nomisId = 12345, addressUsageCode = "HOME")),
+    )
+
+    @Test
+    fun `will pass NOMIS ids to service`() = runTest {
+      mockServer.stubGetMappingsFromNomisIds()
+
+      apiService.getMappingsFromNomisIds(request)
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/core-person/address-contact/mappings/by-nomis-ids"))
+          .withRequestBodyJsonPath("addresses[0]", 12345)
+          .withRequestBodyJsonPath("contacts[0].nomisId", 67890)
+          .withRequestBodyJsonPath("contacts[0].nomisContactType", "PHONE")
+          .withRequestBodyJsonPath("addressUsages[0].nomisId", 12345)
+          .withRequestBodyJsonPath("addressUsages[0].addressUsageCode", "HOME"),
+      )
+    }
+
+    @Test
+    fun `will return mappings`() = runTest {
+      mockServer.stubGetMappingsFromNomisIds(
+        CorePersonAddressContactMappingsResult(
+          addresses = listOf(
+            CorePersonAddressMappingDto(cprId = "cpr-address-id", nomisId = 12345, nomisPrisonNumber = "A1234BC", mappingType = CorePersonAddressMappingDto.MappingType.MIGRATED),
+          ),
+          contacts = listOf(
+            CorePersonContactMappingDto(cprId = "cpr-contact-id", nomisId = 67890, nomisContactType = PHONE, nomisPrisonNumber = "A1234BC", mappingType = CorePersonContactMappingDto.MappingType.MIGRATED),
+          ),
+          addressUsages = listOf(
+            CorePersonAddressUsageMappingDto(cprId = "cpr-address-usage-id", nomisId = 12345, addressUsageCode = "HOME", nomisPrisonNumber = "A1234BC", mappingType = CorePersonAddressUsageMappingDto.MappingType.MIGRATED),
+          ),
+        ),
+      )
+
+      val result = apiService.getMappingsFromNomisIds(request)
+
+      assertThat(result.addresses.single().cprId).isEqualTo("cpr-address-id")
+      assertThat(result.contacts.single().cprId).isEqualTo("cpr-contact-id")
+      assertThat(result.addressUsages.single().cprId).isEqualTo("cpr-address-usage-id")
+    }
+  }
+
   @Nested
   inner class GetByNomisAddressIdOrNull {
     @Test

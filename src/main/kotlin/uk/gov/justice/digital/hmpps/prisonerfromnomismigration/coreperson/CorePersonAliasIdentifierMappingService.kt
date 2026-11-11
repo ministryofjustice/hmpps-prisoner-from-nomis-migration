@@ -17,7 +17,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonAliasMappingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonIdentifierMappingResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonMigrationAliasIdentifierResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAliasIdentifierMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAliasIdentifierMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAliasIdentifierMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderAliasMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderIdentifierMappingDto
@@ -75,6 +77,11 @@ class CorePersonAliasIdentifierMappingService(@Qualifier("mappingApiWebClient") 
       Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<OffenderIdentifierMappingDto>>() {})))
     }
     .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun getMappingsFromNomisIds(request: CorePersonAliasIdentifierMappingsByNomisIdsRequest): CorePersonAliasIdentifierMappingsResult = repairApi
+    .prepare(repairApi.getMappingsFromNomisIdsForAliasIdentifierRequestConfig(request))
+    .retrieve()
+    .awaitBody()
 
   suspend fun replaceMappings(mappings: CorePersonAliasIdentifierMappingsDto) {
     repairApi.replaceCorePersonAliasIdentifierMappings(mappings).awaitSingle()
