@@ -18,10 +18,12 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactByNomisIdRequest.NomisContactType.PHONE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto.MappingType.NOMIS_CREATED
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
@@ -40,10 +42,34 @@ class CorePersonSynchronisationAddressContactService(
   private companion object {
     private val log: Logger = LoggerFactory.getLogger(this::class.java)
   }
-  suspend fun prisonAddressesAndContactsRequest(prisonNumber: String): PrisonAddressesAndContactsRequest {
+  suspend fun prisonAddressesAndContactsRequest(prisonNumber: String): PrisonAddressesAndContactsRequest = prisonAddressesAndContactsRequest(prisonNumber) {
+    corePersonAddressContactMappingService.getMappingsFromNomisIds(it)
+  }
+
+  suspend fun prisonAddressesAndContactsRequestForMerge(prisonNumber: String): PrisonAddressesAndContactsRequest = prisonAddressesAndContactsRequest(prisonNumber) { request ->
+    corePersonMappingService.getMappingsFromNomisIds(
+      CorePersonMappingsByNomisIdsRequest(
+        aliases = emptyList(),
+        identifiers = emptyList(),
+        addresses = request.addresses,
+        contacts = request.contacts,
+        addressUsages = request.addressUsages,
+      ),
+    ).let {
+      CorePersonAddressContactMappingsResult(
+        addresses = it.addresses,
+        contacts = it.contacts,
+        addressUsages = it.addressUsages,
+      )
+    }
+  }
+
+  private suspend fun prisonAddressesAndContactsRequest(
+    prisonNumber: String,
+    getExistingMappings: suspend (CorePersonAddressContactMappingsByNomisIdsRequest) -> CorePersonAddressContactMappingsResult,
+  ): PrisonAddressesAndContactsRequest {
     val nomisAddressesAndContacts = corePersonNomisApiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = prisonNumber)
-    val existingMappingsRequest = mappingsRequest(nomisAddressesAndContacts)
-    val existingMappings = corePersonMappingService.getMappingsFromNomisIds(existingMappingsRequest)
+    val existingMappings = getExistingMappings(mappingsRequest(nomisAddressesAndContacts))
     return nomisAddressesAndContacts.toMigrateAddressesAndContactsRequest(existingMappings)
   }
 

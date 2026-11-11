@@ -17,6 +17,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundE
 @PreAuthorize("hasRole('ROLE_PRISONER_FROM_NOMIS__UPDATE__RW')")
 class CorePersonDataRepairResource(
   private val addressContactSynchronisationService: CorePersonSynchronisationAddressContactService,
+  private val aliasIdentifierSynchronisationService: CorePersonSynchronisationAliasIdentifierService,
   private val telemetryClient: TelemetryClient,
 ) {
   @PostMapping("/prisoners/{prisonNumber}/core-person/addresses-contacts/repair")
@@ -35,6 +36,29 @@ class CorePersonDataRepairResource(
     }
     telemetryClient.trackEvent(
       "coreperson-address-contact-resynchronisation-repair",
+      mapOf(
+        "prisonNumber" to prisonNumber,
+      ),
+      null,
+    )
+  }
+
+  @PostMapping("/prisoners/{prisonNumber}/core-person/aliases-identifiers/repair")
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  @Operation(
+    summary = "Resynchronises an offender's aliases and identifiers for the given prisoner from NOMIS to DPS",
+    description = """
+      Used when an unexpected event has happened in NOMIS that has resulted in the DPS data drifting from NOMIS, 
+      so emergency use only. Requires ROLE_PRISONER_FROM_NOMIS__UPDATE__RW""",
+  )
+  suspend fun repairCorePersonAliasesAndIdentifiers(@PathVariable prisonNumber: String) {
+    try {
+      aliasIdentifierSynchronisationService.resynchroniseAliasesAndIdentifiers(prisonNumber)
+    } catch (_: NotFound) {
+      throw NotFoundException("Prisoner $prisonNumber not found")
+    }
+    telemetryClient.trackEvent(
+      "coreperson-alias-identifier-resynchronisation-repair",
       mapOf(
         "prisonNumber" to prisonNumber,
       ),

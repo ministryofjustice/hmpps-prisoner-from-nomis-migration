@@ -6,14 +6,16 @@ import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import tools.jackson.databind.json.JsonMapper
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 
 @Component
 class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
 
   fun stubGetMappingsFromNomisIds(
-    result: CorePersonAddressContactMappingsResult = CorePersonAddressContactMappingsResult(
+    result: CorePersonMappingsResult = CorePersonMappingsResult(
+      aliases = emptyList(),
+      identifiers = emptyList(),
       addresses = emptyList(),
       contacts = emptyList(),
       addressUsages = emptyList(),

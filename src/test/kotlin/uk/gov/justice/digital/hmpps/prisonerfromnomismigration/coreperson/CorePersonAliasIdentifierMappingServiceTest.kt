@@ -13,10 +13,13 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAliasIdentifierMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAliasIdentifierMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAliasIdentifierMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingIdDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateMappingErrorResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IdentifierByNomisIdRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderAliasMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
@@ -29,6 +32,47 @@ class CorePersonAliasIdentifierMappingServiceTest(
   @Autowired private val apiService: CorePersonAliasIdentifierMappingService,
   @Autowired private val mockServer: CorePersonAliasIdentifierMappingApiMockServer,
 ) {
+  @Nested
+  inner class GetMappingsFromNomisIds {
+    private val request = CorePersonAliasIdentifierMappingsByNomisIdsRequest(
+      aliases = listOf(1234567),
+      identifiers = listOf(IdentifierByNomisIdRequest(nomisId = 1234567, nomisSequence = 2)),
+    )
+
+    @Test
+    fun `will pass NOMIS ids to service`() = runTest {
+      mockServer.stubGetMappingsFromNomisIds()
+
+      apiService.getMappingsFromNomisIds(request)
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/core-person/alias-identifier/mappings/by-nomis-ids"))
+          .withRequestBodyJsonPath("aliases[0]", 1234567)
+          .withRequestBodyJsonPath("identifiers[0].nomisId", 1234567)
+          .withRequestBodyJsonPath("identifiers[0].nomisSequence", 2),
+      )
+    }
+
+    @Test
+    fun `will return mappings`() = runTest {
+      mockServer.stubGetMappingsFromNomisIds(
+        CorePersonAliasIdentifierMappingsResult(
+          aliases = listOf(
+            OffenderAliasMappingDto(cprId = "cpr-alias-id", nomisOffenderId = 1234567, nomisPrisonNumber = "A1234BC", mappingType = OffenderAliasMappingDto.MappingType.MIGRATED),
+          ),
+          identifiers = listOf(
+            OffenderIdentifierMappingDto(cprId = "cpr-identifier-id", nomisOffenderId = 1234567, nomisIdentifierSequence = 2, nomisPrisonNumber = "A1234BC", mappingType = OffenderIdentifierMappingDto.MappingType.MIGRATED),
+          ),
+        ),
+      )
+
+      val result = apiService.getMappingsFromNomisIds(request)
+
+      assertThat(result.aliases.single().cprId).isEqualTo("cpr-alias-id")
+      assertThat(result.identifiers.single().cprId).isEqualTo("cpr-identifier-id")
+    }
+  }
+
   private fun aliasMapping() = OffenderAliasMappingDto(
     cprId = "cpr-alias-id",
     nomisOffenderId = 1234567,

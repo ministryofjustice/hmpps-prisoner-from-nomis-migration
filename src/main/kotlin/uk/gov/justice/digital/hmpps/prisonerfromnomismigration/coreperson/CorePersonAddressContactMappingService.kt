@@ -19,7 +19,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonContactMappingResourceApi.NomisContactTypeDeleteCorePersonContactMappingByNomisId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonContactMappingResourceApi.NomisContactTypeGetCorePersonContactMappingByNomisId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.api.CorePersonMigrationAddressContactResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
@@ -120,6 +122,11 @@ class CorePersonAddressContactMappingService(@Qualifier("mappingApiWebClient") w
       Mono.just(CreateMappingResult(it.getResponseBodyAs(object : ParameterizedTypeReference<DuplicateErrorResponse<CorePersonContactMappingDto>>() {})))
     }
     .awaitFirstOrDefault(CreateMappingResult())
+
+  suspend fun getMappingsFromNomisIds(request: CorePersonAddressContactMappingsByNomisIdsRequest): CorePersonAddressContactMappingsResult = repairApi
+    .prepare(repairApi.getMappingsFromNomisIdsForAddressContactRequestConfig(request))
+    .retrieve()
+    .awaitBody()
 
   suspend fun replaceMappings(mappings: CorePersonAddressContactMappingsDto) {
     repairApi.replaceCorePersonAddressContactMappings(mappings).awaitSingle()

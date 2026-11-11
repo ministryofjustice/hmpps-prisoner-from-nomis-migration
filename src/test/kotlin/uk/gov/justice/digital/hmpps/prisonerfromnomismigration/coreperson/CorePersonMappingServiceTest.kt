@@ -12,12 +12,15 @@ import org.springframework.context.annotation.Import
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AddressUsageByNomisIdRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ContactByNomisIdRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsByNomisIdsRequest
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMergeMappingsDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressUsageMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IdentifierByNomisIdRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderAliasMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 
@@ -53,7 +56,9 @@ class CorePersonMappingServiceTest(
 
   @Nested
   inner class GetMappingsFromNomisIds {
-    private val request = CorePersonAddressContactMappingsByNomisIdsRequest(
+    private val request = CorePersonMappingsByNomisIdsRequest(
+      aliases = listOf(54321),
+      identifiers = listOf(IdentifierByNomisIdRequest(nomisId = 54321, nomisSequence = 2)),
       addresses = listOf(12345),
       contacts = listOf(ContactByNomisIdRequest(nomisId = 67890, nomisContactType = ContactByNomisIdRequest.NomisContactType.PHONE)),
       addressUsages = listOf(AddressUsageByNomisIdRequest(nomisId = 12345, addressUsageCode = "HOME")),
@@ -67,6 +72,9 @@ class CorePersonMappingServiceTest(
 
       mockServer.verify(
         postRequestedFor(urlPathEqualTo("/mapping/core-person/merge/mappings/by-nomis-ids"))
+          .withRequestBodyJsonPath("aliases[0]", 54321)
+          .withRequestBodyJsonPath("identifiers[0].nomisId", 54321)
+          .withRequestBodyJsonPath("identifiers[0].nomisSequence", 2)
           .withRequestBodyJsonPath("addresses[0]", 12345)
           .withRequestBodyJsonPath("contacts[0].nomisId", 67890)
           .withRequestBodyJsonPath("contacts[0].nomisContactType", "PHONE")
@@ -78,7 +86,24 @@ class CorePersonMappingServiceTest(
     @Test
     fun `will return mappings`() = runTest {
       mockServer.stubGetMappingsFromNomisIds(
-        CorePersonAddressContactMappingsResult(
+        CorePersonMappingsResult(
+          aliases = listOf(
+            OffenderAliasMappingDto(
+              cprId = "cpr-alias-id",
+              nomisOffenderId = 54321,
+              nomisPrisonNumber = "A1234BC",
+              mappingType = OffenderAliasMappingDto.MappingType.MIGRATED,
+            ),
+          ),
+          identifiers = listOf(
+            OffenderIdentifierMappingDto(
+              cprId = "cpr-identifier-id",
+              nomisOffenderId = 54321,
+              nomisIdentifierSequence = 2,
+              nomisPrisonNumber = "A1234BC",
+              mappingType = OffenderIdentifierMappingDto.MappingType.MIGRATED,
+            ),
+          ),
           addresses = listOf(addressMapping()),
           contacts = listOf(contactMapping()),
           addressUsages = listOf(addressUsageMapping()),
@@ -87,6 +112,8 @@ class CorePersonMappingServiceTest(
 
       val result = apiService.getMappingsFromNomisIds(request)
 
+      assertThat(result.aliases.single().cprId).isEqualTo("cpr-alias-id")
+      assertThat(result.identifiers.single().cprId).isEqualTo("cpr-identifier-id")
       assertThat(result.addresses.single().cprId).isEqualTo("cpr-address-id")
       assertThat(result.contacts.single().cprId).isEqualTo("cpr-contact-id")
       assertThat(result.addressUsages.single().cprId).isEqualTo("cpr-address-usage-id")

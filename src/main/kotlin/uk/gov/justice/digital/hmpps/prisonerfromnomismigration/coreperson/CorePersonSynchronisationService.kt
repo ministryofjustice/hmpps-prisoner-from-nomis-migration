@@ -25,7 +25,7 @@ class CorePersonSynchronisationService(
       "bookingId" to bookingId,
       "removedOffenderNo" to removedOffenderNo,
     )
-    val prisonAddressesAndContactsRequest = corePersonSynchronisationAddressContactService.prisonAddressesAndContactsRequest(offenderNo)
+    val prisonAddressesAndContactsRequest = corePersonSynchronisationAddressContactService.prisonAddressesAndContactsRequestForMerge(offenderNo)
     val cprMergeResponse = corePersonCprApiService.processPrisonMerge(offenderNo, PrisonMerge(removedOffenderNo, prisonAddressesAndContactsRequest))
     val newAddressAndContactsMappings = cprMergeResponse.sysconAddressesAndContactsResponseBody.toCorePersonAddressContactMappingsDto(migrationType = NOMIS_CREATED)
     corePersonMappingService.merge(
