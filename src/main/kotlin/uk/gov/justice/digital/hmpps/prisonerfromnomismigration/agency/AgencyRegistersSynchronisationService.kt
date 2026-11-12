@@ -2,6 +2,8 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.DepartmentDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyPrisonPhoneDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
@@ -36,6 +38,25 @@ class AgencyRegistersSynchronisationService(
 
     synchronise(agencyId, telemetry)
   }
+
+  suspend fun resyncPrisonPhoneNumber(agencyId: String): DepartmentDto? {
+    val telemetry = telemetryOf(
+      "agencyId" to agencyId,
+      "reason" to "repair",
+    )
+    val phone = agencyNomisApiService.getAgencyPhoneNumber(agencyId).phone
+    if (phone == null) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-phone-number-updated-skipped", telemetry)
+      return null
+    }
+    return track("$TELEMETRY_PREFIX-phone-number-updated", telemetry) {
+      agencyRegistersDpsApiService.updatePrisonPhoneNumber(
+        agencyId,
+        LegacyPrisonPhoneDto(phoneNumber = phone.toLegacyAgencyPhoneDto()),
+      )
+    }
+  }
+
   private suspend fun synchronise(
     agencyId: String,
     telemetry: MutableMap<String, Any>,

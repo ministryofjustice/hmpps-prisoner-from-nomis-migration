@@ -118,6 +118,8 @@ class AgencyNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetAgencyPhoneNumberNoPhone(agencyId: String = "MDI") = stubGetAgencyPhoneNumber(agencyId, AgencyPhoneResponse(phone = null))
+
   fun stubGetAgencyIds(
     response: AgencyIdsResponse = agencyIdsResponse(),
   ) {
