@@ -12,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyIdsResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyPhoneResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CodeDescription
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
@@ -72,6 +73,10 @@ class AgencyNomisApiMockServer(private val jsonMapper: JsonMapper) {
       extension = null,
     )
 
+    fun agencyPhoneResponse() = AgencyPhoneResponse(
+      phone = agencyPhoneNumber(),
+    )
+
     fun agencyEmailAddress() = AgencyEmailAddress(
       id = 1,
       emailAddress = "sheffield.crown.court@test.com",
@@ -98,6 +103,21 @@ class AgencyNomisApiMockServer(private val jsonMapper: JsonMapper) {
       ),
     )
   }
+
+  fun stubGetAgencyPhoneNumber(
+    agencyId: String = "MDI",
+    response: AgencyPhoneResponse = agencyPhoneResponse(),
+  ) {
+    nomisApi.stubFor(
+      get(urlPathEqualTo("/agency/$agencyId/phone-number")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value())
+          .withBody(jsonMapper.writeValueAsString(response)),
+      ),
+    )
+  }
+
   fun stubGetAgencyIds(
     response: AgencyIdsResponse = agencyIdsResponse(),
   ) {

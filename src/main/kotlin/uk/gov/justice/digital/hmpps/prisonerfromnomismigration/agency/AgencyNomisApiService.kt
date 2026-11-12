@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.api.AgencyResourceApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyIdsResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyPhoneResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AgencyResponse
 
 @Service
@@ -17,6 +18,12 @@ class AgencyNomisApiService(@Qualifier("nomisApiWebClient") private val webClien
   suspend fun getAgency(
     agencyId: String,
   ): AgencyResponse = api.getAgency(
+    agencyId = agencyId,
+  ).awaitSingle()
+
+  suspend fun getAgencyPhoneNumber(
+    agencyId: String,
+  ): AgencyPhoneResponse = api.getAgencyPhoneNumber(
     agencyId = agencyId,
   ).awaitSingle()
 }
