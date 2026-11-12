@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
+import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
@@ -11,14 +12,17 @@ import org.junit.jupiter.api.extension.BeforeEachCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency.AgencyRegistersDpsApiExtension.Companion.departmentDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency.AgencyRegistersDpsApiExtension.Companion.jsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency.AgencyRegistersDpsApiExtension.Companion.legacyAgencyResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.DepartmentDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyAddressDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyEmailDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyPhoneDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyType
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyPrisonPhoneDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 
 class AgencyRegistersDpsApiExtension :
@@ -73,6 +77,15 @@ class AgencyRegistersDpsApiExtension :
 
     fun legacyAgencyPhoneDto() = LegacyAgencyPhoneDto(
       number = "0114 555 9898",
+    )
+
+    fun legacyPrisonPhoneDto() = LegacyPrisonPhoneDto(
+      phoneNumber = legacyAgencyPhoneDto(),
+    )
+
+    fun departmentDto() = DepartmentDto(
+      type = DepartmentDto.Type.PRISON,
+      phoneNumber = "0114 555 9898",
     )
 
     fun legacyAgencyResponse() = LegacyAgencyResponse(
@@ -136,6 +149,17 @@ class AgencyRegistersDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
   fun stubSyncPrison(agencyId: String, response: LegacyAgencyResponse = legacyAgencyResponse()) {
     stubFor(
       post("/legacy/sync/prison/id/$agencyId").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(jsonMapper.writeValueAsString(response))
+          .withStatus(200),
+      ),
+    )
+  }
+
+  fun stubUpdatePrisonPhoneNumber(agencyId: String, response: DepartmentDto = departmentDto()) {
+    stubFor(
+      put("/legacy/sync/prison/id/$agencyId/phone-number").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
           .withBody(jsonMapper.writeValueAsString(response))
