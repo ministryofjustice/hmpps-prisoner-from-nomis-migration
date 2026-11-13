@@ -67,6 +67,14 @@ class CorePersonAliasIdentifierMappingService(@Qualifier("mappingApiWebClient") 
     .retrieve()
     .awaitBody()
 
+  suspend fun getIdentifierMappingsByNomisOffenderId(nomisOffenderId: Long): List<OffenderIdentifierMappingDto> = identifierApi
+    .getOffenderIdentifierMappingsByNomisOffenderId(nomisOffenderId)
+    .awaitSingle()
+
+  suspend fun replaceIdentifierMappings(nomisOffenderId: Long, mappings: List<OffenderIdentifierMappingDto>) {
+    identifierApi.replaceOffenderIdentifierMappings(nomisOffenderId, mappings).awaitSingle()
+  }
+
   suspend fun deleteByNomisIdentifierId(nomisOffenderId: Long, nomisIdentifierSequence: Int) {
     identifierApi.deleteOffenderIdentifierMappingByNomisId(nomisOffenderId, nomisIdentifierSequence).awaitSingle()
   }

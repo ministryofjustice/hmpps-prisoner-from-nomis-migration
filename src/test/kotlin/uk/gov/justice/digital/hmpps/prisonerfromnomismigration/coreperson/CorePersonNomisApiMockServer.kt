@@ -202,6 +202,22 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
+  fun stubGetOffenderIdentifiers(
+    offenderId: Long = 1,
+    identifiers: List<Identifier> = corePerson().offenders!!.first().identifiers.map { it.copy(offenderId = offenderId) },
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    nomisApi.stubFor(
+      get(urlEqualTo("/core-person/$offenderId/identifiers")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value())
+          .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) identifiers else error)),
+      ),
+    )
+  }
+
   fun stubCreateOffenderEmail(
     offenderId: Long = 12345,
     response: CreateOffenderEmailResponse = CreateOffenderEmailResponse(emailAddressId = 45678),

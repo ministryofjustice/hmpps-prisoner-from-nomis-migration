@@ -6,9 +6,12 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpStatus
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
@@ -299,6 +302,84 @@ class CorePersonNomisApiServiceTest(
       assertThat(identifier.sequence).isEqualTo(3)
       assertThat(identifier.type.code).isEqualTo("PNC")
       assertThat(identifier.identifier).isEqualTo("20/0071818T")
+    }
+  }
+
+  @Nested
+  inner class GetOffenderIdentifiers {
+    @Test
+    fun `will pass NOMIS offender id to service`() = runTest {
+      mockServer.stubGetOffenderIdentifiers(offenderId = 12345)
+
+      apiService.getOffenderIdentifiers(offenderId = 12345)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/core-person/12345/identifiers")),
+      )
+    }
+
+    @Test
+    fun `will return the identifiers`() = runTest {
+      mockServer.stubGetOffenderIdentifiers(offenderId = 12345)
+
+      val identifiers = apiService.getOffenderIdentifiers(offenderId = 12345)
+
+      assertThat(identifiers).hasSize(1)
+      with(identifiers.first()) {
+        assertThat(offenderId).isEqualTo(12345)
+        assertThat(sequence).isEqualTo(1)
+        assertThat(type.code).isEqualTo("PNC")
+        assertThat(identifier).isEqualTo("20/0071818T")
+      }
+    }
+
+    @Test
+    fun `will return an empty list when there are no identifiers`() = runTest {
+      mockServer.stubGetOffenderIdentifiers(offenderId = 12345, identifiers = emptyList())
+
+      assertThat(apiService.getOffenderIdentifiers(offenderId = 12345)).isEmpty()
+    }
+
+    @Test
+    fun `will throw if offender not found`() = runTest {
+      mockServer.stubGetOffenderIdentifiers(offenderId = 12345, status = HttpStatus.NOT_FOUND)
+
+      assertThrows<WebClientResponseException.NotFound> {
+        apiService.getOffenderIdentifiers(offenderId = 12345)
+      }
+    }
+  }
+
+  @Nested
+  inner class GetOffenderReligions {
+    @Test
+    fun `will pass NOMIS prison number to service`() = runTest {
+      mockServer.stubGetOffenderReligions(prisonNumber = "A1234BC")
+
+      apiService.getOffenderReligions(nomisPrisonNumber = "A1234BC")
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/core-person/A1234BC/religions")),
+      )
+    }
+
+    @Test
+    fun `will return the religions`() = runTest {
+      mockServer.stubGetOffenderReligions(prisonNumber = "A1234BC", religions = multipleBeliefs())
+
+      val religions = apiService.getOffenderReligions(nomisPrisonNumber = "A1234BC")
+
+      assertThat(religions.map { it.beliefId }).containsExactly(1, 2)
+      assertThat(religions.map { it.belief.code }).containsExactly("ZORO", "DRU")
+    }
+
+    @Test
+    fun `will throw if prisoner not found`() = runTest {
+      mockServer.stubGetOffenderReligions(prisonNumber = "A1234BC", status = HttpStatus.NOT_FOUND)
+
+      assertThrows<WebClientResponseException.NotFound> {
+        apiService.getOffenderReligions(nomisPrisonNumber = "A1234BC")
+      }
     }
   }
 }

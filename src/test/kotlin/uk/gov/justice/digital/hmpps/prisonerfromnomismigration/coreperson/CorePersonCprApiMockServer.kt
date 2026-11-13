@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasesAndIdentifiersResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconIdentifierMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconIdentifiersResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconPersonMergeResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconReligionResponseBody
@@ -125,6 +126,28 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withStatus(status.value())
             .withHeader("Content-Type", "application/json")
             .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.CREATED) response else error)),
+        ),
+    )
+  }
+
+  fun stubSyncReplaceIdentifiers(
+    prisonNumber: String = "A1234BC",
+    cprAliasId: String = "cpr-alias-id",
+    identifierMappings: List<SysconIdentifierMapping> = emptyList(),
+    status: HttpStatus = HttpStatus.OK,
+    response: SysconIdentifiersResponseBody = SysconIdentifiersResponseBody(
+      prisonNumber = prisonNumber,
+      identifiersMappings = identifierMappings,
+    ),
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    stubFor(
+      put("/syscon-sync/person/$prisonNumber/alias/$cprAliasId/identifiers")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) response else error)),
         ),
     )
   }

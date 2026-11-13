@@ -24,8 +24,10 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAliasesAndIdentifiersRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonIdentifier
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonIdentifiersRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionHistory
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonReligionUpdateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasMapping
@@ -111,6 +113,81 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
       assertThrows<WebClientResponseException.BadRequest> {
         apiService.migrateCorePersonAliasesAndIdentifiers("A1234BC", prisonAliasesRequest())
       }
+    }
+  }
+
+  @Nested
+  inner class SyncReplaceIdentifiers {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncReplaceIdentifiers("A1234BC", "cpr-alias-1")
+
+      apiService.syncReplaceIdentifiers("A1234BC", "cpr-alias-1", prisonIdentifiersRequest())
+
+      cprCorePersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/alias/cpr-alias-1/identifiers"))
+          .withRequestBodyJsonPath("identifiers[0].nomisIdentifierId.nomisOffenderId", equalTo("12345"))
+          .withRequestBodyJsonPath("identifiers[0].nomisIdentifierId.nomisSequence", equalTo("1"))
+          .withRequestBodyJsonPath("identifiers[0].cprIdentifierId", equalTo("cpr-identifier-1"))
+          .withRequestBodyJsonPath("identifiers[0].type", equalTo("PNC"))
+          .withRequestBodyJsonPath("identifiers[0].value", equalTo("20/0071818T")),
+      )
+    }
+
+    @Test
+    fun `will return the mappings`() = runTest {
+      cprCorePersonServer.stubSyncReplaceIdentifiers(
+        "A1234BC",
+        "cpr-alias-1",
+        identifierMappings = listOf(
+          SysconIdentifierMapping(
+            nomisIdentifierId = NomisIdentifierId(nomisOffenderId = 12345, nomisSequence = 1),
+            cprIdentifierId = "cpr-identifier-1",
+          ),
+        ),
+      )
+
+      val response = apiService.syncReplaceIdentifiers("A1234BC", "cpr-alias-1", prisonIdentifiersRequest())
+
+      assertThat(response.prisonNumber).isEqualTo("A1234BC")
+      assertThat(response.identifiersMappings.single().cprIdentifierId).isEqualTo("cpr-identifier-1")
+      assertThat(response.identifiersMappings.single().nomisIdentifierId).isEqualTo(NomisIdentifierId(nomisOffenderId = 12345, nomisSequence = 1))
+    }
+
+    @Test
+    fun `should throw if bad request`() = runTest {
+      cprCorePersonServer.stubSyncReplaceIdentifiers("A1234BC", "cpr-alias-1", status = BAD_REQUEST)
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.syncReplaceIdentifiers("A1234BC", "cpr-alias-1", prisonIdentifiersRequest())
+      }
+    }
+  }
+
+  @Nested
+  inner class MigrateCorePersonReligion {
+    @Test
+    fun `will call the migrate endpoint`() = runTest {
+      cprCorePersonServer.stubMigrateCorePersonReligion("A1234BC")
+
+      apiService.migrateCorePersonReligion("A1234BC", PrisonReligionRequest(religions = listOf(prisonReligionRequest())))
+
+      cprCorePersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/syscon-sync/religion/A1234BC"))
+          .withRequestBodyJsonPath("religions[0].nomisReligionId", equalTo("1"))
+          .withRequestBodyJsonPath("religions[0].religionCode", equalTo("BAPT")),
+      )
+    }
+
+    @Test
+    fun `will return the mappings`() = runTest {
+      cprCorePersonServer.stubMigrateCorePersonReligion("A1234BC", nomisId = 1, cprId = "cpr-religion-1")
+
+      val response = apiService.migrateCorePersonReligion("A1234BC", PrisonReligionRequest(religions = listOf(prisonReligionRequest())))
+
+      assertThat(response.prisonNumber).isEqualTo("A1234BC")
+      assertThat(response.religionMappings.single().nomisReligionId).isEqualTo("1")
+      assertThat(response.religionMappings.single().cprReligionId).isEqualTo("cpr-religion-1")
     }
   }
 
@@ -461,6 +538,20 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
             createUserId = "JANE_ADM",
           ),
         ),
+      ),
+    ),
+  )
+
+  fun prisonIdentifiersRequest() = PrisonIdentifiersRequest(
+    identifiers = listOf(
+      PrisonIdentifier(
+        nomisIdentifierId = NomisIdentifierId(nomisOffenderId = 12345, nomisSequence = 1),
+        cprIdentifierId = "cpr-identifier-1",
+        type = PrisonIdentifier.Type.PNC,
+        `value` = "20/0071818T",
+        verified = true,
+        createDateTime = LocalDateTime.parse("2020-01-01T10:00:00"),
+        createUserId = "JANE_ADM",
       ),
     ),
   )
