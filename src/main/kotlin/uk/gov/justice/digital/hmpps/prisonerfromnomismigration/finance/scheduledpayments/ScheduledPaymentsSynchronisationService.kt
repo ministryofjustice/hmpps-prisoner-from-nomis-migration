@@ -20,12 +20,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledPaymentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.ScheduledPaymentDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NotFoundException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
 import java.time.LocalDateTime
 import java.util.UUID
 
-private const val TELEMETRY_PREFIX = "scheduled-payments-synchronisation"
+private const val TELEMETRY_PREFIX = "finance-scheduled-payments-synchronisation"
 
 @Service
 class ScheduledPaymentsSynchronisationService(
@@ -88,6 +89,20 @@ class ScheduledPaymentsSynchronisationService(
         ?.let { dpsApiService.updateScheduledPayment(UUID.fromString(mapping.dpsId), SyncUpdateSubscriptionRequest(endDate = it)) }
         ?: telemetryClient.trackEvent("$TELEMETRY_PREFIX-updated-ignored-no-end-date", telemetry)
     }
+  }
+
+  suspend fun resynchroniseScheduledPayment(scheduledPaymentId: Long) {
+    val nomisScheduledPayment = nomisApiService.getScheduledPaymentOrNull(scheduledPaymentId)
+      ?: throw NotFoundException("scheduledPaymentId $scheduledPaymentId not found")
+
+    val dpsScheduledPayment = dpsApiService.createScheduledPayment(nomisScheduledPayment.toCreateScheduledPaymentDto())
+    mappingService.replaceOrCreateMapping(
+      ScheduledPaymentMappingDto(
+        nomisScheduledPaymentId = nomisScheduledPayment.id,
+        dpsId = dpsScheduledPayment.subscriptionId.toString(),
+        mappingType = ScheduledPaymentMappingDto.MappingType.NOMIS_CREATED,
+      ),
+    )
   }
 
   private suspend fun tryToCreateMapping(

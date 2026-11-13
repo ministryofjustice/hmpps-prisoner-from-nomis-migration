@@ -13,6 +13,7 @@ import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PageMetadata
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.PagedModelScheduledPaymentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.ScheduledPaymentMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import java.time.LocalDateTime
@@ -54,6 +55,16 @@ class ScheduledPaymentsMappingApiMockServer(private val jsonMapper: JsonMapper) 
     )
   }
 
+  fun stubReplaceMapping() {
+    mappingApi.stubFor(
+      post("/mapping/scheduled-payments/replace").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(HttpStatus.OK.value()),
+      ),
+    )
+  }
+
   fun stubGetMigrationCount(migrationId: String = "2020-01-01T11:10:00", count: Int = 1) {
     mappingApi.stubFor(
       get(urlPathMatching("/mapping/scheduled-payments/migration-id/.*")).willReturn(
@@ -61,8 +72,8 @@ class ScheduledPaymentsMappingApiMockServer(private val jsonMapper: JsonMapper) 
           .withHeader("Content-Type", "application/json")
           .withBody(
             jsonMapper.writeValueAsString(
-              mapOf(
-                "content" to listOf(
+              PagedModelScheduledPaymentMappingDto(
+                content = listOf(
                   ScheduledPaymentMappingDto(
                     dpsId = "A1234BC",
                     nomisScheduledPaymentId = 12345L,
@@ -71,7 +82,7 @@ class ScheduledPaymentsMappingApiMockServer(private val jsonMapper: JsonMapper) 
                     whenCreated = LocalDateTime.now().toString(),
                   ),
                 ),
-                "page" to PageMetadata(
+                page = PageMetadata(
                   propertySize = 1,
                   number = 0,
                   totalPages = count.toLong(),

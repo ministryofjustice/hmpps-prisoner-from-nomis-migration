@@ -55,7 +55,7 @@ class ScheduledPaymentsSynchronisationIntTest(
 
     private fun verifySuccessTelemetry() {
       verify(telemetryClient).trackEvent(
-        eq("scheduled-payments-synchronisation-created-success"),
+        eq("finance-scheduled-payments-synchronisation-created-success"),
         check {
           assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
           assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
@@ -70,7 +70,7 @@ class ScheduledPaymentsSynchronisationIntTest(
       @BeforeEach
       fun setUp() {
         sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-INSERTED", auditModuleName = "DPS_SYNCHRONISATION")
-          .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-created-skipped") }
+          .also { waitForAnyProcessingToComplete("finance-scheduled-payments-synchronisation-created-skipped") }
       }
 
       @Test
@@ -92,7 +92,7 @@ class ScheduledPaymentsSynchronisationIntTest(
       @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("scheduled-payments-synchronisation-created-skipped"),
+          eq("finance-scheduled-payments-synchronisation-created-skipped"),
           check {
             assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
             assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
@@ -119,12 +119,7 @@ class ScheduledPaymentsSynchronisationIntTest(
           @BeforeEach
           fun setUp() {
             sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-INSERTED")
-              .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-created-success") }
-          }
-
-          @Test
-          fun `will check for an existing mapping`() {
-            mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/scheduled-payments/nomis-id/$scheduledPaymentId")))
+              .also { waitForAnyProcessingToComplete("finance-scheduled-payments-synchronisation-created-success") }
           }
 
           @Test
@@ -140,8 +135,10 @@ class ScheduledPaymentsSynchronisationIntTest(
                 .withRequestBodyJsonPath("prisonNumber", equalTo(prisonNumber))
                 .withRequestBodyJsonPath("prisonId", equalTo("LEI"))
                 .withRequestBodyJsonPath("amount", equalTo("2.1"))
+                .withRequestBodyJsonPath("dayOfPayment", equalTo("WEDNESDAY"))
                 .withRequestBodyJsonPath("startDate", equalTo("2024-06-18"))
                 .withRequestBodyJsonPath("endDate", equalTo("2024-07-30"))
+                .withRequestBodyJsonPath("subAccountCode", equalTo("2103"))
                 .withRequestBodyJsonPath("subscriptionType", equalTo("TELE"))
                 .withRequestBodyJsonPath("reference", equalTo("description of the scheduled payment"))
                 .withRequestBodyJsonPath("createdBy", equalTo("JD12345")),
@@ -149,13 +146,18 @@ class ScheduledPaymentsSynchronisationIntTest(
           }
 
           @Test
-          fun `will create the mapping`() {
-            verifyMappingSaved()
+          fun `will track telemetry`() {
+            verifySuccessTelemetry()
           }
 
           @Test
-          fun `will track telemetry`() {
-            verifySuccessTelemetry()
+          fun `will check for an existing mapping`() {
+            mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/scheduled-payments/nomis-id/$scheduledPaymentId")))
+          }
+
+          @Test
+          fun `will create the mapping`() {
+            verifyMappingSaved()
           }
         }
 
@@ -167,7 +169,7 @@ class ScheduledPaymentsSynchronisationIntTest(
             fun setUp() {
               mappingApiMock.stubCreateMappingFailureFollowedBySuccess()
               sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-INSERTED")
-                .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-mapping-created") }
+                .also { waitForAnyProcessingToComplete("finance-scheduled-payments-synchronisation-mapping-created") }
             }
 
             @Test
@@ -185,7 +187,7 @@ class ScheduledPaymentsSynchronisationIntTest(
             fun `will track telemetry`() {
               verifySuccessTelemetry()
               verify(telemetryClient).trackEvent(
-                eq("scheduled-payments-synchronisation-mapping-created"),
+                eq("finance-scheduled-payments-synchronisation-mapping-created"),
                 check {
                   assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
                   assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
@@ -219,7 +221,7 @@ class ScheduledPaymentsSynchronisationIntTest(
                 ),
               )
               sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-INSERTED")
-                .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-created-success") }
+                .also { waitForAnyProcessingToComplete("finance-scheduled-payments-synchronisation-created-success") }
             }
 
             @Test
@@ -236,7 +238,7 @@ class ScheduledPaymentsSynchronisationIntTest(
             fun `will track telemetry`() {
               verifySuccessTelemetry()
               verify(telemetryClient).trackEvent(
-                eq("scheduled-payments-synchronisation-duplicate"),
+                eq("finance-scheduled-payments-synchronisation-duplicate"),
                 check {
                   assertThat(it["existingNomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
                   assertThat(it["existingDpsScheduledPaymentId"]).isEqualTo(existingDpsId)
@@ -261,7 +263,7 @@ class ScheduledPaymentsSynchronisationIntTest(
               dpsId = dpsScheduledPaymentId.toString(),
             )
             sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-INSERTED")
-              .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-created-ignored") }
+              .also { waitForAnyProcessingToComplete("finance-scheduled-payments-synchronisation-created-ignored") }
           }
 
           @Test
@@ -282,7 +284,7 @@ class ScheduledPaymentsSynchronisationIntTest(
           @Test
           fun `will track telemetry`() {
             verify(telemetryClient).trackEvent(
-              eq("scheduled-payments-synchronisation-created-ignored"),
+              eq("finance-scheduled-payments-synchronisation-created-ignored"),
               check {
                 assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
                 assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
@@ -308,7 +310,7 @@ class ScheduledPaymentsSynchronisationIntTest(
       @BeforeEach
       fun setUp() {
         sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED", auditModuleName = "DPS_SYNCHRONISATION")
-          .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-skipped") }
+          .also { waitForAnyProcessingToComplete("finance-scheduled-payments-synchronisation-updated-skipped") }
       }
 
       @Test
@@ -321,7 +323,7 @@ class ScheduledPaymentsSynchronisationIntTest(
       @Test
       fun `will track telemetry`() {
         verify(telemetryClient).trackEvent(
-          eq("scheduled-payments-synchronisation-updated-skipped"),
+          eq("finance-scheduled-payments-synchronisation-updated-skipped"),
           check {
             assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
             assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
@@ -356,7 +358,7 @@ class ScheduledPaymentsSynchronisationIntTest(
             scheduledPayment(prisonNumber).copy(endDate = LocalDate.parse("2024-08-06")),
           )
           sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED")
-            .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-success") }
+            .also { waitForAnyProcessingToComplete("finance-scheduled-payments-synchronisation-updated-success") }
         }
 
         @Test
@@ -375,7 +377,7 @@ class ScheduledPaymentsSynchronisationIntTest(
         @Test
         fun `will track telemetry`() {
           verify(telemetryClient).trackEvent(
-            eq("scheduled-payments-synchronisation-updated-success"),
+            eq("finance-scheduled-payments-synchronisation-updated-success"),
             check {
               assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
               assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
@@ -396,7 +398,7 @@ class ScheduledPaymentsSynchronisationIntTest(
             scheduledPayment(prisonNumber).copy(endDate = null),
           )
           sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED")
-            .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-success") }
+            .also { waitForAnyProcessingToComplete("finance-scheduled-payments-synchronisation-updated-success") }
         }
 
         @Test
@@ -407,7 +409,7 @@ class ScheduledPaymentsSynchronisationIntTest(
         @Test
         fun `will track telemetry for the ignored update`() {
           verify(telemetryClient).trackEvent(
-            eq("scheduled-payments-synchronisation-updated-ignored-no-end-date"),
+            eq("finance-scheduled-payments-synchronisation-updated-ignored-no-end-date"),
             check {
               assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
               assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
@@ -426,7 +428,7 @@ class ScheduledPaymentsSynchronisationIntTest(
           fun setUp() {
             mappingApiMock.stubGetByNomisId(scheduledPaymentId, mapping = null)
             sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED")
-              .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-error", times = 2) }
+              .also { waitForAnyProcessingToComplete("finance-scheduled-payments-synchronisation-updated-error", times = 2) }
           }
 
           @Test
@@ -451,7 +453,7 @@ class ScheduledPaymentsSynchronisationIntTest(
           fun setUp() {
             mappingApiMock.stubGetByNomisIdFailure(scheduledPaymentId)
             sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED")
-              .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-error", times = 2) }
+              .also { waitForAnyProcessingToComplete("finance-scheduled-payments-synchronisation-updated-error", times = 2) }
           }
 
           @Test
@@ -484,7 +486,7 @@ class ScheduledPaymentsSynchronisationIntTest(
                 .willReturn(aResponse().withStatus(500)),
             )
             sendScheduledPaymentEvent("OFFENDER_SCHEDULED_PAYMENTS-UPDATED")
-              .also { waitForAnyProcessingToComplete("scheduled-payments-synchronisation-updated-error", times = 2) }
+              .also { waitForAnyProcessingToComplete("finance-scheduled-payments-synchronisation-updated-error", times = 2) }
           }
 
           @Test
@@ -506,7 +508,7 @@ class ScheduledPaymentsSynchronisationIntTest(
         }
         private fun verifyUpdateError(status: Int, path: String, hasMapping: Boolean) {
           verify(telemetryClient, times(2)).trackEvent(
-            eq("scheduled-payments-synchronisation-updated-error"),
+            eq("finance-scheduled-payments-synchronisation-updated-error"),
             check {
               assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
               assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())

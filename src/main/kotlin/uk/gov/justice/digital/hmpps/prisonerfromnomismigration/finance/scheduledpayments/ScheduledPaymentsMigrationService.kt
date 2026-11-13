@@ -125,7 +125,7 @@ class ScheduledPaymentsMigrationService(
       if (it.isError) {
         val duplicateErrorDetails = it.errorResponse!!.moreInfo
         telemetryClient.trackEvent(
-          "scheduled-payments-migration-duplicate",
+          "finance-scheduled-payments-migration-duplicate",
           mapOf(
             "duplicateDpsScheduledPaymentId" to duplicateErrorDetails.duplicate.dpsId,
             "duplicateNomisScheduledPaymentId" to duplicateErrorDetails.duplicate.nomisScheduledPaymentId,
@@ -136,7 +136,7 @@ class ScheduledPaymentsMigrationService(
         )
       } else {
         telemetryClient.trackEvent(
-          "scheduled-payments-migration-entity-migrated",
+          "finance-scheduled-payments-migration-entity-migrated",
           mapOf(
             "nomisScheduledPaymentId" to mapping.nomisScheduledPaymentId,
             "dpsId" to mapping.dpsId,
