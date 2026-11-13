@@ -117,6 +117,29 @@ class CorePersonAliasIdentifierMappingApiMockServer(private val jsonMapper: Json
     )
   }
 
+  fun stubGetIdentifierMappingsByNomisOffenderId(
+    nomisOffenderId: Long = 123456,
+    mappings: List<OffenderIdentifierMappingDto> = emptyList(),
+  ) {
+    stubGet(
+      "/mapping/core-person/identifier/nomis-offender-id/$nomisOffenderId",
+      mappings,
+    )
+  }
+
+  fun stubReplaceIdentifierMappings(
+    nomisOffenderId: Long = 123456,
+    status: HttpStatus = HttpStatus.OK,
+  ) {
+    mappingApi.stubFor(
+      post(urlEqualTo("/mapping/core-person/identifier/nomis-offender-id/$nomisOffenderId/replace")).willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withStatus(status.value()),
+      ),
+    )
+  }
+
   fun stubDeleteByNomisAliasId(nomisOffenderId: Long = 123456) = stubDelete("/mapping/core-person/alias/nomis-offender-id/$nomisOffenderId")
 
   fun stubDeleteByNomisIdentifierId(nomisOffenderId: Long = 123456, nomisIdentifierSequence: Int = 1) = stubDelete("/mapping/core-person/identifier/nomis-offender-id/$nomisOffenderId/nomis-identifier-sequence/$nomisIdentifierSequence")

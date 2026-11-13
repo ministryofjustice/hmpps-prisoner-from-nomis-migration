@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.equalToJson
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -296,6 +297,97 @@ class CorePersonAliasIdentifierMappingServiceTest(
       mockServer.stubGetByNomisIdentifierIdOrNull(1234567, 2)
 
       assertThat(apiService.getByNomisIdentifierId(1234567, 2).cprId).isEqualTo("cpr-identifier-id")
+    }
+  }
+
+  @Nested
+  inner class GetIdentifierMappingsByNomisOffenderId {
+    @Test
+    fun `will pass NOMIS offender id to service`() = runTest {
+      mockServer.stubGetIdentifierMappingsByNomisOffenderId(1234567)
+
+      apiService.getIdentifierMappingsByNomisOffenderId(1234567)
+
+      mockServer.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/identifier/nomis-offender-id/1234567")))
+    }
+
+    @Test
+    fun `will return the mappings`() = runTest {
+      mockServer.stubGetIdentifierMappingsByNomisOffenderId(
+        1234567,
+        listOf(
+          OffenderIdentifierMappingDto(
+            cprId = "cpr-identifier-1",
+            nomisOffenderId = 1234567,
+            nomisIdentifierSequence = 1,
+            nomisPrisonNumber = "A1234BC",
+            mappingType = OffenderIdentifierMappingDto.MappingType.MIGRATED,
+          ),
+          OffenderIdentifierMappingDto(
+            cprId = "cpr-identifier-2",
+            nomisOffenderId = 1234567,
+            nomisIdentifierSequence = 2,
+            nomisPrisonNumber = "A1234BC",
+            mappingType = OffenderIdentifierMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        ),
+      )
+
+      val mappings = apiService.getIdentifierMappingsByNomisOffenderId(1234567)
+
+      assertThat(mappings.map { it.nomisIdentifierSequence to it.cprId }).containsExactly(
+        1 to "cpr-identifier-1",
+        2 to "cpr-identifier-2",
+      )
+    }
+
+    @Test
+    fun `will return an empty list when there are no mappings`() = runTest {
+      mockServer.stubGetIdentifierMappingsByNomisOffenderId(1234567, emptyList())
+
+      assertThat(apiService.getIdentifierMappingsByNomisOffenderId(1234567)).isEmpty()
+    }
+  }
+
+  @Nested
+  inner class ReplaceIdentifierMappings {
+    @Test
+    fun `will pass NOMIS offender id and mappings to service`() = runTest {
+      mockServer.stubReplaceIdentifierMappings(1234567)
+
+      apiService.replaceIdentifierMappings(
+        1234567,
+        listOf(
+          OffenderIdentifierMappingDto(
+            cprId = "cpr-identifier-1",
+            nomisOffenderId = 1234567,
+            nomisIdentifierSequence = 1,
+            nomisPrisonNumber = "A1234BC",
+            mappingType = OffenderIdentifierMappingDto.MappingType.NOMIS_CREATED,
+          ),
+        ),
+      )
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/core-person/identifier/nomis-offender-id/1234567/replace"))
+          .withRequestBodyJsonPath("$[0].cprId", "cpr-identifier-1")
+          .withRequestBodyJsonPath("$[0].nomisOffenderId", "1234567")
+          .withRequestBodyJsonPath("$[0].nomisIdentifierSequence", "1")
+          .withRequestBodyJsonPath("$[0].nomisPrisonNumber", "A1234BC")
+          .withRequestBodyJsonPath("$[0].mappingType", "NOMIS_CREATED"),
+      )
+    }
+
+    @Test
+    fun `will pass an empty list to service`() = runTest {
+      mockServer.stubReplaceIdentifierMappings(1234567)
+
+      apiService.replaceIdentifierMappings(1234567, emptyList())
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/core-person/identifier/nomis-offender-id/1234567/replace"))
+          .withRequestBody(equalToJson("[]")),
+      )
     }
   }
 

@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-12.2392.c4a4fde"
+    "version" : "2026-11-13.2397.6576521"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -46450,12 +46450,20 @@
             "format" : "date-time",
             "description" : "The booking end date"
           },
+          "prison" : {
+            "type" : "string",
+            "description" : "The prison the booking is currently at, or OUT or TRN when released or in transit"
+          },
+          "inOutStatus" : {
+            "type" : "string",
+            "description" : "The booking in/out status: IN, OUT or TRN"
+          },
           "audit" : {
             "$ref" : "#/components/schemas/NomisAudit",
             "description" : "Audit data associated with the records"
           }
         },
-        "required" : [ "activeBooking", "audit", "bookingBeginTime", "bookingId", "bookingNumber", "bookingStatus", "latestBooking" ]
+        "required" : [ "activeBooking", "audit", "bookingBeginTime", "bookingId", "bookingNumber", "bookingStatus", "inOutStatus", "latestBooking", "prison" ]
       },
       "PersonLocationMovement" : {
         "type" : "object",
@@ -48267,6 +48275,13 @@
       "PrisonerHoldProjection" : {
         "type" : "object",
         "properties" : {
+          "clientUniqueRef" : {
+            "type" : [ "string", "null" ]
+          },
+          "holdNumber" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
           "txnEntrySeq" : {
             "type" : "integer",
             "format" : "int32"
@@ -48287,13 +48302,6 @@
           },
           "txnEntryAmount" : {
             "type" : "number"
-          },
-          "clientUniqueRef" : {
-            "type" : [ "string", "null" ]
-          },
-          "holdNumber" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
           }
         },
         "required" : [ "txnEntryAmount", "txnEntryDate", "txnEntrySeq", "txnId" ]

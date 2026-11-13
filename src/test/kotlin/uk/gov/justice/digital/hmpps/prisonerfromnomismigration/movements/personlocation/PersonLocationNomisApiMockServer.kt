@@ -85,6 +85,8 @@ fun offenderPersonLocationsResponse(
         latestBooking = true,
         bookingStatus = PersonLocationBooking.BookingStatus.OPEN,
         bookingBeginTime = bookingBeginTime,
+        prison = "LEI",
+        inOutStatus = "IN",
         audit = NomisAudit(createDatetime = bookingBeginTime, createUsername = "PRISONER_MANAGER_API"),
       ),
       movements = listOf(
@@ -132,6 +134,8 @@ fun personLocationBooking(
   latestBooking = true,
   bookingStatus = PersonLocationBooking.BookingStatus.OPEN,
   bookingBeginTime = bookingBeginTime,
+  prison = "LEI",
+  inOutStatus = "IN",
   audit = NomisAudit(createDatetime = bookingBeginTime, createUsername = "PRISONER_MANAGER_API"),
 )
 
