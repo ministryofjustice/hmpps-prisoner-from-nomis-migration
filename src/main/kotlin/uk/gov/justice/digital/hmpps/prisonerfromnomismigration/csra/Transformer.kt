@@ -16,6 +16,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.AssessmentType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CsraGetDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.EvaluationResultCode
+import java.math.BigDecimal
 
 /**
  * See https://dsdmoj.atlassian.net/browse/MAP-3113
@@ -29,7 +30,7 @@ fun CsraGetDto.toDPSCsra() = NomisCsraReview(
   calculatedLevel = convertLevel(calculatedLevel),
   overrideLevel = convertLevel(overrideLevel),
   overrideReasonCode = convertOverrideReason(overrideReasonCode),
-  score = score!!,
+  score = score ?: BigDecimal.ZERO, // there are a couple of nulls in dev Nomis
   status = convertStatus(),
   committeeCode = convertCommitteeCode(committeeCode),
   nextReviewDate = nextReviewDate,
