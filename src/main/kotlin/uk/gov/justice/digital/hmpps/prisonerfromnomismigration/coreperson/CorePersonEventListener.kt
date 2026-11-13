@@ -25,6 +25,7 @@ class CorePersonEventListener(
   private val service: CorePersonSynchronisationService,
   private val beliefsService: CorePersonSynchronisationBeliefsService,
   private val addressContactService: CorePersonSynchronisationAddressContactService,
+  private val aliasIdentifierService: CorePersonSynchronisationAliasIdentifierService,
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
 ) {
@@ -62,6 +63,9 @@ class CorePersonEventListener(
               "OFFENDER_EMAIL-INSERTED" -> addressContactService.offenderEmailAdded(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-UPDATED" -> addressContactService.offenderEmailUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-DELETED" -> addressContactService.offenderEmailDeleted(sqsMessage.Message.fromJson())
+
+              // this single event is for inserts, updates and also deletes
+              "OFFENDER_IDENTIFIER-UPDATED" -> aliasIdentifierService.offenderIdentifierUpdated(sqsMessage.Message.fromJson())
 
               "prison-offender-events.prisoner.merged" -> service.synchronisePrisonerMerge(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
@@ -134,4 +138,11 @@ data class OffenderPhoneEvent(
   val addressId: Long?,
   val phoneId: Long,
   override val auditModuleName: String?,
+) : EventAudited
+
+data class OffenderIdentifierEvent(
+  val offenderIdDisplay: String,
+  val offenderId: Long,
+  val offenderIdSeq: Long,
+  override val auditModuleName: String,
 ) : EventAudited
