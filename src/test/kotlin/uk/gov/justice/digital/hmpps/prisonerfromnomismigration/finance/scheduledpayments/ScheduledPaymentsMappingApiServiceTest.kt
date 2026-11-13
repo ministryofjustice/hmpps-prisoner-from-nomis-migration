@@ -415,43 +415,17 @@ class ScheduledPaymentsMappingApiServiceTest {
     }
 
     @Test
-    fun `will return error when 409 conflict`() = runTest {
-      val dpsId = "A4321BC"
-      val nomisId = 12345L
-      val existingDpsId = "existing-scheduled-payment-id"
-
-      mockServer.stubCreateMapping(
-        error = DuplicateErrorResponse(
-          moreInfo = DuplicateErrorContent(
-            duplicate = ScheduledPaymentMappingDto(
-              dpsId = dpsId,
-              nomisScheduledPaymentId = nomisId,
-              mappingType = NOMIS_CREATED,
-            ),
-            existing = ScheduledPaymentMappingDto(
-              dpsId = existingDpsId,
-              nomisScheduledPaymentId = nomisId,
-              mappingType = NOMIS_CREATED,
-            ),
-          ),
+    fun `will propagate error when 409 conflict`() = runTest {
+      mappingApi.stubFor(
+        com.github.tomakehurst.wiremock.client.WireMock.post("/mapping/scheduled-payments/replace").willReturn(
+          com.github.tomakehurst.wiremock.client.WireMock.aResponse()
+            .withStatus(HttpStatus.CONFLICT.value()),
         ),
       )
 
-      val result = apiService.createMapping(
-        ScheduledPaymentMappingDto(
-          mappingType = MIGRATED,
-          label = "2020-01-01T10:00",
-          dpsId = "A1234KT",
-          nomisScheduledPaymentId = 12345L,
-        ),
-        object : ParameterizedTypeReference<DuplicateErrorResponse<ScheduledPaymentMappingDto>>() {},
-      )
-
-      assertThat(result.isError).isTrue()
-      assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
-      assertThat(result.errorResponse.moreInfo.duplicate.nomisScheduledPaymentId).isEqualTo(nomisId)
-      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
-      assertThat(result.errorResponse.moreInfo.existing.nomisScheduledPaymentId).isEqualTo(nomisId)
+      assertThrows<WebClientResponseException.Conflict> {
+        apiService.replaceOrCreateMapping(mapping)
+      }
     }
   }
 }
