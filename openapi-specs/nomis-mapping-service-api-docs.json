@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-11.995.d9a8546"
+    "version" : "2026-11-13.1003.68a4670"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -3141,6 +3141,50 @@
         }
       }
     },
+    "/mapping/scheduled-payments/replace" : {
+      "post" : {
+        "tags" : [ "scheduled-payment-mapping-resource" ],
+        "summary" : "Replaces a scheduled payment mapping.",
+        "description" : "Creates a new scheduled payment mapping and removes the previously supplied one (if one exists).\n      Requires ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "operationId" : "replaceScheduledPaymentMapping",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ScheduledPaymentMappingDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Mapping replaced",
+            "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access forbidden for this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mapping/scheduled-payments" : {
       "get" : {
         "tags" : [ "scheduled-payment-mapping-resource" ],
@@ -5977,6 +6021,76 @@
           "200" : {
             "description" : "Mappings replaced",
             "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access forbidden for this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/core-person/identifier/nomis-offender-id/{nomisOffenderId}/replace" : {
+      "post" : {
+        "tags" : [ "core-person-identifier-mapping-resource" ],
+        "summary" : "Replaces all offender identifier mappings for a nomis offender id",
+        "description" : "Removes all existing identifier mappings for the NOMIS offender id and replaces them with the supplied list.\n      Any existing mappings with the same CPR ids held against a different offender are also removed.\n      Requires ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "operationId" : "replaceOffenderIdentifierMappings",
+        "parameters" : [ {
+          "name" : "nomisOffenderId",
+          "in" : "path",
+          "description" : "NOMIS offender id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "NOMIS offender id",
+            "example" : 12345
+          },
+          "example" : 12345
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "type" : "array",
+                "items" : {
+                  "$ref" : "#/components/schemas/OffenderIdentifierMappingDto"
+                }
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Mappings replaced",
+            "content" : { }
+          },
+          "400" : {
+            "description" : "A mapping is for a different NOMIS offender id",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           },
           "401" : {
             "description" : "Unauthorized to access this endpoint",
@@ -18324,6 +18438,62 @@
           "204" : {
             "description" : "Offender identifier mapping deleted",
             "content" : { }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Access this endpoint is forbidden",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mapping/core-person/identifier/nomis-offender-id/{nomisOffenderId}" : {
+      "get" : {
+        "tags" : [ "core-person-identifier-mapping-resource" ],
+        "summary" : "Get all offender identifier mappings by nomis offender id",
+        "description" : "Retrieves all the offender identifier mappings for a NOMIS offender id. Returns an empty list when none are found. Requires role ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "operationId" : "getOffenderIdentifierMappingsByNomisOffenderId",
+        "parameters" : [ {
+          "name" : "nomisOffenderId",
+          "in" : "path",
+          "description" : "NOMIS offender id",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "NOMIS offender id",
+            "example" : 12345
+          },
+          "example" : 12345
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "List of offender identifier mappings",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/OffenderIdentifierMappingDto"
+                  }
+                }
+              }
+            }
           },
           "401" : {
             "description" : "Unauthorized to access this endpoint",
