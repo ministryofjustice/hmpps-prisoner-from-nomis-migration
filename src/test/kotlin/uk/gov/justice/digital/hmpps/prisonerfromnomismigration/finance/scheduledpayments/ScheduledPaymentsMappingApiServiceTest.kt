@@ -366,4 +366,92 @@ class ScheduledPaymentsMappingApiServiceTest {
       assertThat(result.errorResponse.moreInfo.existing.nomisScheduledPaymentId).isEqualTo(nomisId)
     }
   }
+
+  @Nested
+  inner class ReplaceMapping {
+    private val mapping = ScheduledPaymentMappingDto(
+      mappingType = MIGRATED,
+      label = "2020-01-01T10:00",
+      dpsId = "de2bc56c-ea73-4f3c-8a37-5a46fdb2d79a",
+      nomisScheduledPaymentId = 12345L,
+    )
+
+    @Test
+    internal fun `will pass oauth2 token to migrate endpoint`() = runTest {
+      mockServer.stubReplaceMapping()
+
+      apiService.replaceOrCreateMapping(mapping)
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/scheduled-payments/replace")).withHeader(
+          "Authorization",
+          equalTo("Bearer ABCDE"),
+        ),
+      )
+    }
+
+    @Test
+    fun `will send the scheduled payment mapping to the service`() = runTest {
+      mockServer.stubReplaceMapping()
+
+      apiService.replaceOrCreateMapping(mapping)
+
+      mockServer.verify(
+        postRequestedFor(urlPathEqualTo("/mapping/scheduled-payments/replace"))
+          .withRequestBody(
+            equalToJson(
+              """
+                {
+                  "nomisScheduledPaymentId": 12345,
+                  "dpsId": "de2bc56c-ea73-4f3c-8a37-5a46fdb2d79a",
+                  "mappingType": "MIGRATED",
+                  "label": "2020-01-01T10:00",
+                  "whenCreated": null
+                }
+              """.trimIndent(),
+            ),
+          ),
+      )
+    }
+
+    @Test
+    fun `will return error when 409 conflict`() = runTest {
+      val dpsId = "A4321BC"
+      val nomisId = 12345L
+      val existingDpsId = "existing-scheduled-payment-id"
+
+      mockServer.stubCreateMapping(
+        error = DuplicateErrorResponse(
+          moreInfo = DuplicateErrorContent(
+            duplicate = ScheduledPaymentMappingDto(
+              dpsId = dpsId,
+              nomisScheduledPaymentId = nomisId,
+              mappingType = NOMIS_CREATED,
+            ),
+            existing = ScheduledPaymentMappingDto(
+              dpsId = existingDpsId,
+              nomisScheduledPaymentId = nomisId,
+              mappingType = NOMIS_CREATED,
+            ),
+          ),
+        ),
+      )
+
+      val result = apiService.createMapping(
+        ScheduledPaymentMappingDto(
+          mappingType = MIGRATED,
+          label = "2020-01-01T10:00",
+          dpsId = "A1234KT",
+          nomisScheduledPaymentId = 12345L,
+        ),
+        object : ParameterizedTypeReference<DuplicateErrorResponse<ScheduledPaymentMappingDto>>() {},
+      )
+
+      assertThat(result.isError).isTrue()
+      assertThat(result.errorResponse!!.moreInfo.duplicate.dpsId).isEqualTo(dpsId)
+      assertThat(result.errorResponse.moreInfo.duplicate.nomisScheduledPaymentId).isEqualTo(nomisId)
+      assertThat(result.errorResponse.moreInfo.existing.dpsId).isEqualTo(existingDpsId)
+      assertThat(result.errorResponse.moreInfo.existing.nomisScheduledPaymentId).isEqualTo(nomisId)
+    }
+  }
 }
