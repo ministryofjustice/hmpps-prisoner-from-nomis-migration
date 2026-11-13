@@ -8,6 +8,7 @@ import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_ADDRESS_USAGE_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_ALIAS_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_EMAIL_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_PHONE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonSynchronisationMessageType.RETRY_SYNCHRONISATION_RELIGION_MAPPING
@@ -64,6 +65,9 @@ class CorePersonEventListener(
               "OFFENDER_EMAIL-UPDATED" -> addressContactService.offenderEmailUpdated(sqsMessage.Message.fromJson())
               "OFFENDER_EMAIL-DELETED" -> addressContactService.offenderEmailDeleted(sqsMessage.Message.fromJson())
 
+              "OFFENDER-INSERTED" -> aliasIdentifierService.offenderAdded(sqsMessage.Message.fromJson())
+              "OFFENDER-UPDATED" -> aliasIdentifierService.offenderUpdated(sqsMessage.Message.fromJson())
+              "OFFENDER-DELETED" -> aliasIdentifierService.offenderDeleted(sqsMessage.Message.fromJson())
               // this single event is for inserts, updates and also deletes
               "OFFENDER_IDENTIFIER-UPDATED" -> aliasIdentifierService.offenderIdentifierUpdated(sqsMessage.Message.fromJson())
 
@@ -86,6 +90,7 @@ class CorePersonEventListener(
       RETRY_SYNCHRONISATION_ADDRESS_MAPPING -> addressContactService.retryCreateAddressMapping(message.fromJson())
       RETRY_SYNCHRONISATION_PHONE_MAPPING -> addressContactService.retryCreatePhoneMapping(message.fromJson())
       RETRY_SYNCHRONISATION_ADDRESS_USAGE_MAPPING -> addressContactService.retryCreateAddressUsageMapping(message.fromJson())
+      RETRY_SYNCHRONISATION_ALIAS_MAPPING -> aliasIdentifierService.retryCreateAliasMapping(message.fromJson())
     }
   }
 }
@@ -96,6 +101,7 @@ enum class CorePersonSynchronisationMessageType {
   RETRY_SYNCHRONISATION_ADDRESS_MAPPING,
   RETRY_SYNCHRONISATION_PHONE_MAPPING,
   RETRY_SYNCHRONISATION_ADDRESS_USAGE_MAPPING,
+  RETRY_SYNCHRONISATION_ALIAS_MAPPING,
 }
 
 data class OffenderBeliefEvent(
@@ -138,6 +144,12 @@ data class OffenderPhoneEvent(
   val addressId: Long?,
   val phoneId: Long,
   override val auditModuleName: String?,
+) : EventAudited
+
+data class OffenderEvent(
+  val offenderIdDisplay: String,
+  val offenderId: Long,
+  override val auditModuleName: String,
 ) : EventAudited
 
 data class OffenderIdentifierEvent(

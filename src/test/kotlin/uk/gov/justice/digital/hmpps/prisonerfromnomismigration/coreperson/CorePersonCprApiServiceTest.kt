@@ -13,6 +13,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpStatus
 import org.springframework.http.HttpStatus.BAD_REQUEST
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension.Companion.cprCorePersonServer
@@ -160,6 +161,84 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
 
       assertThrows<WebClientResponseException.BadRequest> {
         apiService.syncReplaceIdentifiers("A1234BC", "cpr-alias-1", prisonIdentifiersRequest())
+      }
+    }
+  }
+
+  @Nested
+  inner class SyncCreateAlias {
+    @Test
+    fun `will call the sync endpoint and return the alias mapping`() = runTest {
+      cprCorePersonServer.stubSyncCreateAlias("A1234BC", nomisOffenderId = 12345, cprAliasId = "cpr-alias-1")
+
+      val response = apiService.syncCreateAlias("A1234BC", prisonAliasesRequest().aliases.first())
+
+      assertThat(response.nomisOffenderId).isEqualTo(12345)
+      assertThat(response.cprAliasId).isEqualTo("cpr-alias-1")
+      cprCorePersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/alias"))
+          .withRequestBodyJsonPath("nomisOffenderId", equalTo("12345"))
+          .withRequestBodyJsonPath("firstName", equalTo("JOHN"))
+          .withRequestBodyJsonPath("lastName", equalTo("SMITH"))
+          .withRequestBodyJsonPath("isPrimary", equalTo("true")),
+      )
+    }
+
+    @Test
+    fun `should throw if bad request`() = runTest {
+      cprCorePersonServer.stubSyncCreateAlias("A1234BC", status = BAD_REQUEST)
+
+      assertThrows<WebClientResponseException.BadRequest> {
+        apiService.syncCreateAlias("A1234BC", prisonAliasesRequest().aliases.first())
+      }
+    }
+  }
+
+  @Nested
+  inner class SyncUpdateAlias {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncUpdateAlias("A1234BC", "cpr-alias-1")
+
+      apiService.syncUpdateAlias("A1234BC", "cpr-alias-1", prisonAliasesRequest().aliases.first().copy(cprAliasId = "cpr-alias-1"))
+
+      cprCorePersonServer.verify(
+        putRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/alias/cpr-alias-1"))
+          .withRequestBodyJsonPath("nomisOffenderId", equalTo("12345"))
+          .withRequestBodyJsonPath("cprAliasId", equalTo("cpr-alias-1"))
+          .withRequestBodyJsonPath("firstName", equalTo("JOHN")),
+      )
+    }
+
+    @Test
+    fun `should throw if not found`() = runTest {
+      cprCorePersonServer.stubSyncUpdateAlias("A1234BC", "cpr-alias-1", status = HttpStatus.NOT_FOUND)
+
+      assertThrows<WebClientResponseException.NotFound> {
+        apiService.syncUpdateAlias("A1234BC", "cpr-alias-1", prisonAliasesRequest().aliases.first())
+      }
+    }
+  }
+
+  @Nested
+  inner class SyncDeleteAlias {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncDeleteAlias("A1234BC", "cpr-alias-1")
+
+      apiService.syncDeleteAlias("A1234BC", "cpr-alias-1")
+
+      cprCorePersonServer.verify(
+        deleteRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/alias/cpr-alias-1")),
+      )
+    }
+
+    @Test
+    fun `should throw if server error`() = runTest {
+      cprCorePersonServer.stubSyncDeleteAlias("A1234BC", "cpr-alias-1", status = HttpStatus.INTERNAL_SERVER_ERROR)
+
+      assertThrows<WebClientResponseException.InternalServerError> {
+        apiService.syncDeleteAlias("A1234BC", "cpr-alias-1")
       }
     }
   }

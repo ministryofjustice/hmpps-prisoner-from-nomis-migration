@@ -21,6 +21,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasWithIdentifiersMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasesAndIdentifiersResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconIdentifierMapping
@@ -149,6 +150,51 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
             .withHeader("Content-Type", "application/json")
             .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.OK) response else error)),
         ),
+    )
+  }
+
+  fun stubSyncCreateAlias(
+    prisonNumber: String = "A1234BC",
+    nomisOffenderId: Long = 123456,
+    cprAliasId: String = "cpr-alias-id",
+    status: HttpStatus = HttpStatus.CREATED,
+    response: SysconAliasWithIdentifiersMapping = SysconAliasWithIdentifiersMapping(
+      nomisOffenderId = nomisOffenderId,
+      cprAliasId = cprAliasId,
+      identifierMappings = emptyList(),
+    ),
+    error: ErrorResponse = ErrorResponse(status = status.value()),
+  ) {
+    stubFor(
+      post("/syscon-sync/person/$prisonNumber/alias")
+        .willReturn(
+          aResponse()
+            .withStatus(status.value())
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(if (status == HttpStatus.CREATED) response else error)),
+        ),
+    )
+  }
+
+  fun stubSyncUpdateAlias(
+    prisonNumber: String = "A1234BC",
+    cprAliasId: String = "cpr-alias-id",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      put("/syscon-sync/person/$prisonNumber/alias/$cprAliasId")
+        .willReturn(aResponse().withStatus(status.value())),
+    )
+  }
+
+  fun stubSyncDeleteAlias(
+    prisonNumber: String = "A1234BC",
+    cprAliasId: String = "cpr-alias-id",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      delete("/syscon-sync/person/$prisonNumber/alias/$cprAliasId")
+        .willReturn(aResponse().withStatus(status.value())),
     )
   }
 

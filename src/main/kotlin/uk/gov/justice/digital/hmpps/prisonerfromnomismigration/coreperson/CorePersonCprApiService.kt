@@ -8,6 +8,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.api.Sy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressUsage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAliasesAndIdentifiersRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonIdentifiersRequest
@@ -19,6 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasWithIdentifiersMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasesAndIdentifiersResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconIdentifiersResponseBody
@@ -83,6 +85,19 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") webClient: We
 
   suspend fun syncDeleteAddress(prisonNumber: String, cprAddressId: String): Unit = api
     .deletePrisonerAddress(prisonNumber, cprAddressId)
+    .awaitSingle()
+
+  suspend fun syncCreateAlias(prisonNumber: String, alias: PrisonAlias): SysconAliasWithIdentifiersMapping = api
+    .prepare(api.createPrisonerAliasRequestConfig(prisonNumber, alias))
+    .retrieve()
+    .awaitBodyOrLogAndRethrowBadRequest()
+
+  suspend fun syncUpdateAlias(prisonNumber: String, cprAliasId: String, alias: PrisonAlias): Unit = api
+    .updatePrisonerAlias(prisonNumber, cprAliasId, alias)
+    .awaitSingle()
+
+  suspend fun syncDeleteAlias(prisonNumber: String, cprAliasId: String): Unit = api
+    .deletePrisonerAlias(prisonNumber, cprAliasId)
     .awaitSingle()
 
   suspend fun processPrisonMerge(prisonNumber: String, prisonMerge: PrisonMerge): SysconPersonMergeResponseBody = api
