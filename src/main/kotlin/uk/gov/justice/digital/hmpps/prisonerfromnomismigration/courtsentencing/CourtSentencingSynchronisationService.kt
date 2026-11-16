@@ -846,7 +846,8 @@ class CourtSentencingSynchronisationService(
                 telemetry + ("dpsChargeId" to chargeMapping.dpsCourtChargeId) +
                   ("dpsCourtAppearanceId" to courtAppearanceMapping.dpsCourtAppearanceId) +
                   ("nomisOutcomeCode" to nomisCourtAppearanceCharge.resultCode1?.code.toString()) +
-                  ("offenceCode" to nomisCourtAppearanceCharge.offenderCharge.offence.offenceCode)
+                  ("offenceCode" to nomisCourtAppearanceCharge.offenderCharge.offence.offenceCode) +
+                  ("propertyValue" to nomisCourtAppearanceCharge.propertyValue.toString())
                 ).toMutableMap(),
             ) {
               dpsApiService.updateCourtCharge(
