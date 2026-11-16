@@ -563,7 +563,7 @@ class PersonLocationSyncBookingIntTest(
   }
 
   @Nested
-  @DisplayName("BOOKING_STATUS-DELETED")
+  @DisplayName("BOOKING-DELETED")
   @TestInstance(TestInstance.Lifecycle.PER_CLASS)
   inner class BookingDeleted {
     private val dpsCustodialSeriesId = UUID.randomUUID()
@@ -580,7 +580,7 @@ class PersonLocationSyncBookingIntTest(
         dpsApi.stubDeleteCustodialSeries(dpsCustodialSeriesId)
         mappingApi.stubDeletePersonLocationBookingMapping(nomisBookingId = 12345)
 
-        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-DELETED"))
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING-DELETED"))
           .also { waitForAnyProcessingToComplete() }
       }
 
@@ -601,30 +601,10 @@ class PersonLocationSyncBookingIntTest(
           check {
             assertThat(it["offenderNo"]).isEqualTo("A1234BC")
             assertThat(it["bookingId"]).isEqualTo("12345")
-            assertThat(it["bookingSeq"]).isEqualTo("1")
             assertThat(it["dpsCustodialSeriesId"]).isEqualTo("$dpsCustodialSeriesId")
           },
           isNull(),
         )
-      }
-    }
-
-    @Nested
-    @DisplayName("Ignored when raised by DPS")
-    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class WhenDpsSyncAuditModule {
-      @BeforeEach
-      fun setUp() {
-        setUpTestClass()
-
-        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-DELETED", auditModuleName = "DPS_SYNCHRONISATION"))
-          .also { waitForAnyProcessingToComplete("person-location-sync-booking-deleted-ignored") }
-      }
-
-      @Test
-      fun `should NOT call DPS or delete mapping`() {
-        dpsApi.verify(0, deleteRequestedFor(anyUrl()))
-        mappingApi.verify(0, deleteRequestedFor(anyUrl()))
       }
     }
 
@@ -638,7 +618,7 @@ class PersonLocationSyncBookingIntTest(
 
         mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, status = NOT_FOUND)
 
-        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-DELETED"))
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING-DELETED"))
           .also { waitForAnyProcessingToComplete("person-location-sync-booking-deleted-ignored") }
       }
 
@@ -660,7 +640,7 @@ class PersonLocationSyncBookingIntTest(
         mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
         dpsApi.stubDeleteCustodialSeries(dpsCustodialSeriesId, status = INTERNAL_SERVER_ERROR)
 
-        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING_STATUS-DELETED"))
+        personLocationsOffenderEventsQueue.sendMessage(bookingStatusEvent("BOOKING-DELETED"))
           .also { waitForAnyProcessingToComplete("person-location-sync-booking-deleted-error", times = 2) }
       }
 

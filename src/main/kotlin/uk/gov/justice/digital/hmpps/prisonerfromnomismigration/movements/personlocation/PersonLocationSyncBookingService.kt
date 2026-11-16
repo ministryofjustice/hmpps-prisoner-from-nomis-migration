@@ -34,6 +34,11 @@ data class BookingStatusEvent(
   override val auditModuleName: String?,
 ) : EventAudited
 
+data class BookingDeletedEvent(
+  val bookingId: Long,
+  val offenderIdDisplay: String,
+)
+
 @Service
 class PersonLocationSyncBookingService(
   override val telemetryClient: TelemetryClient,
@@ -66,14 +71,9 @@ class PersonLocationSyncBookingService(
     }
   }
 
-  suspend fun bookingDeleted(event: BookingStatusEvent) {
+  suspend fun bookingDeleted(event: BookingDeletedEvent) {
     val bookingId = event.bookingId
     val telemetry = event.telemetry()
-
-    if (event.auditExactMatchOrHasMissingAudit(DPS_SYNC_AUDIT_MODULE)) {
-      telemetryClient.trackEvent("$TELEMETRY_PREFIX-deleted-ignored", telemetry)
-      return
-    }
 
     mappingApiService.getBookingMappingOrNull(bookingId)
       ?.also { telemetry["dpsCustodialSeriesId"] = it.dpsCustodialSeriesId }
@@ -158,6 +158,11 @@ private fun BookingStatusEvent.telemetry() = mutableMapOf<String, Any>(
   "bookingId" to bookingId,
   "bookingSeq" to bookingSequence,
 ).apply { oldBookingSequence?.also { put("oldBookingSeq", it) } }
+
+private fun BookingDeletedEvent.telemetry() = mutableMapOf<String, Any>(
+  "offenderNo" to offenderIdDisplay,
+  "bookingId" to bookingId,
+)
 
 private fun PersonLocationBooking.toDpsRequest(dpsId: UUID?) = SyncCustodialSeriesRequest(
   occurredAt = audit.modifyDatetime ?: audit.createDatetime,
