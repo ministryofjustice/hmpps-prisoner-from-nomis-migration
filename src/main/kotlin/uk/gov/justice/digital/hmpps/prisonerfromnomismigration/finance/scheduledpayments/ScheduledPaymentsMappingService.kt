@@ -18,4 +18,8 @@ class ScheduledPaymentsMappingService(@Qualifier("mappingApiWebClient") webClien
 
   suspend fun getByNomisId(nomisId: Long): ScheduledPaymentMappingDto = api.getScheduledPaymentMappingByNomisId(nomisId)
     .awaitSingle()
+
+  suspend fun replaceOrCreateMapping(mapping: ScheduledPaymentMappingDto) = api
+    .replaceScheduledPaymentMapping(mapping)
+    .awaitSingle()
 }

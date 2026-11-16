@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.scheduledpayments
 
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
+import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
@@ -186,7 +187,7 @@ class ScheduledPaymentsMigrationIntTest(
       @Test
       fun `will track telemetry for each scheduled payment migrated`() {
         verify(telemetryClient).trackEvent(
-          eq("scheduled-payments-migration-entity-migrated"),
+          eq("finance-scheduled-payments-migration-entity-migrated"),
           check {
             assertThat(it["nomisScheduledPaymentId"]).isEqualTo("12345")
             assertThat(it["dpsId"]).isEqualTo(dpsScheduledPaymentId.toString())
@@ -194,7 +195,7 @@ class ScheduledPaymentsMigrationIntTest(
           isNull(),
         )
         verify(telemetryClient).trackEvent(
-          eq("scheduled-payments-migration-entity-migrated"),
+          eq("finance-scheduled-payments-migration-entity-migrated"),
           check {
             assertThat(it["nomisScheduledPaymentId"]).isEqualTo("54321")
             assertThat(it["dpsId"]).isEqualTo(dpsScheduledPaymentId.toString())
@@ -238,7 +239,8 @@ class ScheduledPaymentsMigrationIntTest(
       @Test
       fun `will retrieve active scheduled payment details`() {
         scheduledPaymentsNomisApiMock.verify(
-          getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/0/scheduled-payments")),
+          getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/0/scheduled-payments"))
+            .withQueryParam("activeOnly", equalTo("true")),
         )
       }
 
@@ -292,7 +294,8 @@ class ScheduledPaymentsMigrationIntTest(
       fun `will retrieve scheduled payment details only once`() {
         scheduledPaymentsNomisApiMock.verify(
           1,
-          getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/0/scheduled-payments")),
+          getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/0/scheduled-payments"))
+            .withQueryParam("activeOnly", equalTo("true")),
         )
       }
 
@@ -314,7 +317,7 @@ class ScheduledPaymentsMigrationIntTest(
       }
 
       @Test
-      fun `will record the scheduled payment as migrated after retry`() {
+      fun `will record the number of scheduled payments migrated`() {
         webTestClient.get().uri("/migrate/history/${migrationResult.migrationId}")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__MIGRATION__RW")))
           .header("Content-Type", "application/json")
@@ -365,7 +368,7 @@ class ScheduledPaymentsMigrationIntTest(
       }
 
       @Test
-      fun `will get scheduled payment details for offender only once`() {
+      fun `will retrieve scheduled payment details only once`() {
         scheduledPaymentsNomisApiMock.verify(
           1,
           getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/0/scheduled-payments")),
@@ -387,7 +390,7 @@ class ScheduledPaymentsMigrationIntTest(
       @Test
       fun `will track telemetry for the duplicate scheduled payment mapping`() {
         verify(telemetryClient).trackEvent(
-          eq("scheduled-payments-migration-duplicate"),
+          eq("finance-scheduled-payments-migration-duplicate"),
           check {
             assertThat(it["duplicateNomisScheduledPaymentId"]).isEqualTo("12345")
             assertThat(it["duplicateDpsScheduledPaymentId"]).isEqualTo(dpsScheduledPaymentId.toString())
