@@ -382,4 +382,27 @@ class CorePersonNomisApiServiceTest(
       }
     }
   }
+
+  @Nested
+  inner class GetWorkingNameOffenderId {
+    @Test
+    fun `will pass NOMIS prison number to service`() = runTest {
+      mockServer.stubGetWorkingName(prisonNumber = "A1234BC")
+
+      apiService.getWorkingNameOffenderId(prisonNumber = "A1234BC")
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/core-person/A1234BC/working-name")),
+      )
+    }
+
+    @Test
+    fun `will return the working name offender id`() = runTest {
+      mockServer.stubGetWorkingName(prisonNumber = "A1234BC", offenderId = 5L)
+
+      val workingNameOffenderId = apiService.getWorkingNameOffenderId(prisonNumber = "A1234BC")
+
+      assertThat(workingNameOffenderId).isEqualTo(5L)
+    }
+  }
 }

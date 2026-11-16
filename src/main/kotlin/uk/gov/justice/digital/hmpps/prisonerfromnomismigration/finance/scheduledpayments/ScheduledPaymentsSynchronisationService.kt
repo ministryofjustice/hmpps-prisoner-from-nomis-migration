@@ -172,4 +172,6 @@ fun ScheduledPaymentDto.DayOfWeek.toDpsDayOfPayment() = when (this) {
   ScheduledPaymentDto.DayOfWeek.FRI -> SyncCreateSubscriptionRequest.DayOfPayment.FRIDAY
   ScheduledPaymentDto.DayOfWeek.SAT -> SyncCreateSubscriptionRequest.DayOfPayment.SATURDAY
   ScheduledPaymentDto.DayOfWeek.SUN -> SyncCreateSubscriptionRequest.DayOfPayment.SUNDAY
+  // TODO: DPS does not support MON-FRI, so we will default to Monday for now.
+  ScheduledPaymentDto.DayOfWeek.MON_FRI -> SyncCreateSubscriptionRequest.DayOfPayment.MONDAY
 }

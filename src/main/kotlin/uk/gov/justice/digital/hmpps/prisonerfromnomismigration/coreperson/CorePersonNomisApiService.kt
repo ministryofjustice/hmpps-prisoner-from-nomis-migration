@@ -59,4 +59,8 @@ class CorePersonNomisApiService(@Qualifier("nomisApiWebClient") private val webC
   suspend fun getOffenderIdentifiers(offenderId: Long): List<Identifier> = api
     .getIdentifiers(offenderId)
     .awaitSingle()
+
+  suspend fun getWorkingNameOffenderId(prisonNumber: String): Long = api
+    .getWorkingName(prisonNumber)
+    .awaitSingle().offenderId
 }
