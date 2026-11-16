@@ -302,7 +302,7 @@ class StaffNomisApiServiceTest {
         ),
       )
 
-      apiService.getStaffIds(
+      apiService.getAllStaffIds(
         pageNumber = 0,
         pageSize = 20,
 
@@ -326,7 +326,7 @@ class StaffNomisApiServiceTest {
         ),
       )
 
-      apiService.getStaffIds(
+      apiService.getAllStaffIds(
         pageNumber = 10,
         pageSize = 30,
       )
@@ -351,7 +351,7 @@ class StaffNomisApiServiceTest {
         totalElements = 1000,
       )
 
-      val pageOfIds = apiService.getStaffIds(
+      val pageOfIds = apiService.getAllStaffIds(
         pageNumber = 10,
         pageSize = 20,
       )

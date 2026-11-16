@@ -19,7 +19,7 @@ class StaffNomisApiService(@Qualifier("nomisApiWebClient") private val webClient
   suspend fun getStaffDetailsByUsername(username: String): StaffDetails = api.getStaffByUsername(username, true)
     .awaitSingle()
 
-  suspend fun getStaffIds(pageNumber: Long, pageSize: Long): PagedModelStaffIdResponse = api.getStaffIds(page = pageNumber.toInt(), size = pageSize.toInt())
+  suspend fun getAllStaffIds(pageNumber: Long, pageSize: Long): PagedModelStaffIdResponse = api.getStaffIds(page = pageNumber.toInt(), size = pageSize.toInt())
     .awaitSingle()
 
   suspend fun getStaffIdsFromId(lastStaffId: Long = 0, pageSize: Long): StaffIdsPage = api.getStaffIdsFromId(staffId = lastStaffId, size = pageSize.toInt())

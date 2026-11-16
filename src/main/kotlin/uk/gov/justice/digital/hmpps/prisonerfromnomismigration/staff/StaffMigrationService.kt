@@ -68,15 +68,15 @@ class StaffMigrationService(
     migrationFilter: Any,
     pageSize: Long,
     pageNumber: Long,
-  ): List<StaffIdResponse> = nomisApiService.getStaffIds(
+  ): List<StaffIdResponse> = nomisApiService.getAllStaffIds(
     pageNumber = pageNumber,
     pageSize = pageSize,
-  ).content!!
+  ).content
 
-  override suspend fun getTotalNumberOfIds(migrationFilter: Any): Long = nomisApiService.getStaffIds(
+  override suspend fun getTotalNumberOfIds(migrationFilter: Any): Long = nomisApiService.getAllStaffIds(
     pageNumber = 0,
     pageSize = 1,
-  ).page?.totalElements!!
+  ).page.totalElements
 
   override suspend fun migrateNomisEntity(context: MigrationContext<StaffIdResponse>) {
     val nomisStaffId = context.body.staffId
