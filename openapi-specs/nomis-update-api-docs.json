@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-10.5733.968b842"
+    "version" : "2026-11-13.5810.83bc12b"
   },
   "servers" : [ {
     "url" : "https://prisoner-to-nomis-update-dev.hmpps.service.justice.gov.uk",
@@ -4206,9 +4206,12 @@
             }, {
               "type" : "null"
             } ]
+          },
+          "scheduledPayments" : {
+            "$ref" : "#/components/schemas/ScheduledPaymentSummary"
           }
         },
-        "required" : [ "accounts", "prisonNumber" ]
+        "required" : [ "accounts", "prisonNumber", "scheduledPayments" ]
       },
       "MismatchPrisonerBalance" : {
         "type" : "object",
@@ -4231,6 +4234,19 @@
           }
         },
         "required" : [ "differences", "nomis" ]
+      },
+      "ScheduledPaymentSummary" : {
+        "type" : "object",
+        "properties" : {
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "weeklyPayment" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "count", "weeklyPayment" ]
       },
       "MismatchPersonContacts" : {
         "type" : "object",
