@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-13.2397.6576521"
+    "version" : "2026-11-16.2400.79f83a7"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -41240,7 +41240,7 @@
           "offenderDeductionId" : {
             "type" : [ "integer", "null" ],
             "format" : "int64",
-            "description" : "The offender deduction id if this is an deduction transaction",
+            "description" : "The offender deduction id if this is a deduction transaction",
             "example" : 12345678
           },
           "createdAt" : {
@@ -47895,8 +47895,8 @@
           },
           "dayOfWeek" : {
             "type" : "string",
-            "description" : "Day of the week the scheduled payment is paid",
-            "enum" : [ "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN" ],
+            "description" : "Day of the week the scheduled payment is paid, This can also be MON-FRI.",
+            "enum" : [ "MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN", "MON_FRI" ],
             "example" : "MON"
           },
           "startDate" : {
@@ -48282,13 +48282,13 @@
             "type" : [ "integer", "null" ],
             "format" : "int64"
           },
-          "txnEntrySeq" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "txnId" : {
             "type" : "integer",
             "format" : "int64"
+          },
+          "txnEntrySeq" : {
+            "type" : "integer",
+            "format" : "int32"
           },
           "txnEntryDate" : {
             "type" : "string",
