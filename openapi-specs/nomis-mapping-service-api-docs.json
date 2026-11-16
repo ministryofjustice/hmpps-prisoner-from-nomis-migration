@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-13.1003.68a4670"
+    "version" : "2026-11-16.1007.42e398e"
   },
   "servers" : [ {
     "url" : "https://nomis-sync-prisoner-mapping.hmpps.service.justice.gov.uk",
@@ -18839,7 +18839,7 @@
       "delete" : {
         "tags" : [ "core-person-alias-mapping-resource" ],
         "summary" : "Delete offender alias mapping by nomis offender id",
-        "description" : "Delete the offender alias mapping by NOMIS offender id. Requires role ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
+        "description" : "Delete the offender alias mapping and all associated offender identifier mappings by NOMIS offender id. Requires role ROLE_NOMIS_MAPPING_API__SYNCHRONISATION__RW",
         "operationId" : "deleteOffenderAliasMappingByNomisId",
         "parameters" : [ {
           "name" : "nomisOffenderId",

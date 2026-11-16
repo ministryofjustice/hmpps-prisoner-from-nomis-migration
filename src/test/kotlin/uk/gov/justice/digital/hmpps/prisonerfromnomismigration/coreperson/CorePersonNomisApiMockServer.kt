@@ -1,10 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
-import com.github.tomakehurst.wiremock.client.WireMock.delete
 import com.github.tomakehurst.wiremock.client.WireMock.get
-import com.github.tomakehurst.wiremock.client.WireMock.post
-import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo
 import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.springframework.http.HttpStatus
@@ -15,7 +12,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CoreOffender
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePerson
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CreateOffenderEmailResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.Identifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.NomisAudit
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderAddress
@@ -23,30 +19,13 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderBelief
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderEmailAddress
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderPhoneNumber
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.WorkingName
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Component
 class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
-  fun stubGetCorePerson(
-    prisonNumber: String = "A1234BC",
-    corePerson: CorePerson = corePerson(prisonNumber = prisonNumber),
-    status: HttpStatus = HttpStatus.OK,
-    error: ErrorResponse = ErrorResponse(status = status.value()),
-  ) {
-    nomisApi.stubFor(
-      get(urlEqualTo("/core-person/$prisonNumber")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(
-            jsonMapper.writeValueAsString(if (status == HttpStatus.OK) corePerson else error),
-          ),
-      ),
-    )
-  }
-
   fun stubGetAddressesAndContacts(
     prisonNumber: String = "A1234BC",
     addressesAndContacts: CorePersonAddressContact = CorePersonAddressContact(
@@ -218,24 +197,6 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubCreateOffenderEmail(
-    offenderId: Long = 12345,
-    response: CreateOffenderEmailResponse = CreateOffenderEmailResponse(emailAddressId = 45678),
-    status: HttpStatus = HttpStatus.CREATED,
-    error: ErrorResponse = ErrorResponse(status = status.value()),
-  ) {
-    nomisApi.stubFor(
-      post(urlEqualTo("/core-person/$offenderId/email")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value())
-          .withBody(
-            jsonMapper.writeValueAsString(if (status == HttpStatus.CREATED) response else error),
-          ),
-      ),
-    )
-  }
-
   fun stubGetOffenderEmail(
     offenderId: Long = 12345,
     emailAddressId: Long = 45678,
@@ -333,30 +294,20 @@ class CorePersonNomisApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubUpdateOffenderEmail(
-    offenderId: Long = 12345,
-    emailAddressId: Long = 45678,
-    status: HttpStatus = HttpStatus.NO_CONTENT,
+  fun stubGetWorkingName(
+    prisonNumber: String = "A1234BC",
+    offenderId: Long = 12345L,
+    status: HttpStatus = HttpStatus.OK,
+    error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
     nomisApi.stubFor(
-      put(urlEqualTo("/core-person/$offenderId/email/$emailAddressId")).willReturn(
+      get(urlEqualTo("/core-person/$prisonNumber/working-name")).willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(status.value()),
-      ),
-    )
-  }
-
-  fun stubDeleteOffenderEmail(
-    offenderId: Long = 12345,
-    emailAddressId: Long = 45678,
-    status: HttpStatus = HttpStatus.NO_CONTENT,
-  ) {
-    nomisApi.stubFor(
-      delete(urlEqualTo("/core-person/$offenderId/email/$emailAddressId")).willReturn(
-        aResponse()
-          .withHeader("Content-Type", "application/json")
-          .withStatus(status.value()),
+          .withStatus(status.value())
+          .withBody(
+            jsonMapper.writeValueAsString(if (status == HttpStatus.OK) WorkingName(offenderId = offenderId) else error),
+          ),
       ),
     )
   }
