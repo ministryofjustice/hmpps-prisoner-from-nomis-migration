@@ -81,9 +81,9 @@ class StaffSynchronisationService(
     synchroniseStaff(event, "usercaseloadrole-synchronisation-$eventType", telemetry)
   }
 
-  suspend fun laaAdministratorUpserted(eventType: String) {
-    // TODO
-    log.info("LAA Administrator event $eventType received, to be implemented")
+  suspend fun laaAdministratorUpserted(eventType: String, event: LaaAdministratorEvent) {
+    val telemetry = telemetryOf("nomisStaffId" to event.staffId, "username" to event.username, "caseloadId" to event.caseloadId)
+    synchroniseStaff(event, "laaadministrator-synchronisation-$eventType", telemetry)
   }
 
   suspend fun laaGeneralUserUpserted(eventType: String) {

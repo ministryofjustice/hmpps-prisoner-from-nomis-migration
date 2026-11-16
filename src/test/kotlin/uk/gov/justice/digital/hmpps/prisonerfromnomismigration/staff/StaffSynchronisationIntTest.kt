@@ -1035,6 +1035,164 @@ class StaffSynchronisationIntTest(
       }
     }
   }
+
+  @Nested
+  inner class LaaAdministrators {
+    val nomisStaffId = 1234L
+    val username = "JOHNSMITH_ADM"
+    val caseloadId = "ASI"
+
+    @Nested
+    @DisplayName("LAA_ADMINISTRATORS-INSERTED")
+    inner class LaaAdministratorCreated {
+      @Nested
+      inner class WhenCreatedInDps {
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            laaAdministratorEvent(
+              eventType = "LAA_ADMINISTRATORS-INSERTED",
+              staffId = nomisStaffId,
+              username = username,
+              caseloadId = caseloadId,
+              auditModuleName = "DPS_SYNCHRONISATION",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("laaadministrator-synchronisation-created-skipped"),
+            check {
+              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenCreatedInNomis {
+
+        @Nested
+        inner class HappyPath {
+
+          @BeforeEach
+          fun setUp() {
+            nomisApiMock.stubGetStaffDetailsById()
+            dpsApiMock.stubSyncStaff()
+
+            staffOffenderEventsQueue.sendMessage(
+              laaAdministratorEvent(
+                eventType = "LAA_ADMINISTRATORS-INSERTED",
+                staffId = nomisStaffId,
+                username = username,
+                caseloadId = caseloadId,
+              ),
+            ).also { waitForAnyProcessingToComplete() }
+          }
+
+          @Test
+          fun `will retrieve the staff details from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
+          }
+
+          @Test
+          fun `will create the staff in DPS`() {
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("laaadministrator-synchronisation-created-success"),
+              check {
+                assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("LAA_ADMINISTRATORS-UPDATED")
+    inner class LaaAdministratorUpdated {
+      @Nested
+      inner class WhenUpdatedInDps {
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            laaAdministratorEvent(
+              eventType = "LAA_ADMINISTRATORS-UPDATED",
+              staffId = nomisStaffId,
+              username = username,
+              caseloadId = caseloadId,
+              auditModuleName = "DPS_SYNCHRONISATION",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("laaadministrator-synchronisation-updated-skipped"),
+            check {
+              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenUpdatedInNomis {
+        @Nested
+        inner class HappyPath {
+
+          @BeforeEach
+          fun setUp() {
+            nomisApiMock.stubGetStaffDetailsById()
+            dpsApiMock.stubSyncStaff()
+
+            staffOffenderEventsQueue.sendMessage(
+              laaAdministratorEvent(
+                eventType = "LAA_ADMINISTRATORS-UPDATED",
+                staffId = nomisStaffId,
+                username = username,
+                caseloadId = caseloadId,
+              ),
+            ).also { waitForAnyProcessingToComplete() }
+          }
+
+          @Test
+          fun `will retrieve the staff details from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
+          }
+
+          @Test
+          fun `will update the staff in DPS`() {
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("laaadministrator-synchronisation-updated-success"),
+              check {
+                assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+  }
 }
 
 fun staffEvent(
@@ -1094,6 +1252,26 @@ fun internetAddressesStaffEvent(
   """.trimIndent()
 
 fun userAccessibleCaseloadEvent(
+  eventType: String,
+  staffId: Long,
+  username: String,
+  caseloadId: String,
+  auditModuleName: String = "OUUUSERS",
+) = // language=JSON
+  """{
+    "MessageId": "ae06c49e-1f41-4b9f-b2f2-dcca610d02cd", "Type": "Notification", "Timestamp": "2019-10-21T14:01:18.500Z", 
+    "Message": "{\"eventType\":\"$eventType\",\"eventDatetime\":\"2019-10-21T15:00:25.489964\",\"staffId\": $staffId,\"username\": \"$username\",\"caseloadId\": \"$caseloadId\",\"auditModuleName\":\"$auditModuleName\",\"nomisEventType\":\"$eventType\" }",
+    "TopicArn": "arn:aws:sns:eu-west-1:000000000000:offender_events", 
+    "MessageAttributes": {
+      "eventType": {"Type": "String", "Value": "$eventType"}, 
+      "id": {"Type": "String", "Value": "8b07cbd9-0820-0a0f-c32f-a9429b618e0b"}, 
+      "contentType": {"Type": "String", "Value": "text/plain;charset=UTF-8"}, 
+      "timestamp": {"Type": "Number.java.lang.Long", "Value": "1571666478344"}
+    }
+}
+  """.trimIndent()
+
+fun laaAdministratorEvent(
   eventType: String,
   staffId: Long,
   username: String,
