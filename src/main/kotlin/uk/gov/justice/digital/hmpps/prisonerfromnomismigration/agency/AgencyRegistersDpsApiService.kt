@@ -4,7 +4,7 @@ import kotlinx.coroutines.reactor.awaitSingle
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.api.LegacySyncResourceApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.api.NOMISSynchronisationAPIApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.DepartmentDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.model.LegacyAgencyResponse
@@ -14,7 +14,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agencyregisters.m
 class AgencyRegistersDpsApiService(
   @Qualifier("agencyApiWebClient") private val webClient: WebClient,
 ) {
-  private val api = LegacySyncResourceApi(webClient)
+  private val api = NOMISSynchronisationAPIApi(webClient)
 
   suspend fun migrateAgency(agencyId: String, request: LegacyAgencyDto): LegacyAgencyResponse = api.migrateAgency(agencyId, request).awaitSingle()
 
