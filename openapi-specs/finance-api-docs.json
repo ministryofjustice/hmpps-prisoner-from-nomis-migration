@@ -1,0 +1,2751 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "title" : "HMPPS Prisoner Finance Sync API",
+    "description" : "API for synchronising NOMIS transactions with the Prisoner Finance Ledger.\n\n## Authentication\nThis API uses **OAuth2 with JWTs**. Pass your JWT in the `Authorization` header using the `Bearer` scheme.\n**Important:** This service is designed for client tokens only; user tokens should not be used.\n\n## Authorization\nAccess to API endpoints is controlled by roles. The required roles are documented with each endpoint.\nIntegrations should request one of the following roles based on their needs:\n\n* `ROLE_PRISONER_FINANCE_SYNC__RW`: Grants **read/write access** to the NOMIS sync endpoints.\n* `ROLE_PRISONER_FINANCE_SYNC__AUDIT__RO`: Grants **read only access** to the Sync audit endpoints.",
+    "contact" : {
+      "name" : "HMPPS Digital Studio",
+      "email" : "feedback@digital.justice.gov.uk"
+    },
+    "version" : "2026-11-13.1280.c0b82f7"
+  },
+  "servers" : [ {
+    "url" : "https://prisoner-finance-sync-api-dev.hmpps.service.justice.gov.uk/",
+    "description" : "Development"
+  }, {
+    "url" : "https://prisoner-finance-sync-api-preprod.hmpps.service.justice.gov.uk/",
+    "description" : "Pre-Production"
+  }, {
+    "url" : "https://prisoner-finance-sync-api.hmpps.service.justice.gov.uk/",
+    "description" : "Production"
+  }, {
+    "url" : "http://localhost:8080",
+    "description" : "Local"
+  } ],
+  "security" : [ {
+    "bearer-jwt" : [ ]
+  } ],
+  "tags" : [ {
+    "name" : "NOMIS Sync",
+    "description" : "Endpoints exclusively for NOMIS synchronization. Do not use for other client integrations."
+  } ],
+  "paths" : {
+    "/sync/subscriptions" : {
+      "post" : {
+        "tags" : [ "Subscriptions" ],
+        "summary" : "Create a new subscription record for a prisoner",
+        "description" : "Create a new subscription record for a prisoner",
+        "operationId" : "createSubscription",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncCreateSubscriptionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Subscription record created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncCreateSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal server error.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502" : {
+            "description" : "A dependency error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/sync/subscriptions/{subscriptionId}/update" : {
+      "post" : {
+        "tags" : [ "Subscriptions" ],
+        "summary" : "Update a subscription record for a prisoner",
+        "description" : "Update a subscription record for a prisoner",
+        "operationId" : "updateSubscription",
+        "parameters" : [ {
+          "name" : "subscriptionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncUpdateSubscriptionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Subscription record updated",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncUpdateSubscriptionResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Subscription not found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal server error.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501" : {
+            "description" : "This endpoint is not yet implemented.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/sync/offender-transactions" : {
+      "post" : {
+        "tags" : [ "NOMIS Sync" ],
+        "summary" : "Synchronize offender transactions",
+        "description" : "\n      Transactions that have not been posted before will be created.\n      Those that have already been posted and can be identified will be updated with metadata only.\n      If the core details of a transaction have changed, the ledger will need to reverse the original transaction and post a new one.\n    ",
+        "operationId" : "postOffenderTransaction",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncOffenderTransactionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Offender transactions successfully created.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncTransactionReceipt"
+                }
+              }
+            }
+          },
+          "200" : {
+            "description" : "All transactions previously posted successfully were created",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncTransactionReceipt"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422" : {
+            "description" : "Partially processed - some transactions were successfully created but some failed.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncTransactionReceipt"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error - An unexpected error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/sync/holds" : {
+      "post" : {
+        "tags" : [ "Holds" ],
+        "summary" : "Create a new Hold record",
+        "description" : "Creates a new Hold record for the specified prisoner in the holds service",
+        "operationId" : "postHolds",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncCreateHoldRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Hold record created.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncCreateHoldResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error - An unexpected error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/sync/holds/{holdNumber}/release" : {
+      "post" : {
+        "tags" : [ "Holds" ],
+        "summary" : "Release an existing hold record",
+        "description" : "Releases a specific hold in the holds service",
+        "operationId" : "releaseHold",
+        "parameters" : [ {
+          "name" : "holdNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncReleaseHoldRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Hold record released.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncReleasedHoldResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Hold not found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error - An unexpected error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/sync/general-ledger-transactions" : {
+      "post" : {
+        "tags" : [ "NOMIS Sync" ],
+        "summary" : "Synchronize general ledger transactions",
+        "description" : "\n      General ledger transactions that have not been posted before will be created.\n      Those that have already been posted and can be identified will be updated with metadata only.\n      If the core details of a transaction have changed, the ledger will need to reverse the original transaction and post a new one.\n    ",
+        "operationId" : "postGeneralLedgerTransaction",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncGeneralLedgerTransactionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501" : {
+            "description" : "Method not implemented - General ledger transactions are not currently supported.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/sync/advances" : {
+      "post" : {
+        "tags" : [ "Advances" ],
+        "summary" : "Create a new Advance record",
+        "description" : "Creates a new Advance record for the specified prisoner in the advance service",
+        "operationId" : "postAdvance",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncCreateAdvanceRecordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Advance record created.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncCreateAdvanceRecordResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error - An unexpected error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502" : {
+            "description" : "A dependency error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/sync/advances/{advanceId}/write-off" : {
+      "post" : {
+        "tags" : [ "Advances" ],
+        "summary" : "Write off an existing Advance record",
+        "description" : "Write off an existing Advance record",
+        "operationId" : "postAdvanceWriteOff",
+        "parameters" : [ {
+          "name" : "advanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncCreateAdvanceWriteOffRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Advance record written off.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncAdvanceWriteOffResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found - Advance was not found.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error - An unexpected error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502" : {
+            "description" : "The Advance Service is not available or throwing an error",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/sync/advances/{advanceId}/repay" : {
+      "post" : {
+        "tags" : [ "Advances" ],
+        "summary" : "Repay an existing advance",
+        "description" : "Repay an existing advance",
+        "operationId" : "postAdvanceRepay",
+        "parameters" : [ {
+          "name" : "advanceId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncCreateAdvanceRepayRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Advance repayment created.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncAdvanceRepayResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not found - advance Id not found",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error - An unexpected error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502" : {
+            "description" : "A dependency error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/migrate/prisoner-balances/{prisonNumber}" : {
+      "post" : {
+        "tags" : [ "NOMIS Sync" ],
+        "summary" : "Migrate a prisoners balances",
+        "description" : "Migrate a prisoners sub-accounts (e.g., Spends, Private Cash) to a given balance from a legacy system.",
+        "operationId" : "migratePrisonerBalances",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PrisonerBalancesSyncRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "Prisoner balances successfully migrated."
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error - An unexpected error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502" : {
+            "description" : "The Sync service is working but general ledger is throwing an unexpected 5XX error.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/migrate/holds" : {
+      "post" : {
+        "tags" : [ "Holds" ],
+        "summary" : "Migrate an historical hold record",
+        "description" : "Migrates an historical hold record from the legacy system to the holds service",
+        "operationId" : "migrateHolds",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncCreateHoldRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Hold record created.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncCreateHoldResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error - An unexpected error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502" : {
+            "description" : "Dependency Error - An unexpected error occurred in the hold service.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/migrate/general-ledger-balances/{prisonId}" : {
+      "post" : {
+        "tags" : [ "NOMIS Sync" ],
+        "summary" : "Migrate general ledger balances for a single prison",
+        "description" : "Migrate general ledger account balances for a specific prison.",
+        "operationId" : "migrateGeneralLedgerBalances",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/GeneralLedgerBalancesSyncRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "501" : {
+            "description" : "This endpoint is not yet implemented.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/migrate/advances" : {
+      "post" : {
+        "tags" : [ "Advances" ],
+        "summary" : "Migrate advances",
+        "description" : "Migrate advances",
+        "operationId" : "migrateAdvance",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SyncMigrateAdvanceRecordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "description" : "Advance record migrated.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncCreateAdvanceRecordResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error - An unexpected error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502" : {
+            "description" : "A dependency error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/reconcile/prisoner-balances/{prisonNumber}" : {
+      "get" : {
+        "tags" : [ "NOMIS Sync" ],
+        "summary" : "Get all sub account balances for a prisoner across all prisons",
+        "operationId" : "listPrisonerSubaccountBalances",
+        "parameters" : [ {
+          "name" : "prisonNumber",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AccountReconciliationResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found - Prisoner not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error - An unexpected error occurred.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502" : {
+            "description" : "General Ledger threw an unexpected 5XX error.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/reconcile/offender-transactions/{legacyTransactionId}" : {
+      "get" : {
+        "tags" : [ "NOMIS Sync" ],
+        "summary" : "Retrieve an offender transaction by its ID using data from the prisoner general ledger",
+        "operationId" : "getTransactionReconciliationById",
+        "parameters" : [ {
+          "name" : "legacyTransactionId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Retrieve an offender transaction by its ID using data from the prisoner general ledger",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/SyncOffenderTransactionResponse"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found - Legacy transaction id not found",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error - An unexpected error occurred.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "502" : {
+            "description" : "General Ledger threw an unexpected 5XX error.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/reconcile/general-ledger-balances/{prisonId}" : {
+      "get" : {
+        "tags" : [ "NOMIS Sync" ],
+        "summary" : "Get a list of all general ledger balances accounts for a specific prison",
+        "operationId" : "listGeneralLedgerBalances",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "501" : {
+            "description" : "This endpoint is not yet implemented.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__RW" ]
+        } ]
+      }
+    },
+    "/audit/history" : {
+      "get" : {
+        "tags" : [ "Audit" ],
+        "summary" : "Get Audit History",
+        "description" : "Get a list of synced payloads, including NOMIS' legacy IDs",
+        "operationId" : "getMatchingPayloads",
+        "parameters" : [ {
+          "name" : "prisonId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^[A-Za-z0-9]{3}$"
+          }
+        }, {
+          "name" : "legacyTransactionId",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }, {
+          "name" : "transactionType",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^[A-Z0-9_]{1,19}$"
+          }
+        }, {
+          "name" : "startDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "name" : "cursor",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "size",
+          "in" : "query",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Returns list of captured sync payloads.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CursorPageNomisSyncPayloadSummary"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid input data.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error - An unexpected error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__AUDIT__RO" ]
+        } ]
+      }
+    },
+    "/audit/history/{payloadId}" : {
+      "get" : {
+        "tags" : [ "Audit" ],
+        "summary" : "Get Payloads Details",
+        "description" : "Get the full payload details (including the JSON body) for a specific request ID.",
+        "operationId" : "getPayloadByRequestId",
+        "parameters" : [ {
+          "name" : "payloadId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Returns the Payload matching the payloadId provided.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/NomisSyncPayloadDetail"
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Bad request - invalid payloadId.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized - requires a valid OAuth2 token",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Forbidden - requires an appropriate role",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404" : {
+            "description" : "Not Found - No Payload found with payloadId provided",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error - An unexpected error occurred.",
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security" : [ {
+          "bearer-jwt" : [ "ROLE_PRISONER_FINANCE_SYNC__AUDIT__RO" ]
+        } ]
+      }
+    }
+  },
+  "components" : {
+    "schemas" : {
+      "SyncCreateSubscriptionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "legacyPaymentProfileId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The payment profile ID",
+            "example" : 123456789
+          },
+          "amount" : {
+            "type" : "number",
+            "description" : "The amount paid weekly",
+            "example" : 0.5
+          },
+          "dayOfPayment" : {
+            "type" : "string",
+            "description" : "The day the payment is made weekly",
+            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ],
+            "example" : "MONDAY"
+          },
+          "startDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The start date of the subscription",
+            "example" : "2026-12-03"
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The end date of the subscription",
+            "example" : "2026-13-04"
+          },
+          "subscriptionType" : {
+            "type" : "string",
+            "description" : "The transaction type on the payment profile",
+            "example" : "TELE"
+          },
+          "reference" : {
+            "type" : [ "string", "null" ],
+            "description" : "The reference on the payment profile",
+            "example" : "REF"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "The user that created the subscription",
+            "example" : "TEST_USER"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The time that the subscription was created",
+            "example" : "2023-07-01T12:00:00Z"
+          },
+          "prisonId" : {
+            "type" : "string",
+            "description" : "The caseload ID of the prison",
+            "example" : "LEI"
+          },
+          "prisonNumber" : {
+            "type" : "string",
+            "description" : "The prison number of the offender that has the subscription",
+            "example" : "AE12345"
+          },
+          "subAccountCode" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The sub-account that the subscription payment is debited from",
+            "example" : 2101
+          }
+        },
+        "required" : [ "amount", "createdAt", "createdBy", "dayOfPayment", "legacyPaymentProfileId", "prisonId", "prisonNumber", "startDate", "subAccountCode", "subscriptionType" ]
+      },
+      "SyncCreateSubscriptionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "subscriptionId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The subscription ID in Prisoner Finance",
+            "example" : "de2bc56c-ea73-4f3c-8a37-5a46fdb2d79b"
+          }
+        },
+        "required" : [ "subscriptionId" ]
+      },
+      "ErrorResponse" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "errorCode" : {
+            "type" : [ "string", "null" ]
+          },
+          "userMessage" : {
+            "type" : [ "string", "null" ]
+          },
+          "developerMessage" : {
+            "type" : [ "string", "null" ]
+          },
+          "moreInfo" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "status" ]
+      },
+      "SyncUpdateSubscriptionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "endDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The subscription end date",
+            "example" : "2026-07-01"
+          }
+        },
+        "required" : [ "endDate" ]
+      },
+      "SyncUpdateSubscriptionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "endDate" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "The updated subscription end date",
+            "example" : "2026-07-01"
+          }
+        },
+        "required" : [ "endDate" ]
+      },
+      "GeneralLedgerEntry" : {
+        "type" : "object",
+        "description" : "Represents a general ledger entry.",
+        "properties" : {
+          "entrySequence" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The sequence number for this specific general ledger entry.",
+            "example" : 1
+          },
+          "code" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The general ledger account code.",
+            "example" : 2101
+          },
+          "postingType" : {
+            "type" : "string",
+            "description" : "Indicates whether the entry is a Debit (DR) or Credit (CR).",
+            "enum" : [ "DR", "CR" ],
+            "example" : "DR"
+          },
+          "amount" : {
+            "type" : "number",
+            "format" : "decimal",
+            "description" : "The monetary amount of the general ledger entry.",
+            "example" : 162.0
+          },
+          "offenderDisplayId" : {
+            "type" : [ "string", "null" ],
+            "description" : "The offender display ID relating to the GL Entry (posting)"
+          }
+        },
+        "required" : [ "amount", "code", "entrySequence", "postingType" ]
+      },
+      "OffenderTransaction" : {
+        "type" : "object",
+        "description" : "Represents a single offender transaction entry, including related general ledger entries.",
+        "properties" : {
+          "entrySequence" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The sequence number for this specific offender transaction entry.",
+            "example" : 1
+          },
+          "offenderId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "The internal ID of the offender.",
+            "example" : 1015388
+          },
+          "offenderDisplayId" : {
+            "type" : "string",
+            "description" : "The display ID for the offender.",
+            "example" : "A1234AA",
+            "pattern" : "^[A-Za-z]\\d{4}[A-Za-z]{2}$"
+          },
+          "offenderBookingId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "The booking ID of the offender transaction.",
+            "example" : 455987
+          },
+          "subAccountType" : {
+            "type" : "string",
+            "description" : "The sub-account type (e.g., REG, SPND, SAV).",
+            "example" : "REG"
+          },
+          "postingType" : {
+            "type" : "string",
+            "description" : "The type of posting (DR/CR).",
+            "enum" : [ "DR", "CR" ],
+            "example" : "DR"
+          },
+          "type" : {
+            "type" : "string",
+            "description" : "The type of transaction (e.g., OT, DISCP).",
+            "example" : "OT",
+            "pattern" : "^[A-Z0-9_]{1,19}$"
+          },
+          "description" : {
+            "type" : "string",
+            "description" : "A description of the transaction entry.",
+            "example" : "Sub-Account Transfer"
+          },
+          "amount" : {
+            "type" : "number",
+            "description" : "The monetary amount of the transaction entry.",
+            "example" : 162.0
+          },
+          "reference" : {
+            "type" : [ "string", "null" ],
+            "description" : "An optional reference number for the transaction."
+          },
+          "generalLedgerEntries" : {
+            "type" : "array",
+            "description" : "A list of general ledger entries associated with this offender transaction.",
+            "items" : {
+              "$ref" : "#/components/schemas/GeneralLedgerEntry"
+            }
+          }
+        },
+        "required" : [ "amount", "description", "entrySequence", "generalLedgerEntries", "offenderDisplayId", "offenderId", "postingType", "subAccountType", "type" ]
+      },
+      "SyncOffenderTransactionRequest" : {
+        "type" : "object",
+        "description" : "Request body for synchronizing an offender financial transaction.",
+        "properties" : {
+          "transactionId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The unique ID of the transaction in NOMIS.",
+            "example" : 19228028
+          },
+          "requestId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "A unique identifier for this synchronization request. This can be used for idempotency or tracing.",
+            "example" : "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+          },
+          "caseloadId" : {
+            "type" : "string",
+            "description" : "The ID of the caseload associated with this transaction.",
+            "example" : "GMI",
+            "pattern" : "^[A-Za-z0-9]{3}$"
+          },
+          "transactionTimestamp" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The timestamp when this transaction occurred (ISO 8601 format).",
+            "example" : "2024-06-18T14:30:00.123456"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date and time the transaction was created.",
+            "example" : "2024-06-18T14:30:00.123456"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "The user id of the person who created the transaction.",
+            "example" : "JD12345",
+            "maxLength" : 32,
+            "minLength" : 1
+          },
+          "createdByDisplayName" : {
+            "type" : "string",
+            "description" : "The display name of the person who created the transaction.",
+            "example" : "J Doe",
+            "maxLength" : 255,
+            "minLength" : 1
+          },
+          "lastModifiedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "The date and time the transaction was last modified. Only provided if the transaction has been modified since creation.",
+            "example" : "2022-07-15T23:03:01.123456"
+          },
+          "lastModifiedBy" : {
+            "type" : [ "string", "null" ],
+            "description" : "The user id of the person who last modified the transaction. Required if lastModifiedAt has been supplied.",
+            "example" : "AB11DZ",
+            "maxLength" : 32,
+            "minLength" : 0
+          },
+          "lastModifiedByDisplayName" : {
+            "type" : [ "string", "null" ],
+            "description" : "The displayable name of the person who last modified the transaction. Required if lastModifiedAt has been supplied.",
+            "example" : "U Dated",
+            "maxLength" : 255,
+            "minLength" : 0
+          },
+          "offenderTransactions" : {
+            "type" : "array",
+            "description" : "A list of individual entries that comprise this offender transaction.",
+            "items" : {
+              "$ref" : "#/components/schemas/OffenderTransaction"
+            }
+          }
+        },
+        "required" : [ "caseloadId", "createdAt", "createdBy", "createdByDisplayName", "offenderTransactions", "requestId", "transactionId", "transactionTimestamp" ]
+      },
+      "SyncTransactionReceipt" : {
+        "type" : "object",
+        "description" : "Receipt details for a synchronized transaction, indicating the outcome of the operation.",
+        "properties" : {
+          "requestId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The unique identifier of the **current synchronization request**. This Id was provided by the client as the idempotency key.",
+            "example" : "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+          },
+          "synchronizedTransactionId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The unique UUID generated by the **finance system** for the synchronized transaction. This is the internal identifier for the created or updated record.",
+            "example" : "f1e2d3c4-b5a6-9876-5432-10fedcba9876"
+          },
+          "action" : {
+            "type" : "string",
+            "description" : "The action taken on the transaction by the finance system during synchronization.",
+            "enum" : [ "CREATED", "PROCESSED", "PROCESSED_WITH_ERRORS" ],
+            "example" : "CREATED"
+          }
+        },
+        "required" : [ "action", "requestId", "synchronizedTransactionId" ]
+      },
+      "SyncCreateHoldRequest" : {
+        "type" : "object",
+        "description" : "Create Hold Request",
+        "properties" : {
+          "prisonNumber" : {
+            "type" : "string",
+            "description" : "The prison number that the hold belongs to",
+            "example" : "19228028"
+          },
+          "subAccountCode" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The general ledger account code",
+            "example" : 2101
+          },
+          "holdNumber" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The hold number",
+            "example" : 123456789
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date and time the transaction was created.",
+            "example" : "2024-06-18T14:30:00.123456"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "The user id of the person who created the transaction.",
+            "example" : "JD12345"
+          },
+          "holdFromDate" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date and time the hold applies from.",
+            "example" : "2024-06-18T14:30:00.123456"
+          },
+          "holdUntilDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "The date and time the hold applies until.",
+            "example" : "2024-06-20T14:30:00.123456"
+          },
+          "isReleased" : {
+            "type" : "boolean",
+            "description" : "A flag to indicate if the hold has been released."
+          },
+          "description" : {
+            "type" : [ "string", "null" ],
+            "description" : "The description on the hold transaction."
+          },
+          "holdType" : {
+            "type" : "string",
+            "description" : "The hold type of the hold transaction.",
+            "example" : "WHF"
+          },
+          "holdLocation" : {
+            "type" : "string",
+            "description" : "The prison code of the location that initiated the transaction.",
+            "example" : "LEI"
+          },
+          "amount" : {
+            "type" : "number",
+            "description" : "The amount to hold.",
+            "example" : 10.23
+          },
+          "holdTransactionId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The transaction id of the hold transaction."
+          },
+          "releaseTransactionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "The transaction id of the hold release transaction."
+          }
+        },
+        "required" : [ "amount", "createdAt", "createdBy", "holdFromDate", "holdLocation", "holdNumber", "holdTransactionId", "holdType", "isReleased", "prisonNumber", "subAccountCode" ]
+      },
+      "SyncCreateHoldResponse" : {
+        "type" : "object",
+        "properties" : {
+          "holdNumber" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "holdUuid" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        },
+        "required" : [ "holdNumber", "holdUuid" ]
+      },
+      "SyncReleaseHoldRequest" : {
+        "type" : "object",
+        "properties" : {
+          "releaseDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The time the hold was released according to NOMIS"
+          },
+          "releaseTransactionId" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        },
+        "required" : [ "releaseDateTime", "releaseTransactionId" ]
+      },
+      "SyncReleasedHoldResponse" : {
+        "type" : "object",
+        "properties" : {
+          "prisonNumber" : {
+            "type" : "string"
+          },
+          "holdNumber" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "amountReleased" : {
+            "type" : "number"
+          },
+          "releasedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "amountReleased", "holdNumber", "prisonNumber", "releasedAt" ]
+      },
+      "SyncGeneralLedgerTransactionRequest" : {
+        "type" : "object",
+        "description" : "Request body for synchronizing general ledger transactions. Please note these are for non-offender accounts only.",
+        "properties" : {
+          "transactionId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The unique identifier for the general ledger transaction.",
+            "example" : 19228028
+          },
+          "requestId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "A unique identifier for this synchronization request. This can be used for idempotency or tracing.",
+            "example" : "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+          },
+          "description" : {
+            "type" : "string",
+            "description" : "A description of the general ledger transaction.",
+            "example" : "General Ledger Account Transfer"
+          },
+          "reference" : {
+            "type" : [ "string", "null" ],
+            "description" : "An optional reference number for the transaction.",
+            "example" : "REF12345"
+          },
+          "caseloadId" : {
+            "type" : "string",
+            "description" : "The ID of the caseload associated with the transaction.",
+            "example" : "GMI",
+            "pattern" : "^[A-Za-z0-9]{3}$"
+          },
+          "transactionType" : {
+            "type" : "string",
+            "description" : "The transaction type",
+            "example" : "GJ",
+            "pattern" : "^[A-Z0-9_]{1,19}$"
+          },
+          "transactionTimestamp" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The full timestamp of the transaction (ISO 8601).",
+            "example" : "2011-09-30T09:08:08.671682"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date and time the transaction was created.",
+            "example" : "2024-06-18T14:30:00.123456"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "The user ID of the person who created the transaction in the source system.",
+            "example" : "JD12345",
+            "maxLength" : 32,
+            "minLength" : 1
+          },
+          "createdByDisplayName" : {
+            "type" : "string",
+            "description" : "The display name of the person who created the transaction.",
+            "example" : "J Doe",
+            "maxLength" : 255,
+            "minLength" : 1
+          },
+          "lastModifiedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "The date and time the transaction was last modified. Only provided if the transaction has been modified since creation. (ISO 8601 format with offset)",
+            "example" : "2022-07-15T23:03:01.123456"
+          },
+          "lastModifiedBy" : {
+            "type" : [ "string", "null" ],
+            "description" : "The user ID of the person who last modified the transaction. Required if lastModifiedAt has been supplied.",
+            "example" : "AB11DZ",
+            "maxLength" : 32,
+            "minLength" : 0
+          },
+          "lastModifiedByDisplayName" : {
+            "type" : [ "string", "null" ],
+            "description" : "The displayable name of the person who last modified the transaction. Required if lastModifiedAt has been supplied.",
+            "example" : "U Dated",
+            "maxLength" : 255,
+            "minLength" : 0
+          },
+          "generalLedgerEntries" : {
+            "type" : "array",
+            "description" : "A list of general ledger entries associated with this general ledger transaction.",
+            "items" : {
+              "$ref" : "#/components/schemas/GeneralLedgerEntry"
+            }
+          }
+        },
+        "required" : [ "caseloadId", "createdAt", "createdBy", "createdByDisplayName", "description", "generalLedgerEntries", "requestId", "transactionId", "transactionTimestamp", "transactionType" ]
+      },
+      "SyncCreateAdvanceRecordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "legacyPaymentProfileId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The payment profile id from NOMIS",
+            "example" : 123456789
+          },
+          "legacyInformationNumber" : {
+            "type" : "string",
+            "description" : "The information number for the advance from NOMIS",
+            "example" : "12345678-1"
+          },
+          "prisonNumber" : {
+            "type" : "string",
+            "description" : "The prison number of the offender this advance was for",
+            "example" : "A9917EC"
+          },
+          "prisonID" : {
+            "type" : "string",
+            "description" : "The prison ID that issued this advance",
+            "example" : "LEI"
+          },
+          "amount" : {
+            "type" : "number",
+            "description" : "The amount issued in the advance",
+            "example" : 5.32
+          },
+          "createdOn" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date time when the advance was created with the time set to midnight",
+            "example" : "2024-06-18T00:00:00.000000"
+          },
+          "repaymentStartDate" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date time when the payments are intended to begin",
+            "example" : "2024-06-18T00:00:00.000000"
+          },
+          "repaymentAmount" : {
+            "type" : "number",
+            "description" : "The amount to be repaid weekly",
+            "example" : 0.5
+          },
+          "reference" : {
+            "type" : [ "string", "null" ],
+            "description" : "The reference from the payment profile ",
+            "example" : "FNC"
+          },
+          "comment" : {
+            "type" : [ "string", "null" ],
+            "description" : "The comment from the payment profile ",
+            "example" : "Repayment"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "The username that created this advance",
+            "example" : "JOHN_USER"
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "The current status of this advance",
+            "enum" : [ "ACTIVE", "REPAID", "WRITTEN_OFF" ],
+            "example" : "AdvanceStatus.ACTIVE"
+          },
+          "legacyTransactionId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The legacy transaction ID from NOMIS that paid the advance to the prisoner",
+            "example" : 123456
+          }
+        },
+        "required" : [ "amount", "createdBy", "createdOn", "legacyInformationNumber", "legacyPaymentProfileId", "legacyTransactionId", "prisonID", "prisonNumber", "repaymentAmount", "repaymentStartDate", "status" ]
+      },
+      "SyncCreateAdvanceRecordResponse" : {
+        "type" : "object",
+        "properties" : {
+          "paymentProfileId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The payment profile id from NOMIS",
+            "example" : 123456789
+          },
+          "advanceId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The advance id from Prisoner Finance",
+            "example" : "de2bc56c-ea73-4f3c-8a37-5a46fdb2d79a"
+          }
+        },
+        "required" : [ "advanceId", "paymentProfileId" ]
+      },
+      "SyncCreateAdvanceWriteOffRequest" : {
+        "type" : "object",
+        "properties" : {
+          "writeOffDateTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date and time of the written off advance",
+            "example" : "2024-06-18T00:00:00.000000"
+          },
+          "writtenOffBy" : {
+            "type" : "string",
+            "description" : "The username that wrote off this advance",
+            "example" : "JOHN_USER"
+          },
+          "writtenOffAmount" : {
+            "type" : "number",
+            "description" : "The amount written off",
+            "example" : 10.1
+          }
+        },
+        "required" : [ "writeOffDateTime", "writtenOffAmount", "writtenOffBy" ]
+      },
+      "SyncAdvanceWriteOffResponse" : {
+        "type" : "object",
+        "properties" : {
+          "advanceId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The advance id from Prisoner Finance",
+            "example" : "de2bc56c-ea73-4f3c-8a37-5a46fdb2d79a"
+          },
+          "advanceStatus" : {
+            "type" : "string",
+            "description" : "The status of the advance",
+            "enum" : [ "ACTIVE", "REPAID", "WRITTEN_OFF" ],
+            "example" : "WRITTEN_OFF"
+          },
+          "writtenOffAmount" : {
+            "type" : "number",
+            "description" : "The amount written off",
+            "example" : 10.1
+          }
+        },
+        "required" : [ "advanceId", "advanceStatus", "writtenOffAmount" ]
+      },
+      "SyncCreateAdvanceRepayRequest" : {
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "number",
+            "description" : "The amount paid towards the advance",
+            "example" : 5.0
+          },
+          "transactionId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The transaction id that paid the amount to the advance",
+            "example" : 123456
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The transaction date and time for the advance repayment",
+            "example" : "2024-06-18T00:00:00.000000"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "The username that created this advance repayment",
+            "example" : "JOHN_USER"
+          },
+          "description" : {
+            "type" : "string",
+            "description" : "The description on the advance repayment transaction",
+            "example" : "Deduction-ADV-08052026 D D"
+          },
+          "entrySequence" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The entry sequence from the offender transactions table in NOMIS",
+            "example" : 1
+          },
+          "caseloadId" : {
+            "type" : "string",
+            "description" : "The caseload ID for the prison which receives the payment",
+            "example" : "LEI",
+            "pattern" : "^[A-Za-z0-9]{3}$"
+          }
+        },
+        "required" : [ "amount", "caseloadId", "createdAt", "createdBy", "description", "entrySequence", "transactionId" ]
+      },
+      "SyncAdvanceRepayResponse" : {
+        "type" : "object",
+        "properties" : {
+          "repaymentTransactionId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The repayment transaction id from Prisoner Finance",
+            "example" : "de2bc56c-ea73-4f3c-8a37-5a46fdb2d79a"
+          }
+        },
+        "required" : [ "repaymentTransactionId" ]
+      },
+      "PrisonerAccountPointInTimeBalance" : {
+        "type" : "object",
+        "description" : "Represents a prisoner balance at a specific point in time for synchronization from a legacy system.",
+        "properties" : {
+          "prisonId" : {
+            "type" : "string",
+            "description" : "The prison code (e.g., 'MDI') where this specific account balance is held.",
+            "minLength" : 1
+          },
+          "accountCode" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The account code for the prisoner account."
+          },
+          "balance" : {
+            "type" : "number",
+            "description" : "The account balance at the specified time.",
+            "example" : 123.45
+          },
+          "holdBalance" : {
+            "type" : "number",
+            "format" : "decimal",
+            "description" : "The amount on hold for the sub-account.",
+            "example" : 10.0
+          },
+          "transactionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "The transaction ID that resulted in the last update to the prisoner balance."
+          },
+          "asOfTimestamp" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The local date and time from the legacy system when this balance was valid.",
+            "example" : "2025-09-24T10:00:00"
+          }
+        },
+        "required" : [ "accountCode", "asOfTimestamp", "balance", "holdBalance", "prisonId", "transactionId" ]
+      },
+      "PrisonerBalancesSyncRequest" : {
+        "type" : "object",
+        "description" : "A request to synchronize all balances for a single prisoner across their sub-accounts.",
+        "properties" : {
+          "accountBalances" : {
+            "type" : "array",
+            "description" : "A list of sub-account balances to be synchronized for the prisoner.",
+            "items" : {
+              "$ref" : "#/components/schemas/PrisonerAccountPointInTimeBalance"
+            },
+            "minItems" : 1
+          }
+        },
+        "required" : [ "accountBalances" ]
+      },
+      "GeneralLedgerBalancesSyncRequest" : {
+        "type" : "object",
+        "description" : "A request to synchronize general ledger balances for a single prison.",
+        "properties" : {
+          "accountBalances" : {
+            "type" : "array",
+            "description" : "A list of general ledger account balances to be synchronized.",
+            "items" : {
+              "$ref" : "#/components/schemas/GeneralLedgerPointInTimeBalance"
+            },
+            "minItems" : 1
+          }
+        },
+        "required" : [ "accountBalances" ]
+      },
+      "GeneralLedgerPointInTimeBalance" : {
+        "type" : "object",
+        "description" : "Represents a single general ledger account and its balance at a specific point in time.",
+        "properties" : {
+          "accountCode" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The account code for the general ledger account."
+          },
+          "balance" : {
+            "type" : "number",
+            "description" : "The account balance at the specified time.",
+            "example" : 123.45
+          },
+          "asOfTimestamp" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The local date and time from the legacy system when this balance was valid.",
+            "example" : "2025-09-24T10:00:00"
+          }
+        },
+        "required" : [ "accountCode", "asOfTimestamp", "balance" ]
+      },
+      "SyncMigrateAdvanceRecordRequest" : {
+        "type" : "object",
+        "properties" : {
+          "legacyPaymentProfileId" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "The payment profile id from NOMIS",
+            "example" : 123456789
+          },
+          "legacyInformationNumber" : {
+            "type" : "string",
+            "description" : "The information number for the advance from NOMIS",
+            "example" : "12345678-1"
+          },
+          "prisonNumber" : {
+            "type" : "string",
+            "description" : "The prison number of the offender this advance was for",
+            "example" : "A9917EC"
+          },
+          "prisonID" : {
+            "type" : "string",
+            "description" : "The prison ID that issued this advance",
+            "example" : "LEI"
+          },
+          "amountIssued" : {
+            "type" : "number",
+            "description" : "The total amount in pence issued in the advance",
+            "example" : 5.0
+          },
+          "amountOutstanding" : {
+            "type" : "number",
+            "description" : "The outstanding amount in pence at the time of the migration",
+            "example" : 4.5
+          },
+          "createdOn" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date time when the advance was created with the time set to midnight",
+            "example" : "2024-06-18T00:00:00.000000"
+          },
+          "balanceCalculationTime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date time that the advance balance was calculated. I.e. the time of the last transaction relating to this advance.",
+            "example" : "2024-06-18T12:05:38.000000"
+          },
+          "repaymentStartDate" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date time when the payments are intended to begin",
+            "example" : "2024-06-18T00:00:00.000000"
+          },
+          "repaymentAmount" : {
+            "type" : "number",
+            "description" : "The amount to be repaid weekly",
+            "example" : 0.5
+          },
+          "reference" : {
+            "type" : [ "string", "null" ],
+            "description" : "The reference from the payment profile ",
+            "example" : "FNC"
+          },
+          "comment" : {
+            "type" : [ "string", "null" ],
+            "description" : "The comment from the payment profile ",
+            "example" : "Repayment"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "The username that created this advance",
+            "example" : "JOHN_USER"
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "The current status of this advance",
+            "enum" : [ "ACTIVE", "REPAID", "WRITTEN_OFF" ],
+            "example" : "AdvanceStatus.ACTIVE"
+          },
+          "legacyTransactionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "The legacy transaction ID from NOMIS that paid the advance to the prisoner",
+            "example" : 123456
+          }
+        },
+        "required" : [ "amountIssued", "amountOutstanding", "balanceCalculationTime", "createdBy", "createdOn", "legacyInformationNumber", "legacyPaymentProfileId", "prisonID", "prisonNumber", "repaymentAmount", "repaymentStartDate", "status" ]
+      },
+      "AccountReconciliationResponse" : {
+        "type" : "object",
+        "properties" : {
+          "advances" : {
+            "$ref" : "#/components/schemas/AdvancesAccountReconciliation"
+          },
+          "subscriptions" : {
+            "$ref" : "#/components/schemas/SubscriptionsAccountReconciliation"
+          },
+          "subAccountBalances" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/SubAccountBalanceForReconciliation"
+            }
+          }
+        },
+        "required" : [ "advances", "subAccountBalances", "subscriptions" ]
+      },
+      "AdvancesAccountReconciliation" : {
+        "type" : "object",
+        "properties" : {
+          "advanceCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "advanceBalance" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "advanceBalance", "advanceCount" ]
+      },
+      "SubAccountBalanceForReconciliation" : {
+        "type" : "object",
+        "properties" : {
+          "totalBalance" : {
+            "type" : "number"
+          },
+          "holdBalance" : {
+            "type" : "number"
+          },
+          "balanceDateTime" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        },
+        "required" : [ "balanceDateTime", "holdBalance", "totalBalance" ]
+      },
+      "SubscriptionsAccountReconciliation" : {
+        "type" : "object",
+        "properties" : {
+          "subscriptionCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "weeklyPaymentAmount" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "subscriptionCount", "weeklyPaymentAmount" ]
+      },
+      "SyncOffenderTransactionResponse" : {
+        "type" : "object",
+        "description" : "A response containing a list of offender transactions",
+        "properties" : {
+          "synchronizedTransactionId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The unique UUID generated by the **finance system** for the synchronized transaction. This is the internal identifier for the created or updated record.",
+            "example" : "f1e2d3c4-b5a6-9876-5432-10fedcba9876"
+          },
+          "legacyTransactionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64",
+            "description" : "The legacy ID of the transaction from the source system. This is only present if the transaction was originally generated by the legacy system.",
+            "example" : 123456
+          },
+          "caseloadId" : {
+            "type" : "string",
+            "description" : "The ID of the caseload associated with this transaction.",
+            "example" : "GMI"
+          },
+          "transactionTimestamp" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The timestamp when this transaction occurred (ISO 8601 format).",
+            "example" : "2024-06-18T14:30:00.123456"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date and time the transaction was created.",
+            "example" : "2024-06-18T14:30:00.123456"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "The user id of the person who created the transaction.",
+            "example" : "JD12345",
+            "maxLength" : 32,
+            "minLength" : 1
+          },
+          "createdByDisplayName" : {
+            "type" : "string",
+            "description" : "The display name of the person who created the transaction.",
+            "example" : "J Doe",
+            "maxLength" : 255,
+            "minLength" : 1
+          },
+          "lastModifiedAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "The date and time the transaction was last modified. Only provided if the transaction has been modified since creation.",
+            "example" : "2022-07-15T23:03:01.123456"
+          },
+          "lastModifiedBy" : {
+            "type" : [ "string", "null" ],
+            "description" : "The user id of the person who last modified the transaction. Required if lastModifiedAt has been supplied.",
+            "example" : "AB11DZ",
+            "maxLength" : 32,
+            "minLength" : 0
+          },
+          "lastModifiedByDisplayName" : {
+            "type" : [ "string", "null" ],
+            "description" : "The displayable name of the person who last modified the transaction. Required if lastModifiedAt has been supplied.",
+            "example" : "U Dated",
+            "maxLength" : 255,
+            "minLength" : 0
+          },
+          "transactions" : {
+            "type" : "array",
+            "description" : "The list of transactions found for the specified offender and date range.",
+            "items" : {
+              "$ref" : "#/components/schemas/OffenderTransaction"
+            }
+          }
+        },
+        "required" : [ "caseloadId", "createdAt", "createdBy", "createdByDisplayName", "synchronizedTransactionId", "transactionTimestamp", "transactions" ]
+      },
+      "CursorPageNomisSyncPayloadSummary" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/NomisSyncPayloadSummary"
+            }
+          },
+          "nextCursor" : {
+            "type" : [ "string", "null" ]
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        },
+        "required" : [ "content", "size", "totalElements" ]
+      },
+      "NomisSyncPayloadSummary" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "requestId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "transactionType" : {
+            "type" : [ "string", "null" ]
+          },
+          "caseloadId" : {
+            "type" : [ "string", "null" ]
+          },
+          "transactionTimestamp" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "legacyTransactionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "synchronizedTransactionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "requestTypeIdentifier" : {
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "id", "requestId", "synchronizedTransactionId", "timestamp" ]
+      },
+      "NomisSyncPayloadDetail" : {
+        "type" : "object",
+        "properties" : {
+          "timestamp" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "legacyTransactionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          },
+          "synchronizedTransactionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "requestId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "caseloadId" : {
+            "type" : [ "string", "null" ]
+          },
+          "requestTypeIdentifier" : {
+            "type" : [ "string", "null" ]
+          },
+          "transactionTimestamp" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time"
+          },
+          "transactionType" : {
+            "type" : "string"
+          },
+          "body" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
+          }
+        },
+        "required" : [ "body", "requestId", "synchronizedTransactionId", "timestamp", "transactionType" ]
+      }
+    },
+    "securitySchemes" : {
+      "bearer-jwt" : {
+        "type" : "http",
+        "description" : "A HMPPS Auth access token with the `ROLE_PRISONER_FINANCE_SYNC__RW` role.",
+        "name" : "Authorization",
+        "in" : "header",
+        "scheme" : "bearer",
+        "bearerFormat" : "JWT"
+      }
+    }
+  }
+}
