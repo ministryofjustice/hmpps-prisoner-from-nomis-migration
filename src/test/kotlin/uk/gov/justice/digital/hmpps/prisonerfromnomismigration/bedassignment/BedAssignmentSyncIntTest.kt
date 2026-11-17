@@ -207,7 +207,7 @@ class BedAssignmentSyncIntTest(
 
         send(eventType)
         waitForAnyProcessingToComplete("bedassignment-synchronisation-created-success")
-        waitForAnyProcessingToComplete("bedassignment-mapping-created-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-mapping-created-success")
       }
 
       @Test
@@ -245,7 +245,7 @@ class BedAssignmentSyncIntTest(
         waitForAnyProcessingToComplete("bedassignment-synchronisation-created-success")
 
         await untilCallTo { bedAssignmentEventQueue.countAllMessagesOnDLQQueue() } matches { it == 1 }
-        verify(telemetryClient, times(3)).trackEvent(eq("bedassignment-from-nomis-sync-duplicate"), anyMap(), isNull())
+        verify(telemetryClient, times(3)).trackEvent(eq("bedassignment-synchronisation-duplicate"), anyMap(), isNull())
         verify(telemetryClient).trackEvent(
           eq("bedassignment-synchronisation-created-success"),
           check { assertThat(it).containsEntry("mapping", "initial-failure") },
@@ -406,7 +406,7 @@ class BedAssignmentSyncIntTest(
         waitForAnyProcessingToComplete("bedassignment-synchronisation-updated-success")
 
         await untilCallTo { bedAssignmentEventQueue.countAllMessagesOnDLQQueue() } matches { it == 1 }
-        verify(telemetryClient, times(3)).trackEvent(eq("bedassignment-from-nomis-sync-duplicate"), anyMap(), isNull())
+        verify(telemetryClient, times(3)).trackEvent(eq("bedassignment-synchronisation-duplicate"), anyMap(), isNull())
         mappingApi.verify(0, postRequestedFor(urlEqualTo("/mapping/bed-assignments")))
       }
     }
@@ -424,7 +424,7 @@ class BedAssignmentSyncIntTest(
         mappingMockServer.stubCreateMappingFailureFollowedBySuccess()
 
         send(eventType)
-        waitForAnyProcessingToComplete("bedassignment-mapping-created-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-mapping-created-success")
 
         bedAssignmentApi.verify(1, putRequestedFor(urlEqualTo("/nomis-sync/bed-assignments/sync/$SYNC_OFFENDER_NO")))
         mappingApi.verify(2, postRequestedFor(urlEqualTo("/mapping/bed-assignments")))
@@ -447,7 +447,7 @@ class BedAssignmentSyncIntTest(
         await untilCallTo { bedAssignmentEventQueue.countAllMessagesOnDLQQueue() } matches { it == 1 }
 
         bedAssignmentApi.verify(1, putRequestedFor(urlEqualTo("/nomis-sync/bed-assignments/sync/$SYNC_OFFENDER_NO")))
-        verify(telemetryClient, times(2)).trackEvent(eq("bedassignment-mapping-created-failure"), anyMap(), isNull())
+        verify(telemetryClient, times(2)).trackEvent(eq("bedassignment-synchronisation-mapping-created-failure"), anyMap(), isNull())
       }
     }
 
@@ -593,7 +593,7 @@ class BedAssignmentSyncIntTest(
         mappingMockServer.stubDeleteMappingFailureFollowedBySuccess(SYNC_DPS_ID)
 
         send(eventType)
-        waitForAnyProcessingToComplete("bedassignment-mapping-created-success")
+        waitForAnyProcessingToComplete("bedassignment-synchronisation-mapping-created-success")
 
         bedAssignmentApi.verify(1, putRequestedFor(urlEqualTo("/nomis-sync/bed-assignments/sync/$SYNC_OFFENDER_NO")))
         mappingApi.verify(
@@ -618,7 +618,7 @@ class BedAssignmentSyncIntTest(
         await untilCallTo { bedAssignmentEventQueue.countAllMessagesOnDLQQueue() } matches { it == 1 }
 
         bedAssignmentApi.verify(1, putRequestedFor(urlEqualTo("/nomis-sync/bed-assignments/sync/$SYNC_OFFENDER_NO")))
-        verify(telemetryClient, times(2)).trackEvent(eq("bedassignment-mapping-created-failure"), anyMap(), isNull())
+        verify(telemetryClient, times(2)).trackEvent(eq("bedassignment-synchronisation-mapping-created-failure"), anyMap(), isNull())
       }
     }
 

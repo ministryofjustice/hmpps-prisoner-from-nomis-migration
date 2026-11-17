@@ -24,7 +24,9 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorContent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BedAssignmentMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBedAssignmentHistoryResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
@@ -32,13 +34,15 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 class BedAssignmentSyncServiceTest {
-  private val historyService = mock<TranslatorService>()
+  private val nomisApiService = mock<BedAssignmentNomisApiService>()
+  private val locationsMappingService = mock<LocationsMappingService>()
   private val dpsApiService = mock<BedAssignmentDpsApiService>()
   private val mappingApiService = mock<BedAssignmentMappingApiService>()
   private val telemetryClient = mock<TelemetryClient>()
   private val queueService = mock<SynchronisationQueueService>()
   private val service = BedAssignmentSyncService(
-    historyService,
+    nomisApiService,
+    locationsMappingService,
     dpsApiService,
     mappingApiService,
     telemetryClient,
@@ -62,7 +66,9 @@ class BedAssignmentSyncServiceTest {
   )
 
   private suspend fun stubSyncResponse() {
-    whenever(historyService.getHistory(event.offenderIdDisplay)).thenReturn(emptyList())
+    whenever(nomisApiService.getBedAssignments(event.offenderIdDisplay)).thenReturn(
+      PrisonerBedAssignmentHistoryResponse(bedAssignments = emptyList()),
+    )
     whenever(dpsApiService.sync(event.offenderIdDisplay, emptyList())).thenReturn(
       BedAssignmentSyncResponse(
         created = listOf(BedAssignmentNomisMapping(dpsId, 123, 1)),
@@ -146,8 +152,8 @@ class BedAssignmentSyncServiceTest {
         verify(mappingApiService).createMapping(eq(mapping), any())
       }
       verify(dpsApiService, never()).sync(any(), any())
-      verify(historyService, never()).getHistory(any())
-      verify(telemetryClient).trackEvent("bedassignment-mapping-created-success", retry.telemetryAttributes, null)
+      verify(nomisApiService, never()).getBedAssignments(any())
+      verify(telemetryClient).trackEvent("bedassignment-synchronisation-mapping-created-success", retry.telemetryAttributes, null)
     }
 
     @Test
@@ -170,8 +176,8 @@ class BedAssignmentSyncServiceTest {
 
       service.retryCreateMapping(retry)
 
-      verify(telemetryClient).trackEvent(eq("bedassignment-from-nomis-sync-duplicate"), any(), isNull())
-      verify(telemetryClient).trackEvent("bedassignment-mapping-created-success", retry.telemetryAttributes, null)
+      verify(telemetryClient).trackEvent(eq("bedassignment-synchronisation-duplicate"), any(), isNull())
+      verify(telemetryClient).trackEvent("bedassignment-synchronisation-mapping-created-success", retry.telemetryAttributes, null)
     }
 
     @Test
@@ -184,11 +190,11 @@ class BedAssignmentSyncServiceTest {
 
       verify(mappingApiService, never()).createMapping(any(), any())
       verify(telemetryClient).trackEvent(
-        eq("bedassignment-from-nomis-sync-duplicate"),
+        eq("bedassignment-synchronisation-duplicate"),
         argThat { this["existingDpsBedAssignmentId"] == deletedDpsId && this["duplicateDpsBedAssignmentId"] == dpsId.toString() },
         isNull(),
       )
-      verify(telemetryClient).trackEvent(eq("bedassignment-mapping-created-failure"), any(), isNull())
+      verify(telemetryClient).trackEvent(eq("bedassignment-synchronisation-mapping-created-failure"), any(), isNull())
     }
 
     @Test
@@ -202,8 +208,8 @@ class BedAssignmentSyncServiceTest {
         .isInstanceOf(IllegalStateException::class.java)
         .hasMessageContaining("Conflicting bed-assignment mapping")
 
-      verify(telemetryClient).trackEvent(eq("bedassignment-from-nomis-sync-duplicate"), any(), isNull())
-      verify(telemetryClient, never()).trackEvent(eq("bedassignment-mapping-created-success"), any(), isNull())
+      verify(telemetryClient).trackEvent(eq("bedassignment-synchronisation-duplicate"), any(), isNull())
+      verify(telemetryClient, never()).trackEvent(eq("bedassignment-synchronisation-mapping-created-success"), any(), isNull())
     }
 
     @Test
@@ -213,7 +219,7 @@ class BedAssignmentSyncServiceTest {
       assertThatThrownBy { runBlocking { service.retryCreateMapping(retry) } }.hasMessage("mapping delete failed")
 
       verify(telemetryClient).trackEvent(
-        "bedassignment-mapping-created-failure",
+        "bedassignment-synchronisation-mapping-created-failure",
         retry.telemetryAttributes + ("error" to "mapping delete failed"),
         null,
       )
