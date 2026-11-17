@@ -209,5 +209,5 @@ fun PrisonerAdvanceDto.toSyncAdvanceDto() = SyncCreateAdvanceRecordRequest(
   createdOn = createDatetime,
   createdBy = createdBy,
   legacyInformationNumber = informationNumber,
-  legacyTransactionId = advanceCreateTransactionId,
+  legacyTransactionId = advanceCreateTransactionId!!,
 )
