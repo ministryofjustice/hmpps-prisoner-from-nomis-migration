@@ -39,7 +39,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtCaseResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtEventResponse
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderChargeResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.SentenceTermResponse
 import java.time.LocalDate
@@ -244,23 +243,6 @@ fun CourtEventResponse.toMergeDpsCourtAppearance(
   },
 )
 
-fun OffenderChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharge(
-  offenceCode = this.offence.offenceCode,
-  offenceStartDate = this.offenceDate,
-  legacyData =
-  ChargeLegacyData(
-    postedDate = LocalDate.now().toString(),
-    outcomeDescription = this.resultCode1?.description,
-    nomisOutcomeCode = this.resultCode1?.code,
-    outcomeDispositionCode = this.resultCode1?.dispositionCode,
-    outcomeConvictionFlag = this.resultCode1?.conviction,
-    offenceDescription = this.offence.description,
-  ),
-  offenceEndDate = this.offenceEndDate,
-  appearanceLifetimeUuid = UUID.fromString(appearanceId),
-  performedByUser = this.modifiedByUsername ?: this.createdByUsername,
-)
-
 fun CourtEventChargeResponse.toDpsCharge(appearanceId: String) = LegacyCreateCharge(
   offenceCode = this.offenderCharge.offence.offenceCode,
   offenceStartDate = this.offenceDate,
@@ -303,6 +285,7 @@ fun CourtEventChargeResponse.toDpsMigrationCharge(
 ): MigrationCreateCharge = MigrationCreateCharge(
   offenceCode = this.offenderCharge.offence.offenceCode,
   offenceStartDate = this.offenceDate,
+  value = this.propertyValue,
   legacyData =
   ChargeLegacyData(
     postedDate = LocalDate.now().toString(),
@@ -324,6 +307,7 @@ fun CourtEventChargeResponse.toDpsBookingCloneCharge(
 ): BookingCreateCharge = BookingCreateCharge(
   offenceCode = this.offenderCharge.offence.offenceCode,
   offenceStartDate = this.offenceDate,
+  value = this.propertyValue,
   legacyData =
   ChargeLegacyData(
     postedDate = LocalDate.now().toString(),
@@ -346,6 +330,7 @@ fun CourtEventChargeResponse.toMergeCharge(
 ): MergeCreateCharge = MergeCreateCharge(
   offenceCode = this.offenderCharge.offence.offenceCode,
   offenceStartDate = this.offenceDate,
+  value = this.propertyValue,
   legacyData =
   ChargeLegacyData(
     postedDate = LocalDate.now().toString(),
