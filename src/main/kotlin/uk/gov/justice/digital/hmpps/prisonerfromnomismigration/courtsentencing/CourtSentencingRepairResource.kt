@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -92,8 +93,8 @@ class CourtSentencingRepairResource(
 
   @PutMapping("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/appearances/{eventId}/charges/{chargeId}/repair")
   @Operation(
-    summary = "Replicate a court event charge update event from NOMIS to DPS",
-    description = "Used when a court event charge update event has been missed and the charge is out of sync in DPS. Requires PRISONER_FROM_NOMIS__UPDATE__RW",
+    summary = "Replicate a court event charge update event from NOMIS to DPS for CECx with a property value",
+    description = "Used when court_event_charges property_value are out of sync in DPS. Requires PRISONER_FROM_NOMIS__UPDATE__RW",
   )
   suspend fun courtEventChargeUpdateRepair(
     @PathVariable
@@ -112,6 +113,16 @@ class CourtSentencingRepairResource(
       chargeId = chargeId,
     )
   }
+
+  @PostMapping("/prisoners/court-sentencing/court-event-charges/property-value/repair")
+  @Operation(
+    summary = "Replicate court event charge update events from NOMIS to DPS for charges with a property value",
+    description = "Used to resynchronise every court event charge with a property value for the given offenders. Any failure is reported through the existing synchronisation telemetry and stops the request. Requires PRISONER_FROM_NOMIS__UPDATE__RW",
+  )
+  suspend fun courtEventChargesWithPropertyValueRepair(
+    @RequestBody
+    offenderNos: List<String>,
+  ) = courtSentencingRepairService.resynchroniseCourtEventChargesWithPropertyValue(offenderNos)
 
   @PostMapping("/prisoners/{offenderNo}/booking-id/{bookingId}/court-sentencing/sentences/{sentenceSeq}/terms/{termSeq}/repair")
   @Operation(

@@ -3,6 +3,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.BadRequestException
+import java.math.BigDecimal
 
 @Service
 class CourtSentencingRepairService(
@@ -149,6 +150,47 @@ class CourtSentencingRepairService(
       ),
       null,
     )
+  }
+
+  private data class PropertyValueCharge(
+    val bookingId: Long,
+    val eventId: Long,
+    val chargeId: Long,
+    val propertyValue: BigDecimal,
+  )
+
+  suspend fun resynchroniseCourtEventChargesWithPropertyValue(offenderNos: List<String>) {
+    offenderNos.distinct().forEach { offenderNo ->
+      val charges = nomisApiService.getCourtCasesForMigration(offenderNo).flatMap { courtCase ->
+        courtCase.courtEvents.flatMap { event ->
+          event.courtEventCharges.mapNotNull { charge ->
+            charge.propertyValue?.let {
+              PropertyValueCharge(courtCase.bookingId, event.id, charge.offenderCharge.id, it)
+            }
+          }
+        }
+      }
+
+      telemetryClient.trackEvent(
+        "court-charge-property-value-repair",
+        mapOf(
+          "offenderNo" to offenderNo,
+          "chargeWithPropertyValueCount" to charges.size.toString(),
+          // one entry per resynchronised charge: bookingId:eventId:chargeId:propertyValue
+          "charges" to charges.joinToString(",") { "${it.bookingId}:${it.eventId}:${it.chargeId}:${it.propertyValue.toPlainString()}" },
+        ),
+        null,
+      )
+
+      charges.forEach {
+        resynchroniseCourtEventChargeUpdated(
+          offenderNo = offenderNo,
+          bookingId = it.bookingId,
+          eventId = it.eventId,
+          chargeId = it.chargeId,
+        )
+      }
+    }
   }
 
   suspend fun resynchronisePrisonerSentenceUpdated(

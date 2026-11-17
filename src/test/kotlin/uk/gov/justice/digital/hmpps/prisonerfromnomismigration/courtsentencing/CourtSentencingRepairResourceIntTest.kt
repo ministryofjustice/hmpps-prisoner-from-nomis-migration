@@ -36,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.m
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.model.NomisPeriodLengthId
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CaseIdentifierResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CourtOrderResponse
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -1236,6 +1237,146 @@ class CourtSentencingRepairResourceIntTest(
             assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
             assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
             assertThat(it["dpsCourtAppearanceId"]).isEqualTo(DPS_APPEARANCE_ID)
+            assertThat(it["propertyValue"]).isEqualTo("123.45")
+          },
+          isNull(),
+        )
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("POST /prisoners/court-sentencing/court-event-charges/property-value/repair")
+  inner class RepairCourtEventChargesWithPropertyValue {
+    val offenderNo = "A1234KT"
+    val otherOffenderNo = "B4321KT"
+    val uri = "/prisoners/court-sentencing/court-event-charges/property-value/repair"
+
+    private fun casesWithCharges(offenderNo: String, vararg chargeIdsAndValues: Pair<Long, BigDecimal?>) = listOf(
+      courtCaseResponse(
+        bookingId = NOMIS_BOOKING_ID,
+        offenderNo = offenderNo,
+        courtEvents = listOf(
+          courtEventResponse(NOMIS_COURT_APPEARANCE_ID).copy(
+            courtEventCharges = chargeIdsAndValues.map { (chargeId, value) ->
+              courtEventChargeResponse(NOMIS_COURT_APPEARANCE_ID, chargeId).copy(propertyValue = value)
+            },
+          ),
+        ),
+      ),
+    )
+
+    private fun callRepair(offenderNos: List<String>) = webTestClient.post().uri(uri)
+      .headers(setAuthorisation(roles = listOf("PRISONER_FROM_NOMIS__UPDATE__RW")))
+      .header("Content-Type", "application/json")
+      .bodyValue(offenderNos)
+      .exchange()
+
+    @Nested
+    inner class Security {
+      @Test
+      internal fun `must have valid token`() {
+        webTestClient.post().uri(uri)
+          .header("Content-Type", "application/json")
+          .bodyValue(listOf(offenderNo))
+          .exchange()
+          .expectStatus().isUnauthorized
+      }
+
+      @Test
+      internal fun `must have correct role`() {
+        webTestClient.post().uri(uri)
+          .headers(setAuthorisation(roles = listOf("ROLE_MIGRATE_BANANAS")))
+          .header("Content-Type", "application/json")
+          .bodyValue(listOf(offenderNo))
+          .exchange()
+          .expectStatus().isForbidden
+      }
+    }
+
+    @Nested
+    inner class HappyPath {
+      @BeforeEach
+      internal fun setup() {
+        courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(
+          offenderNo,
+          casesWithCharges(
+            offenderNo,
+            NOMIS_COURT_CHARGE_ID to BigDecimal("123.45"),
+            NOMIS_COURT_CHARGE_2_ID to null,
+          ),
+        )
+        courtSentencingNomisApiMockServer.stubGetCourtCasesByOffenderForMigration(otherOffenderNo, emptyList())
+        courtSentencingMappingApiMockServer.stubGetCourtAppearanceByNomisId(
+          nomisCourtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          dpsCourtAppearanceId = DPS_APPEARANCE_ID,
+        )
+        courtSentencingMappingApiMockServer.stubGetCourtChargeByNomisId(
+          nomisCourtChargeId = NOMIS_COURT_CHARGE_ID,
+          dpsCourtChargeId = DPS_CHARGE_ID,
+        )
+        courtSentencingNomisApiMockServer.stubGetCourtEventCharge(
+          offenderChargeId = NOMIS_COURT_CHARGE_ID,
+          courtAppearanceId = NOMIS_COURT_APPEARANCE_ID,
+          offenderNo = offenderNo,
+        )
+        dpsCourtSentencingServer.stubPutAppearanceChargeForUpdate(
+          chargeId = DPS_CHARGE_ID,
+          appearanceId = DPS_APPEARANCE_ID,
+        )
+
+        callRepair(listOf(offenderNo, otherOffenderNo))
+          .expectStatus().isOk
+      }
+
+      @Test
+      fun `will update DPS only for the charge with a property value`() {
+        dpsCourtSentencingServer.verify(
+          1,
+          putRequestedFor(urlPathEqualTo("/legacy/charge/$DPS_CHARGE_ID/appearance/$DPS_APPEARANCE_ID")),
+        )
+        dpsCourtSentencingServer.verify(1, putRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will track the charges with a property value for each offender`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-charge-property-value-repair"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["chargeWithPropertyValueCount"]).isEqualTo("1")
+            assertThat(it["charges"]).isEqualTo("$NOMIS_BOOKING_ID:$NOMIS_COURT_APPEARANCE_ID:$NOMIS_COURT_CHARGE_ID:123.45")
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("court-charge-property-value-repair"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(otherOffenderNo)
+            assertThat(it["chargeWithPropertyValueCount"]).isEqualTo("0")
+            assertThat(it["charges"]).isEqualTo("")
+          },
+          isNull(),
+        )
+      }
+
+      @Test
+      fun `will track telemetry for the resynchronised charge`() {
+        verify(telemetryClient).trackEvent(
+          eq("court-charge-synchronisation-updated-repaired"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["nomisBookingId"]).isEqualTo(NOMIS_BOOKING_ID.toString())
+            assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_COURT_CHARGE_ID.toString())
+            assertThat(it["nomisCourtAppearanceId"]).isEqualTo(NOMIS_COURT_APPEARANCE_ID.toString())
+          },
+          isNull(),
+        )
+        verify(telemetryClient).trackEvent(
+          eq("court-charge-synchronisation-updated-success"),
+          check {
+            assertThat(it["nomisOffenderChargeId"]).isEqualTo(NOMIS_COURT_CHARGE_ID.toString())
+            assertThat(it["dpsChargeId"]).isEqualTo(DPS_CHARGE_ID)
             assertThat(it["propertyValue"]).isEqualTo("123.45")
           },
           isNull(),
