@@ -2666,13 +2666,12 @@
             "type" : "string",
             "format" : "date-time"
           },
-          "legacyTransactionId" : {
-            "type" : [ "integer", "null" ],
-            "format" : "int64"
-          },
           "requestId" : {
             "type" : "string",
             "format" : "uuid"
+          },
+          "transactionType" : {
+            "type" : [ "string", "null" ]
           },
           "caseloadId" : {
             "type" : [ "string", "null" ]
@@ -2681,8 +2680,9 @@
             "type" : [ "string", "null" ],
             "format" : "date-time"
           },
-          "transactionType" : {
-            "type" : [ "string", "null" ]
+          "legacyTransactionId" : {
+            "type" : [ "integer", "null" ],
+            "format" : "int64"
           },
           "synchronizedTransactionId" : {
             "type" : "string",
