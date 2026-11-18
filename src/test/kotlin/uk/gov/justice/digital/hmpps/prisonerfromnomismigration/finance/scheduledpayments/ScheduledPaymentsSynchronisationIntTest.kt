@@ -135,7 +135,7 @@ class ScheduledPaymentsSynchronisationIntTest(
                 .withRequestBodyJsonPath("prisonNumber", equalTo(prisonNumber))
                 .withRequestBodyJsonPath("prisonId", equalTo("LEI"))
                 .withRequestBodyJsonPath("amount", equalTo("2.1"))
-                .withRequestBodyJsonPath("dayOfPayment", equalTo("WEDNESDAY"))
+                .withRequestBodyJsonPath("paymentSchedule", equalTo("WEDNESDAY"))
                 .withRequestBodyJsonPath("startDate", equalTo("2024-06-18"))
                 .withRequestBodyJsonPath("endDate", equalTo("2024-07-30"))
                 .withRequestBodyJsonPath("subAccountCode", equalTo("2103"))

@@ -156,7 +156,7 @@ class ScheduledPaymentsMigrationIntTest(
         assertThat(migrationRequests[0].prisonNumber).isEqualTo("A0001BC")
         assertThat(migrationRequests[0].prisonId).isEqualTo("LEI")
         assertThat(migrationRequests[0].amount).isEqualTo(BigDecimal("2.10"))
-        assertThat(migrationRequests[0].dayOfPayment).isEqualTo(SyncCreateSubscriptionRequest.DayOfPayment.WEDNESDAY)
+        assertThat(migrationRequests[0].paymentSchedule).isEqualTo(SyncCreateSubscriptionRequest.PaymentSchedule.WEDNESDAY)
         assertThat(migrationRequests[0].startDate).isEqualTo(LocalDate.parse("2024-06-18"))
         assertThat(migrationRequests[0].endDate).isEqualTo(LocalDate.parse("2024-07-30"))
         assertThat(migrationRequests[0].subAccountCode).isEqualTo(2103)

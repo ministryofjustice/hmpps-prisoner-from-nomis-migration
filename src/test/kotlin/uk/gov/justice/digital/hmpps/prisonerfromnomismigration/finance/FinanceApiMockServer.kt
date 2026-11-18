@@ -194,7 +194,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun syncScheduledPaymentDto(prisonNumber: String = "A0001BC") = SyncCreateSubscriptionRequest(
       legacyPaymentProfileId = 12345,
       amount = BigDecimal.valueOf(2.10),
-      dayOfPayment = SyncCreateSubscriptionRequest.DayOfPayment.TUESDAY,
+      paymentSchedule = SyncCreateSubscriptionRequest.PaymentSchedule.TUESDAY,
       startDate = LocalDate.of(2024, Month.JUNE, 18),
       endDate = LocalDate.of(2024, Month.JULY, 30),
       subscriptionType = "TV",
@@ -430,7 +430,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubUpdateScheduledPayment(
     subscriptionId: UUID,
-    response: SyncUpdateSubscriptionResponse = SyncUpdateSubscriptionResponse(LocalDate.of(2024, Month.AUGUST, 6)),
+    response: SyncUpdateSubscriptionResponse = SyncUpdateSubscriptionResponse(endDate = LocalDate.of(2024, Month.AUGUST, 6)),
   ) {
     stubFor(
       post("/sync/subscriptions/$subscriptionId/update")
