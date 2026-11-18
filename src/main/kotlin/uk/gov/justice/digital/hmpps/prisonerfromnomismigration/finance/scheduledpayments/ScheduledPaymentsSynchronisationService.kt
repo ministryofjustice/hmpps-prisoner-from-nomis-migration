@@ -85,9 +85,13 @@ class ScheduledPaymentsSynchronisationService(
       telemetry["dpsScheduledPaymentId"] = mapping.dpsId
       val nomisScheduledPayment = nomisApiService.getScheduledPayment(nomisId)
       // DPS only supports ending a scheduled payment
-      nomisScheduledPayment.endDate
-        ?.let { dpsApiService.updateScheduledPayment(UUID.fromString(mapping.dpsId), SyncUpdateSubscriptionRequest(endDate = it)) }
-        ?: telemetryClient.trackEvent("$TELEMETRY_PREFIX-updated-ignored-no-end-date", telemetry)
+      dpsApiService.updateScheduledPayment(
+        UUID.fromString(mapping.dpsId),
+        SyncUpdateSubscriptionRequest(
+          startDate = nomisScheduledPayment.startDate,
+          endDate = nomisScheduledPayment.endDate,
+        ),
+      )
     }
   }
 

@@ -529,7 +529,7 @@ class FinanceDpsApiServiceTest {
     }
 
     @Nested
-    inner class UpdateScheduledPayment {
+    inner class UpdateScheduledPaymentDates {
       val subscriptionId: UUID = UUID.randomUUID()
 
       @Test
@@ -552,6 +552,7 @@ class FinanceDpsApiServiceTest {
 
         financeApi.verify(
           postRequestedFor(anyUrl())
+            .withRequestBodyJsonPath("startDate", equalTo("2024-06-16"))
             .withRequestBodyJsonPath("endDate", equalTo("2024-08-06")),
         )
       }
@@ -568,11 +569,12 @@ class FinanceDpsApiServiceTest {
       }
 
       @Test
-      fun `will return updated end date`() = runTest {
+      fun `will return updated start and end date`() = runTest {
         financeApi.stubUpdateScheduledPayment(subscriptionId)
 
         val response = apiService.updateScheduledPayment(subscriptionId, syncUpdateScheduledPaymentDto())
 
+        assertThat(response.startDate).isEqualTo(LocalDate.parse("2024-06-16"))
         assertThat(response.endDate).isEqualTo(LocalDate.parse("2024-08-06"))
       }
     }

@@ -207,6 +207,7 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
 
     fun syncUpdateScheduledPaymentDto() = SyncUpdateSubscriptionRequest(
+      startDate = LocalDate.of(2024, Month.JUNE, 16),
       endDate = LocalDate.of(2024, Month.AUGUST, 6),
     )
   }
@@ -430,7 +431,10 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
 
   fun stubUpdateScheduledPayment(
     subscriptionId: UUID,
-    response: SyncUpdateSubscriptionResponse = SyncUpdateSubscriptionResponse(endDate = LocalDate.of(2024, Month.AUGUST, 6)),
+    response: SyncUpdateSubscriptionResponse = SyncUpdateSubscriptionResponse(
+      startDate = LocalDate.of(2024, Month.JUNE, 16),
+      endDate = LocalDate.of(2024, Month.AUGUST, 6),
+    ),
   ) {
     stubFor(
       post("/sync/subscriptions/$subscriptionId/update")
