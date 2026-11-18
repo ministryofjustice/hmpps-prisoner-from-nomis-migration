@@ -214,7 +214,7 @@ fun SysconAliasesAndIdentifiersResponseBody.toCorePersonAliasIdentifierMappingsD
       label = migrationId,
     )
   },
-  identifiers = identifiersMappings.map {
+  identifiers = aliasesMappings.flatMap { it.identifierMappings }.map {
     OffenderIdentifierMappingDto(
       cprId = it.cprIdentifierId,
       nomisOffenderId = it.nomisIdentifierId.nomisOffenderId,

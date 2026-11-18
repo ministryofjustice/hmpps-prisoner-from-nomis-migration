@@ -20,7 +20,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasWithIdentifiersMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasesAndIdentifiersResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconIdentifiersResponseBody
@@ -87,7 +87,7 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") webClient: We
     .deletePrisonerAddress(prisonNumber, cprAddressId)
     .awaitSingle()
 
-  suspend fun syncCreateAlias(prisonNumber: String, alias: PrisonAlias): SysconAliasWithIdentifiersMapping = api
+  suspend fun syncCreateAlias(prisonNumber: String, alias: PrisonAlias): SysconAliasMapping = api
     .prepare(api.createPrisonerAliasRequestConfig(prisonNumber, alias))
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()

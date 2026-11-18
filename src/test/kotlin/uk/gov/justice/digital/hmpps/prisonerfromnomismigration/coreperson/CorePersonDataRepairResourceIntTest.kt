@@ -563,14 +563,17 @@ class CorePersonDataRepairResourceIntTest(
         cprApiMock.stubMigrateAliasesAndIdentifiers(
           nomisPrisonNumber = prisonNumber,
           aliasMappings = listOf(
-            SysconAliasMapping(nomisOffenderId = 10000, cprAliasId = "4d1d4b0e-2a3c-4f3e-9d6a-0f0c1b2a3c4d"),
-            SysconAliasMapping(nomisOffenderId = 10001, cprAliasId = "5e2e5c1f-3b4d-4a4f-8e7b-1a1d2c3b4d5e"),
-          ),
-          identifierMappings = listOf(
-            SysconIdentifierMapping(
-              nomisIdentifierId = NomisIdentifierId(nomisOffenderId = 10000, nomisSequence = 1),
-              cprIdentifierId = "6f3f6d2a-4c5e-4b5a-9f8c-2b2e3d4c5e6f",
+            SysconAliasMapping(
+              nomisOffenderId = 10000,
+              cprAliasId = "4d1d4b0e-2a3c-4f3e-9d6a-0f0c1b2a3c4d",
+              listOf(
+                SysconIdentifierMapping(
+                  nomisIdentifierId = NomisIdentifierId(nomisOffenderId = 10000, nomisSequence = 1),
+                  cprIdentifierId = "6f3f6d2a-4c5e-4b5a-9f8c-2b2e3d4c5e6f",
+                ),
+              ),
             ),
+            SysconAliasMapping(nomisOffenderId = 10001, cprAliasId = "5e2e5c1f-3b4d-4a4f-8e7b-1a1d2c3b4d5e", emptyList()),
           ),
         )
         aliasIdentifierMappingApiMockServer.stubReplaceMappings()

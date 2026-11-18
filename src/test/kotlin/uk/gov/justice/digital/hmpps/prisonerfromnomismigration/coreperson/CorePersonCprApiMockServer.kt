@@ -21,7 +21,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressesAndContactsResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasMapping
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasWithIdentifiersMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasesAndIdentifiersResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconIdentifierMapping
@@ -116,7 +115,6 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     response: SysconAliasesAndIdentifiersResponseBody = SysconAliasesAndIdentifiersResponseBody(
       prisonNumber = nomisPrisonNumber,
       aliasesMappings = aliasMappings,
-      identifiersMappings = identifierMappings,
     ),
     error: ErrorResponse = ErrorResponse(status = status.value()),
   ) {
@@ -158,7 +156,7 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     nomisOffenderId: Long = 123456,
     cprAliasId: String = "cpr-alias-id",
     status: HttpStatus = HttpStatus.CREATED,
-    response: SysconAliasWithIdentifiersMapping = SysconAliasWithIdentifiersMapping(
+    response: SysconAliasMapping = SysconAliasMapping(
       nomisOffenderId = nomisOffenderId,
       cprAliasId = cprAliasId,
       identifierMappings = emptyList(),

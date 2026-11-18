@@ -7,7 +7,7 @@
       "name" : "HMPPS Person Record",
       "email" : "hmpps-person-record@digital.justice.gov.uk"
     },
-    "version" : "2026-11-13.6258.d7ca680"
+    "version" : "2026-11-18"
   },
   "servers" : [ {
     "url" : "https://hmpps-person-record-dev.hmpps.service.justice.gov.uk",
@@ -1017,7 +1017,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/SysconAliasWithIdentifiersMapping"
+                  "$ref" : "#/components/schemas/SysconAliasMapping"
                 }
               }
             }
@@ -3203,7 +3203,7 @@
         },
         "required" : [ "prisonNumber", "religionMappings" ]
       },
-      "SysconAliasWithIdentifiersMapping" : {
+      "SysconAliasMapping" : {
         "type" : "object",
         "properties" : {
           "nomisOffenderId" : {
@@ -3235,19 +3235,6 @@
         },
         "required" : [ "aliases" ]
       },
-      "SysconAliasMapping" : {
-        "type" : "object",
-        "properties" : {
-          "nomisOffenderId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "cprAliasId" : {
-            "type" : "string"
-          }
-        },
-        "required" : [ "cprAliasId", "nomisOffenderId" ]
-      },
       "SysconAliasesAndIdentifiersResponseBody" : {
         "type" : "object",
         "properties" : {
@@ -3259,15 +3246,9 @@
             "items" : {
               "$ref" : "#/components/schemas/SysconAliasMapping"
             }
-          },
-          "identifiersMappings" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/SysconIdentifierMapping"
-            }
           }
         },
-        "required" : [ "aliasesMappings", "identifiersMappings", "prisonNumber" ]
+        "required" : [ "aliasesMappings", "prisonNumber" ]
       },
       "ExactMatchSearchRequest" : {
         "type" : "object",
