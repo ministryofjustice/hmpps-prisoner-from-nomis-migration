@@ -39,6 +39,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Synchroni
 import java.util.*
 
 private const val TELEMETRY_PREFIX = "person-location-sync-movement"
+private const val SCHEDULE_NOT_FOUND = "NOT_FOUND"
 
 @Service
 class PersonLocationSyncMovementService(
@@ -67,22 +68,26 @@ class PersonLocationSyncMovementService(
   }
 
   private suspend fun getDpsScheduleReference(movementType: PersonLocationMovement.MovementType, nomisScheduleId: Long): String? = when (movementType) {
-    TRN -> tryFetchParent("transfer schedule mapping for nomisScheduleId=$nomisScheduleId") {
-      transferScheduleMappingApiService.getTransferScheduleMappingOrNull(nomisScheduleId)
-    }.let { "$TRN_URN_PREFIX${it.dpsTransferScheduleId}" }
+    TRN -> transferScheduleMappingApiService.getTransferScheduleMappingOrNull(nomisScheduleId)
+      ?.let { "$TRN_URN_PREFIX${it.dpsTransferScheduleId}" }
 
-    TAP -> tryFetchParent("tap schedule mapping for nomisScheduleId=$nomisScheduleId") {
-      tapMappingApiService.getTapScheduleMappingOrNull(nomisScheduleId)
-    }.let { "$TAP_URN_PREFIX${it.dpsOccurrenceId}" }
+    TAP -> tapMappingApiService.getTapScheduleMappingOrNull(nomisScheduleId)
+      ?.let { "$TAP_URN_PREFIX${it.dpsOccurrenceId}" }
 
-    CRT -> tryFetchParent("court schedule mapping for $nomisScheduleId") {
-      courtSchedulerMappingApiService.getCourtScheduleMappingOrNull(nomisScheduleId)
-        ?.let { "$CAS_URN_PREFIX${it.dpsCourtAppearanceId}" }
-        ?: courtSentencingMappingApiService.getCourtAppearanceOrNullByNomisId(nomisScheduleId)
-          ?.let { "$RAS_URN_PREFIX${it.dpsCourtAppearanceId}" }
-    }
+    CRT -> courtSchedulerMappingApiService.getCourtScheduleMappingOrNull(nomisScheduleId)
+      ?.let { "$CAS_URN_PREFIX${it.dpsCourtAppearanceId}" }
+      ?: courtSentencingMappingApiService.getCourtAppearanceOrNullByNomisId(nomisScheduleId)
+        ?.let { "$RAS_URN_PREFIX${it.dpsCourtAppearanceId}" }
 
     else -> null
+  }
+
+  // A missing schedule must not block the movement; schedule syncs will report any schedule problems
+  private suspend fun lookupDpsScheduleReference(nomis: PersonLocationMovement, telemetry: MutableMap<String, Any>): String? {
+    val scheduleId = nomis.scheduleId?.takeIf { nomis.directionCode == OUT } ?: return null
+    if (nomis.movementType !in setOf(TRN, TAP, CRT)) return null
+    return getDpsScheduleReference(nomis.movementType, scheduleId)
+      .also { telemetry["dpsScheduleReference"] = it ?: SCHEDULE_NOT_FOUND }
   }
 
   private suspend fun externalMovementInserted(event: ExternalMovementEvent) {
@@ -166,11 +171,7 @@ class PersonLocationSyncMovementService(
     val (bookingId, prisonerNumber, movementSeq) = event
     val nomis = nomisApiService.getPersonLocationMovement(prisonerNumber!!, bookingId, movementSeq)
       .also { telemetry["nomisEventId"] = "${it.scheduleId}" }
-    val dpsScheduleReference = if (nomis.directionCode == OUT) {
-      nomis.scheduleId?.let { getDpsScheduleReference(nomis.movementType, it) }
-    } else {
-      null
-    }
+    val dpsScheduleReference = lookupDpsScheduleReference(nomis, telemetry)
     val dpsCustodialSeriesId = tryFetchParent("mapping for bookingId=$bookingId") {
       mappingApiService.getBookingMappingOrNull(bookingId)
     }.dpsCustodialSeriesId
