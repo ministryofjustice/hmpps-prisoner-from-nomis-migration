@@ -493,7 +493,7 @@ class FinanceDpsApiServiceTest {
           postRequestedFor(anyUrl())
             .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo("12345"))
             .withRequestBodyJsonPath("amount", equalTo("2.1"))
-            .withRequestBodyJsonPath("dayOfPayment", equalTo("TUESDAY"))
+            .withRequestBodyJsonPath("paymentSchedule", equalTo("TUESDAY"))
             .withRequestBodyJsonPath("startDate", equalTo("2024-06-18"))
             .withRequestBodyJsonPath("endDate", equalTo("2024-07-30"))
             .withRequestBodyJsonPath("subscriptionType", equalTo("TV"))
