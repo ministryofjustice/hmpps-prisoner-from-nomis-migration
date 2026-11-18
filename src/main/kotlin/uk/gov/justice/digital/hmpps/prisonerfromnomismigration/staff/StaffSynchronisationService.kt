@@ -1,8 +1,6 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.staff
 
 import com.microsoft.applicationinsights.TelemetryClient
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
@@ -29,9 +27,6 @@ class StaffSynchronisationService(
   private val dpsApiService: StaffDpsApiService,
   override val telemetryClient: TelemetryClient,
 ) : TelemetryEnabled {
-  private companion object {
-    val log: Logger = LoggerFactory.getLogger(this::class.java)
-  }
 
   suspend fun resynchroniseStaff(staffId: Long) {
     val nomisStaff = nomisApiService.getStaffDetailsById(staffId)
@@ -86,9 +81,9 @@ class StaffSynchronisationService(
     synchroniseStaff(event, "laaadministrator-synchronisation-$eventType", telemetry)
   }
 
-  suspend fun laaGeneralUserUpserted(eventType: String) {
-    // TODO
-    log.info("LAA General User event $eventType received, to be implemented")
+  suspend fun laaGeneralUserUpserted(eventType: String, event: LaaGeneralUserEvent) {
+    val telemetry = telemetryOf("nomisStaffId" to event.staffId, "username" to event.username, "caseloadId" to event.caseloadId)
+    synchroniseStaff(event, "laageneraluser-synchronisation-$eventType", telemetry)
   }
 
   private suspend fun synchroniseStaff(
