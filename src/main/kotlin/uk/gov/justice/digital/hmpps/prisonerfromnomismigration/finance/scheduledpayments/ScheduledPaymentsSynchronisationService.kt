@@ -154,7 +154,7 @@ fun ScheduledPaymentDto.toCreateScheduledPaymentDto() = SyncCreateSubscriptionRe
   prisonNumber = prisonNumber,
   prisonId = caseloadId,
   amount = MoneySupport.penceToPounds(amount),
-  dayOfPayment = dayOfWeek.toDpsDayOfPayment(),
+  paymentSchedule = dayOfWeek.toDpsPaymentSchedule(),
   startDate = startDate,
   endDate = endDate,
   subAccountCode = subAccountCode,
@@ -164,14 +164,13 @@ fun ScheduledPaymentDto.toCreateScheduledPaymentDto() = SyncCreateSubscriptionRe
   createdBy = createdBy,
 )
 
-fun ScheduledPaymentDto.DayOfWeek.toDpsDayOfPayment() = when (this) {
-  ScheduledPaymentDto.DayOfWeek.MON -> SyncCreateSubscriptionRequest.DayOfPayment.MONDAY
-  ScheduledPaymentDto.DayOfWeek.TUE -> SyncCreateSubscriptionRequest.DayOfPayment.TUESDAY
-  ScheduledPaymentDto.DayOfWeek.WED -> SyncCreateSubscriptionRequest.DayOfPayment.WEDNESDAY
-  ScheduledPaymentDto.DayOfWeek.THU -> SyncCreateSubscriptionRequest.DayOfPayment.THURSDAY
-  ScheduledPaymentDto.DayOfWeek.FRI -> SyncCreateSubscriptionRequest.DayOfPayment.FRIDAY
-  ScheduledPaymentDto.DayOfWeek.SAT -> SyncCreateSubscriptionRequest.DayOfPayment.SATURDAY
-  ScheduledPaymentDto.DayOfWeek.SUN -> SyncCreateSubscriptionRequest.DayOfPayment.SUNDAY
-  // TODO: DPS does not support MON-FRI, so we will default to Monday for now.
-  ScheduledPaymentDto.DayOfWeek.MON_FRI -> SyncCreateSubscriptionRequest.DayOfPayment.MONDAY
+fun ScheduledPaymentDto.DayOfWeek.toDpsPaymentSchedule() = when (this) {
+  ScheduledPaymentDto.DayOfWeek.MON -> SyncCreateSubscriptionRequest.PaymentSchedule.MONDAY
+  ScheduledPaymentDto.DayOfWeek.TUE -> SyncCreateSubscriptionRequest.PaymentSchedule.TUESDAY
+  ScheduledPaymentDto.DayOfWeek.WED -> SyncCreateSubscriptionRequest.PaymentSchedule.WEDNESDAY
+  ScheduledPaymentDto.DayOfWeek.THU -> SyncCreateSubscriptionRequest.PaymentSchedule.THURSDAY
+  ScheduledPaymentDto.DayOfWeek.FRI -> SyncCreateSubscriptionRequest.PaymentSchedule.FRIDAY
+  ScheduledPaymentDto.DayOfWeek.SAT -> SyncCreateSubscriptionRequest.PaymentSchedule.SATURDAY
+  ScheduledPaymentDto.DayOfWeek.SUN -> SyncCreateSubscriptionRequest.PaymentSchedule.SUNDAY
+  ScheduledPaymentDto.DayOfWeek.MON_FRI -> SyncCreateSubscriptionRequest.PaymentSchedule.MONDAY_TO_FRIDAY
 }

@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-13.1280.c0b82f7"
+    "version" : "2026-11-18.1292.4f0a5aa"
   },
   "servers" : [ {
     "url" : "https://prisoner-finance-sync-api-dev.hmpps.service.justice.gov.uk/",
@@ -199,8 +199,8 @@
               }
             }
           },
-          "501" : {
-            "description" : "This endpoint is not yet implemented.",
+          "502" : {
+            "description" : "A dependency error occurred.",
             "content" : {
               "*/*" : {
                 "schema" : {
@@ -1574,11 +1574,11 @@
             "description" : "The amount paid weekly",
             "example" : 0.5
           },
-          "dayOfPayment" : {
+          "paymentSchedule" : {
             "type" : "string",
-            "description" : "The day the payment is made weekly",
-            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ],
-            "example" : "MONDAY"
+            "description" : "The day or days the payment is made weekly",
+            "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY", "MONDAY_TO_FRIDAY" ],
+            "example" : "MONDAY_TO_FRIDAY / TUESDAY"
           },
           "startDate" : {
             "type" : "string",
@@ -1630,7 +1630,7 @@
             "example" : 2101
           }
         },
-        "required" : [ "amount", "createdAt", "createdBy", "dayOfPayment", "legacyPaymentProfileId", "prisonId", "prisonNumber", "startDate", "subAccountCode", "subscriptionType" ]
+        "required" : [ "amount", "createdAt", "createdBy", "legacyPaymentProfileId", "paymentSchedule", "prisonId", "prisonNumber", "startDate", "subAccountCode", "subscriptionType" ]
       },
       "SyncCreateSubscriptionResponse" : {
         "type" : "object",
@@ -1669,26 +1669,36 @@
       "SyncUpdateSubscriptionRequest" : {
         "type" : "object",
         "properties" : {
-          "endDate" : {
-            "type" : "string",
+          "startDate" : {
+            "type" : [ "string", "null" ],
             "format" : "date",
-            "description" : "The subscription end date",
-            "example" : "2026-07-01"
+            "description" : "The updated subscription start date - Must be before the end date of the subscription",
+            "example" : "2026-06-14"
+          },
+          "endDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The updated subscription end date - Must be after the start date of the subscription",
+            "example" : "2026-07-14"
           }
-        },
-        "required" : [ "endDate" ]
+        }
       },
       "SyncUpdateSubscriptionResponse" : {
         "type" : "object",
         "properties" : {
+          "startDate" : {
+            "type" : [ "string", "null" ],
+            "format" : "date",
+            "description" : "The updated subscription start date",
+            "example" : "2026-06-14"
+          },
           "endDate" : {
-            "type" : "string",
+            "type" : [ "string", "null" ],
             "format" : "date",
             "description" : "The updated subscription end date",
-            "example" : "2026-07-01"
+            "example" : "2026-07-14"
           }
-        },
-        "required" : [ "endDate" ]
+        }
       },
       "GeneralLedgerEntry" : {
         "type" : "object",
