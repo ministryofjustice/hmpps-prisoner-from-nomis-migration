@@ -175,6 +175,7 @@ class PersonLocationSyncMovementIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["movementSeq"]).isEqualTo("3")
             assertThat(it["nomisEventId"]).isEqualTo("$NOMIS_SCHEDULE_ID")
+            assertThat(it["dpsScheduleReference"]).isEqualTo("urn:transfer-scheduler:transfer:$dpsTransferScheduleId")
             assertThat(it["dpsExternalMovementId"]).isEqualTo("$dpsExternalMovementId")
           },
           isNull(),
@@ -235,6 +236,7 @@ class PersonLocationSyncMovementIntTest(
             assertThat(it["bookingId"]).isEqualTo("12345")
             assertThat(it["movementSeq"]).isEqualTo("3")
             assertThat(it["nomisEventId"]).isEqualTo("null")
+            assertThat(it).doesNotContainKey("dpsScheduleReference")
             assertThat(it["dpsExternalMovementId"]).isEqualTo("$dpsExternalMovementId")
           },
           isNull(),
@@ -317,31 +319,40 @@ class PersonLocationSyncMovementIntTest(
         mappingApi.stubGetPersonLocationMovementMapping(nomisBookingId = 12345, nomisMovementSeq = 3, status = NOT_FOUND)
         nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = transferMovementOut(scheduleId = NOMIS_SCHEDULE_ID))
         transferScheduleMappingApi.stubGetTransferScheduleMapping(NOMIS_SCHEDULE_ID, status = NOT_FOUND)
+        mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        dpsApi.stubSyncExternalMovement("A1234BC", response = ReferenceId(dpsExternalMovementId))
+        mappingApi.stubCreatePersonLocationMovementMapping()
 
         personLocationsOffenderEventsQueue.sendMessage(transferMovementEvent())
-          .also { waitForAnyProcessingToComplete("person-location-sync-movement-inserted-awaiting-parent", times = 2) }
+          .also { waitForAnyProcessingToComplete() }
       }
 
       @Test
-      fun `should retry the schedule mapping lookup`() {
-        transferScheduleMappingApi.verify(2, getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/$NOMIS_SCHEDULE_ID")))
+      fun `should NOT retry the schedule mapping lookup`() {
+        transferScheduleMappingApi.verify(1, getRequestedFor(urlPathEqualTo("/mapping/transfer-scheduler/schedule/nomis-id/$NOMIS_SCHEDULE_ID")))
       }
 
       @Test
-      fun `should NOT call DPS or create mapping`() {
-        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
-        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      fun `should create DPS external movement without a schedule reference`() {
+        getRequest().movement.apply {
+          assertThat(journey.type).isEqualTo(SyncExternalJourney.Type.TRANSFER)
+          assertThat(journey.scheduleReference).isNull()
+        }
       }
 
       @Test
-      fun `should publish awaiting parent telemetry`() {
-        verify(telemetryClient, times(2)).trackEvent(
-          eq("person-location-sync-movement-inserted-awaiting-parent"),
+      fun `should create mapping`() {
+        mappingApi.verify(postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      }
+
+      @Test
+      fun `should publish success telemetry with schedule not found`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-movement-inserted-success"),
           check {
-            assertThat(it["bookingId"]).isEqualTo("12345")
-            assertThat(it["movementSeq"]).isEqualTo("3")
             assertThat(it["nomisEventId"]).isEqualTo("$NOMIS_SCHEDULE_ID")
-            assertThat(it["error"]).isEqualTo("Expected parent entity not found, retrying: transfer schedule mapping for nomisScheduleId=$NOMIS_SCHEDULE_ID")
+            assertThat(it["dpsScheduleReference"]).isEqualTo("NOT_FOUND")
+            assertThat(it["dpsExternalMovementId"]).isEqualTo("$dpsExternalMovementId")
           },
           isNull(),
         )
@@ -771,21 +782,39 @@ class PersonLocationSyncMovementIntTest(
         nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = movementOut(CRT, scheduleId = NOMIS_SCHEDULE_ID))
         courtSchedulerMappingApi.stubGetCourtScheduleMapping(NOMIS_SCHEDULE_ID, status = NOT_FOUND)
         mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        dpsApi.stubSyncExternalMovement("A1234BC", response = ReferenceId(dpsExternalMovementId))
+        mappingApi.stubCreatePersonLocationMovementMapping()
 
         personLocationsOffenderEventsQueue.sendMessage(movementEvent("CRT"))
-          .also { waitForAnyProcessingToComplete("person-location-sync-movement-inserted-awaiting-parent", times = 2) }
+          .also { waitForAnyProcessingToComplete() }
       }
 
       @Test
-      fun `should retry the schedule mapping lookup`() {
-        courtSchedulerMappingApi.verify(2, getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/$NOMIS_SCHEDULE_ID")))
-        courtSentencingMappingApi.verify(2, getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/$NOMIS_SCHEDULE_ID")))
+      fun `should check both schedule mappings once`() {
+        courtSchedulerMappingApi.verify(1, getRequestedFor(urlPathEqualTo("/mapping/court-scheduler/schedule/nomis-id/$NOMIS_SCHEDULE_ID")))
+        courtSentencingMappingApi.verify(1, getRequestedFor(urlPathEqualTo("/mapping/court-sentencing/court-appearances/nomis-court-appearance-id/$NOMIS_SCHEDULE_ID")))
       }
 
       @Test
-      fun `should NOT call DPS or create mapping`() {
-        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
-        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      fun `should create DPS external movement without a schedule reference`() {
+        getRequest().movement.apply {
+          assertThat(journey.type).isEqualTo(SyncExternalJourney.Type.COURT_APPEARANCE)
+          assertThat(journey.scheduleReference).isNull()
+        }
+      }
+
+      @Test
+      fun `should create mapping`() {
+        mappingApi.verify(postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      }
+
+      @Test
+      fun `should publish success telemetry with schedule not found`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-movement-inserted-success"),
+          check { assertThat(it["dpsScheduleReference"]).isEqualTo("NOT_FOUND") },
+          isNull(),
+        )
       }
     }
 
@@ -800,20 +829,38 @@ class PersonLocationSyncMovementIntTest(
         nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = movementOut(TAP, scheduleId = NOMIS_SCHEDULE_ID))
         tapMappingApi.stubGetTapScheduleMapping(NOMIS_SCHEDULE_ID, status = NOT_FOUND)
         mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        dpsApi.stubSyncExternalMovement("A1234BC", response = ReferenceId(dpsExternalMovementId))
+        mappingApi.stubCreatePersonLocationMovementMapping()
 
         personLocationsOffenderEventsQueue.sendMessage(movementEvent("TAP"))
-          .also { waitForAnyProcessingToComplete("person-location-sync-movement-inserted-awaiting-parent", times = 2) }
+          .also { waitForAnyProcessingToComplete() }
       }
 
       @Test
-      fun `should retry the schedule mapping lookup`() {
-        tapMappingApi.verify(2, getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/$NOMIS_SCHEDULE_ID")))
+      fun `should NOT retry the schedule mapping lookup`() {
+        tapMappingApi.verify(1, getRequestedFor(urlPathEqualTo("/mapping/taps/schedule/nomis-id/$NOMIS_SCHEDULE_ID")))
       }
 
       @Test
-      fun `should NOT call DPS or create mapping`() {
-        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
-        mappingApi.verify(0, postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      fun `should create DPS external movement without a schedule reference`() {
+        getRequest().movement.apply {
+          assertThat(journey.type).isEqualTo(SyncExternalJourney.Type.TEMPORARY_ABSENCE)
+          assertThat(journey.scheduleReference).isNull()
+        }
+      }
+
+      @Test
+      fun `should create mapping`() {
+        mappingApi.verify(postRequestedFor(urlPathEqualTo("/mapping/person-location/movement")))
+      }
+
+      @Test
+      fun `should publish success telemetry with schedule not found`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-movement-inserted-success"),
+          check { assertThat(it["dpsScheduleReference"]).isEqualTo("NOT_FOUND") },
+          isNull(),
+        )
       }
     }
   }
@@ -982,14 +1029,27 @@ class PersonLocationSyncMovementIntTest(
         nomisApi.stubGetPersonLocationMovement(bookingId = 12345, movementSeq = 3, response = movementOut(TAP, scheduleId = NOMIS_SCHEDULE_ID))
         tapMappingApi.stubGetTapScheduleMapping(NOMIS_SCHEDULE_ID, status = NOT_FOUND)
         mappingApi.stubGetPersonLocationBookingMapping(nomisBookingId = 12345, response = personLocationBookingMapping(nomisBookingId = 12345, dpsCustodialSeriesId = dpsCustodialSeriesId))
+        dpsApi.stubSyncExternalMovement("A1234BC", response = ReferenceId(dpsExternalMovementId))
 
         personLocationsOffenderEventsQueue.sendMessage(movementEvent("TAP", recordInserted = false))
-          .also { waitForAnyProcessingToComplete("person-location-sync-movement-updated-awaiting-parent", times = 2) }
+          .also { waitForAnyProcessingToComplete() }
       }
 
       @Test
-      fun `should NOT call DPS`() {
-        dpsApi.verify(0, putRequestedFor(urlPathEqualTo("/sync/external-movements/A1234BC")))
+      fun `should update DPS external movement without a schedule reference`() {
+        getRequest().movement.apply {
+          assertThat(dpsId).isEqualTo(dpsExternalMovementId)
+          assertThat(journey.scheduleReference).isNull()
+        }
+      }
+
+      @Test
+      fun `should publish success telemetry with schedule not found`() {
+        verify(telemetryClient).trackEvent(
+          eq("person-location-sync-movement-updated-success"),
+          check { assertThat(it["dpsScheduleReference"]).isEqualTo("NOT_FOUND") },
+          isNull(),
+        )
       }
     }
 
