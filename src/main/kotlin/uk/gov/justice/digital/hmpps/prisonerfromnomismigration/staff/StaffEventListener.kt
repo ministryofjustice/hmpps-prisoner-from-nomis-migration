@@ -48,8 +48,9 @@ class StaffEventListener(
               "USER_CASELOAD_ROLES-DELETED" -> service.userCaseloadRoleUpserted("deleted", sqsMessage.Message.fromJson())
               "LAA_ADMINISTRATORS-INSERTED" -> service.laaAdministratorUpserted("created", sqsMessage.Message.fromJson())
               "LAA_ADMINISTRATORS-UPDATED" -> service.laaAdministratorUpserted("updated", sqsMessage.Message.fromJson())
-              "LAA_GENERAL_USERS-INSERTED" -> service.laaGeneralUserUpserted("created")
-              "LAA_GENERAL_USERS-UPDATED" -> service.laaGeneralUserUpserted("updated")
+              "LAA_GENERAL_USERS-INSERTED" -> service.laaGeneralUserUpserted("created", sqsMessage.Message.fromJson())
+              "LAA_GENERAL_USERS-UPDATED" -> service.laaGeneralUserUpserted("updated", sqsMessage.Message.fromJson())
+              "LAA_GENERAL_USERS-DELETED" -> service.laaGeneralUserUpserted("deleted", sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
           } else {
@@ -102,6 +103,13 @@ data class UserCaseloadRoleEvent(
 ) : UsernameAuditedEvent
 
 data class LaaAdministratorEvent(
+  override val staffId: Long,
+  override val username: String,
+  val caseloadId: String,
+  override val auditModuleName: String,
+) : UsernameAuditedEvent
+
+data class LaaGeneralUserEvent(
   override val staffId: Long,
   override val username: String,
   val caseloadId: String,
