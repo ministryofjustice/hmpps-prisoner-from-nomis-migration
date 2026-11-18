@@ -83,20 +83,22 @@ class BedAssignmentSyncService(
     }
   }
 
-  suspend fun toDps(nomisHistory: PrisonerBedAssignmentHistoryResponse): List<NomisBedAssignment> = nomisHistory
-    .bedAssignments.map {
+  suspend fun toDps(nomisHistory: PrisonerBedAssignmentHistoryResponse): List<NomisBedAssignment> {
+    val locations = nomisHistory.bedAssignments.map { it.livingUnitId }.distinct().associateWith { toDpsLocation(it) }
+    return nomisHistory.bedAssignments.map {
       NomisBedAssignment(
         bookingId = it.bookingId,
         sequence = it.sequence,
         livingUnitId = it.livingUnitId,
         livingUnitDescription = it.livingUnitDescription,
-        locationId = toDpsLocation(it.livingUnitId),
+        locationId = locations[it.livingUnitId],
         assignmentDateTime = it.assignmentDateTime,
         assignmentEndDateTime = it.assignmentEndDateTime,
         assignmentReasonCode = it.assignmentReasonCode,
         createdBy = it.audit.createUsername,
       )
     }
+  }
 
   private suspend fun toDpsLocation(livingUnitId: Long): UUID? = locationsMappingService
     .getMappingGivenNomisId(livingUnitId)?.dpsLocationId?.let(UUID::fromString)
