@@ -31,15 +31,16 @@ class CorePersonMappingApiMockServer(private val jsonMapper: JsonMapper) {
     )
   }
 
-  fun stubMerge() {
+  fun stubMerge(status: HttpStatus = HttpStatus.OK) {
     mappingApi.stubFor(
       post("/mapping/core-person/merge").willReturn(
         aResponse()
           .withHeader("Content-Type", "application/json")
-          .withStatus(HttpStatus.OK.value()),
+          .withStatus(status.value()),
       ),
     )
   }
 
   fun verify(pattern: RequestPatternBuilder) = mappingApi.verify(pattern)
+  fun verify(count: Int, pattern: RequestPatternBuilder) = mappingApi.verify(count, pattern)
 }
