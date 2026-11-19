@@ -1,5 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data
 
+import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 
 data class NomisPrisonerMergeEvent(
@@ -34,4 +36,15 @@ data class BookingMovedAdditionalInformationEvent(
   val movedToNomsNumber: String,
   val movedFromNomsNumber: String,
   val bookingId: Long,
+)
+
+data class NomisBookingReassignedEvent(
+  val bookingId: Long,
+  val offenderId: Long,
+  val offenderIdDisplay: String,
+  val previousOffenderId: Long,
+  val previousOffenderIdDisplay: String,
+  val bookingStartDateTime: LocalDateTime? = null,
+  val bookingEndDateTime: LocalDateTime? = null,
+  val lastAdmissionDate: LocalDate? = null,
 )
