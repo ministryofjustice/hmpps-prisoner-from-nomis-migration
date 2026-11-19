@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.scheduledpayments
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.absent
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -367,9 +368,10 @@ class ScheduledPaymentsSynchronisationIntTest(
         }
 
         @Test
-        fun `will update the end date in DPS`() {
+        fun `will update the start and end date in DPS`() {
           financeApi.verify(
             postRequestedFor(urlPathEqualTo("/sync/subscriptions/$dpsScheduledPaymentId/update"))
+              .withRequestBodyJsonPath("startDate", equalTo("2024-06-18"))
               .withRequestBodyJsonPath("endDate", equalTo("2024-08-06")),
           )
         }
@@ -402,14 +404,18 @@ class ScheduledPaymentsSynchronisationIntTest(
         }
 
         @Test
-        fun `will not update the scheduled payment in DPS`() {
-          financeApi.verify(0, postRequestedFor(urlPathEqualTo("/sync/subscriptions/$dpsScheduledPaymentId/update")))
+        fun `will update the scheduled payment in DPS with no endDate`() {
+          financeApi.verify(
+            postRequestedFor(urlPathEqualTo("/sync/subscriptions/$dpsScheduledPaymentId/update"))
+              .withRequestBodyJsonPath("startDate", equalTo("2024-06-18"))
+              .withRequestBodyJsonPath("endDate", absent()),
+          )
         }
 
         @Test
-        fun `will track telemetry for the ignored update`() {
+        fun `will track telemetry for the update`() {
           verify(telemetryClient).trackEvent(
-            eq("finance-scheduled-payments-synchronisation-updated-ignored-no-end-date"),
+            eq("finance-scheduled-payments-synchronisation-updated-success"),
             check {
               assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
               assertThat(it["nomisScheduledPaymentId"]).isEqualTo(scheduledPaymentId.toString())
