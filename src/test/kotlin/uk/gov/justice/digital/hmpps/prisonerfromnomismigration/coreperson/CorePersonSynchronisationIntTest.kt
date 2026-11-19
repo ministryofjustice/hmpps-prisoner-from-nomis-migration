@@ -694,6 +694,7 @@ class CorePersonSynchronisationIntTest(
     private val offenderId = 123456L
     private val previousOffenderNo = "A1000KT"
     private val previousOffenderId = 100000L
+    private val workingNameOffenderId = 100001L
     private val cprAliasId = "cpr-alias-id"
     private val primaryNameUrl = "/syscon-sync/person/$previousOffenderNo/primary-name/$cprAliasId"
 
@@ -704,8 +705,9 @@ class CorePersonSynchronisationIntTest(
       fun setUp() {
         setupSynchronisationTest()
 
+        corePersonNomisApiMock.stubGetWorkingName(prisonNumber = previousOffenderNo, offenderId = workingNameOffenderId)
         aliasIdentifierMappingApiMock.stubGetByNomisAliasIdOrNull(
-          nomisOffenderId = previousOffenderId,
+          nomisOffenderId = workingNameOffenderId,
           mapping = aliasMapping(),
         )
         corePersonCprApiMockServer.stubSyncPrimaryName(prisonNumber = previousOffenderNo, cprAliasId = cprAliasId)
@@ -714,8 +716,13 @@ class CorePersonSynchronisationIntTest(
       }
 
       @Test
-      fun `will get the alias mapping for the previous offender`() {
-        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/alias/nomis-offender-id/$previousOffenderId")))
+      fun `will get the working name from NOMIS for the previous prisoner`() {
+        nomisApi.verify(getRequestedFor(urlPathEqualTo("/core-person/$previousOffenderNo/working-name")))
+      }
+
+      @Test
+      fun `will get the alias mapping for the working name`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/alias/nomis-offender-id/$workingNameOffenderId")))
       }
 
       @Test
@@ -736,8 +743,42 @@ class CorePersonSynchronisationIntTest(
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
             assertThat(it["previousOffenderNo"]).isEqualTo(previousOffenderNo)
             assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
-            assertThat(it["nomisOffenderId"]).isEqualTo(previousOffenderId.toString())
+            assertThat(it["nomisOffenderId"]).isEqualTo(workingNameOffenderId.toString())
             assertThat(it["cprAliasId"]).isEqualTo(cprAliasId)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenNomisFails {
+      @BeforeEach
+      fun setUp() {
+        tearDownTelemetryClient()
+        corePersonNomisApiMock.stubGetWorkingName(prisonNumber = previousOffenderNo, status = HttpStatus.INTERNAL_SERVER_ERROR)
+        sendBookingReassignedEvent()
+          .also { waitForAnyProcessingToComplete("coreperson-booking-reassigned-synchronisation-error", times = 2) }
+      }
+
+      @Test
+      fun `will retry and send the event to the DLQ without updating CPR`() {
+        mappingApi.verify(0, getRequestedFor(urlPathMatching("/mapping/core-person/alias/.*")))
+        corePersonCprApiMockServer.verify(0, postRequestedFor(urlPathMatching("/syscon-sync/person/.*/primary-name/.*")))
+        await untilAsserted {
+          assertThat(corePersonOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1)
+        }
+      }
+
+      @Test
+      fun `will track the error for each attempt`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("coreperson-booking-reassigned-synchronisation-error"),
+          check {
+            assertThat(it["previousOffenderNo"]).isEqualTo(previousOffenderNo)
+            assertThat(it).doesNotContainKey("nomisOffenderId")
+            assertThat(it).doesNotContainKey("cprAliasId")
+            assertThat(it["error"]).isNotNull()
           },
           isNull(),
         )
@@ -749,7 +790,8 @@ class CorePersonSynchronisationIntTest(
       @BeforeEach
       fun setUp() {
         tearDownTelemetryClient()
-        aliasIdentifierMappingApiMock.stubGetByNomisAliasIdOrNull(nomisOffenderId = previousOffenderId, mapping = null)
+        corePersonNomisApiMock.stubGetWorkingName(prisonNumber = previousOffenderNo, offenderId = workingNameOffenderId)
+        aliasIdentifierMappingApiMock.stubGetByNomisAliasIdOrNull(nomisOffenderId = workingNameOffenderId, mapping = null)
         sendBookingReassignedEvent()
           .also { waitForAnyProcessingToComplete("coreperson-booking-reassigned-synchronisation-error", times = 2) }
       }
@@ -768,7 +810,7 @@ class CorePersonSynchronisationIntTest(
           eq("coreperson-booking-reassigned-synchronisation-error"),
           check {
             assertThat(it["previousOffenderNo"]).isEqualTo(previousOffenderNo)
-            assertThat(it["nomisOffenderId"]).isEqualTo(previousOffenderId.toString())
+            assertThat(it["nomisOffenderId"]).isEqualTo(workingNameOffenderId.toString())
             assertThat(it).doesNotContainKey("cprAliasId")
             assertThat(it["error"]).isNotNull()
           },
@@ -782,8 +824,9 @@ class CorePersonSynchronisationIntTest(
       @BeforeEach
       fun setUp() {
         tearDownTelemetryClient()
+        corePersonNomisApiMock.stubGetWorkingName(prisonNumber = previousOffenderNo, offenderId = workingNameOffenderId)
         aliasIdentifierMappingApiMock.stubGetByNomisAliasIdOrNull(
-          nomisOffenderId = previousOffenderId,
+          nomisOffenderId = workingNameOffenderId,
           mapping = aliasMapping(),
         )
         corePersonCprApiMockServer.stubSyncPrimaryName(
@@ -830,7 +873,7 @@ class CorePersonSynchronisationIntTest(
 
     private fun aliasMapping() = OffenderAliasMappingDto(
       cprId = cprAliasId,
-      nomisOffenderId = previousOffenderId,
+      nomisOffenderId = workingNameOffenderId,
       nomisPrisonNumber = previousOffenderNo,
       mappingType = OffenderAliasMappingDto.MappingType.MIGRATED,
     )

@@ -54,11 +54,7 @@ class CorePersonSynchronisationService(
       "bookingId" to bookingDeletedEvent.bookingId,
     )
     track("coreperson-booking-deleted-synchronisation", telemetry) {
-      val workingNameOffenderId = corePersonNomisApiService.getWorkingNameOffenderId(bookingDeletedEvent.offenderIdDisplay)
-        .also { telemetry["nomisOffenderId"] = it }
-      val cprAliasId = corePersonAliasIdentifierMappingService.getByNomisAliasId(workingNameOffenderId).cprId
-        .also { telemetry["cprAliasId"] = it }
-      corePersonCprApiService.syncPrimaryName(bookingDeletedEvent.offenderIdDisplay, cprAliasId)
+      syncPrimaryName(bookingDeletedEvent.offenderIdDisplay, telemetry)
     }
   }
 
@@ -68,13 +64,19 @@ class CorePersonSynchronisationService(
       "offenderNo" to bookingReassignedEvent.offenderIdDisplay,
       "previousOffenderNo" to bookingReassignedEvent.previousOffenderIdDisplay,
       "bookingId" to bookingReassignedEvent.bookingId,
-      "nomisOffenderId" to bookingReassignedEvent.previousOffenderId,
     )
     track("coreperson-booking-reassigned-synchronisation", telemetry) {
-      val cprAliasId = corePersonAliasIdentifierMappingService.getByNomisAliasId(bookingReassignedEvent.previousOffenderId).cprId
-        .also { telemetry["cprAliasId"] = it }
-      corePersonCprApiService.syncPrimaryName(bookingReassignedEvent.previousOffenderIdDisplay, cprAliasId)
+      // could be that they have moved an old booking so still need to get the working name from NOMIS
+      syncPrimaryName(bookingReassignedEvent.previousOffenderIdDisplay, telemetry)
     }
+  }
+
+  private suspend fun syncPrimaryName(prisonNumber: String, telemetry: MutableMap<String, Any>) {
+    val workingNameOffenderId = corePersonNomisApiService.getWorkingNameOffenderId(prisonNumber)
+      .also { telemetry["nomisOffenderId"] = it }
+    val cprAliasId = corePersonAliasIdentifierMappingService.getByNomisAliasId(workingNameOffenderId).cprId
+      .also { telemetry["cprAliasId"] = it }
+    corePersonCprApiService.syncPrimaryName(prisonNumber, cprAliasId)
   }
 
   private suspend fun prisonAddressesAndContactsRequestForMerge(prisonNumber: String): PrisonAddressesAndContactsRequest {
