@@ -33,11 +33,10 @@ class BedAssignmentSynchronisationEventListener(
       "Notification" -> {
         val eventType = sqsMessage.MessageAttributes!!.eventType.Value
         if (eventFeatureSwitch.isEnabled(eventType, "bedassignment")) {
-          val event = jsonMapper.readValue<BedAssignmentEvent>(sqsMessage.Message)
           when (eventType) {
-            "BED_ASSIGNMENT_HISTORY-INSERTED" -> syncService.create(event)
-            "BED_ASSIGNMENT_HISTORY-UPDATED" -> syncService.update(event)
-            "BED_ASSIGNMENT_HISTORY-DELETED" -> syncService.delete(event)
+            "BED_ASSIGNMENT_HISTORY-INSERTED" -> syncService.create(sqsMessage.Message.fromJson())
+            "BED_ASSIGNMENT_HISTORY-UPDATED" -> syncService.update(sqsMessage.Message.fromJson())
+            "BED_ASSIGNMENT_HISTORY-DELETED" -> syncService.delete(sqsMessage.Message.fromJson())
 
             else -> log.info("Received an unexpected bed-assignment event {}", eventType)
           }
@@ -50,6 +49,7 @@ class BedAssignmentSynchronisationEventListener(
       else -> log.info("Received an unexpected bed-assignment message type {}", sqsMessage.Type)
     }
   }
+  private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
 }
 
 data class BedAssignmentEvent(

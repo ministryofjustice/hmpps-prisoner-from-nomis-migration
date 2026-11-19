@@ -22,11 +22,14 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.Migration
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.MigrationType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.NomisApiService
 
+private const val TELEMETRY_BASE = "bedassignment-migration"
+
 @Service
 class BedAssignmentMigrationService(
   private val nomisApiService: NomisApiService,
+  private val bedAssignmentNomisApiService: BedAssignmentNomisApiService,
   private val bedAssignmentMappingService: BedAssignmentByPrisonerMappingApiService,
-  private val translatorService: TranslatorService,
+  private val bedAssignmentSyncService: BedAssignmentSyncService,
   private val dpsApiService: BedAssignmentDpsApiService,
   jsonMapper: JsonMapper,
   @Value($$"${bedassignment.page.size:1000}") pageSize: Long,
@@ -77,7 +80,7 @@ class BedAssignmentMigrationService(
       "migrationType" to MigrationType.BED_ASSIGNMENT.name,
     )
     try {
-      val history = translatorService.getHistory(offenderNo)
+      val history = bedAssignmentSyncService.toDps(bedAssignmentNomisApiService.getBedAssignments(offenderNo))
       val result = dpsApiService.migratePrisoner(offenderNo, history)
       val mapping = BedAssignmentMigrationMapping(
         prisonerMappings = PrisonerBedAssignmentMappingsDto(
@@ -102,12 +105,12 @@ class BedAssignmentMigrationService(
       }
       telemetry["bedAssignmentCount"] = result.size.toString()
       telemetryClient.trackEvent(
-        if (mappingComplete) "bedassignment-migration-entity-migrated" else "bedassignment-migration-entity-mapping-pending",
+        if (mappingComplete) "$TELEMETRY_BASE-entity-migrated" else "$TELEMETRY_BASE-entity-mapping-pending",
         telemetry,
       )
     } catch (e: Exception) {
       telemetry["error"] = e.message ?: e.javaClass.name
-      telemetryClient.trackEvent("bedassignment-migration-entity-failed", telemetry)
+      telemetryClient.trackEvent("$TELEMETRY_BASE-entity-failed", telemetry)
       throw e
     }
   }
@@ -139,7 +142,7 @@ class BedAssignmentMigrationService(
   ) {
     successOrDuplicate.errorResponse?.moreInfo?.let {
       telemetryClient.trackEvent(
-        "bedassignment-migration-entity-duplicate",
+        "$TELEMETRY_BASE-entity-duplicate",
         mapOf(
           "offenderNo" to mapping.offenderNo,
           "migrationId" to mapping.prisonerMappings.label!!,

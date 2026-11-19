@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.stereotype.Service
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.bedassignment.model.BedAssignmentNomisMapping
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.bedassignment.model.NomisBedAssignment
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.config.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
@@ -13,14 +14,20 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.valuesAsStrings
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.locations.LocationsMappingService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.BedAssignmentMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.PrisonerBedAssignmentHistoryResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationQueueService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.SynchronisationType
+import java.util.UUID
+
+private const val TELEMETRY_BASE = "bedassignment-synchronisation"
 
 @Service
 class BedAssignmentSyncService(
-  private val nomisAndTranslatorService: TranslatorService,
+  private val bedAssignmentNomisApiService: BedAssignmentNomisApiService,
+  private val locationsMappingService: LocationsMappingService,
   private val dpsApiService: BedAssignmentDpsApiService,
   private val mappingApiService: BedAssignmentMappingApiService,
   override val telemetryClient: TelemetryClient,
@@ -37,7 +44,7 @@ class BedAssignmentSyncService(
   suspend fun delete(event: BedAssignmentEvent) = synchronise(event, "deleted")
 
   private suspend fun synchronise(event: BedAssignmentEvent, action: String) {
-    val telemetryName = "bedassignment-synchronisation-$action"
+    val telemetryName = "$TELEMETRY_BASE-$action"
     val telemetry = telemetryOf(
       "offenderNo" to event.offenderIdDisplay,
       "bookingId" to event.bookingId.toString(),
@@ -49,7 +56,7 @@ class BedAssignmentSyncService(
       return
     }
     track(telemetryName, telemetry) {
-      val history = nomisAndTranslatorService.getHistory(event.offenderIdDisplay)
+      val history = toDps(bedAssignmentNomisApiService.getBedAssignments(event.offenderIdDisplay))
       val result = dpsApiService.sync(event.offenderIdDisplay, history)
       telemetry["historyCount"] = history.size
       telemetry["createdCount"] = result.created.size
@@ -76,13 +83,33 @@ class BedAssignmentSyncService(
     }
   }
 
+  suspend fun toDps(nomisHistory: PrisonerBedAssignmentHistoryResponse): List<NomisBedAssignment> {
+    val locations = nomisHistory.bedAssignments.map { it.livingUnitId }.distinct().associateWith { toDpsLocation(it) }
+    return nomisHistory.bedAssignments.map {
+      NomisBedAssignment(
+        bookingId = it.bookingId,
+        sequence = it.sequence,
+        livingUnitId = it.livingUnitId,
+        livingUnitDescription = it.livingUnitDescription,
+        locationId = locations[it.livingUnitId],
+        assignmentDateTime = it.assignmentDateTime,
+        assignmentEndDateTime = it.assignmentEndDateTime,
+        assignmentReasonCode = it.assignmentReasonCode,
+        createdBy = it.audit.createUsername,
+      )
+    }
+  }
+
+  private suspend fun toDpsLocation(livingUnitId: Long): UUID? = locationsMappingService
+    .getMappingGivenNomisId(livingUnitId)?.dpsLocationId?.let(UUID::fromString)
+
   suspend fun retryCreateMapping(retryMessage: InternalMessage<BedAssignmentMappingRetry>) {
     try {
       reconcileMappings(retryMessage.body)
-      telemetryClient.trackEvent("bedassignment-mapping-created-success", retryMessage.telemetryAttributes)
+      telemetryClient.trackEvent("$TELEMETRY_BASE-mapping-created-success", retryMessage.telemetryAttributes)
     } catch (e: Exception) {
       telemetryClient.trackEvent(
-        "bedassignment-mapping-created-failure",
+        "$TELEMETRY_BASE-mapping-created-failure",
         retryMessage.telemetryAttributes + ("error" to (e.message ?: e.javaClass.name)),
       )
       throw e
@@ -114,7 +141,7 @@ class BedAssignmentSyncService(
 
   private fun reportDuplicate(duplicate: BedAssignmentMappingDto, existing: BedAssignmentMappingDto) {
     telemetryClient.trackEvent(
-      "bedassignment-from-nomis-sync-duplicate",
+      "$TELEMETRY_BASE-duplicate",
       mapOf(
         "duplicateDpsBedAssignmentId" to duplicate.dpsBedAssignmentId,
         "duplicateBookingId" to duplicate.nomisBookingId.toString(),
