@@ -71,6 +71,8 @@ class CorePersonEventListener(
               // this single event is for inserts, updates and also deletes
               "OFFENDER_IDENTIFIER-UPDATED" -> aliasIdentifierService.offenderIdentifierUpdated(sqsMessage.Message.fromJson())
 
+              "OFFENDER_BOOKING-REASSIGNED" -> service.synchroniseBookingReassigned(sqsMessage.Message.fromJson())
+              "BOOKING-DELETED" -> service.synchroniseBookingDeleted(sqsMessage.Message.fromJson())
               "prison-offender-events.prisoner.merged" -> service.synchronisePrisonerMerge(sqsMessage.Message.fromJson())
               else -> log.info("Received a message I wasn't expecting {}", eventType)
             }
