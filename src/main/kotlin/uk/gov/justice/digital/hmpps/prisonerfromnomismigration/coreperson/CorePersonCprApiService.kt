@@ -105,6 +105,10 @@ class CorePersonCprApiService(@Qualifier("corePersonApiWebClient") webClient: We
     .retrieve()
     .awaitBodyOrLogAndRethrowBadRequest()
 
+  suspend fun syncPrimaryName(prisonNumber: String, cprAliasId: String): Unit = api
+    .processPrisonPrimaryName(prisonNumber, cprAliasId)
+    .awaitSingle()
+
   suspend fun syncCreateAddressContact(prisonNumber: String, cprAddressId: String, contact: PrisonContact): SysconContactMapping = api
     .prepare(api.createPrisonerAddressContactRequestConfig(prisonNumber, cprAddressId, contact))
     .retrieve()

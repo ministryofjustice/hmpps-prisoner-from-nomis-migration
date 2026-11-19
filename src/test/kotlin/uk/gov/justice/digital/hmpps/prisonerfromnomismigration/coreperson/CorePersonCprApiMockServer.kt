@@ -196,6 +196,17 @@ class CorePersonCprApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
+  fun stubSyncPrimaryName(
+    prisonNumber: String = "A1234BC",
+    cprAliasId: String = "cpr-alias-id",
+    status: HttpStatus = HttpStatus.NO_CONTENT,
+  ) {
+    stubFor(
+      post("/syscon-sync/person/$prisonNumber/primary-name/$cprAliasId")
+        .willReturn(aResponse().withStatus(status.value())),
+    )
+  }
+
   fun stubMigrateAddressesAndContacts(
     nomisPrisonNumber: String = "A1234BC",
     addressMappings: List<SysconAddressMapping> = emptyList(),

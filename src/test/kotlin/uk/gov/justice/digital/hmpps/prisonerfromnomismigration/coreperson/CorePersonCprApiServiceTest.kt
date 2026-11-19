@@ -588,6 +588,29 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
     }
   }
 
+  @Nested
+  inner class SyncPrimaryName {
+    @Test
+    fun `will call the sync endpoint`() = runTest {
+      cprCorePersonServer.stubSyncPrimaryName("A1234BC", "cpr-alias-1")
+
+      apiService.syncPrimaryName("A1234BC", "cpr-alias-1")
+
+      cprCorePersonServer.verify(
+        postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/primary-name/cpr-alias-1")),
+      )
+    }
+
+    @Test
+    fun `should throw if not found`() = runTest {
+      cprCorePersonServer.stubSyncPrimaryName("A1234BC", "cpr-alias-1", status = HttpStatus.NOT_FOUND)
+
+      assertThrows<WebClientResponseException.NotFound> {
+        apiService.syncPrimaryName("A1234BC", "cpr-alias-1")
+      }
+    }
+  }
+
   fun prisonReligionRequest() = PrisonReligionHistory(
     nomisReligionId = "1",
     religionCode = PrisonReligionHistory.ReligionCode.BAPT,
