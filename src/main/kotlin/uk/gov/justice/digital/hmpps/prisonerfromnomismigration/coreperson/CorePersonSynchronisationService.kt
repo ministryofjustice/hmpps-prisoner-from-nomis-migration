@@ -10,7 +10,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.PrisonerMerg
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.TelemetryEnabled
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.telemetryOf
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.trackEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMergeMappingsDto
@@ -28,24 +27,25 @@ class CorePersonSynchronisationService(
     val bookingId = prisonerMergeEvent.additionalInformation.bookingId
     val offenderNo = prisonerMergeEvent.additionalInformation.nomsNumber
     val removedOffenderNo = prisonerMergeEvent.additionalInformation.removedNomsNumber
-    val telemetry = mapOf(
+    val telemetry = telemetryOf(
       "offenderNo" to offenderNo,
       "bookingId" to bookingId,
       "removedOffenderNo" to removedOffenderNo,
     )
-    val prisonAddressesAndContactsRequest = prisonAddressesAndContactsRequestForMerge(offenderNo)
-    val cprMergeResponse = corePersonCprApiService.processPrisonMerge(offenderNo, PrisonMerge(removedOffenderNo, prisonAddressesAndContactsRequest))
-    val newAddressAndContactsMappings = cprMergeResponse.sysconAddressesAndContactsResponseBody.toCorePersonAddressContactMappingsDto(migrationType = NOMIS_CREATED)
-    corePersonMappingService.merge(
-      CorePersonAddressContactMergeMappingsDto(
-        offenderNo,
-        removedOffenderNo,
-        newAddressAndContactsMappings.addresses,
-        newAddressAndContactsMappings.contacts,
-        newAddressAndContactsMappings.addressUsages,
-      ),
-    )
-    telemetryClient.trackEvent("coreperson-prisoner-merge-synchronisation", telemetry)
+    track("coreperson-prisoner-merge-synchronisation", telemetry) {
+      val prisonAddressesAndContactsRequest = prisonAddressesAndContactsRequestForMerge(offenderNo)
+      val cprMergeResponse = corePersonCprApiService.processPrisonMerge(offenderNo, PrisonMerge(removedOffenderNo, prisonAddressesAndContactsRequest))
+      val newAddressAndContactsMappings = cprMergeResponse.sysconAddressesAndContactsResponseBody.toCorePersonAddressContactMappingsDto(migrationType = NOMIS_CREATED)
+      corePersonMappingService.merge(
+        CorePersonAddressContactMergeMappingsDto(
+          offenderNo,
+          removedOffenderNo,
+          newAddressAndContactsMappings.addresses,
+          newAddressAndContactsMappings.contacts,
+          newAddressAndContactsMappings.addressUsages,
+        ),
+      )
+    }
   }
 
   suspend fun synchroniseBookingDeleted(bookingDeletedEvent: NomisBookingDeletedEvent) {
@@ -54,23 +54,27 @@ class CorePersonSynchronisationService(
       "bookingId" to bookingDeletedEvent.bookingId,
     )
     track("coreperson-booking-deleted-synchronisation", telemetry) {
-      val offenderId = corePersonNomisApiService.getWorkingNameOffenderId(bookingDeletedEvent.offenderIdDisplay)
+      val workingNameOffenderId = corePersonNomisApiService.getWorkingNameOffenderId(bookingDeletedEvent.offenderIdDisplay)
         .also { telemetry["nomisOffenderId"] = it }
-      val cprAliasId = corePersonAliasIdentifierMappingService.getByNomisAliasId(offenderId).cprId
+      val cprAliasId = corePersonAliasIdentifierMappingService.getByNomisAliasId(workingNameOffenderId).cprId
         .also { telemetry["cprAliasId"] = it }
       corePersonCprApiService.syncPrimaryName(bookingDeletedEvent.offenderIdDisplay, cprAliasId)
     }
   }
 
+  // assuming for now that only the primary name of the prisoner the booking was moved from will change
   suspend fun synchroniseBookingReassigned(bookingReassignedEvent: NomisBookingReassignedEvent) {
-    // assuming for now that this will only change the from offender id
-    val cprFromAliasId = corePersonAliasIdentifierMappingService.getByNomisAliasId(bookingReassignedEvent.previousOffenderId).cprId
-
-    // Booking moved can change the working name only.
-    // Yes, but can it actually change anything i.e. will it change the working name on either prisoner?
-    // TODO Investigate whether this is a no-op or whether any action needs to be taken
-    // Actually the FROM can change as the previous booking could have a different offender id linked
-    // need to try out a booking moved to see what options there are on selection of new prisoner / alias
+    val telemetry = telemetryOf(
+      "offenderNo" to bookingReassignedEvent.offenderIdDisplay,
+      "previousOffenderNo" to bookingReassignedEvent.previousOffenderIdDisplay,
+      "bookingId" to bookingReassignedEvent.bookingId,
+      "nomisOffenderId" to bookingReassignedEvent.previousOffenderId,
+    )
+    track("coreperson-booking-reassigned-synchronisation", telemetry) {
+      val cprAliasId = corePersonAliasIdentifierMappingService.getByNomisAliasId(bookingReassignedEvent.previousOffenderId).cprId
+        .also { telemetry["cprAliasId"] = it }
+      corePersonCprApiService.syncPrimaryName(bookingReassignedEvent.previousOffenderIdDisplay, cprAliasId)
+    }
   }
 
   private suspend fun prisonAddressesAndContactsRequestForMerge(prisonNumber: String): PrisonAddressesAndContactsRequest {

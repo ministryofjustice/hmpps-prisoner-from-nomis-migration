@@ -33,6 +33,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconContactMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconPersonMergeResponseBody
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingDeletedEvent
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.bookingReassignedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.mergeDomainEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -104,13 +105,13 @@ class CorePersonSynchronisationIntTest(
             removedOffenderNo = removedOffenderNo,
           ),
         )
-        waitForAnyProcessingToComplete()
+        waitForAnyProcessingToComplete("coreperson-prisoner-merge-synchronisation-success")
       }
 
       @Test
       fun `will track telemetry for the merge`() {
         verify(telemetryClient).trackEvent(
-          eq("coreperson-prisoner-merge-synchronisation"),
+          eq("coreperson-prisoner-merge-synchronisation-success"),
           check {
             assertThat(it["offenderNo"]).isEqualTo(offenderNo)
             assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
@@ -248,7 +249,7 @@ class CorePersonSynchronisationIntTest(
             removedOffenderNo = removedOffenderNo,
           ),
         )
-        waitForAnyProcessingToComplete()
+        waitForAnyProcessingToComplete("coreperson-prisoner-merge-synchronisation-success")
       }
 
       @Test
@@ -377,7 +378,7 @@ class CorePersonSynchronisationIntTest(
             removedOffenderNo = removedOffenderNo,
           ),
         )
-        waitForAnyProcessingToComplete()
+        waitForAnyProcessingToComplete("coreperson-prisoner-merge-synchronisation-success")
       }
 
       @Test
@@ -412,8 +413,93 @@ class CorePersonSynchronisationIntTest(
       @Test
       fun `will track telemetry for the merge`() {
         verify(telemetryClient).trackEvent(
-          eq("coreperson-prisoner-merge-synchronisation"),
+          eq("coreperson-prisoner-merge-synchronisation-success"),
           any(),
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenCprFails {
+      val bookingId = 1234567L
+      val offenderNo = "A1234KT"
+      val removedOffenderNo = "A1000KT"
+
+      @BeforeEach
+      fun setUp() {
+        reset(telemetryClient)
+        corePersonNomisApiMock.stubGetAddressesAndContacts(prisonNumber = offenderNo)
+        corePersonMappingApiMock.stubGetMappingsFromNomisIds()
+        corePersonCprApiMockServer.stubProcessPrisonMerge(offenderNo, status = HttpStatus.INTERNAL_SERVER_ERROR)
+        awsSqsCorePersonOffenderEventsClient.sendMessage(
+          corePersonQueueOffenderEventsUrl,
+          mergeDomainEvent(bookingId = bookingId, offenderNo = offenderNo, removedOffenderNo = removedOffenderNo),
+        )
+        waitForAnyProcessingToComplete("coreperson-prisoner-merge-synchronisation-error", times = 2)
+      }
+
+      @Test
+      fun `will retry and send the event to the DLQ without merging the mappings`() {
+        corePersonCprApiMockServer.verify(2, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$offenderNo/merge")))
+        corePersonMappingApiMock.verify(0, postRequestedFor(urlPathEqualTo("/mapping/core-person/merge")))
+        await untilAsserted {
+          assertThat(corePersonOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1)
+        }
+      }
+
+      @Test
+      fun `will track the error for each attempt`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("coreperson-prisoner-merge-synchronisation-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["removedOffenderNo"]).isEqualTo(removedOffenderNo)
+            assertThat(it["error"]).isNotNull()
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenMappingMergeFails {
+      val bookingId = 1234567L
+      val offenderNo = "A1234KT"
+      val removedOffenderNo = "A1000KT"
+
+      @BeforeEach
+      fun setUp() {
+        reset(telemetryClient)
+        corePersonNomisApiMock.stubGetAddressesAndContacts(prisonNumber = offenderNo)
+        corePersonMappingApiMock.stubGetMappingsFromNomisIds()
+        corePersonCprApiMockServer.stubProcessPrisonMerge(offenderNo)
+        corePersonMappingApiMock.stubMerge(status = HttpStatus.INTERNAL_SERVER_ERROR)
+        awsSqsCorePersonOffenderEventsClient.sendMessage(
+          corePersonQueueOffenderEventsUrl,
+          mergeDomainEvent(bookingId = bookingId, offenderNo = offenderNo, removedOffenderNo = removedOffenderNo),
+        )
+        waitForAnyProcessingToComplete("coreperson-prisoner-merge-synchronisation-error", times = 2)
+      }
+
+      @Test
+      fun `will retry the whole merge and send the event to the DLQ`() {
+        corePersonCprApiMockServer.verify(2, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$offenderNo/merge")))
+        corePersonMappingApiMock.verify(2, postRequestedFor(urlPathEqualTo("/mapping/core-person/merge")))
+        await untilAsserted {
+          assertThat(corePersonOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1)
+        }
+      }
+
+      @Test
+      fun `will track the error for each attempt`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("coreperson-prisoner-merge-synchronisation-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["error"]).isNotNull()
+          },
           isNull(),
         )
       }
@@ -596,6 +682,156 @@ class CorePersonSynchronisationIntTest(
       cprId = cprAliasId,
       nomisOffenderId = offenderId,
       nomisPrisonNumber = offenderNo,
+      mappingType = OffenderAliasMappingDto.MappingType.MIGRATED,
+    )
+  }
+
+  @Nested
+  @DisplayName("OFFENDER_BOOKING-REASSIGNED")
+  inner class BookingReassigned {
+    private val bookingId = 1234567L
+    private val offenderNo = "A1234KT"
+    private val offenderId = 123456L
+    private val previousOffenderNo = "A1000KT"
+    private val previousOffenderId = 100000L
+    private val cprAliasId = "cpr-alias-id"
+    private val primaryNameUrl = "/syscon-sync/person/$previousOffenderNo/primary-name/$cprAliasId"
+
+    @Nested
+    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+    inner class HappyPath {
+      @BeforeAll
+      fun setUp() {
+        setupSynchronisationTest()
+
+        aliasIdentifierMappingApiMock.stubGetByNomisAliasIdOrNull(
+          nomisOffenderId = previousOffenderId,
+          mapping = aliasMapping(),
+        )
+        corePersonCprApiMockServer.stubSyncPrimaryName(prisonNumber = previousOffenderNo, cprAliasId = cprAliasId)
+        sendBookingReassignedEvent()
+          .also { waitForAnyProcessingToComplete("coreperson-booking-reassigned-synchronisation-success") }
+      }
+
+      @Test
+      fun `will get the alias mapping for the previous offender`() {
+        mappingApi.verify(getRequestedFor(urlPathEqualTo("/mapping/core-person/alias/nomis-offender-id/$previousOffenderId")))
+      }
+
+      @Test
+      fun `will set the primary name in CPR for the previous prisoner`() {
+        corePersonCprApiMockServer.verify(postRequestedFor(urlPathEqualTo(primaryNameUrl)))
+      }
+
+      @Test
+      fun `will not update the primary name for the new prisoner`() {
+        corePersonCprApiMockServer.verify(0, postRequestedFor(urlPathMatching("/syscon-sync/person/$offenderNo/primary-name/.*")))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("coreperson-booking-reassigned-synchronisation-success"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["previousOffenderNo"]).isEqualTo(previousOffenderNo)
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["nomisOffenderId"]).isEqualTo(previousOffenderId.toString())
+            assertThat(it["cprAliasId"]).isEqualTo(cprAliasId)
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenMappingDoesNotExist {
+      @BeforeEach
+      fun setUp() {
+        tearDownTelemetryClient()
+        aliasIdentifierMappingApiMock.stubGetByNomisAliasIdOrNull(nomisOffenderId = previousOffenderId, mapping = null)
+        sendBookingReassignedEvent()
+          .also { waitForAnyProcessingToComplete("coreperson-booking-reassigned-synchronisation-error", times = 2) }
+      }
+
+      @Test
+      fun `will retry and send the event to the DLQ without updating CPR`() {
+        corePersonCprApiMockServer.verify(0, postRequestedFor(urlPathMatching("/syscon-sync/person/.*/primary-name/.*")))
+        await untilAsserted {
+          assertThat(corePersonOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1)
+        }
+      }
+
+      @Test
+      fun `will track the error for each attempt`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("coreperson-booking-reassigned-synchronisation-error"),
+          check {
+            assertThat(it["previousOffenderNo"]).isEqualTo(previousOffenderNo)
+            assertThat(it["nomisOffenderId"]).isEqualTo(previousOffenderId.toString())
+            assertThat(it).doesNotContainKey("cprAliasId")
+            assertThat(it["error"]).isNotNull()
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenCprFails {
+      @BeforeEach
+      fun setUp() {
+        tearDownTelemetryClient()
+        aliasIdentifierMappingApiMock.stubGetByNomisAliasIdOrNull(
+          nomisOffenderId = previousOffenderId,
+          mapping = aliasMapping(),
+        )
+        corePersonCprApiMockServer.stubSyncPrimaryName(
+          prisonNumber = previousOffenderNo,
+          cprAliasId = cprAliasId,
+          status = HttpStatus.INTERNAL_SERVER_ERROR,
+        )
+        sendBookingReassignedEvent()
+          .also { waitForAnyProcessingToComplete("coreperson-booking-reassigned-synchronisation-error", times = 2) }
+      }
+
+      @Test
+      fun `will retry and send the event to the DLQ`() {
+        corePersonCprApiMockServer.verify(2, postRequestedFor(urlPathEqualTo(primaryNameUrl)))
+        await untilAsserted {
+          assertThat(corePersonOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1)
+        }
+      }
+
+      @Test
+      fun `will track the error for each attempt`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("coreperson-booking-reassigned-synchronisation-error"),
+          check {
+            assertThat(it["previousOffenderNo"]).isEqualTo(previousOffenderNo)
+            assertThat(it["cprAliasId"]).isEqualTo(cprAliasId)
+            assertThat(it["error"]).isNotNull()
+          },
+          isNull(),
+        )
+      }
+    }
+
+    private fun sendBookingReassignedEvent() = awsSqsCorePersonOffenderEventsClient.sendMessage(
+      corePersonQueueOffenderEventsUrl,
+      bookingReassignedEvent(
+        bookingId = bookingId,
+        offenderId = offenderId,
+        offenderNo = offenderNo,
+        previousOffenderId = previousOffenderId,
+        previousOffenderNo = previousOffenderNo,
+      ),
+    )
+
+    private fun aliasMapping() = OffenderAliasMappingDto(
+      cprId = cprAliasId,
+      nomisOffenderId = previousOffenderId,
+      nomisPrisonNumber = previousOffenderNo,
       mappingType = OffenderAliasMappingDto.MappingType.MIGRATED,
     )
   }
