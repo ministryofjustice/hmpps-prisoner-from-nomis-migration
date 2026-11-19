@@ -17,16 +17,20 @@ class CorePersonAliasIdentifierConversionTest {
     @ParameterizedTest
     @CsvSource(
       "BR,BR",
-      "LADY,LDY",
-      "SIR,SIR",
-      "FR,FR",
-      "REV,REV",
-      "LORD,LRD",
+      "DAME,DME",
       "DR,DR",
-      "MRS,MRS",
-      "MS,MS",
+      "FR,FR",
+      "IMAM,IMAM",
+      "LADY,LDY",
+      "LORD,LRD",
       "MISS,MISS",
       "MR,MR",
+      "MRS,MRS",
+      "MS,MS",
+      "RABBI,RABBI",
+      "REV,REV",
+      "SIR,SIR",
+      "SR,SR",
     )
     fun `will map NOMIS title to CPR title`(nomisCode: String, cprCode: String) {
       val prisonAlias = alias.copy(title = CodeDescription(nomisCode, nomisCode)).toPrisonAlias()

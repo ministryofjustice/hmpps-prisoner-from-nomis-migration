@@ -154,6 +154,7 @@ private fun String.mapBirthCountryCode(): String = when (this) {
 }
 
 private fun String.mapTitleCode(): String = when (this) {
+  "DAME" -> "DME"
   "LADY" -> "LDY"
   "LORD" -> "LRD"
   else -> this
