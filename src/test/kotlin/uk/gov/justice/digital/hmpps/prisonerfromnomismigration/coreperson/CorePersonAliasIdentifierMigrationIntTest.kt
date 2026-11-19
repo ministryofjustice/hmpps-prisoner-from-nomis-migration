@@ -177,7 +177,6 @@ class CorePersonAliasIdentifierMigrationIntTest(
         cprApiMock.stubMigrateAliasesAndIdentifiers(
           nomisPrisonNumber = nomisPrisonNumber,
           aliasMappings = testData.aliasMappings,
-          identifierMappings = testData.identifierMappings,
         )
         mappingApiMock.stubCreateMappingsForMigration()
         mappingApiMock.stubGetMigrationCount(count = 1, testData.corePersonMapping)
@@ -339,7 +338,6 @@ class CorePersonAliasIdentifierMigrationIntTest(
             cprApiMock.stubMigrateAliasesAndIdentifiers(
               nomisPrisonNumber = prisonNumber,
               aliasMappings = testData.aliasMappings,
-              identifierMappings = testData.identifierMappings,
             )
           }
 
@@ -383,7 +381,6 @@ class CorePersonAliasIdentifierMigrationIntTest(
         cprApiMock.stubMigrateAliasesAndIdentifiers(
           nomisPrisonNumber = nomisPrisonNumber,
           aliasMappings = testData.aliasMappings,
-          identifierMappings = testData.identifierMappings,
         )
         mappingApiMock.stubCreateMappingsForMigrationFailureFollowedBySuccess()
         mappingApiMock.stubGetMigrationCount(count = 1, corePersonMappingDto = testData.corePersonMapping)
@@ -463,7 +460,6 @@ class CorePersonAliasIdentifierMigrationIntTest(
         cprApiMock.stubMigrateAliasesAndIdentifiers(
           nomisPrisonNumber = nomisPrisonNumber,
           aliasMappings = testData.aliasMappings,
-          identifierMappings = testData.identifierMappings,
         )
         mappingApiMock.stubCreateMappingsForMigration(
           DuplicateMappingErrorResponse(
@@ -621,7 +617,6 @@ class CorePersonAliasIdentifierMigrationIntTest(
   private data class TestData(
     val aliases: List<CoreOffender>,
     val aliasMappings: List<SysconAliasMapping>,
-    val identifierMappings: List<SysconIdentifierMapping>,
     val corePersonMapping: List<CorePersonMappingDto>,
   )
 
@@ -671,13 +666,21 @@ class CorePersonAliasIdentifierMigrationIntTest(
         ),
       ),
       aliasMappings = listOf(
-        SysconAliasMapping(nomisOffenderId = offenderId, cprAliasId = "cpr-alias-$offenderId"),
-        SysconAliasMapping(nomisOffenderId = aliasOffenderId, cprAliasId = "cpr-alias-$aliasOffenderId"),
-      ),
-      identifierMappings = listOf(
-        SysconIdentifierMapping(nomisIdentifierId = NomisIdentifierId(offenderId, 1), cprIdentifierId = "cpr-identifier-$offenderId-1"),
-        SysconIdentifierMapping(nomisIdentifierId = NomisIdentifierId(offenderId, 2), cprIdentifierId = "cpr-identifier-$offenderId-2"),
-        SysconIdentifierMapping(nomisIdentifierId = NomisIdentifierId(aliasOffenderId, 1), cprIdentifierId = UUID.randomUUID().toString()),
+        SysconAliasMapping(
+          nomisOffenderId = offenderId,
+          cprAliasId = "cpr-alias-$offenderId",
+          identifierMappings = listOf(
+            SysconIdentifierMapping(nomisIdentifierId = NomisIdentifierId(offenderId, 1), cprIdentifierId = "cpr-identifier-$offenderId-1"),
+            SysconIdentifierMapping(nomisIdentifierId = NomisIdentifierId(offenderId, 2), cprIdentifierId = "cpr-identifier-$offenderId-2"),
+          ),
+        ),
+        SysconAliasMapping(
+          nomisOffenderId = aliasOffenderId,
+          cprAliasId = "cpr-alias-$aliasOffenderId",
+          identifierMappings = listOf(
+            SysconIdentifierMapping(nomisIdentifierId = NomisIdentifierId(aliasOffenderId, 1), cprIdentifierId = UUID.randomUUID().toString()),
+          ),
+        ),
       ),
       corePersonMapping = listOf(
         CorePersonMappingDto(

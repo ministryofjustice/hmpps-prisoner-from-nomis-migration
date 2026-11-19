@@ -90,11 +90,16 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
     fun `will return the mappings`() = runTest {
       cprCorePersonServer.stubMigrateAliasesAndIdentifiers(
         "A1234BC",
-        aliasMappings = listOf(SysconAliasMapping(nomisOffenderId = 12345, cprAliasId = "cpr-alias-1")),
-        identifierMappings = listOf(
-          SysconIdentifierMapping(
-            nomisIdentifierId = NomisIdentifierId(nomisOffenderId = 12345, nomisSequence = 1),
-            cprIdentifierId = "cpr-identifier-1",
+        aliasMappings = listOf(
+          SysconAliasMapping(
+            nomisOffenderId = 12345,
+            cprAliasId = "cpr-alias-1",
+            listOf(
+              SysconIdentifierMapping(
+                nomisIdentifierId = NomisIdentifierId(nomisOffenderId = 12345, nomisSequence = 1),
+                cprIdentifierId = "cpr-identifier-1",
+              ),
+            ),
           ),
         ),
       )
@@ -103,8 +108,8 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
 
       assertThat(response.prisonNumber).isEqualTo("A1234BC")
       assertThat(response.aliasesMappings.single().cprAliasId).isEqualTo("cpr-alias-1")
-      assertThat(response.identifiersMappings.single().cprIdentifierId).isEqualTo("cpr-identifier-1")
-      assertThat(response.identifiersMappings.single().nomisIdentifierId.nomisSequence).isEqualTo(1)
+      assertThat(response.aliasesMappings.single().identifierMappings.single().cprIdentifierId).isEqualTo("cpr-identifier-1")
+      assertThat(response.aliasesMappings.single().identifierMappings.single().nomisIdentifierId.nomisSequence).isEqualTo(1)
     }
 
     @Test
