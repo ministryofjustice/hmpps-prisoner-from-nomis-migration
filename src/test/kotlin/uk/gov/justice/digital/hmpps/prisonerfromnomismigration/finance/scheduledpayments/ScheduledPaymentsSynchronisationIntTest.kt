@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.scheduledpayments
 
 import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.absent
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
@@ -406,7 +407,8 @@ class ScheduledPaymentsSynchronisationIntTest(
         fun `will update the scheduled payment in DPS with no endDate`() {
           financeApi.verify(
             postRequestedFor(urlPathEqualTo("/sync/subscriptions/$dpsScheduledPaymentId/update"))
-              .withRequestBodyJsonPath("startDate", equalTo("2024-06-18")),
+              .withRequestBodyJsonPath("startDate", equalTo("2024-06-18"))
+              .withRequestBodyJsonPath("endDate", absent()),
           )
         }
 
