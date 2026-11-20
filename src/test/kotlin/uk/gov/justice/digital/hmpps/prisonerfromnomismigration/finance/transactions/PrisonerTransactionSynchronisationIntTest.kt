@@ -361,15 +361,6 @@ class PrisonerTransactionSynchronisationIntTest(
           financeApi.stubPostPrisonerTransaction(receipt)
           financeApi.stubPostAddHold(holdResponse)
           financeMappingApiMockServer.stubPostMapping()
-
-          financeOffenderEventsQueue.sendMessage(
-            offenderTransactionEvent(
-              messageId = messageUuid,
-              bookingId = BOOKING_ID,
-              transactionId = NOMIS_TRANSACTION_ID,
-              offenderNo = OFFENDER_ID_DISPLAY,
-            ),
-          )
         }
 
         @Nested
@@ -390,6 +381,14 @@ class PrisonerTransactionSynchronisationIntTest(
               bookingId = BOOKING_ID,
               transactionId = NOMIS_TRANSACTION_ID,
               response = listOf(holdTransaction),
+            )
+            financeOffenderEventsQueue.sendMessage(
+              offenderTransactionEvent(
+                messageId = messageUuid,
+                bookingId = BOOKING_ID,
+                transactionId = NOMIS_TRANSACTION_ID,
+                offenderNo = OFFENDER_ID_DISPLAY,
+              ),
             )
             waitForAnyProcessingToComplete(
               "transactions-synchronisation-created-success",
@@ -518,6 +517,14 @@ class PrisonerTransactionSynchronisationIntTest(
               bookingId = BOOKING_ID,
               transactionId = NOMIS_TRANSACTION_ID,
               response = listOf(holdTransaction),
+            )
+            financeOffenderEventsQueue.sendMessage(
+              offenderTransactionEvent(
+                messageId = messageUuid,
+                bookingId = BOOKING_ID,
+                transactionId = NOMIS_TRANSACTION_ID,
+                offenderNo = OFFENDER_ID_DISPLAY,
+              ),
             )
             waitForAnyProcessingToComplete(
               "transactions-synchronisation-created-success",
