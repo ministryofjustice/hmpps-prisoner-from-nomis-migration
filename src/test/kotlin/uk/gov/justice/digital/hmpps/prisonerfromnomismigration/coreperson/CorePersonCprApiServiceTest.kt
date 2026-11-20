@@ -94,7 +94,7 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
           SysconAliasMapping(
             nomisOffenderId = 12345,
             cprAliasId = "cpr-alias-1",
-            listOf(
+            identifierMappings = listOf(
               SysconIdentifierMapping(
                 nomisIdentifierId = NomisIdentifierId(nomisOffenderId = 12345, nomisSequence = 1),
                 cprIdentifierId = "cpr-identifier-1",
