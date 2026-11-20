@@ -574,7 +574,6 @@ class CorePersonDataRepairResourceIntTest(
               ),
             ),
             SysconAliasMapping(nomisOffenderId = 10001, cprAliasId = "5e2e5c1f-3b4d-4a4f-8e7b-1a1d2c3b4d5e", identifierMappings = emptyList()),
-            SysconAliasMapping(nomisOffenderId = 10001, cprAliasId = "5e2e5c1f-3b4d-4a4f-8e7b-1a1d2c3b4d5e", identifierMappings = emptyList()),
           ),
         )
         aliasIdentifierMappingApiMockServer.stubReplaceMappings()
