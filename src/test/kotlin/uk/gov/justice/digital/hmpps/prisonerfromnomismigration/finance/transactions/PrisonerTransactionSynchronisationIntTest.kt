@@ -803,6 +803,10 @@ class PrisonerTransactionSynchronisationIntTest(
                 messageId = messageUuid,
               ),
             )
+            waitForAnyProcessingToComplete(
+              "transactions-synchronisation-created-success",
+              "transactions-mapping-created-synchronisation-success",
+            )
           }
 
           @Test
