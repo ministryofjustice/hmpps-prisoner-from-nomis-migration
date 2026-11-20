@@ -24,6 +24,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonIdentifiersRequest
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAliasMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconIdentifierMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -144,7 +145,6 @@ class CorePersonSynchronisationAliasIdentifierIntTest(
           assertThat(value).isEqualTo("20/0071818T")
           assertThat(verified).isTrue()
           assertThat(comment).isEqualTo("Met Police")
-          assertThat(issuedDate).isEqualTo(LocalDate.parse("2020-01-01"))
           assertThat(createDateTime).isEqualTo(LocalDateTime.parse("2020-01-01T10:00:00"))
           assertThat(createUserId).isEqualTo("SYSTEM")
           assertThat(modifyDateTime).isEqualTo(LocalDateTime.parse("2024-10-01T13:31:00"))
@@ -540,6 +540,42 @@ class CorePersonSynchronisationAliasIdentifierIntTest(
       @Test
       fun `will track telemetry`() {
         verifyAliasTelemetry("coreperson-alias-synchronisation-created-success", prisonNumber, offenderId, cprAliasId)
+      }
+    }
+
+    // TODO when the creation and sync code is complete in CPR, cprAliasId should be non nullable and these tests can be removed
+    @Nested
+    inner class WhenCprReturnsNoAliasId {
+      @BeforeEach
+      fun setUp() {
+        mappingApiMock.stubGetByNomisAliasIdOrNull(offenderId, null)
+        nomisApiMock.stubGetOffenderAlias(offenderId)
+        corePersonCprApiMockServer.stubSyncCreateAlias(
+          prisonNumber = prisonNumber,
+          nomisOffenderId = offenderId,
+          response = SysconAliasMapping(
+            nomisOffenderId = offenderId,
+            cprAliasId = null,
+            identifierMappings = emptyList(),
+          ),
+        )
+        sendOffenderEvent("OFFENDER-INSERTED", prisonNumber, offenderId)
+          .also { waitForAnyProcessingToComplete("coreperson-alias-synchronisation-created-success") }
+      }
+
+      @Test
+      fun `will call CPR creation end point`() {
+        corePersonCprApiMockServer.verify(1, postRequestedFor(urlPathEqualTo(createAliasUrl)))
+      }
+
+      @Test
+      fun `will not create an alias mapping`() {
+        mappingApi.verify(0, postRequestedFor(urlPathEqualTo(aliasMappingUrl)))
+      }
+
+      @Test
+      fun `will track telemetry without a CPR alias id`() {
+        verifyAliasTelemetry("coreperson-alias-synchronisation-created-success", prisonNumber, offenderId, cprAliasId = null)
       }
     }
 

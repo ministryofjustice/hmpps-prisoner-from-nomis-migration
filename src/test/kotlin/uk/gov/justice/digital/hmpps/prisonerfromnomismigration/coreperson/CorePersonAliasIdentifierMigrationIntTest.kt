@@ -220,7 +220,6 @@ class CorePersonAliasIdentifierMigrationIntTest(
             assertThat(value).isEqualTo("20/0071818T")
             assertThat(verified).isTrue()
             assertThat(comment).isEqualTo("Met Police")
-            assertThat(issuedDate).isEqualTo(LocalDate.parse("2020-01-01"))
           }
           with(identifiers[1]) {
             assertThat(nomisIdentifierId).isEqualTo(NomisIdentifierId(nomisOffenderId = 10000L, nomisSequence = 2))

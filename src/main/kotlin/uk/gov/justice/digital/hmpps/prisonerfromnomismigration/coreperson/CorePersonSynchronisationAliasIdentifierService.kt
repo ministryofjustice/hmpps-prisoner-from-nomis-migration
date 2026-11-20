@@ -59,16 +59,18 @@ class CorePersonSynchronisationAliasIdentifierService(
         val cprAlias = corePersonCprApiService.syncCreateAlias(
           prisonNumber = event.offenderIdDisplay,
           alias = nomisAlias.toPrisonAlias().copy(identifiers = emptyList()),
-        ).also {
-          telemetry["cprAliasId"] = it.cprAliasId
-        }
-        val mapping = OffenderAliasMappingDto(
-          cprId = cprAlias.cprAliasId,
-          nomisOffenderId = event.offenderId,
-          nomisPrisonNumber = event.offenderIdDisplay,
-          mappingType = OffenderAliasMappingDto.MappingType.NOMIS_CREATED,
         )
-        tryToCreateAliasMapping(mapping, telemetry)
+        // TODO when the creation and sync code is complete in CPR, cprAliasId should be non nullable.
+        cprAlias.cprAliasId?.let { cprAliasId ->
+          telemetry["cprAliasId"] = cprAliasId
+          val mapping = OffenderAliasMappingDto(
+            cprId = cprAliasId,
+            nomisOffenderId = event.offenderId,
+            nomisPrisonNumber = event.offenderIdDisplay,
+            mappingType = OffenderAliasMappingDto.MappingType.NOMIS_CREATED,
+          )
+          tryToCreateAliasMapping(mapping, telemetry)
+        }
       }
     }
   }

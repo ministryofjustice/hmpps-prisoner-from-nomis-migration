@@ -140,7 +140,6 @@ internal fun Identifier.toPrisonIdentifier(existingMappings: CorePersonAliasIden
   `value` = identifier,
   verified = verified,
   comment = issuedAuthority,
-  issuedDate = issuedDate,
   createDateTime = createdDateTime,
   createUserId = createdByUsername,
   modifyDateTime = lastUpdatedDateTime,
@@ -208,8 +207,8 @@ fun SysconAliasesAndIdentifiersResponseBody.toCorePersonAliasIdentifierMappingsD
   ),
   aliases = aliasesMappings.map {
     OffenderAliasMappingDto(
-      cprId = it.cprAliasId,
-      nomisOffenderId = it.nomisOffenderId,
+      cprId = it.cprAliasId!!,
+      nomisOffenderId = it.nomisOffenderId!!,
       nomisPrisonNumber = prisonNumber,
       mappingType = OffenderAliasMappingDto.MappingType.valueOf(mappingType.name),
       label = migrationId,
