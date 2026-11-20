@@ -44,7 +44,7 @@ class PrisonTransactionDataRepairResourceIntTest(
     inner class Security {
       @Test
       fun `access forbidden when no role`() {
-        webTestClient.get().uri("/prison-transactions/$transactionId/repair")
+        webTestClient.post().uri("/prison-transactions/$transactionId/repair")
           .headers(setAuthorisation(roles = listOf()))
           .exchange()
           .expectStatus().isForbidden
@@ -52,7 +52,7 @@ class PrisonTransactionDataRepairResourceIntTest(
 
       @Test
       fun `access forbidden with wrong role`() {
-        webTestClient.get().uri("/prison-transactions/$transactionId/repair")
+        webTestClient.post().uri("/prison-transactions/$transactionId/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_BANANAS")))
           .exchange()
           .expectStatus().isForbidden
@@ -60,7 +60,7 @@ class PrisonTransactionDataRepairResourceIntTest(
 
       @Test
       fun `access unauthorised with no auth token`() {
-        webTestClient.get().uri("/prison-transactions/$transactionId/repair")
+        webTestClient.post().uri("/prison-transactions/$transactionId/repair")
           .exchange()
           .expectStatus().isUnauthorized
       }
@@ -91,7 +91,7 @@ class PrisonTransactionDataRepairResourceIntTest(
           )
           financeApi.stubWriteOffAdvance(advanceUuid = dpsAdvanceId)
 
-          webTestClient.get().uri("/prison-transactions/$transactionId/repair")
+          webTestClient.post().uri("/prison-transactions/$transactionId/repair")
             .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
             .exchange()
             .expectStatus().isOk
@@ -155,7 +155,7 @@ class PrisonTransactionDataRepairResourceIntTest(
       fun setUp() {
         nomisApiMockServer.stubGetPrisonTransaction(transactionId = transactionId, response = emptyList())
 
-        webTestClient.get().uri("/prison-transactions/$transactionId/repair")
+        webTestClient.post().uri("/prison-transactions/$transactionId/repair")
           .headers(setAuthorisation(roles = listOf("ROLE_PRISONER_FROM_NOMIS__UPDATE__RW")))
           .exchange()
           .expectStatus().isNotFound
@@ -170,7 +170,7 @@ class PrisonTransactionDataRepairResourceIntTest(
 
       @Test
       fun `will not send transaction to DPS`() {
-        financeApi.verify(0, getRequestedFor(anyUrl()))
+        financeApi.verify(0, postRequestedFor(anyUrl()))
       }
 
       @Test
