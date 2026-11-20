@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.TransactionIdBufferRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -96,6 +97,13 @@ class TransactionSynchronisationService(
     val transactionEvent = nomisApiService.getPrisonerTransactions(nomisTransactionId).firstOrNull()
       ?.toTransactionEvent()
       ?: throw NotFoundException("No prisoner transaction found in nomis for transactionId=$nomisTransactionId")
+    transactionUpserted(transactionEvent, UUID.randomUUID(), "repair")
+  }
+
+  suspend fun resynchronisePrisonTransaction(nomisTransactionId: Long) {
+    val transactionEvent = nomisApiService.getPrisonTransactions(nomisTransactionId).firstOrNull()
+      ?.toTransactionEvent()
+      ?: throw NotFoundException("No prison transaction found in nomis for transactionId=$nomisTransactionId")
     transactionUpserted(transactionEvent, UUID.randomUUID(), "repair")
   }
 
@@ -305,6 +313,14 @@ private fun OffenderTransactionDto.toTransactionEvent() = TransactionEvent(
   caseload = caseloadId,
   offenderIdDisplay = offenderNo,
   bookingId = bookingId,
+  transactionType = type,
+  auditModuleName = null,
+)
+
+private fun GeneralLedgerTransactionDto.toTransactionEvent() = TransactionEvent(
+  transactionId = transactionId,
+  entrySequence = transactionEntrySequence,
+  caseload = caseloadId,
   transactionType = type,
   auditModuleName = null,
 )
