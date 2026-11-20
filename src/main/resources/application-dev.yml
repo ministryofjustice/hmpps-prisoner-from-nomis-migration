@@ -29,6 +29,7 @@ api.base.url:
   agencyregisters: http://localhost:8109
   drug.testing: http://localhost:8110
   person-location: http://localhost:8111
+  calculate-release-dates: http://localhost:8113
 
 spring:
   r2dbc:

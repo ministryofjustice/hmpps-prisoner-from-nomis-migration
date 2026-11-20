@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency.AgencyRegistersDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.bedassignment.BedAssignmentDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.calculatereleasedates.CalculateReleaseDatesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
@@ -35,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsAp
 @ExtendWith(
   ActivitiesApiExtension::class,
   AgencyRegistersDpsApiExtension::class,
+  CalculateReleaseDatesApiExtension::class,
   AlertsDpsApiExtension::class,
   BedAssignmentDpsApiExtension::class,
   CaseNotesApiExtension::class,
@@ -78,6 +80,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
       .jsonPath("components.agencyApi.status").isEqualTo("UP")
       .jsonPath("components.alertsApi.status").isEqualTo("UP")
       .jsonPath("components.bedAssignmentApi.status").isEqualTo("UP")
+      .jsonPath("components.calculateReleaseDatesApi.status").isEqualTo("UP")
       .jsonPath("components.caseNotesApi.status").isEqualTo("UP")
       .jsonPath("components.corePersonApi.status").isEqualTo("UP")
       .jsonPath("components.courtSchedulerApi.status").isEqualTo("UP")
@@ -173,6 +176,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     ActivitiesApiExtension.activitiesApi.stubHealthPing(status)
     AgencyRegistersDpsApiExtension.agencyRegistersApi.stubHealthPing(status)
     AlertsDpsApiExtension.dpsAlertsServer.stubHealthPing(status)
+    CalculateReleaseDatesApiExtension.calculateReleaseDatesApi.stubHealthPing(status)
     BedAssignmentDpsApiExtension.bedAssignmentApi.stubHealthPing(status)
     CaseNotesApiExtension.caseNotesApi.stubHealthPing(status)
     CorePersonCprApiExtension.cprCorePersonServer.stubHealthPing(status)
