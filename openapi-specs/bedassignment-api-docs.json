@@ -6,7 +6,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-03.96.dc08117"
+    "version" : "2026-11-19.117.780a15e"
   },
   "servers" : [ {
     "url" : "https://change-someones-cell-api-dev.hmpps.service.justice.gov.uk",
@@ -164,7 +164,7 @@
             }
           },
           "403" : {
-            "description" : "Missing required role. Requires the ROLE_CELL_MOVEMENTS__SYNC__RW role",
+            "description" : "Missing a required role.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -241,7 +241,7 @@
             }
           },
           "403" : {
-            "description" : "Missing required role. Requires the ROLE_CELL_MOVEMENTS__SYNC__RW role",
+            "description" : "Missing a required role.",
             "content" : {
               "application/json" : {
                 "schema" : {
@@ -461,6 +461,70 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/GetDlqResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nomis-sync/bed-assignments/{prisonerNumber}" : {
+      "get" : {
+        "tags" : [ "NOMIS migration and sync" ],
+        "summary" : "Get a prisoner's bed assignments",
+        "description" : "Every bed assignment held for the prisoner, oldest first. Requires role ROLE_CELL_MOVEMENTS__SYNC__RW",
+        "operationId" : "findAll",
+        "parameters" : [ {
+          "name" : "prisonerNumber",
+          "in" : "path",
+          "description" : "The prisoner number",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "pattern" : "^[A-Z][0-9]{4}[A-Z]{2}$"
+          },
+          "example" : "A1234AA"
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "The prisoner's bed assignments, empty if there are none",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/BedAssignment"
+                  }
+                }
+              }
+            }
+          },
+          "400" : {
+            "description" : "Invalid prisoner number",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401" : {
+            "description" : "Unauthorized to access this endpoint",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403" : {
+            "description" : "Missing a required role.",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -979,6 +1043,71 @@
           }
         },
         "required" : [ "messages", "messagesFoundCount", "messagesReturnedCount" ]
+      },
+      "BedAssignment" : {
+        "type" : "object",
+        "description" : "A bed assignment: a period a prisoner was assigned to a cell. An open one (no endAt) is current",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The DPS bed assignment id",
+            "example" : "0199e3c0-0000-7000-8000-00000000000a"
+          },
+          "prisonerNumber" : {
+            "type" : "string",
+            "description" : "The prisoner number",
+            "example" : "A1234BC"
+          },
+          "locationId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The locations-inside-prison id"
+          },
+          "locationKey" : {
+            "type" : "string",
+            "description" : "The location key, or the NOMIS description",
+            "example" : "MDI-A-1-001"
+          },
+          "startAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When the assignment began",
+            "example" : "2023-05-01T09:15:00"
+          },
+          "startReason" : {
+            "type" : [ "string", "null" ],
+            "description" : "The reason code (domain CHG_HOUS_RSN) the assignment began",
+            "example" : "ADM"
+          },
+          "endAt" : {
+            "type" : [ "string", "null" ],
+            "format" : "date-time",
+            "description" : "When the assignment ended, null for a current assignment",
+            "example" : "2023-06-10T14:30:00"
+          },
+          "endReason" : {
+            "type" : [ "string", "null" ],
+            "description" : "The reason code (domain CHG_HOUS_RSN) the assignment ended",
+            "example" : "GM"
+          },
+          "source" : {
+            "type" : "string",
+            "description" : "Whether the assignment came from NOMIS or was made by DPS",
+            "enum" : [ "NOMIS", "DPS" ]
+          },
+          "recordedBy" : {
+            "type" : "string",
+            "description" : "The user who recorded the assignment",
+            "example" : "NQP56Y"
+          },
+          "cellMovementId" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid",
+            "description" : "The cell movement that opened this assignment, when this service made it"
+          }
+        },
+        "required" : [ "id", "locationKey", "prisonerNumber", "recordedBy", "source", "startAt" ]
       },
       "CellMovementReason" : {
         "type" : "object",
