@@ -147,14 +147,20 @@ class TransactionSynchronisationService(
               ),
             )
           }
-          additionalOffenderTransactionProcessing(nomisTransactions.first(), dpsTransactionId, event, eventType)
+          additionalOffenderTransactionProcessing(
+            nomisTransactions.first(),
+            event.toTelemetryProperties(
+              dpsTransactionId = dpsTransactionId,
+            ),
+            eventType,
+          )
         }
     }
   }
 
-  suspend fun additionalOffenderTransactionProcessing(transaction: OffenderTransactionDto, dpsTransactionId: UUID, event: TransactionEvent, eventType: String) {
+  suspend fun additionalOffenderTransactionProcessing(transaction: OffenderTransactionDto, telemetry: Map<String, String>, eventType: String) {
     if (processHoldTransaction && transaction.isHoldTransaction()) {
-      sendHoldTransactionToDps(transaction, dpsTransactionId, event, eventType)
+      sendHoldTransactionToDps(transaction, telemetry, eventType)
     } else if (processAdvanceTransaction && transaction.isRepaymentTransaction()) {
       advancesSynchronisationService.sendRepaymentToDps(transaction)
     }
@@ -175,12 +181,18 @@ class TransactionSynchronisationService(
     }
   }
 
-  suspend fun sendHoldTransactionToDps(nomisTransaction: OffenderTransactionDto, dpsTransactionId: UUID, event: TransactionEvent, eventType: String) {
+  suspend fun sendHoldTransactionToDps(nomisTransaction: OffenderTransactionDto, telemetry: Map<String, String>, eventType: String) {
     if (nomisTransaction.isAddHoldTransaction()) {
+      if (nomisTransaction.holdDetails!!.holdCleared) {
+        telemetryClient.trackEvent(
+          "transactions-synchronisation-$eventType-add-hold-overriding-released-hold-flag",
+          telemetry,
+        )
+      }
       financeService.syncAddHoldTransaction(nomisTransaction.toSyncAddHoldRequest())
       telemetryClient.trackEvent(
         "transactions-synchronisation-$eventType-add-hold-success",
-        event.toTelemetryProperties(dpsTransactionId = dpsTransactionId),
+        telemetry,
       )
     } else if (nomisTransaction.isReleaseHoldTransaction()) {
       // holdNumber is now present on all new release transactions, so we can safely use !! here
@@ -190,7 +202,7 @@ class TransactionSynchronisationService(
       )
       telemetryClient.trackEvent(
         "transactions-synchronisation-$eventType-release-hold-success",
-        event.toTelemetryProperties(dpsTransactionId = dpsTransactionId),
+        telemetry,
       )
     }
   }
