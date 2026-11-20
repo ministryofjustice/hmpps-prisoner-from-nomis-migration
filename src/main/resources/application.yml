@@ -149,6 +149,11 @@ spring:
             client-id: ${person.location.client.id}
             client-secret: ${person.location.client.secret}
             authorization-grant-type: client_credentials
+          calculate-release-dates-api:
+            provider: hmpps-auth
+            client-id: ${calculate.release.dates.client.id}
+            client-secret: ${calculate.release.dates.client.secret}
+            authorization-grant-type: client_credentials
           drug-testing-api:
             provider: hmpps-auth
             client-id: ${drug.testing.client.id}
