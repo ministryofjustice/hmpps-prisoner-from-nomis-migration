@@ -575,7 +575,7 @@ class CorePersonCprApiServiceTest(@Autowired private val apiService: CorePersonC
     fun `will call the sync endpoint`() = runTest {
       cprCorePersonServer.stubProcessPrisonMerge("A1234BC")
 
-      val response = apiService.processPrisonMerge("A1234BC", PrisonMerge(fromPrisonNumber = "B2345CD", toPrisonAddressesAndContactsRequest = PrisonAddressesAndContactsRequest(addresses = emptyList(), contacts = emptyList())))
+      val response = apiService.processPrisonMerge("A1234BC", PrisonMerge(fromPrisonNumber = "B2345CD", toPrisonAddressesAndContactsRequest = PrisonAddressesAndContactsRequest(addresses = emptyList(), contacts = emptyList()), toPrisonAliasesAndIdentifiersRequest = PrisonAliasesAndIdentifiersRequest(aliases = emptyList())))
 
       cprCorePersonServer.verify(
         postRequestedFor(urlPathEqualTo("/syscon-sync/person/A1234BC/merge"))

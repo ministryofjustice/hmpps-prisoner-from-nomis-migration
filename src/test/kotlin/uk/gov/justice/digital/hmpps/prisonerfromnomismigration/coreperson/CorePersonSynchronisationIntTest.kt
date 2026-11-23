@@ -25,7 +25,9 @@ import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAlias
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonContact
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonIdentifier
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressMapping
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.SysconAddressUsageMapping
@@ -48,12 +50,15 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.mod
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonContactMappingDto.NomisContactType.PHONE
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.IdentifierByNomisIdRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderAliasMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.OffenderIdentifierMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.CorePersonAddressContact
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.MappingApiExtension.Companion.mappingApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension.Companion.nomisApi
+import java.time.LocalDate
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CorePersonSynchronisationIntTest(
@@ -94,6 +99,7 @@ class CorePersonSynchronisationIntTest(
             emailAddresses = emptyList(),
           ),
         )
+        corePersonNomisApiMock.stubGetAliasesAndIdentifiers(prisonNumber = offenderNo, aliasesAndIdentifiers = emptyList())
         corePersonMappingApiMock.stubGetMappingsFromNomisIds()
         corePersonCprApiMockServer.stubProcessPrisonMerge(offenderNo)
         corePersonMappingApiMock.stubMerge()
@@ -133,6 +139,9 @@ class CorePersonSynchronisationIntTest(
                   "toPrisonAddressesAndContactsRequest": {
                     "addresses": [],
                     "contacts": []
+                  },
+                  "toPrisonAliasesAndIdentifiersRequest": {
+                    "aliases": []
                   }
                 }
                 """.trimIndent(),
@@ -153,10 +162,26 @@ class CorePersonSynchronisationIntTest(
       fun setUp() {
         setupSynchronisationTest()
         corePersonNomisApiMock.stubGetAddressesAndContacts(prisonNumber = offenderNo)
+        corePersonNomisApiMock.stubGetAliasesAndIdentifiers(prisonNumber = offenderNo)
         corePersonMappingApiMock.stubGetMappingsFromNomisIds(
           CorePersonMappingsResult(
-            aliases = emptyList(),
-            identifiers = emptyList(),
+            aliases = listOf(
+              OffenderAliasMappingDto(
+                cprId = "cpr-alias-1",
+                nomisOffenderId = 1,
+                nomisPrisonNumber = offenderNo,
+                mappingType = OffenderAliasMappingDto.MappingType.MIGRATED,
+              ),
+            ),
+            identifiers = listOf(
+              OffenderIdentifierMappingDto(
+                cprId = "cpr-identifier-1-1",
+                nomisOffenderId = 1,
+                nomisIdentifierSequence = 1,
+                nomisPrisonNumber = offenderNo,
+                mappingType = OffenderIdentifierMappingDto.MappingType.MIGRATED,
+              ),
+            ),
             addresses = listOf(
               CorePersonAddressMappingDto(
                 cprId = "cpr-address-12345",
@@ -282,8 +307,8 @@ class CorePersonSynchronisationIntTest(
         val request: CorePersonMappingsByNomisIdsRequest =
           MappingApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/mapping/core-person/merge/mappings/by-nomis-ids")))
 
-        assertThat(request.aliases).isEmpty()
-        assertThat(request.identifiers).isEmpty()
+        assertThat(request.aliases).containsExactly(1L)
+        assertThat(request.identifiers).containsExactly(IdentifierByNomisIdRequest(nomisId = 1, nomisSequence = 1))
 
         assertThat(request.addresses).containsExactly(12345L)
         assertThat(request.addressUsages).containsExactly(AddressUsageByNomisIdRequest(10000, "HOME"))
@@ -354,6 +379,44 @@ class CorePersonSynchronisationIntTest(
           assertThat(contacts[1].value).isEqualTo("test@example.com")
         }
       }
+
+      @Test
+      fun `will add existing CPR alias and identifier ids to the merge request`() {
+        val request: PrisonMerge =
+          CorePersonCprApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/syscon-sync/person/$offenderNo/merge")))
+        with(request.toPrisonAliasesAndIdentifiersRequest.aliases.single()) {
+          assertThat(nomisOffenderId).isEqualTo(1L)
+          assertThat(cprAliasId).isEqualTo("cpr-alias-1")
+          with(identifiers.single()) {
+            assertThat(nomisIdentifierId.nomisOffenderId).isEqualTo(1L)
+            assertThat(nomisIdentifierId.nomisSequence).isEqualTo(1)
+            assertThat(cprIdentifierId).isEqualTo("cpr-identifier-1-1")
+          }
+        }
+      }
+
+      @Test
+      fun `will send the NOMIS aliases and identifiers to the merge request`() {
+        val request: PrisonMerge =
+          CorePersonCprApiExtension.getRequestBody(postRequestedFor(urlPathEqualTo("/syscon-sync/person/$offenderNo/merge")))
+        with(request.toPrisonAliasesAndIdentifiersRequest.aliases.single()) {
+          assertThat(isPrimary).isTrue()
+          assertThat(titleCode).isEqualTo(PrisonAlias.TitleCode.MR)
+          assertThat(firstName).isEqualTo("JOHN")
+          assertThat(middleNames).isEqualTo("FRED JAMES")
+          assertThat(lastName).isEqualTo("SMITH")
+          assertThat(dateOfBirth).isEqualTo(LocalDate.parse("1980-01-01"))
+          assertThat(birthPlace).isEqualTo("LONDON")
+          assertThat(sexCode).isEqualTo(PrisonAlias.SexCode.M)
+          with(identifiers.single()) {
+            assertThat(type).isEqualTo(PrisonIdentifier.Type.PNC)
+            assertThat(value).isEqualTo("20/0071818T")
+            assertThat(comment).isEqualTo("Met Police")
+            assertThat(issuedDate).isEqualTo(LocalDate.parse("2020-01-01"))
+            assertThat(verified).isTrue()
+          }
+        }
+      }
     }
 
     @Nested
@@ -367,6 +430,7 @@ class CorePersonSynchronisationIntTest(
       fun setUp() {
         setupSynchronisationTest()
         corePersonNomisApiMock.stubGetAddressesAndContacts(prisonNumber = offenderNo)
+        corePersonNomisApiMock.stubGetAliasesAndIdentifiers(prisonNumber = offenderNo)
         corePersonMappingApiMock.stubGetMappingsFromNomisIds()
         corePersonCprApiMockServer.stubProcessPrisonMerge(offenderNo)
         corePersonMappingApiMock.stubMerge()
@@ -403,6 +467,16 @@ class CorePersonSynchronisationIntTest(
         val contacts = toPrisonAddressesAndContactsRequest.contacts
         assertThat(contacts.map { it.nomisContactId }).containsExactlyInAnyOrder(30000L, 40000L)
         assertThat(contacts.map { it.cprContactId }).containsOnlyNulls()
+
+        with(request.toPrisonAliasesAndIdentifiersRequest.aliases.single()) {
+          assertThat(nomisOffenderId).isEqualTo(1L)
+          assertThat(cprAliasId).isNull()
+          with(identifiers.single()) {
+            assertThat(nomisIdentifierId.nomisOffenderId).isEqualTo(1L)
+            assertThat(nomisIdentifierId.nomisSequence).isEqualTo(1)
+            assertThat(cprIdentifierId).isNull()
+          }
+        }
       }
 
       @Test
@@ -421,6 +495,53 @@ class CorePersonSynchronisationIntTest(
     }
 
     @Nested
+    inner class WhenNomisAliasesAndIdentifiersFails {
+      val bookingId = 1234567L
+      val offenderNo = "A1234KT"
+      val removedOffenderNo = "A1000KT"
+
+      @BeforeEach
+      fun setUp() {
+        setupSynchronisationTest()
+        corePersonNomisApiMock.stubGetAddressesAndContacts(prisonNumber = offenderNo)
+        corePersonNomisApiMock.stubGetAliasesAndIdentifiers(prisonNumber = offenderNo, status = HttpStatus.INTERNAL_SERVER_ERROR)
+        corePersonMappingApiMock.stubGetMappingsFromNomisIds()
+        corePersonCprApiMockServer.stubProcessPrisonMerge(offenderNo)
+        corePersonMappingApiMock.stubMerge()
+        awsSqsCorePersonOffenderEventsClient.sendMessage(
+          corePersonQueueOffenderEventsUrl,
+          mergeDomainEvent(bookingId = bookingId, offenderNo = offenderNo, removedOffenderNo = removedOffenderNo),
+        )
+        waitForAnyProcessingToComplete("coreperson-prisoner-merge-synchronisation-error", times = 2)
+      }
+
+      @Test
+      fun `will retry and send the event to the DLQ without calling CPR or merging the mappings`() {
+        corePersonNomisApiMock.verify(2, getRequestedFor(urlPathEqualTo("/core-person/$offenderNo/aliases-identifiers")))
+        corePersonMappingApiMock.verify(0, postRequestedFor(urlPathEqualTo("/mapping/core-person/merge/mappings/by-nomis-ids")))
+        corePersonCprApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/syscon-sync/person/$offenderNo/merge")))
+        corePersonMappingApiMock.verify(0, postRequestedFor(urlPathEqualTo("/mapping/core-person/merge")))
+        await untilAsserted {
+          assertThat(corePersonOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1)
+        }
+      }
+
+      @Test
+      fun `will track the error for each attempt`() {
+        verify(telemetryClient, times(2)).trackEvent(
+          eq("coreperson-prisoner-merge-synchronisation-error"),
+          check {
+            assertThat(it["offenderNo"]).isEqualTo(offenderNo)
+            assertThat(it["bookingId"]).isEqualTo(bookingId.toString())
+            assertThat(it["removedOffenderNo"]).isEqualTo(removedOffenderNo)
+            assertThat(it["error"]).isNotNull()
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
     inner class WhenCprFails {
       val bookingId = 1234567L
       val offenderNo = "A1234KT"
@@ -430,6 +551,7 @@ class CorePersonSynchronisationIntTest(
       fun setUp() {
         reset(telemetryClient)
         corePersonNomisApiMock.stubGetAddressesAndContacts(prisonNumber = offenderNo)
+        corePersonNomisApiMock.stubGetAliasesAndIdentifiers(prisonNumber = offenderNo)
         corePersonMappingApiMock.stubGetMappingsFromNomisIds()
         corePersonCprApiMockServer.stubProcessPrisonMerge(offenderNo, status = HttpStatus.INTERNAL_SERVER_ERROR)
         awsSqsCorePersonOffenderEventsClient.sendMessage(
@@ -473,6 +595,7 @@ class CorePersonSynchronisationIntTest(
       fun setUp() {
         reset(telemetryClient)
         corePersonNomisApiMock.stubGetAddressesAndContacts(prisonNumber = offenderNo)
+        corePersonNomisApiMock.stubGetAliasesAndIdentifiers(prisonNumber = offenderNo)
         corePersonMappingApiMock.stubGetMappingsFromNomisIds()
         corePersonCprApiMockServer.stubProcessPrisonMerge(offenderNo)
         corePersonMappingApiMock.stubMerge(status = HttpStatus.INTERNAL_SERVER_ERROR)
@@ -755,7 +878,7 @@ class CorePersonSynchronisationIntTest(
     inner class WhenNomisFails {
       @BeforeEach
       fun setUp() {
-        tearDownTelemetryClient()
+        setupSynchronisationTest()
         corePersonNomisApiMock.stubGetWorkingName(prisonNumber = previousOffenderNo, status = HttpStatus.INTERNAL_SERVER_ERROR)
         sendBookingReassignedEvent()
           .also { waitForAnyProcessingToComplete("coreperson-booking-reassigned-synchronisation-error", times = 2) }
@@ -789,7 +912,7 @@ class CorePersonSynchronisationIntTest(
     inner class WhenMappingDoesNotExist {
       @BeforeEach
       fun setUp() {
-        tearDownTelemetryClient()
+        setupSynchronisationTest()
         corePersonNomisApiMock.stubGetWorkingName(prisonNumber = previousOffenderNo, offenderId = workingNameOffenderId)
         aliasIdentifierMappingApiMock.stubGetByNomisAliasIdOrNull(nomisOffenderId = workingNameOffenderId, mapping = null)
         sendBookingReassignedEvent()
@@ -823,7 +946,7 @@ class CorePersonSynchronisationIntTest(
     inner class WhenCprFails {
       @BeforeEach
       fun setUp() {
-        tearDownTelemetryClient()
+        setupSynchronisationTest()
         corePersonNomisApiMock.stubGetWorkingName(prisonNumber = previousOffenderNo, offenderId = workingNameOffenderId)
         aliasIdentifierMappingApiMock.stubGetByNomisAliasIdOrNull(
           nomisOffenderId = workingNameOffenderId,
