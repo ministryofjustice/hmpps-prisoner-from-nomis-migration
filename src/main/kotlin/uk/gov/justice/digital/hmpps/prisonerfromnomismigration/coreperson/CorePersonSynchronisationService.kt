@@ -2,7 +2,6 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAddressesAndContactsRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.NomisBookingDeletedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.NomisBookingReassignedEvent
@@ -13,6 +12,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMergeMappingsDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAliasIdentifierMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
 
 @Service
@@ -33,8 +33,8 @@ class CorePersonSynchronisationService(
       "removedOffenderNo" to removedOffenderNo,
     )
     track("coreperson-prisoner-merge-synchronisation", telemetry) {
-      val prisonAddressesAndContactsRequest = prisonAddressesAndContactsRequestForMerge(offenderNo)
-      val cprMergeResponse = corePersonCprApiService.processPrisonMerge(offenderNo, PrisonMerge(removedOffenderNo, prisonAddressesAndContactsRequest))
+      val prisonMergeRequest = constructPrisonMerge(prisonNumber = offenderNo, removedPrisonNumber = removedOffenderNo)
+      val cprMergeResponse = corePersonCprApiService.processPrisonMerge(offenderNo, prisonMergeRequest)
       val newAddressAndContactsMappings = cprMergeResponse.sysconAddressesAndContactsResponseBody.toCorePersonAddressContactMappingsDto(migrationType = NOMIS_CREATED)
       corePersonMappingService.merge(
         CorePersonAddressContactMergeMappingsDto(
@@ -79,23 +79,36 @@ class CorePersonSynchronisationService(
     corePersonCprApiService.syncPrimaryName(prisonNumber, cprAliasId)
   }
 
-  private suspend fun prisonAddressesAndContactsRequestForMerge(prisonNumber: String): PrisonAddressesAndContactsRequest {
+  private suspend fun constructPrisonMerge(prisonNumber: String, removedPrisonNumber: String): PrisonMerge {
     val nomisAddressesAndContacts = corePersonNomisApiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = prisonNumber)
-    val request = nomisAddressesAndContacts.toMappingsByNomisIdsRequest()
+    val addressesRequest = nomisAddressesAndContacts.toMappingsByNomisIdsRequest()
+
+    val nomisAliasesAndIdentifiers = corePersonNomisApiService.getOffenderAliasesAndIdentifiers(nomisPrisonNumber = prisonNumber)
+    val aliasesRequest = nomisAliasesAndIdentifiers.toMappingsByNomisIdsRequest()
+
     val existingMappings = corePersonMappingService.getMappingsFromNomisIds(
       CorePersonMappingsByNomisIdsRequest(
-        aliases = emptyList(),
-        identifiers = emptyList(),
-        addresses = request.addresses,
-        contacts = request.contacts,
-        addressUsages = request.addressUsages,
+        aliases = aliasesRequest.aliases,
+        identifiers = aliasesRequest.identifiers,
+        addresses = addressesRequest.addresses,
+        contacts = addressesRequest.contacts,
+        addressUsages = addressesRequest.addressUsages,
       ),
     )
-    return nomisAddressesAndContacts.toMigrateAddressesAndContactsRequest(
-      CorePersonAddressContactMappingsResult(
-        addresses = existingMappings.addresses,
-        contacts = existingMappings.contacts,
-        addressUsages = existingMappings.addressUsages,
+    return PrisonMerge(
+      removedPrisonNumber,
+      nomisAddressesAndContacts.toMigrateAddressesAndContactsRequest(
+        CorePersonAddressContactMappingsResult(
+          addresses = existingMappings.addresses,
+          contacts = existingMappings.contacts,
+          addressUsages = existingMappings.addressUsages,
+        ),
+      ),
+      nomisAliasesAndIdentifiers.toMigrateAliasesAndIdentifiersRequest(
+        CorePersonAliasIdentifierMappingsResult(
+          aliases = existingMappings.aliases,
+          identifiers = existingMappings.identifiers,
+        ),
       ),
     )
   }
