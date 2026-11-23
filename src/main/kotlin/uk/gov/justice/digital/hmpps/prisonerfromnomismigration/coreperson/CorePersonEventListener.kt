@@ -151,7 +151,7 @@ data class OffenderPhoneEvent(
 data class OffenderEvent(
   val offenderIdDisplay: String,
   val offenderId: Long,
-  override val auditModuleName: String,
+  override val auditModuleName: String?,
 ) : EventAudited
 
 data class OffenderIdentifierEvent(
