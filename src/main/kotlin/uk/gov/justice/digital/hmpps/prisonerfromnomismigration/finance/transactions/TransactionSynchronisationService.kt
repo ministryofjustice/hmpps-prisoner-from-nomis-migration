@@ -18,6 +18,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.histo
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SynchronisationMessageType.RETRY_SYNCHRONISATION_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.GeneralLedgerTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.TransactionIdBufferRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.InternalMessage
@@ -99,6 +100,13 @@ class TransactionSynchronisationService(
     transactionUpserted(transactionEvent, UUID.randomUUID(), "repair")
   }
 
+  suspend fun resynchronisePrisonTransaction(nomisTransactionId: Long) {
+    val transactionEvent = nomisApiService.getPrisonTransactions(nomisTransactionId).firstOrNull()
+      ?.toTransactionEvent()
+      ?: throw NotFoundException("No prison transaction found in nomis for transactionId=$nomisTransactionId")
+    transactionUpserted(transactionEvent, UUID.randomUUID(), "repair")
+  }
+
   suspend fun transactionUpserted(encapsulatedTransaction: InternalMessage<EncapsulatedTransaction>) {
     val (event, requestId, eventType) = encapsulatedTransaction.body
     try {
@@ -147,14 +155,20 @@ class TransactionSynchronisationService(
               ),
             )
           }
-          additionalOffenderTransactionProcessing(nomisTransactions.first(), dpsTransactionId, event, eventType)
+          additionalOffenderTransactionProcessing(
+            nomisTransactions.first(),
+            event.toTelemetryProperties(
+              dpsTransactionId = dpsTransactionId,
+            ),
+            eventType,
+          )
         }
     }
   }
 
-  suspend fun additionalOffenderTransactionProcessing(transaction: OffenderTransactionDto, dpsTransactionId: UUID, event: TransactionEvent, eventType: String) {
+  suspend fun additionalOffenderTransactionProcessing(transaction: OffenderTransactionDto, telemetry: Map<String, String>, eventType: String) {
     if (processHoldTransaction && transaction.isHoldTransaction()) {
-      sendHoldTransactionToDps(transaction, dpsTransactionId, event, eventType)
+      sendHoldTransactionToDps(transaction, telemetry, eventType)
     } else if (processAdvanceTransaction && transaction.isRepaymentTransaction()) {
       advancesSynchronisationService.sendRepaymentToDps(transaction)
     }
@@ -175,12 +189,18 @@ class TransactionSynchronisationService(
     }
   }
 
-  suspend fun sendHoldTransactionToDps(nomisTransaction: OffenderTransactionDto, dpsTransactionId: UUID, event: TransactionEvent, eventType: String) {
+  suspend fun sendHoldTransactionToDps(nomisTransaction: OffenderTransactionDto, telemetry: Map<String, String>, eventType: String) {
     if (nomisTransaction.isAddHoldTransaction()) {
+      if (nomisTransaction.holdDetails!!.holdCleared) {
+        telemetryClient.trackEvent(
+          "transactions-synchronisation-$eventType-add-hold-overriding-released-hold-flag",
+          telemetry,
+        )
+      }
       financeService.syncAddHoldTransaction(nomisTransaction.toSyncAddHoldRequest())
       telemetryClient.trackEvent(
         "transactions-synchronisation-$eventType-add-hold-success",
-        event.toTelemetryProperties(dpsTransactionId = dpsTransactionId),
+        telemetry,
       )
     } else if (nomisTransaction.isReleaseHoldTransaction()) {
       // holdNumber is now present on all new release transactions, so we can safely use !! here
@@ -190,7 +210,7 @@ class TransactionSynchronisationService(
       )
       telemetryClient.trackEvent(
         "transactions-synchronisation-$eventType-release-hold-success",
-        event.toTelemetryProperties(dpsTransactionId = dpsTransactionId),
+        telemetry,
       )
     }
   }
@@ -293,6 +313,14 @@ private fun OffenderTransactionDto.toTransactionEvent() = TransactionEvent(
   caseload = caseloadId,
   offenderIdDisplay = offenderNo,
   bookingId = bookingId,
+  transactionType = type,
+  auditModuleName = null,
+)
+
+private fun GeneralLedgerTransactionDto.toTransactionEvent() = TransactionEvent(
+  transactionId = transactionId,
+  entrySequence = transactionEntrySequence,
+  caseload = caseloadId,
   transactionType = type,
   auditModuleName = null,
 )
