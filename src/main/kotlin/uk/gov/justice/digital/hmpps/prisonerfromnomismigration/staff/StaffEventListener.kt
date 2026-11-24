@@ -39,6 +39,8 @@ class StaffEventListener(
               "STAFF_USER_ACCOUNTS-INSERTED" -> service.staffAccountUpserted("created", sqsMessage.Message.fromJson())
               "STAFF_USER_ACCOUNTS-UPDATED" -> service.staffAccountUpserted("updated", sqsMessage.Message.fromJson())
               "STAFF_USER_ACCOUNTS-DELETED" -> service.staffAccountUpserted("deleted", sqsMessage.Message.fromJson())
+              "STAFF_USER_ACCOUNTS-LOCKED" -> service.staffAccountUpserted("locked", sqsMessage.Message.fromJson())
+              "STAFF_USER_ACCOUNTS-UNLOCKED" -> service.staffAccountUpserted("unlocked", sqsMessage.Message.fromJson())
               "INTERNET_ADDRESSES_STAFF-INSERTED" -> service.staffInternetAddressUpserted("created", sqsMessage.Message.fromJson())
               "INTERNET_ADDRESSES_STAFF-UPDATED" -> service.staffInternetAddressUpserted("updated", sqsMessage.Message.fromJson())
               "INTERNET_ADDRESSES_STAFF-DELETED" -> service.staffInternetAddressUpserted("deleted", sqsMessage.Message.fromJson())
