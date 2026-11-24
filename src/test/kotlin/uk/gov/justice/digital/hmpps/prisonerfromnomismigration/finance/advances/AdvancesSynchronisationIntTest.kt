@@ -1,11 +1,15 @@
 package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.advances
 
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
 import com.github.tomakehurst.wiremock.client.WireMock.anyUrl
 import com.github.tomakehurst.wiremock.client.WireMock.equalTo
 import com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor
+import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor
 import com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo
 import org.assertj.core.api.Assertions.assertThat
+import org.awaitility.kotlin.await
+import org.awaitility.kotlin.untilAsserted
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Nested
@@ -18,6 +22,7 @@ import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceIntegrationTestBase
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.countAllMessagesOnDLQQueue
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.AdvanceMappingDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.DuplicateErrorContentObject
@@ -411,7 +416,7 @@ class AdvancesSynchronisationIntTest(
           fun setUp() {
             mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = advanceId, mapping = null)
             sendAdvanceEvent("OFFENDER_ADVANCES-UPDATED")
-              .also { waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-error", 2) }
+              .also { waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-error", times = 2) }
           }
 
           @Test
@@ -426,16 +431,93 @@ class AdvancesSynchronisationIntTest(
 
           @Test
           fun `will track telemetry`() {
-            verify(telemetryClient, times(2)).trackEvent(
-              eq("finance-advances-synchronisation-updated-error"),
-              check {
-                assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
-                assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
-                assertThat(it["dpsAdvanceId"]).isNull()
-              },
-              isNull(),
-            )
+            verifyUpdateError(404, "/mapping/advances/nomis-id/$advanceId", hasMapping = false)
           }
+
+          @Test
+          fun `will retry and send the event to the DLQ`() {
+            mappingApiMock.verify(2, getRequestedFor(urlPathEqualTo("/mapping/advances/nomis-id/$advanceId")))
+            await untilAsserted {
+              assertThat(financeOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1)
+            }
+          }
+        }
+
+        @Nested
+        inner class WhenMappingLookupFails {
+          @BeforeEach
+          fun setUp() {
+            mappingApiMock.stubGetByNomisIdFailure(nomisAdvanceId = advanceId)
+            sendAdvanceEvent("OFFENDER_ADVANCES-UPDATED")
+              .also { waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-error", times = 2) }
+          }
+
+          @Test
+          fun `will track the mapping lookup error for each attempt`() {
+            verifyUpdateError(500, "/mapping/advances/nomis-id/$advanceId", hasMapping = false)
+          }
+
+          @Test
+          fun `will retry and send the event to the DLQ without updating DPS`() {
+            mappingApiMock.verify(2, getRequestedFor(urlPathEqualTo("/mapping/advances/nomis-id/$advanceId")))
+            nomisApiMock.verify(0, getRequestedFor(anyUrl()))
+            financeApi.verify(0, postRequestedFor(anyUrl()))
+            await untilAsserted {
+              assertThat(financeOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1)
+            }
+          }
+        }
+
+        @Nested
+        inner class WhenDpsUpdateFails {
+          @BeforeEach
+          fun setUp() {
+            mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = advanceId, dpsId = dpsAdvanceId.toString())
+            nomisApiMock.stubGetAdvance(advanceId)
+            financeApi.stubFor(
+              post("/sync/advances/$dpsAdvanceId/update")
+                .willReturn(aResponse().withStatus(500)),
+            )
+            sendAdvanceEvent("OFFENDER_ADVANCES-UPDATED")
+              .also { waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-error", times = 2) }
+          }
+
+          @Test
+          fun `will track the DPS update error for each attempt`() {
+            verifyUpdateError(500, "/sync/advances/$dpsAdvanceId/update", hasMapping = true)
+          }
+
+          @Test
+          fun `will retry the update and send the event to the DLQ`() {
+            mappingApiMock.verify(2, getRequestedFor(urlPathEqualTo("/mapping/advances/nomis-id/$advanceId")))
+            nomisApiMock.verify(2, getRequestedFor(urlPathEqualTo("/finance/advances/$advanceId")))
+            financeApi.verify(
+              2,
+              postRequestedFor(urlPathEqualTo("/sync/advances/$dpsAdvanceId/update"))
+                .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
+                .withRequestBodyJsonPath("updatedBy", equalTo("KE23456")),
+            )
+            await untilAsserted {
+              assertThat(financeOffenderEventsQueue.countAllMessagesOnDLQQueue()).isEqualTo(1)
+            }
+          }
+        }
+
+        private fun verifyUpdateError(status: Int, path: String, hasMapping: Boolean) {
+          verify(telemetryClient, times(2)).trackEvent(
+            eq("finance-advances-synchronisation-updated-error"),
+            check {
+              assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+              assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
+              assertThat(it["error"]).contains(status.toString(), path)
+              if (hasMapping) {
+                assertThat(it["dpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
+              } else {
+                assertThat(it).doesNotContainKey("dpsAdvanceId")
+              }
+            },
+            isNull(),
+          )
         }
       }
     }

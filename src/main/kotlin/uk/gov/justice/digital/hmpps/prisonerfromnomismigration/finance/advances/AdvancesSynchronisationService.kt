@@ -108,15 +108,13 @@ class AdvancesSynchronisationService(
       val mapping = mappingService.getByNomisId(nomisAdvanceId)
       telemetry["dpsAdvanceId"] = mapping.dpsId
       val nomisAdvance = nomisApiService.getAdvance(nomisAdvanceId)
-      if (nomisAdvance.comment != null) {
-        dpsApiService.updateAdvance(
-          UUID.fromString(mapping.dpsId),
-          AdvanceUpdateRequest(
-            comment = nomisAdvance.comment,
-            updatedBy = nomisAdvance.lastModifiedBy!!,
-          ),
-        )
-      }
+      dpsApiService.updateAdvance(
+        UUID.fromString(mapping.dpsId),
+        AdvanceUpdateRequest(
+          comment = nomisAdvance.comment,
+          updatedBy = nomisAdvance.lastModifiedBy ?: nomisAdvance.createdBy,
+        ),
+      )
     }
   }
 
