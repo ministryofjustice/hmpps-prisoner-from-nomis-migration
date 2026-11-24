@@ -131,4 +131,5 @@ fun prisonerAdvance(prisonNumber: String = "A0001BC"): PrisonerAdvanceDto = Pris
   status = PrisonerAdvanceDto.Status.ACTIVE,
   createdBy = "JD12345",
   createDatetime = LocalDateTime.of(2024, Month.JUNE, 18, 12, 30, 45),
+  lastModifiedBy = "KE23456",
 )

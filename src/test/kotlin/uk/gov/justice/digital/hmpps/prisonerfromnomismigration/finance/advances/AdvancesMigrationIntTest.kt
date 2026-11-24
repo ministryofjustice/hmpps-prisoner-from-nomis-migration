@@ -307,7 +307,7 @@ class AdvancesMigrationIntTest(
       }
 
       @Test
-      fun `will get details for offender only once`() {
+      fun `will get advance details for offender only once`() {
         advancesNomisApiMock.verify(
           getRequestedFor(urlPathEqualTo("/finance/prisoners/root-offender-id/0/advances"))
             .withQueryParam("activeOnly", equalTo("true")),

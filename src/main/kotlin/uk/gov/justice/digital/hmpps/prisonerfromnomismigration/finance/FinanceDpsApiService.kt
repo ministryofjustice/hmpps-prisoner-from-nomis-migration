@@ -7,6 +7,8 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.Advan
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.HoldsApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.NOMISSyncApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.api.SubscriptionsApi
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.AdvanceRecordResponse
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.AdvanceUpdateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.PrisonerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
@@ -60,6 +62,9 @@ class FinanceDpsApiService(@Qualifier("financeApiWebClient") private val webClie
     .awaitOrLogAndRethrowBadRequest()
 
   suspend fun createAdvance(request: SyncCreateAdvanceRecordRequest): SyncCreateAdvanceRecordResponse = advancesApi.postAdvance(request)
+    .awaitOrLogAndRethrowBadRequest()
+
+  suspend fun updateAdvance(advanceUuid: UUID, request: AdvanceUpdateRequest): AdvanceRecordResponse = advancesApi.updateAdvance(advanceUuid, request)
     .awaitOrLogAndRethrowBadRequest()
 
   suspend fun repayAdvance(advanceUuid: UUID, request: SyncCreateAdvanceRepayRequest) {

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.check
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.isNull
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.springframework.beans.factory.annotation.Autowired
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.financeApi
@@ -287,6 +288,150 @@ class AdvancesSynchronisationIntTest(
                 assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
                 assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
                 assertThat(it["dpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+  }
+
+  @Nested
+  @DisplayName("OFFENDER_ADVANCES-UPDATED")
+  inner class OffenderAdvanceUpdated {
+    private val advanceId = 1234L
+    private val prisonNumber = "A1234BC"
+    private val dpsAdvanceId = UUID.fromString("de2bc56c-ea73-4f3c-8a37-5a46fdb2d79a")
+
+    private fun verifySuccessTelemetry() {
+      verify(telemetryClient).trackEvent(
+        eq("finance-advances-synchronisation-updated-success"),
+        check {
+          assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+          assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
+          assertThat(it["dpsAdvanceId"]).isEqualTo(dpsAdvanceId.toString())
+        },
+        isNull(),
+      )
+    }
+
+    @Nested
+    inner class WhenUpdatedInDps {
+      @BeforeEach
+      fun setUp() {
+        sendAdvanceEvent("OFFENDER_ADVANCES-UPDATED", auditModuleName = "DPS_SYNCHRONISATION")
+          .also { waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-skipped") }
+      }
+
+      @Test
+      fun `will not attempt to retrieve the advance from NOMIS`() {
+        nomisApiMock.verify(0, getRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will not update the advance in DPS`() {
+        financeApi.verify(0, postRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will not call the mapping service`() {
+        mappingApiMock.verify(0, getRequestedFor(anyUrl()))
+        mappingApiMock.verify(0, postRequestedFor(anyUrl()))
+      }
+
+      @Test
+      fun `will track telemetry`() {
+        verify(telemetryClient).trackEvent(
+          eq("finance-advances-synchronisation-updated-skipped"),
+          check {
+            assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+            assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
+          },
+          isNull(),
+        )
+      }
+    }
+
+    @Nested
+    inner class WhenUpdatedInNomis {
+      @Nested
+      inner class HappyPath {
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubGetAdvance(advanceId)
+          mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = advanceId, dpsId = dpsAdvanceId.toString())
+          financeApi.stubUpdateAdvance(advanceUuid = dpsAdvanceId)
+        }
+
+        @Nested
+        inner class HappyPathNoFailures {
+          @BeforeEach
+          fun setUp() {
+            sendAdvanceEvent("OFFENDER_ADVANCES-UPDATED")
+              .also { waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-success") }
+          }
+
+          @Test
+          fun `will retrieve the advance from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/finance/advances/$advanceId")))
+          }
+
+          @Test
+          fun `will update the advance in DPS`() {
+            financeApi.verify(
+              postRequestedFor(urlPathEqualTo("/sync/advances/$dpsAdvanceId/update"))
+                .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
+                .withRequestBodyJsonPath("updatedBy", equalTo("KE23456")),
+            )
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verifySuccessTelemetry()
+          }
+
+          @Test
+          fun `will check for an existing mapping`() {
+            mappingApiMock.verify(getRequestedFor(urlPathEqualTo("/mapping/advances/nomis-id/$advanceId")))
+          }
+
+          @Test
+          fun `will not create a mapping`() {
+            mappingApiMock.verify(0, postRequestedFor(anyUrl()))
+          }
+        }
+      }
+
+      @Nested
+      inner class UnHappyPath {
+        @Nested
+        inner class NoMapping {
+          @BeforeEach
+          fun setUp() {
+            mappingApiMock.stubGetAdvanceByNomisIdOrNull(nomisAdvanceId = advanceId, mapping = null)
+            sendAdvanceEvent("OFFENDER_ADVANCES-UPDATED")
+              .also { waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-error", 2) }
+          }
+
+          @Test
+          fun `will not call NOMIS`() {
+            nomisApiMock.verify(0, getRequestedFor(anyUrl()))
+          }
+
+          @Test
+          fun `will not update the advance in DPS`() {
+            financeApi.verify(0, postRequestedFor(anyUrl()))
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient, times(2)).trackEvent(
+              eq("finance-advances-synchronisation-updated-error"),
+              check {
+                assertThat(it["prisonNumber"]).isEqualTo(prisonNumber)
+                assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
+                assertThat(it["dpsAdvanceId"]).isNull()
               },
               isNull(),
             )

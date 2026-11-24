@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceApiExtension.Companion.jsonMapper
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.AdvanceRecordResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.ErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerBalancesSyncRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.GeneralLedgerPointInTimeBalance
@@ -189,6 +190,23 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
       writtenOffAmount = BigDecimal.TWO,
       writtenOffBy = "LF12345",
       writeOffDateTime = LocalDateTime.of(2024, Month.JUNE, 29, 9, 15),
+    )
+    fun advanceResponseDto(advanceUuid: UUID = UUID.randomUUID()) = AdvanceRecordResponse(
+      id = advanceUuid,
+      legacyPaymentProfileId = 12345,
+      legacyInformationNumber = "9876-1",
+      prisonNumber = "A0001BC",
+      prisonID = "LEI",
+      amount = 210,
+      repaymentAmount = 5,
+      repaymentStartDate = LocalDateTime.of(2024, Month.JUNE, 18, 0, 0, 0),
+      reference = "description of the advance",
+      comment = "This is a comment",
+      status = AdvanceRecordResponse.Status.ACTIVE,
+      createdBy = "JD12345",
+      createdOn = LocalDateTime.of(2024, Month.JUNE, 18, 12, 10),
+      updatedBy = "LF12345",
+      updatedAt = LocalDateTime.of(2024, Month.JULY, 17, 11, 9),
     )
 
     fun syncScheduledPaymentDto(prisonNumber: String = "A0001BC") = SyncCreateSubscriptionRequest(
@@ -370,6 +388,21 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
   ) {
     stubFor(
       post("/sync/advances")
+        .willReturn(
+          aResponse()
+            .withStatus(200)
+            .withHeader("Content-Type", "application/json")
+            .withBody(jsonMapper.writeValueAsString(response)),
+        ),
+    )
+  }
+
+  fun stubUpdateAdvance(
+    advanceUuid: UUID = UUID.randomUUID(),
+    response: AdvanceRecordResponse = advanceResponseDto(advanceUuid = advanceUuid),
+  ) {
+    stubFor(
+      post("/sync/advances/$advanceUuid/update")
         .willReturn(
           aResponse()
             .withStatus(200)
