@@ -55,7 +55,7 @@ class AdvancesNomisApiServiceTest {
     fun `will return advance details`() = runTest {
       mockServer.stubGetAdvance()
 
-      val advance = apiService.getAdvance(12345)!!
+      val advance = apiService.getAdvance(12345)
 
       with(advance) {
         assertThat(id).isEqualTo(12345)
@@ -74,6 +74,59 @@ class AdvancesNomisApiServiceTest {
         assertThat(status).isEqualTo(PrisonerAdvanceDto.Status.ACTIVE)
         assertThat(createDatetime).isEqualTo(LocalDateTime.parse("2024-06-18T12:30:45"))
         assertThat(createdBy).isEqualTo("JD12345")
+        assertThat(lastModifiedBy).isEqualTo("KE23456")
+      }
+    }
+  }
+
+  @Nested
+  inner class GetAdvanceByIdOrNull {
+    @Test
+    fun `will pass oauth2 token to service`() = runTest {
+      mockServer.stubGetAdvance()
+
+      apiService.getAdvanceOrNull(12345)
+
+      mockServer.verify(
+        getRequestedFor(anyUrl()).withHeader("Authorization", equalTo("Bearer ABCDE")),
+      )
+    }
+
+    @Test
+    fun `will pass NOMIS id to service`() = runTest {
+      mockServer.stubGetAdvance()
+
+      apiService.getAdvanceOrNull(12345)
+
+      mockServer.verify(
+        getRequestedFor(urlPathEqualTo("/finance/advances/12345")),
+      )
+    }
+
+    @Test
+    fun `will return advance details`() = runTest {
+      mockServer.stubGetAdvance()
+
+      val advance = apiService.getAdvanceOrNull(12345)!!
+
+      with(advance) {
+        assertThat(id).isEqualTo(12345)
+        assertThat(prisonNumber).isEqualTo("A0001BC")
+        assertThat(caseloadId).isEqualTo("LEI")
+        assertThat(advanceAmount).isEqualTo(210)
+        assertThat(advanceDate).isEqualTo(LocalDate.parse("2024-06-18"))
+        assertThat(repaymentAmount).isEqualTo(50)
+        assertThat(deductionAmount).isEqualTo(0)
+        assertThat(outstandingBalance).isEqualTo(160)
+        assertThat(startDate).isEqualTo(LocalDate.parse("2024-06-18"))
+        assertThat(reference).isEqualTo("description of the advance")
+        assertThat(comment).isEqualTo("This is a comment")
+        assertThat(informationNumber).isEqualTo("info-123")
+        assertThat(advanceCreateTransactionId).isEqualTo(987654)
+        assertThat(status).isEqualTo(PrisonerAdvanceDto.Status.ACTIVE)
+        assertThat(createDatetime).isEqualTo(LocalDateTime.parse("2024-06-18T12:30:45"))
+        assertThat(createdBy).isEqualTo("JD12345")
+        assertThat(lastModifiedBy).isEqualTo("KE23456")
       }
     }
   }
@@ -123,6 +176,7 @@ class AdvancesNomisApiServiceTest {
         assertThat(status).isEqualTo(PrisonerAdvanceDto.Status.ACTIVE)
         assertThat(createDatetime).isEqualTo(LocalDateTime.parse("2024-06-18T12:30:45"))
         assertThat(createdBy).isEqualTo("JD12345")
+        assertThat(lastModifiedBy).isEqualTo("KE23456")
       }
     }
 
@@ -219,6 +273,7 @@ class AdvancesNomisApiServiceTest {
         assertThat(status).isEqualTo(PrisonerAdvanceDto.Status.ACTIVE)
         assertThat(createDatetime).isEqualTo(LocalDateTime.parse("2024-06-18T12:30:45"))
         assertThat(createdBy).isEqualTo("JD12345")
+        assertThat(lastModifiedBy).isEqualTo("KE23456")
       }
     }
   }

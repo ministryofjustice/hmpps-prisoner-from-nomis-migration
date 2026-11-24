@@ -73,12 +73,12 @@ class AdvancesDataRepairResourceIntTest(
       }
 
       @Test
-      fun `will retrieve current prisonerAdvance for the prisoner from Nomis`() {
+      fun `will retrieve the advance for the prisoner from Nomis`() {
         nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/advances/$advanceId")))
       }
 
       @Test
-      fun `will send prisonerAdvance to DPS`() {
+      fun `will send the advance for the prisoner to DPS`() {
         financeApi.verify(
           postRequestedFor(urlPathEqualTo("/sync/advances"))
             .withRequestBodyJsonPath("legacyPaymentProfileId", equalTo(advanceId.toString()))
@@ -110,9 +110,9 @@ class AdvancesDataRepairResourceIntTest(
       @Test
       fun `will track telemetry for the repair`() {
         verify(telemetryClient).trackEvent(
-          eq("prisoneradvance-resynchronisation-repair"),
+          eq("finance-advances-resynchronisation-repair"),
           check {
-            assertThat(it["advanceId"]).isEqualTo(advanceId.toString())
+            assertThat(it["nomisAdvanceId"]).isEqualTo(advanceId.toString())
           },
           isNull(),
         )
@@ -134,12 +134,12 @@ class AdvancesDataRepairResourceIntTest(
       }
 
       @Test
-      fun `will try to get the advanceId from Nomis`() {
+      fun `will try to get the advance from Nomis`() {
         nomisApiMockServer.verify(getRequestedFor(urlPathEqualTo("/finance/advances/99999")))
       }
 
       @Test
-      fun `will not send prisonerAdvance to DPS`() {
+      fun `will not send the advance to DPS`() {
         financeApi.verify(0, postRequestedFor(anyUrl()))
       }
 

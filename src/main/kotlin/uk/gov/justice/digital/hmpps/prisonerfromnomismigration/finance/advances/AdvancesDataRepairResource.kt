@@ -35,9 +35,9 @@ class AdvancesDataRepairResource(
   ) {
     service.resynchroniseAdvance(advanceId)
     telemetryClient.trackEvent(
-      "prisoneradvance-resynchronisation-repair",
+      "finance-advances-resynchronisation-repair",
       mapOf(
-        "advanceId" to advanceId,
+        "nomisAdvanceId" to advanceId,
       ),
     )
   }

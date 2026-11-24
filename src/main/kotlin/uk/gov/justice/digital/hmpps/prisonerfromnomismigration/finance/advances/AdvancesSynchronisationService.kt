@@ -10,6 +10,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.AdvanceEv
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceDpsApiService
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.FinanceSynchronisationMessageType.RETRY_SYNCHRONISATION_ADVANCE_MAPPING
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.MoneySupport
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.AdvanceUpdateRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRecordRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceRepayRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncCreateAdvanceWriteOffRequest
@@ -47,7 +48,7 @@ class AdvancesSynchronisationService(
   }
 
   suspend fun resynchroniseAdvance(advanceId: Long) {
-    val nomisAdvance = nomisApiService.getAdvance(advanceId)
+    val nomisAdvance = nomisApiService.getAdvanceOrNull(advanceId)
       ?: throw NotFoundException("advanceId $advanceId not found")
 
     val dpsAdvance = dpsApiService.createAdvance(nomisAdvance.toSyncAdvanceDto())
@@ -77,7 +78,7 @@ class AdvancesSynchronisationService(
       track("$TELEMETRY_PREFIX-created", telemetry) {
         nomisApiService.getAdvance(advanceId)
           .also { nomisAdvance ->
-            val dpsAdvance = dpsApiService.createAdvance(nomisAdvance!!.toSyncAdvanceDto())
+            val dpsAdvance = dpsApiService.createAdvance(nomisAdvance.toSyncAdvanceDto())
               .also {
                 telemetry["dpsAdvanceId"] = it.advanceId
               }
@@ -92,6 +93,28 @@ class AdvancesSynchronisationService(
             )
           }
       }
+    }
+  }
+
+  suspend fun advanceUpdated(event: AdvanceEvent) {
+    val nomisAdvanceId = event.offenderAdvanceId
+    val telemetry = telemetryOf("nomisAdvanceId" to nomisAdvanceId, "prisonNumber" to event.offenderIdDisplay)
+
+    if (event.originatesInDpsOrHasMissingAudit) {
+      telemetryClient.trackEvent("$TELEMETRY_PREFIX-updated-skipped", telemetry)
+      return
+    }
+    track("$TELEMETRY_PREFIX-updated", telemetry) {
+      val mapping = mappingService.getByNomisId(nomisAdvanceId)
+      telemetry["dpsAdvanceId"] = mapping.dpsId
+      val nomisAdvance = nomisApiService.getAdvance(nomisAdvanceId)
+      dpsApiService.updateAdvance(
+        UUID.fromString(mapping.dpsId),
+        AdvanceUpdateRequest(
+          comment = nomisAdvance.comment,
+          updatedBy = nomisAdvance.lastModifiedBy ?: nomisAdvance.createdBy,
+        ),
+      )
     }
   }
 

@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-23.2417.18f2044"
+    "version" : "2026-11-24.2420.05fa4da"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -48158,17 +48158,6 @@
             "description" : "How much has been written off so far, in pence",
             "example" : 1020
           },
-          "createdBy" : {
-            "type" : "string",
-            "description" : "The user who created the advance",
-            "example" : "FRED_SMITH"
-          },
-          "createDatetime" : {
-            "type" : "string",
-            "format" : "date-time",
-            "description" : "The date time when the advance was created",
-            "example" : "2024-06-01T12:00:00"
-          },
           "status" : {
             "type" : "string",
             "description" : "The status of the advance",
@@ -48186,6 +48175,22 @@
             "format" : "date-time",
             "description" : "The date time of the last transaction for the advance",
             "example" : "2025-07-14T12:13:14"
+          },
+          "createdBy" : {
+            "type" : "string",
+            "description" : "The user who created the advance",
+            "example" : "FRED_SMITH"
+          },
+          "createDatetime" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The date time when the advance was created",
+            "example" : "2024-06-01T12:00:00"
+          },
+          "lastModifiedBy" : {
+            "type" : [ "string", "null" ],
+            "description" : "The user who last modified the advance",
+            "example" : "FRED_SMITH"
           }
         },
         "required" : [ "advanceAmount", "caseloadId", "createDatetime", "createdBy", "id", "informationNumber", "lastTransactionTimestamp", "outstandingBalance", "prisonNumber", "repaymentAmount", "startDate", "status" ]
@@ -48349,14 +48354,6 @@
             "type" : [ "integer", "null" ],
             "format" : "int64"
           },
-          "txnId" : {
-            "type" : "integer",
-            "format" : "int64"
-          },
-          "txnEntrySeq" : {
-            "type" : "integer",
-            "format" : "int32"
-          },
           "txnEntryDate" : {
             "type" : "string",
             "format" : "date-time"
@@ -48369,6 +48366,14 @@
           },
           "txnEntryAmount" : {
             "type" : "number"
+          },
+          "txnEntrySeq" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "txnId" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         },
         "required" : [ "txnEntryAmount", "txnEntryDate", "txnEntrySeq", "txnId" ]
