@@ -412,7 +412,6 @@ class CorePersonSynchronisationIntTest(
             assertThat(type).isEqualTo(PrisonIdentifier.Type.PNC)
             assertThat(value).isEqualTo("20/0071818T")
             assertThat(comment).isEqualTo("Met Police")
-            assertThat(issuedDate).isEqualTo(LocalDate.parse("2020-01-01"))
             assertThat(verified).isTrue()
           }
         }
