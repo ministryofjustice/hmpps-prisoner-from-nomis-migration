@@ -474,6 +474,154 @@ class StaffSynchronisationIntTest(
         }
       }
     }
+
+    @Nested
+    @DisplayName("STAFF_USER_ACCOUNTS-LOCKED")
+    inner class StaffUserAccountLocked {
+      @Nested
+      inner class WhenCreatedInDps {
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            staffUserAccountEvent(
+              eventType = "STAFF_USER_ACCOUNTS-LOCKED",
+              staffId = nomisStaffId,
+              username = username,
+              auditModuleName = "DPS_SYNCHRONISATION",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("staffuseraccount-synchronisation-locked-skipped"),
+            check {
+              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenCreatedInNomis {
+
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubGetStaffDetailsById()
+          dpsApiMock.stubSyncStaff()
+          staffOffenderEventsQueue.sendMessage(
+            staffUserAccountEvent(
+              eventType = "STAFF_USER_ACCOUNTS-LOCKED",
+              staffId = nomisStaffId,
+              username = username,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Nested
+        inner class HappyPath {
+
+          @Test
+          fun `will retrieve the staff details from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
+          }
+
+          @Test
+          fun `will update the staff in DPS`() {
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("staffuseraccount-synchronisation-locked-success"),
+              check {
+                assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+                assertThat(it["username"]).isEqualTo(username)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
+
+    @Nested
+    @DisplayName("STAFF_USER_ACCOUNTS-UNLOCKED")
+    inner class StaffUserAccountUnlocked {
+      @Nested
+      inner class WhenCreatedInDps {
+        @BeforeEach
+        fun setUp() {
+          staffOffenderEventsQueue.sendMessage(
+            staffUserAccountEvent(
+              eventType = "STAFF_USER_ACCOUNTS-UNLOCKED",
+              staffId = nomisStaffId,
+              username = username,
+              auditModuleName = "DPS_SYNCHRONISATION",
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Test
+        fun `will track telemetry`() {
+          verify(telemetryClient).trackEvent(
+            eq("staffuseraccount-synchronisation-unlocked-skipped"),
+            check {
+              assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      inner class WhenCreatedInNomis {
+
+        @BeforeEach
+        fun setUp() {
+          nomisApiMock.stubGetStaffDetailsById()
+          dpsApiMock.stubSyncStaff()
+          staffOffenderEventsQueue.sendMessage(
+            staffUserAccountEvent(
+              eventType = "STAFF_USER_ACCOUNTS-UNLOCKED",
+              staffId = nomisStaffId,
+              username = username,
+            ),
+          ).also { waitForAnyProcessingToComplete() }
+        }
+
+        @Nested
+        inner class HappyPath {
+
+          @Test
+          fun `will retrieve the staff details from NOMIS`() {
+            nomisApiMock.verify(getRequestedFor(urlPathEqualTo("/staff/id/$nomisStaffId")))
+          }
+
+          @Test
+          fun `will update the staff in DPS`() {
+            dpsApiMock.verify(putRequestedFor(urlPathEqualTo("/sync/user/$nomisStaffId")))
+            verifyUserSyncRequest(nomisStaffId)
+          }
+
+          @Test
+          fun `will track telemetry`() {
+            verify(telemetryClient).trackEvent(
+              eq("staffuseraccount-synchronisation-unlocked-success"),
+              check {
+                assertThat(it["nomisStaffId"]).isEqualTo(nomisStaffId.toString())
+                assertThat(it["username"]).isEqualTo(username)
+              },
+              isNull(),
+            )
+          }
+        }
+      }
+    }
   }
 
   @Nested
