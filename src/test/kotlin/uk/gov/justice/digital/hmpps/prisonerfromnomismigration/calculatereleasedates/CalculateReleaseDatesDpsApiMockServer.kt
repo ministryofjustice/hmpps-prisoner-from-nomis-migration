@@ -1,0 +1,48 @@
+package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.calculatereleasedates
+
+import com.github.tomakehurst.wiremock.WireMockServer
+import com.github.tomakehurst.wiremock.client.WireMock.aResponse
+import com.github.tomakehurst.wiremock.client.WireMock.get
+import org.junit.jupiter.api.extension.AfterAllCallback
+import org.junit.jupiter.api.extension.BeforeAllCallback
+import org.junit.jupiter.api.extension.BeforeEachCallback
+import org.junit.jupiter.api.extension.ExtensionContext
+
+class CalculateReleaseDatesDpsApiExtension :
+  BeforeAllCallback,
+  AfterAllCallback,
+  BeforeEachCallback {
+  companion object {
+    @JvmField
+    val calculateReleaseDatesApi = CalculateReleaseDatesDpsApiMockServer()
+  }
+
+  override fun beforeAll(context: ExtensionContext) {
+    calculateReleaseDatesApi.start()
+  }
+
+  override fun beforeEach(context: ExtensionContext) {
+    calculateReleaseDatesApi.resetAll()
+  }
+
+  override fun afterAll(context: ExtensionContext) {
+    calculateReleaseDatesApi.stop()
+  }
+}
+
+class CalculateReleaseDatesDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
+  companion object {
+    const val WIREMOCK_PORT = 8113
+  }
+
+  fun stubHealthPing(status: Int) {
+    stubFor(
+      get("/health/ping").willReturn(
+        aResponse()
+          .withHeader("Content-Type", "application/json")
+          .withBody(if (status == 200) "pong" else "some error")
+          .withStatus(status),
+      ),
+    )
+  }
+}

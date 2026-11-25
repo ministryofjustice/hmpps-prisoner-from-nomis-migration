@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.agency.AgencyRegistersDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.alerts.AlertsDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.bedassignment.BedAssignmentDpsApiExtension
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.calculatereleasedates.CalculateReleaseDatesDpsApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.casenotes.CaseNotesApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.CorePersonCprApiExtension
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.courtsentencing.CourtSentencingDpsApiExtension
@@ -37,6 +38,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.VisitsAp
   AgencyRegistersDpsApiExtension::class,
   AlertsDpsApiExtension::class,
   BedAssignmentDpsApiExtension::class,
+  CalculateReleaseDatesDpsApiExtension::class,
   CaseNotesApiExtension::class,
   ContactPersonDpsApiExtension::class,
   CorePersonCprApiExtension::class,
@@ -78,6 +80,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
       .jsonPath("components.agencyApi.status").isEqualTo("UP")
       .jsonPath("components.alertsApi.status").isEqualTo("UP")
       .jsonPath("components.bedAssignmentApi.status").isEqualTo("UP")
+      .jsonPath("components.calculateReleaseDatesApi.status").isEqualTo("UP")
       .jsonPath("components.caseNotesApi.status").isEqualTo("UP")
       .jsonPath("components.corePersonApi.status").isEqualTo("UP")
       .jsonPath("components.courtSchedulerApi.status").isEqualTo("UP")
@@ -132,6 +135,24 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     }
   }
 
+  @Nested
+  inner class CalculateReleaseDatesHealth {
+    @Test
+    fun `Health page reports down when only calculate release dates is unavailable`() {
+      stubPingWithResponse(200)
+      CalculateReleaseDatesDpsApiExtension.calculateReleaseDatesApi.stubHealthPing(503)
+
+      webTestClient.get()
+        .uri("/health")
+        .exchange()
+        .expectStatus().is5xxServerError
+        .expectBody()
+        .jsonPath("status").isEqualTo("DOWN")
+        .jsonPath("components.calculateReleaseDatesApi.status").isEqualTo("DOWN")
+        .jsonPath("components.csraApi.status").isEqualTo("UP")
+    }
+  }
+
   @Test
   fun `Health ping page is accessible`() {
     webTestClient.get()
@@ -174,6 +195,7 @@ class HealthCheckTest : SqsIntegrationTestBase() {
     AgencyRegistersDpsApiExtension.agencyRegistersApi.stubHealthPing(status)
     AlertsDpsApiExtension.dpsAlertsServer.stubHealthPing(status)
     BedAssignmentDpsApiExtension.bedAssignmentApi.stubHealthPing(status)
+    CalculateReleaseDatesDpsApiExtension.calculateReleaseDatesApi.stubHealthPing(status)
     CaseNotesApiExtension.caseNotesApi.stubHealthPing(status)
     CorePersonCprApiExtension.cprCorePersonServer.stubHealthPing(status)
     ContactPersonDpsApiExtension.dpsContactPersonServer.stubHealthPing(status)
