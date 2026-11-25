@@ -82,6 +82,9 @@ hmpps.sqs:
     eventcasenotes:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    eventcalculatereleasedates:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     eventfinance:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
