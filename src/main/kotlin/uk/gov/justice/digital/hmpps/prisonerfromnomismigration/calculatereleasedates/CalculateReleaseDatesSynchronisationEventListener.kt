@@ -6,16 +6,19 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import tools.jackson.databind.json.JsonMapper
 import tools.jackson.module.kotlin.readValue
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.EventAudited
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventFeatureSwitch
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.asCompletableFuture
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.service.CALCULATE_RELEASE_DATES_SYNC_QUEUE_ID
+import java.time.LocalDateTime
 import java.util.concurrent.CompletableFuture
 
 @Service
 class CalculateReleaseDatesSynchronisationEventListener(
   private val jsonMapper: JsonMapper,
   private val eventFeatureSwitch: EventFeatureSwitch,
+  private val synchronisationService: CalculateReleaseDatesSynchronisationService,
 ) {
   private companion object {
     val log: Logger = LoggerFactory.getLogger(this::class.java)
@@ -30,10 +33,9 @@ class CalculateReleaseDatesSynchronisationEventListener(
         val eventType = sqsMessage.MessageAttributes!!.eventType.Value
         if (eventFeatureSwitch.isEnabled(eventType, "calculatereleasedates")) {
           when (eventType) {
-            "OFFENDER_SENT_CALCULATIONS-INSERTED",
-            "OFFENDER_SENT_CALCULATIONS-UPDATED",
-            "OFFENDER_SENT_CALCULATIONS-DELETED",
-            -> log.info("Received calculate release dates event {}: {}", eventType, sqsMessage.Message)
+            "OFFENDER_SENT_CALCULATIONS-INSERTED" -> synchronisationService.sentenceCalculationInserted(sqsMessage.Message.fromJson())
+            "OFFENDER_SENT_CALCULATIONS-UPDATED" -> synchronisationService.sentenceCalculationUpdated(sqsMessage.Message.fromJson())
+            "OFFENDER_SENT_CALCULATIONS-DELETED" -> synchronisationService.sentenceCalculationDeleted(sqsMessage.Message.fromJson())
 
             else -> log.info("Received an unexpected calculate release dates event {}", eventType)
           }
@@ -45,4 +47,15 @@ class CalculateReleaseDatesSynchronisationEventListener(
       else -> log.info("Received an unexpected calculate release dates message type {}", sqsMessage.Type)
     }
   }
+
+  private inline fun <reified T> String.fromJson(): T = jsonMapper.readValue(this)
 }
+
+data class SentenceCalculationEvent(
+  val eventType: String,
+  val eventDatetime: LocalDateTime,
+  val offenderIdDisplay: String,
+  val bookingId: Long,
+  val offenderSentCalculationId: Long,
+  override val auditModuleName: String? = null,
+) : EventAudited
