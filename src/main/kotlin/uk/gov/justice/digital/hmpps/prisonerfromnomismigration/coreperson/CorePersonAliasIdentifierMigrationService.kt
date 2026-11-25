@@ -125,7 +125,7 @@ internal fun CoreOffender.toPrisonAlias(existingMappings: CorePersonAliasIdentif
   birthCountry = birthCountry?.let { PrisonAlias.BirthCountry.entries.fromCode(it.code.mapBirthCountryCode(), "birth country") },
   ethnicity = ethnicity?.let { PrisonAlias.Ethnicity.entries.fromCode(it.code.mapEthnicityCode(), "ethnicity") },
   suffix = suffix?.let { PrisonAlias.Suffix.entries.fromCode(it.code.mapSuffixCode(), "suffix") },
-  nameType = nameType?.let { PrisonAlias.NameType.entries.fromCode(it.code, "name type") },
+  nameType = nameType?.let { PrisonAlias.NameType.entries.fromCode(it.code.mapNameTypeCode(), "name type") },
   identifiers = identifiers.map { it.toPrisonIdentifier(existingMappings) },
   createDateTime = createdDateTime,
   createUserId = createdByUsername,
@@ -172,6 +172,11 @@ private fun String.mapEthnicityCode(): String = when (this) {
 private fun String.mapSuffixCode(): String = when (this) {
   "JR" -> "Junior"
   "SR" -> "Senior"
+  else -> this
+}
+
+private fun String.mapNameTypeCode(): String = when (this) {
+  "A" -> "ALIAS"
   else -> this
 }
 

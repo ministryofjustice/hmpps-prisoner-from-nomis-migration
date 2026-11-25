@@ -2,6 +2,7 @@ package uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson
 
 import com.microsoft.applicationinsights.TelemetryClient
 import org.springframework.stereotype.Service
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonAliasesAndIdentifiersRequest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.coreperson.model.PrisonMerge
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.NomisBookingDeletedEvent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.data.NomisBookingReassignedEvent
@@ -12,7 +13,6 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helpers.track
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsDto.MappingType.NOMIS_CREATED
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAddressContactMergeMappingsDto
-import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonAliasIdentifierMappingsResult
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.CorePersonMappingsByNomisIdsRequest
 
 @Service
@@ -83,13 +83,10 @@ class CorePersonSynchronisationService(
     val nomisAddressesAndContacts = corePersonNomisApiService.getCorePersonAddressesAndContacts(nomisPrisonNumber = prisonNumber)
     val addressesRequest = nomisAddressesAndContacts.toMappingsByNomisIdsRequest()
 
-    val nomisAliasesAndIdentifiers = corePersonNomisApiService.getOffenderAliasesAndIdentifiers(nomisPrisonNumber = prisonNumber)
-    val aliasesRequest = nomisAliasesAndIdentifiers.toMappingsByNomisIdsRequest()
-
     val existingMappings = corePersonMappingService.getMappingsFromNomisIds(
       CorePersonMappingsByNomisIdsRequest(
-        aliases = aliasesRequest.aliases,
-        identifiers = aliasesRequest.identifiers,
+        aliases = emptyList(),
+        identifiers = emptyList(),
         addresses = addressesRequest.addresses,
         contacts = addressesRequest.contacts,
         addressUsages = addressesRequest.addressUsages,
@@ -104,12 +101,7 @@ class CorePersonSynchronisationService(
           addressUsages = existingMappings.addressUsages,
         ),
       ),
-      nomisAliasesAndIdentifiers.toMigrateAliasesAndIdentifiersRequest(
-        CorePersonAliasIdentifierMappingsResult(
-          aliases = existingMappings.aliases,
-          identifiers = existingMappings.identifiers,
-        ),
-      ),
+      PrisonAliasesAndIdentifiersRequest(emptyList()),
     )
   }
 }
