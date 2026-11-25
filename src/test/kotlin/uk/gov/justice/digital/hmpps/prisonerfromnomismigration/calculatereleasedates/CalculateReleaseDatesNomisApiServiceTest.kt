@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
 import org.springframework.web.reactive.function.client.WebClientResponseException
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.calculatereleasedates.CalculateReleaseDatesNomisApiMockServer.Companion.sentenceCalculationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.helper.SpringAPIServiceTest
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.NomisApiExtension
 
@@ -94,7 +95,10 @@ class CalculateReleaseDatesNomisApiServiceTest {
     fun `will return all the calculations`() = runTest {
       mockServer.stubGetSentenceCalculationsForPrisoner(
         "A1234KT",
-        "[${sentenceCalculationJson(id = 1)},${sentenceCalculationJson(id = 2, bookingId = 234567)}]",
+        listOf(
+          sentenceCalculationResponse(id = 1),
+          sentenceCalculationResponse(id = 2, bookingId = 234567),
+        ),
       )
 
       val calculations = apiService.getSentenceCalculationsForPrisoner("A1234KT")
@@ -105,7 +109,7 @@ class CalculateReleaseDatesNomisApiServiceTest {
 
     @Test
     fun `will return an empty list when the prisoner has no calculations`() = runTest {
-      mockServer.stubGetSentenceCalculationsForPrisoner("A1234KT", "[]")
+      mockServer.stubGetSentenceCalculationsForPrisoner("A1234KT", emptyList())
 
       assertThat(apiService.getSentenceCalculationsForPrisoner("A1234KT")).isEmpty()
     }
