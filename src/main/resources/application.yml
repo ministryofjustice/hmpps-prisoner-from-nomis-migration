@@ -74,6 +74,11 @@ spring:
             client-id: ${cell.move.client.id}
             client-secret: ${cell.move.client.secret}
             authorization-grant-type: client_credentials
+          calculate-release-dates-api:
+            provider: hmpps-auth
+            client-id: ${calculate.release.dates.client.id}
+            client-secret: ${calculate.release.dates.client.secret}
+            authorization-grant-type: client_credentials
           locations-api:
             provider: hmpps-auth
             client-id: ${locations.client.id}
