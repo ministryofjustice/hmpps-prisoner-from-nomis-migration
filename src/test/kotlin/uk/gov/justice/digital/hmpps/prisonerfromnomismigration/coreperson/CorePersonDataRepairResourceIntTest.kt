@@ -625,7 +625,7 @@ class CorePersonDataRepairResourceIntTest(
             .withRequestBodyJsonPath("aliases[0].createUserId", "SYSTEM")
             .withRequestBodyJsonPath("aliases[0].identifiers[0].nomisIdentifierId.nomisOffenderId", 10000)
             .withRequestBodyJsonPath("aliases[0].identifiers[0].nomisIdentifierId.nomisSequence", 1)
-            .withRequestBodyJsonPath("aliases[0].identifiers[0].type", "NATIONAL_INSURANCE_NUMBER")
+            .withRequestBodyJsonPath("aliases[0].identifiers[0].type", "NINO")
             .withRequestBodyJsonPath("aliases[0].identifiers[0].value", "AA123456A")
             .withRequestBodyJsonPath("aliases[0].identifiers[0].comment", "DWP")
             .withRequestBodyJsonPath("aliases[1].nomisOffenderId", 10001)

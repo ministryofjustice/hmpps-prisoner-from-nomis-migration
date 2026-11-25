@@ -223,7 +223,7 @@ class CorePersonAliasIdentifierMigrationIntTest(
           }
           with(identifiers[1]) {
             assertThat(nomisIdentifierId).isEqualTo(NomisIdentifierId(nomisOffenderId = 10000L, nomisSequence = 2))
-            assertThat(type).isEqualTo(PrisonIdentifier.Type.NATIONAL_INSURANCE_NUMBER)
+            assertThat(type).isEqualTo(PrisonIdentifier.Type.NINO)
             assertThat(value).isEqualTo("AA123456A")
           }
         }
@@ -238,7 +238,7 @@ class CorePersonAliasIdentifierMigrationIntTest(
           assertThat(suffix).isNull()
           assertThat(nameType).isNull()
           assertThat(identifiers).hasSize(1)
-          assertThat(identifiers[0].type).isEqualTo(PrisonIdentifier.Type.DRIVER_LICENSE_NUMBER)
+          assertThat(identifiers[0].type).isEqualTo(PrisonIdentifier.Type.DL)
         }
       }
 

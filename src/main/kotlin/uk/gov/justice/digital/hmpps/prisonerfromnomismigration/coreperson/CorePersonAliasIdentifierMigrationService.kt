@@ -181,8 +181,8 @@ private fun String.mapNameTypeCode(): String = when (this) {
 }
 
 private fun String.mapIdentifierTypeCode(): String = when (this) {
-  "NINO" -> "NATIONAL_INSURANCE_NUMBER"
-  "DL" -> "DRIVER_LICENSE_NUMBER"
+  "PORT REF" -> "PORT_REF"
+  "SHARED ALIAS" -> "SHARED_ALIAS"
   else -> this
 }
 
