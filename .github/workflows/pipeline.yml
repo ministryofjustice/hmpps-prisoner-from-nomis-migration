@@ -82,6 +82,7 @@ jobs:
     runs-on: ubuntu-latest
     if: always()
     needs:
+      - app_version
       - gradle-build
       - setup-test-matrix
       - gradle-verify
