@@ -7,6 +7,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.get
 import com.github.tomakehurst.wiremock.client.WireMock.post
 import com.github.tomakehurst.wiremock.client.WireMock.put
 import com.github.tomakehurst.wiremock.client.WireMock.status
+import com.github.tomakehurst.wiremock.matching.RequestPatternBuilder
 import org.junit.jupiter.api.extension.AfterAllCallback
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.BeforeEachCallback
@@ -17,6 +18,7 @@ import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.calculatereleasedates.model.LegacySentenceCalculationDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.calculatereleasedates.model.LegacySentenceCalculationMigrationResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.calculatereleasedates.model.LegacySentenceCalculationToCrdsMappingResult
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.getRequestBody
 import java.time.LocalDate
 import java.time.LocalDateTime
 
@@ -25,9 +27,18 @@ class CalculateReleaseDatesDpsApiExtension :
   AfterAllCallback,
   BeforeEachCallback {
   companion object {
+    private var enableResetBeforeEach = true
+
     @JvmField
     val calculateReleaseDatesApi = CalculateReleaseDatesDpsApiMockServer()
     lateinit var jsonMapper: JsonMapper
+
+    inline fun <reified T> getRequestBody(pattern: RequestPatternBuilder): T = calculateReleaseDatesApi.getRequestBody(pattern, jsonMapper)
+
+    fun resetAndDisableResetBeforeEach() {
+      enableResetBeforeEach = false
+      calculateReleaseDatesApi.resetAll()
+    }
   }
 
   override fun beforeAll(context: ExtensionContext) {
@@ -36,7 +47,7 @@ class CalculateReleaseDatesDpsApiExtension :
   }
 
   override fun beforeEach(context: ExtensionContext) {
-    calculateReleaseDatesApi.resetAll()
+    if (enableResetBeforeEach) calculateReleaseDatesApi.resetAll()
   }
 
   override fun afterAll(context: ExtensionContext) {
