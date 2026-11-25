@@ -106,7 +106,7 @@ class StaffSynchronisationService(
 fun StaffDetails.toSyncStaffRequest() = PrisonUserSyncRequest(
   firstName = firstName,
   lastName = lastName,
-  status = if (status == "ACTIVE") PrisonUserSyncRequest.Status.ACTIVE else PrisonUserSyncRequest.Status.INACTIVE,
+  status = PrisonUserSyncRequest.Status.valueOf(status),
   emails = emailAddresses.map { it.toSyncUserEmail() },
   accounts = accounts.map { it.toSyncUserAccount() },
   createdTimestamp = audit.createDatetime,
