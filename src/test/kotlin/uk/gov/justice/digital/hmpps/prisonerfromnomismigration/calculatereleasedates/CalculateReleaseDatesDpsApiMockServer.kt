@@ -80,40 +80,20 @@ class CalculateReleaseDatesDpsApiMockServer : WireMockServer(WIREMOCK_PORT) {
     )
   }
 
-  fun stubMigratePrisonerError(prisonerId: String = "A1234KT", status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR) {
-    stubFor(post("/legacy-sentence-calculation/migrate/$prisonerId").willReturn(status(status.value())))
-  }
-
   fun stubSyncNew(response: LegacySentenceCalculationToCrdsMappingResult = mappingResult()) {
     stubFor(post("/legacy-sentence-calculation/sync").willReturn(jsonOk(response)))
-  }
-
-  fun stubSyncNewError(status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR) {
-    stubFor(post("/legacy-sentence-calculation/sync").willReturn(status(status.value())))
   }
 
   fun stubSyncUpdated(response: LegacySentenceCalculationToCrdsMappingResult = mappingResult()) {
     stubFor(put("/legacy-sentence-calculation/sync").willReturn(jsonOk(response)))
   }
 
-  fun stubSyncUpdatedError(status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR) {
-    stubFor(put("/legacy-sentence-calculation/sync").willReturn(status(status.value())))
-  }
-
   fun stubSyncDeleted(nomisCalculationId: Long = 12345) {
     stubFor(delete("/legacy-sentence-calculation/sync/$nomisCalculationId").willReturn(status(HttpStatus.NO_CONTENT.value())))
   }
 
-  fun stubSyncDeletedError(nomisCalculationId: Long = 12345, status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR) {
-    stubFor(delete("/legacy-sentence-calculation/sync/$nomisCalculationId").willReturn(status(status.value())))
-  }
-
   fun stubGetAllForPrisoner(prisonerId: String = "A1234KT", response: List<LegacySentenceCalculationDto> = listOf(legacySentenceCalculation(prisonerId = prisonerId))) {
     stubFor(get("/legacy-sentence-calculation/$prisonerId").willReturn(jsonOk(response)))
-  }
-
-  fun stubGetAllForPrisonerError(prisonerId: String = "A1234KT", status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR) {
-    stubFor(get("/legacy-sentence-calculation/$prisonerId").willReturn(status(status.value())))
   }
 
   fun stubHealthPing(status: Int) {

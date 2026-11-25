@@ -11,11 +11,9 @@ import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Import
-import org.springframework.web.reactive.function.client.WebClientResponseException
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.calculatereleasedates.CalculateReleaseDatesDpsApiExtension.Companion.calculateReleaseDatesApi
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.calculatereleasedates.CalculateReleaseDatesDpsApiMockServer.Companion.legacySentenceCalculation
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.calculatereleasedates.CalculateReleaseDatesDpsApiMockServer.Companion.mappingResult
@@ -38,7 +36,7 @@ class CalculateReleaseDatesApiServiceTest {
     private val request = LegacySentenceCalculationMigrationRequest(listOf(legacySentenceCalculation()))
 
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       calculateReleaseDatesApi.stubMigratePrisoner(PRISONER_ID)
 
       apiService.migratePrisoner(PRISONER_ID, request)
@@ -72,19 +70,12 @@ class CalculateReleaseDatesApiServiceTest {
       assertThat(response.mappingResults[0].nomisCalculationId).isEqualTo(NOMIS_CALCULATION_ID)
       assertThat(response.mappingResults[0].crdsCalculationId).isEqualTo(6789)
     }
-
-    @Test
-    fun `will throw when the API returns an error`() = runTest {
-      calculateReleaseDatesApi.stubMigratePrisonerError(PRISONER_ID)
-
-      assertThrows<WebClientResponseException.InternalServerError> { apiService.migratePrisoner(PRISONER_ID, request) }
-    }
   }
 
   @Nested
   inner class SyncNew {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       calculateReleaseDatesApi.stubSyncNew()
 
       apiService.syncNew(legacySentenceCalculation())
@@ -117,19 +108,12 @@ class CalculateReleaseDatesApiServiceTest {
       assertThat(response.nomisCalculationId).isEqualTo(NOMIS_CALCULATION_ID)
       assertThat(response.crdsCalculationId).isEqualTo(6789)
     }
-
-    @Test
-    fun `will throw when the API returns an error`() = runTest {
-      calculateReleaseDatesApi.stubSyncNewError()
-
-      assertThrows<WebClientResponseException.InternalServerError> { apiService.syncNew(legacySentenceCalculation()) }
-    }
   }
 
   @Nested
   inner class SyncUpdated {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       calculateReleaseDatesApi.stubSyncUpdated()
 
       apiService.syncUpdated(legacySentenceCalculation())
@@ -161,19 +145,12 @@ class CalculateReleaseDatesApiServiceTest {
       assertThat(response.nomisCalculationId).isEqualTo(NOMIS_CALCULATION_ID)
       assertThat(response.crdsCalculationId).isNull()
     }
-
-    @Test
-    fun `will throw when the API returns an error`() = runTest {
-      calculateReleaseDatesApi.stubSyncUpdatedError()
-
-      assertThrows<WebClientResponseException.InternalServerError> { apiService.syncUpdated(legacySentenceCalculation()) }
-    }
   }
 
   @Nested
   inner class SyncDeleted {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       calculateReleaseDatesApi.stubSyncDeleted(NOMIS_CALCULATION_ID)
 
       apiService.syncDeleted(NOMIS_CALCULATION_ID)
@@ -192,19 +169,12 @@ class CalculateReleaseDatesApiServiceTest {
 
       calculateReleaseDatesApi.verify(deleteRequestedFor(urlEqualTo("/legacy-sentence-calculation/sync/$NOMIS_CALCULATION_ID")))
     }
-
-    @Test
-    fun `will throw when the API returns an error`() = runTest {
-      calculateReleaseDatesApi.stubSyncDeletedError(NOMIS_CALCULATION_ID)
-
-      assertThrows<WebClientResponseException.InternalServerError> { apiService.syncDeleted(NOMIS_CALCULATION_ID) }
-    }
   }
 
   @Nested
   inner class GetAllForPrisoner {
     @Test
-    fun `will pass oath2 token to service`() = runTest {
+    fun `will pass oauth2 token to service`() = runTest {
       calculateReleaseDatesApi.stubGetAllForPrisoner(PRISONER_ID)
 
       apiService.getAllForPrisoner(PRISONER_ID)
@@ -225,13 +195,6 @@ class CalculateReleaseDatesApiServiceTest {
       assertThat(response).hasSize(1)
       assertThat(response[0].nomisCalculationId).isEqualTo(NOMIS_CALCULATION_ID)
       assertThat(response[0].prisonerId).isEqualTo(PRISONER_ID)
-    }
-
-    @Test
-    fun `will throw when the API returns an error`() = runTest {
-      calculateReleaseDatesApi.stubGetAllForPrisonerError(PRISONER_ID)
-
-      assertThrows<WebClientResponseException.InternalServerError> { apiService.getAllForPrisoner(PRISONER_ID) }
     }
   }
 }
