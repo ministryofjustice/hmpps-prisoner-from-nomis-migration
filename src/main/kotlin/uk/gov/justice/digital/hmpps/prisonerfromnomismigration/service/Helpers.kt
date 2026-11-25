@@ -40,6 +40,7 @@ const val VISITS_QUEUE_ID = "migrationvisits"
 const val AGENCY_REGISTERS_SYNC_QUEUE_ID = "eventagencyregisters"
 const val ALERTS_SYNC_QUEUE_ID = "eventalerts"
 const val BED_ASSIGNMENT_SYNC_QUEUE_ID = "eventbedassignment"
+const val CALCULATE_RELEASE_DATES_SYNC_QUEUE_ID = "eventcalculatereleasedates"
 const val CASENOTES_SYNC_QUEUE_ID = "eventcasenotes"
 const val CORE_PERSON_SYNC_QUEUE_ID = "eventcoreperson"
 const val COURTSCHEDULER_SYNC_QUEUE_ID = "eventcourtmovements"
@@ -89,6 +90,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
 enum class SynchronisationType(val queueId: String) {
   ALERTS(ALERTS_SYNC_QUEUE_ID),
   BED_ASSIGNMENTS(BED_ASSIGNMENT_SYNC_QUEUE_ID),
+  CALCULATE_RELEASE_DATES(CALCULATE_RELEASE_DATES_SYNC_QUEUE_ID),
   CASENOTES(CASENOTES_SYNC_QUEUE_ID),
   CORE_PERSON(CORE_PERSON_SYNC_QUEUE_ID),
   COURT_SCHEDULER(COURTSCHEDULER_SYNC_QUEUE_ID),

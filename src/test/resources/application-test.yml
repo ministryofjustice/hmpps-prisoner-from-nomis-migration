@@ -223,6 +223,9 @@ hmpps.sqs:
     eventbedassignment:
       dlqMaxReceiveCount: 2
       errorVisibilityTimeout: 0
+    eventcalculatereleasedates:
+      dlqMaxReceiveCount: 2
+      errorVisibilityTimeout: 0
     eventfinance:
       dlqMaxReceiveCount: 2
     eventcourtsentencing:

@@ -312,6 +312,8 @@ hmpps.sqs:
       errorVisibilityTimeout: 1, 1, 1, 1, 1, 1, 5, 5, 60, 1, 1, 1, 1, 1, 1, 5, 5, 60
     eventbedassignment:
       errorVisibilityTimeout: 1, 1, 1, 10, 60, 600
+    eventcalculatereleasedates:
+      errorVisibilityTimeout: 1, 1, 1, 10, 60, 600
     eventexternalmovements:
       errorVisibilityTimeout: 1, 1, 1, 10, 60, 600
     eventcourtmovements:
