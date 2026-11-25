@@ -105,6 +105,27 @@ class CorePersonAliasIdentifierConversionTest {
   }
 
   @Nested
+  inner class NameType {
+    @ParameterizedTest
+    @CsvSource("A,ALIAS", "CN,CN", "MAID,MAID", "NICK,NICK")
+    fun `will map NOMIS name type to CPR name type`(nomisCode: String, cprCode: String) {
+      assertThat(alias.copy(nameType = CodeDescription(nomisCode, nomisCode)).toPrisonAlias().nameType?.value).isEqualTo(cprCode)
+    }
+
+    @Test
+    fun `will leave name type null when not set`() {
+      assertThat(alias.copy(nameType = null).toPrisonAlias().nameType).isNull()
+    }
+
+    @Test
+    fun `will fail for an unknown name type`() {
+      assertThatThrownBy { alias.copy(nameType = CodeDescription("XX", "XX")).toPrisonAlias() }
+        .isInstanceOf(IllegalArgumentException::class.java)
+        .hasMessageContaining("name type code 'XX'")
+    }
+  }
+
+  @Nested
   inner class IdentifierType {
     @ParameterizedTest
     @CsvSource("NINO,NATIONAL_INSURANCE_NUMBER", "DL,DRIVER_LICENSE_NUMBER", "PNC,PNC", "CRO,CRO", "NOMS,NOMS", "SPNC,SPNC", "NHS,NHS")
