@@ -140,6 +140,10 @@ generic-service:
       HMPPS_SQS_QUEUES_MIGRATIONBEDASSIGNMENT_QUEUE_NAME: "sqs_name"
     sqs-migration-bedassignment-dlq:
       HMPPS_SQS_QUEUES_MIGRATIONBEDASSIGNMENT_DLQ_NAME: "sqs_name"
+    sqs-migration-calculatereleasedates-queue:
+      HMPPS_SQS_QUEUES_MIGRATIONCALCULATERELEASEDATES_QUEUE_NAME: "sqs_name"
+    sqs-migration-calculatereleasedates-dlq:
+      HMPPS_SQS_QUEUES_MIGRATIONCALCULATERELEASEDATES_DLQ_NAME: "sqs_name"
     sqs-migration-drugtesting-queue:
       HMPPS_SQS_QUEUES_MIGRATIONDRUGTESTING_QUEUE_NAME: "sqs_name"
     sqs-migration-drugtesting-dlq:

@@ -25,6 +25,9 @@ hmpps.sqs:
     migrationcsra:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}
+    migrationcalculatereleasedates:
+      queueName: ${random.uuid}
+      dlqName: ${random.uuid}
     migrationbedassignment:
       queueName: ${random.uuid}
       dlqName: ${random.uuid}

@@ -227,6 +227,11 @@ advances:
     delay-seconds: 10
     count: 9
 
+calculatereleasedates:
+  complete-check:
+    delay-seconds: 10
+    count: 9
+
 agencyregisters:
   complete-check:
     delay-seconds: 10
@@ -340,6 +345,9 @@ hmpps.sqs:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationcsra:
+      errorVisibilityTimeout: 1, 1, 1, 10
+      propagateTracing: false
+    migrationcalculatereleasedates:
       errorVisibilityTimeout: 1, 1, 1, 10
       propagateTracing: false
     migrationbedassignment:

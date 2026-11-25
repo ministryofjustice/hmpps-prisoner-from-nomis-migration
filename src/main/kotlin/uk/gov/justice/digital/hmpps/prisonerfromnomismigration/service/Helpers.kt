@@ -23,6 +23,7 @@ const val ALLOCATIONS_QUEUE_ID = "migrationallocations"
 const val APPOINTMENTS_QUEUE_ID = "migrationappointments"
 const val BED_ASSIGNMENT_QUEUE_ID = "migrationbedassignment"
 const val CORE_PERSON_QUEUE_ID = "migrationcoreperson"
+const val CALCULATE_RELEASE_DATES_QUEUE_ID = "migrationcalculatereleasedates"
 const val CSRA_QUEUE_ID = "migrationcsra"
 const val COURT_SCHEDULER_QUEUE_ID = "migrationcourtmovements"
 const val COURT_SENTENCING_QUEUE_ID = "migrationcourtsentencing"
@@ -70,6 +71,7 @@ enum class MigrationType(val queueId: String, val telemetryName: String) {
   ALLOCATIONS(ALLOCATIONS_QUEUE_ID, "activity-allocation"),
   APPOINTMENTS(APPOINTMENTS_QUEUE_ID, "appointments"),
   BED_ASSIGNMENT(BED_ASSIGNMENT_QUEUE_ID, "bedassignment"),
+  CALCULATE_RELEASE_DATES(CALCULATE_RELEASE_DATES_QUEUE_ID, "calculatereleasedates"),
   CORE_PERSON_ADDRESS_CONTACT(CORE_PERSON_QUEUE_ID, "coreperson-address-contact"),
   CORE_PERSON_ALIAS_IDENTIFIER(CORE_PERSON_QUEUE_ID, "coreperson-alias-identifier"),
   CSRA(CSRA_QUEUE_ID, "csra"),

@@ -162,6 +162,11 @@ officialvisits:
     count: 1
   page:
     size: 10
+calculatereleasedates:
+  complete-check:
+    delay-seconds: 0
+    retry-seconds: 0
+    count: 1
 agencyregisters:
   complete-check:
     delay-seconds: 0
@@ -269,6 +274,9 @@ hmpps.sqs:
     migrationcoreperson:
       errorVisibilityTimeout: 0
     migrationcsra:
+      errorVisibilityTimeout: 0
+      dlqMaxReceiveCount: 2
+    migrationcalculatereleasedates:
       errorVisibilityTimeout: 0
       dlqMaxReceiveCount: 2
     migrationbedassignment:

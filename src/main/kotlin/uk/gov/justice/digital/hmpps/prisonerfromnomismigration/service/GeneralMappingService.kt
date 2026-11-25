@@ -43,6 +43,7 @@ class GeneralMappingService(
     MigrationType.AGENCY_REGISTERS -> 0
     MigrationType.ALLOCATIONS -> allocationsMappingService.getMigrationCount(migrationId)
     MigrationType.APPOINTMENTS -> appointmentsMappingService.getMigrationCount(migrationId)
+    MigrationType.CALCULATE_RELEASE_DATES -> 0 // No implementation necessary
     MigrationType.BED_ASSIGNMENT -> bedAssignmentMappingApiService.getMigrationCount(migrationId)
     MigrationType.CORE_PERSON_ADDRESS_CONTACT -> corePersonAddressContactMappingService.getMigrationCount(migrationId)
     MigrationType.CORE_PERSON_ALIAS_IDENTIFIER -> corePersonAliasIdentifierMappingService.getMigrationCount(migrationId)
