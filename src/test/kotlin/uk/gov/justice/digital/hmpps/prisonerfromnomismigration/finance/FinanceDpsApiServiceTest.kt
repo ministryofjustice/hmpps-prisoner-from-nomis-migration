@@ -529,7 +529,7 @@ class FinanceDpsApiServiceTest {
     }
 
     @Nested
-    inner class UpdateScheduledPaymentDates {
+    inner class UpdateScheduledPayment {
       val subscriptionId: UUID = UUID.randomUUID()
 
       @Test
@@ -553,7 +553,9 @@ class FinanceDpsApiServiceTest {
         financeApi.verify(
           postRequestedFor(anyUrl())
             .withRequestBodyJsonPath("startDate", equalTo("2024-06-16"))
-            .withRequestBodyJsonPath("endDate", equalTo("2024-08-06")),
+            .withRequestBodyJsonPath("endDate", equalTo("2024-08-06"))
+            .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
+            .withRequestBodyJsonPath("updatedBy", equalTo("FRED_SMITH")),
         )
       }
 

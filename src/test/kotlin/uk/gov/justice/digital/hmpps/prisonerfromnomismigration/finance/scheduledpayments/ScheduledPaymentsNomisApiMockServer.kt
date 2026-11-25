@@ -99,4 +99,5 @@ fun scheduledPayment(prisonNumber: String = "A0001BC"): ScheduledPaymentDto = Sc
   reference = "description of the scheduled payment",
   comment = "This is a comment",
   createdBy = "JD12345",
+  lastModifiedBy = "KE23456",
 )

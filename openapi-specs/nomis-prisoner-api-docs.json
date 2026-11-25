@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-24.2420.05fa4da"
+    "version" : "2026-11-25.2431.788789d"
   },
   "servers" : [ {
     "url" : "https://nomis-prisoner-api-dev.prison.service.justice.gov.uk",
@@ -48383,6 +48383,11 @@
             "type" : "string",
             "description" : "The user who created the scheduled payment",
             "example" : "FRED_SMITH"
+          },
+          "lastModifiedBy" : {
+            "type" : [ "string", "null" ],
+            "description" : "The user who last modified the scheduled payment",
+            "example" : "FRED_SMITH"
           }
         },
         "required" : [ "amount", "caseloadId", "createdBy", "dayOfWeek", "id", "prisonNumber", "startDate", "subAccountCode", "transactionType" ]
@@ -48745,6 +48750,10 @@
             "type" : [ "integer", "null" ],
             "format" : "int64"
           },
+          "txnEntrySeq" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
           "txnEntryDate" : {
             "type" : "string",
             "format" : "date-time"
@@ -48757,10 +48766,6 @@
           },
           "txnEntryAmount" : {
             "type" : "number"
-          },
-          "txnEntrySeq" : {
-            "type" : "integer",
-            "format" : "int32"
           },
           "txnId" : {
             "type" : "integer",

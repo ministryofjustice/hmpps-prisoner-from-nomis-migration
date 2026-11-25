@@ -227,6 +227,8 @@ class FinanceApiMockServer : WireMockServer(WIREMOCK_PORT) {
     fun syncUpdateScheduledPaymentDto() = SyncUpdateSubscriptionRequest(
       startDate = LocalDate.of(2024, Month.JUNE, 16),
       endDate = LocalDate.of(2024, Month.AUGUST, 6),
+      comment = "This is a comment",
+      updatedBy = "FRED_SMITH",
     )
   }
 

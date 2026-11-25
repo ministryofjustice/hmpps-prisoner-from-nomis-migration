@@ -84,12 +84,14 @@ class ScheduledPaymentsSynchronisationService(
       val mapping = mappingService.getByNomisId(nomisId)
       telemetry["dpsScheduledPaymentId"] = mapping.dpsId
       val nomisScheduledPayment = nomisApiService.getScheduledPayment(nomisId)
-      // DPS only supports ending a scheduled payment
+
       dpsApiService.updateScheduledPayment(
         UUID.fromString(mapping.dpsId),
         SyncUpdateSubscriptionRequest(
           startDate = nomisScheduledPayment.startDate,
           endDate = nomisScheduledPayment.endDate,
+          comment = nomisScheduledPayment.comment,
+          updatedBy = nomisScheduledPayment.lastModifiedBy ?: nomisScheduledPayment.createdBy,
         ),
       )
     }
