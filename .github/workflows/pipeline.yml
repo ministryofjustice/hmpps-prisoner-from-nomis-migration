@@ -59,6 +59,7 @@ jobs:
     secrets: inherit
   gradle-verify:
     name: Run the tests
+    if: needs.setup-test-matrix.outputs.has_tests == 'true'
     strategy:
       matrix: ${{ fromJson(needs.setup-test-matrix.outputs.matrix) }}
     uses: ministryofjustice/hmpps-github-actions/.github/workflows/gradle_verify.yml@v2 # WORKFLOW_VERSION
@@ -76,12 +77,31 @@ jobs:
     needs:
       - gradle-build
       - setup-test-matrix
+  tests-passed:
+    name: Tests passed
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - gradle-build
+      - setup-test-matrix
+      - gradle-verify
+    steps:
+      - name: Check test results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS" >> "$GITHUB_STEP_SUMMARY"
+          for result in $RESULTS; do
+            if [[ "$result" == "failure" || "$result" == "cancelled" ]]; then
+              exit 1
+            fi
+          done
   build:
     name: Build docker image from hmpps-github-actions
-    if: github.ref == 'refs/heads/main'
+    if: always() && github.ref == 'refs/heads/main' && needs.tests-passed.result == 'success'
     uses: ministryofjustice/hmpps-github-actions/.github/workflows/docker_build.yml@v2 # WORKFLOW_VERSION
     needs:
-      - gradle-verify
+      - tests-passed
     with:
       docker_registry: 'ghcr.io'
       registry_org: 'ministryofjustice'
