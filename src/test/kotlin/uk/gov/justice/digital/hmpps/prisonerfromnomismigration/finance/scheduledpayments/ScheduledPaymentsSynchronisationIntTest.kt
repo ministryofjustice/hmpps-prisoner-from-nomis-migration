@@ -372,7 +372,9 @@ class ScheduledPaymentsSynchronisationIntTest(
           financeApi.verify(
             postRequestedFor(urlPathEqualTo("/sync/subscriptions/$dpsScheduledPaymentId/update"))
               .withRequestBodyJsonPath("startDate", equalTo("2024-06-18"))
-              .withRequestBodyJsonPath("endDate", equalTo("2024-08-06")),
+              .withRequestBodyJsonPath("endDate", equalTo("2024-08-06"))
+              .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
+              .withRequestBodyJsonPath("updatedBy", equalTo("KE23456")),
           )
         }
 
@@ -408,7 +410,9 @@ class ScheduledPaymentsSynchronisationIntTest(
           financeApi.verify(
             postRequestedFor(urlPathEqualTo("/sync/subscriptions/$dpsScheduledPaymentId/update"))
               .withRequestBodyJsonPath("startDate", equalTo("2024-06-18"))
-              .withRequestBodyJsonPath("endDate", absent()),
+              .withRequestBodyJsonPath("endDate", absent())
+              .withRequestBodyJsonPath("comment", equalTo("This is a comment"))
+              .withRequestBodyJsonPath("updatedBy", equalTo("KE23456")),
           )
         }
 
