@@ -551,7 +551,7 @@ class CorePersonAliasIdentifierMigrationIntTest(
         val testData = testData(prisonerNumber = nomisPrisonNumber)
         val aliases = testData.aliases.mapIndexed { i, alias ->
           if (i == 0) {
-            alias.copy(identifiers = alias.identifiers + alias.identifiers.first().copy(sequence = 3, type = CodeDescription("STAFF", "Staff Pass/ Identity Card")))
+            alias.copy(identifiers = alias.identifiers + alias.identifiers.first().copy(sequence = 3, type = CodeDescription("LIDS", "LIDS Number")))
           } else {
             alias
           }

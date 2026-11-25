@@ -801,7 +801,7 @@ class CorePersonDataRepairResourceIntTest(
         nomisApiMockServer.stubGetAliasesAndIdentifiers(
           prisonNumber,
           aliasesAndIdentifiers = corePerson(prisonNumber).offenders!!.map { alias ->
-            alias.copy(identifiers = alias.identifiers.map { it.copy(type = CodeDescription("STAFF", "Staff Pass/ Identity Card")) })
+            alias.copy(identifiers = alias.identifiers.map { it.copy(type = CodeDescription("LIDS", "LIDS Number")) })
           },
         )
         aliasIdentifierMappingApiMockServer.stubGetMappingsFromNomisIds()
