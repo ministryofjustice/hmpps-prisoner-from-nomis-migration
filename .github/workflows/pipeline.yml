@@ -80,7 +80,7 @@ jobs:
   tests-passed:
     name: Tests passed
     runs-on: ubuntu-latest
-    if: always()
+    if: ${{ !cancelled() }}
     needs:
       - app_version
       - gradle-build
@@ -99,7 +99,7 @@ jobs:
           done
   build:
     name: Build docker image from hmpps-github-actions
-    if: always() && github.ref == 'refs/heads/main' && needs.tests-passed.result == 'success'
+    if: ${{ !cancelled() && github.ref == 'refs/heads/main' && needs.tests-passed.result == 'success' }}
     uses: ministryofjustice/hmpps-github-actions/.github/workflows/docker_build.yml@v2 # WORKFLOW_VERSION
     needs:
       - tests-passed
