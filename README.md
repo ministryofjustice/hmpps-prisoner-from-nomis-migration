@@ -60,11 +60,14 @@ Then run any of the `bash` scripts at the root of this project to send events to
 
 For some of our external API calls we use `openapi-generator` to generate the models used in the API clients. The Open API specifications used can be found in directory `openapi-specs`.
 
-In the build.gradle.kts there is a `ModelConfiguration` for each of the models.  This contains the URL to be used to
+In `build-logic/src/main/kotlin/uk/gov/justice/digital/hmpps/testselection/ModelConfiguration.kt` there is a `ModelConfiguration` for each of the models.  This contains the URL to be used to
 obtain the JSON Open API specification and also the package name to be used for the generated models.  For each model
 configuration two tasks are created:
 1. `write<ModelName>Json` - this task will download the Open API specification and save it to `openapi-specs`.
 2. `build<ModelName>ApiModel` - this task will generate the models from the specification
+
+Models with a `testPackageName` also get their own `test<ModelName>` task. `./gradlew -q selectTests` prints all test tasks to run
+(`test` plus each of these) as a GitHub matrix, which CI uses to run the test suites in parallel.
 
 So, for example, running
 ```shell

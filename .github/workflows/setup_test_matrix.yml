@@ -42,6 +42,7 @@ jobs:
         id: create_matrix
         shell: bash
         run: |
-          TASKS=$(./gradlew tasks | awk 'BEGIN { print "test"} /- Run tests/ {print $1}')
-          echo "taskoutput=$(echo "$TASKS" | jq -cRn "{"tests":[inputs]}")" >> $GITHUB_OUTPUT
-          echo "has_tests=$(echo "$TASKS" | jq -cRn '[inputs]|length>0')" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+          MATRIX=$(./gradlew -q selectTests | grep '^{"tests"')
+          echo "taskoutput=$MATRIX" >> "$GITHUB_OUTPUT"
+          echo "has_tests=$(echo "$MATRIX" | jq '.tests|length>0')" >> "$GITHUB_OUTPUT"
