@@ -1,15 +1,33 @@
 package uk.gov.justice.digital.hmpps.testselection
 
+import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.provider.ListProperty
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.TaskAction
+
+abstract class SelectiveTestsExtension {
+  abstract val modelConfigurations: ListProperty<ModelConfiguration>
+}
+
+abstract class SelectTestsTask : DefaultTask() {
+  @get:Input
+  abstract val tests: ListProperty<String>
+
+  @TaskAction
+  fun print() {
+    println(tests.get().toGithubMatrix())
+  }
+}
 
 class SelectiveTestsPlugin : Plugin<Project> {
   override fun apply(project: Project) {
-    val matrix = selectTests(models).toGithubMatrix()
-    project.tasks.register("selectTests") {
+    val extension = project.extensions.create("selectiveTests", SelectiveTestsExtension::class.java)
+    project.tasks.register("selectTests", SelectTestsTask::class.java) {
       group = "Test selection"
       description = "Prints the test tasks to run as a GitHub matrix"
-      doLast { println(matrix) }
+      tests.set(extension.modelConfigurations.map { selectTests(it) })
     }
   }
 }

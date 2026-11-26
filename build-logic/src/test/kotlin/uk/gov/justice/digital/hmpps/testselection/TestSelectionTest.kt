@@ -1,6 +1,7 @@
 package uk.gov.justice.digital.hmpps.testselection
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
 class TestSelectionTest {
@@ -20,21 +21,27 @@ class TestSelectionTest {
 
   @Test
   fun `task name is derived from model name not test package`() {
-    val tests = selectTests(models)
+    val tests = selectTests(
+      listOf(
+        model("agency-registers", "agency"),
+        model("sentencing-adjustments", "sentencing"),
+        model("visit-balance", "visitbalances"),
+      ),
+    )
 
-    assertThat(tests).contains("testAgencyRegisters", "testSentencingAdjustments", "testVisitBalance")
-    assertThat(tests).doesNotContain("testAgency", "testSentencing", "testVisitbalances")
+    assertThat(tests).containsExactly("test", "testAgencyRegisters", "testSentencingAdjustments", "testVisitBalance")
+  }
+
+  @Test
+  fun `duplicate task names are rejected`() {
+    assertThatThrownBy { selectTests(listOf(model("a-b", "x"), model("aB", "y"), model("c", "c"))) }
+      .isInstanceOf(IllegalArgumentException::class.java)
+      .hasMessageContaining("testAB")
+      .hasMessageNotContaining("testC")
   }
 
   @Test
   fun `matrix is single line json`() {
     assertThat(listOf("test", "testA").toGithubMatrix()).isEqualTo("""{"tests":["test","testA"]}""")
-  }
-
-  @Test
-  fun `all configured suites are selected without duplicates`() {
-    val tests = selectTests(models)
-
-    assertThat(tests).isNotEmpty().doesNotHaveDuplicates()
   }
 }
