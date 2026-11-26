@@ -7,7 +7,7 @@
       "name" : "HMPPS Digital Studio",
       "email" : "feedback@digital.justice.gov.uk"
     },
-    "version" : "2026-11-24.1316.7e7612c"
+    "version" : "2026-11-25.1320.41ac986"
   },
   "servers" : [ {
     "url" : "https://prisoner-finance-sync-api-dev.hmpps.service.justice.gov.uk/",
@@ -2124,7 +2124,12 @@
           },
           "releaseTransactionId" : {
             "type" : "integer",
-            "format" : "int64"
+            "format" : "int64",
+            "description" : "The legacy transaction Id of the release transaction"
+          },
+          "updatedBy" : {
+            "type" : [ "string", "null" ],
+            "description" : "The username who made the release"
           }
         },
         "required" : [ "releaseDateTime", "releaseTransactionId" ]
@@ -2145,6 +2150,9 @@
           "releasedAt" : {
             "type" : "string",
             "format" : "date-time"
+          },
+          "updatedBy" : {
+            "type" : [ "string", "null" ]
           }
         },
         "required" : [ "amountReleased", "holdNumber", "prisonNumber", "releasedAt" ]
