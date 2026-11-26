@@ -5,6 +5,7 @@ import org.jlleitschuh.gradle.ktlint.tasks.KtLintCheckTask
 import org.jlleitschuh.gradle.ktlint.tasks.KtLintFormatTask
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 import tools.jackson.databind.json.JsonMapper
+import uk.gov.justice.digital.hmpps.testselection.ModelConfiguration
 import java.net.URI
 import kotlin.io.path.exists
 import kotlin.io.path.pathString
@@ -14,6 +15,7 @@ plugins {
   id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.1.1"
   kotlin("plugin.spring") version "2.4.21"
   id("org.openapi.generator") version "7.27.0"
+  id("uk.gov.justice.digital.hmpps.selective-tests")
 }
 
 configurations {
@@ -120,22 +122,6 @@ abstract class ReadProductionVersionTask : DefaultTask() {
     val version = mapper.readTree(json).at("/build/version").asString()
     println(version)
   }
-}
-
-data class ModelConfiguration(val name: String, val packageName: String, val testPackageName: String? = null, val url: String, val models: String = "", val hasProductionVersion: Boolean = true) {
-  fun toBuildModelTaskName(): String = "build${nameToCamel()}ApiModel"
-  fun toWriteJsonTaskName(): String = "write${nameToCamel()}Json"
-  fun toReadProductionVersionTaskName(): String = "read${nameToCamel()}ProductionVersion"
-  fun toTestTaskName(): String = "test${nameToCamel()}"
-  private val snakeRegex = "-[a-zA-Z]".toRegex()
-  private fun nameToCamel(): String = snakeRegex.replace(name) {
-    it.value.replace("-", "").uppercase()
-  }.replaceFirstChar { it.uppercase() }
-
-  val input: String
-    get() = "$projectDir/openapi-specs/$name-api-docs.json"
-  val output: String
-    get() = name
 }
 
 val packagePrefix = "uk.gov.justice.digital.hmpps.prisonerfromnomismigration"
@@ -297,6 +283,10 @@ val models = listOf(
   ),
 )
 
+selectiveTests {
+  modelConfigurations.set(models)
+}
+
 tasks {
   withType<KotlinCompile> {
     dependsOn(models.map { it.toBuildModelTaskName() })
@@ -317,7 +307,7 @@ models.forEachIndexed { i, model ->
     generatorName.set("kotlin")
     library.set("jvm-spring-webclient")
     skipValidateSpec.set(true)
-    inputSpec.set(model.input)
+    inputSpec.set(model.input(projectDir))
     outputDir.set(buildDirectory.dir("generated/${model.output}").get().asFile.path)
     cleanupOutput.set(true)
     modelPackage.set("$packagePrefix.${model.packageName}.model")
@@ -337,7 +327,7 @@ models.forEachIndexed { i, model ->
     group = "Write JSON"
     description = "Write JSON for ${model.name}"
     url.set(model.url)
-    outputFile.set(buildDirectory.file(model.input))
+    outputFile.set(buildDirectory.file(model.input(projectDir)))
     // ensure that the write task happens every time
     outputs.upToDateWhen { false }
   }
@@ -356,8 +346,8 @@ models.forEachIndexed { i, model ->
       }
     }
   }
-  if (model.testPackageName != null) {
-    separateTestPackages.add(model.testPackageName)
+  model.testPackageName?.let { testPackageName ->
+    separateTestPackages.add(testPackageName)
     val test by testing.suites.existing(JvmTestSuite::class)
     val task = tasks.register<Test>(model.toTestTaskName()) {
       testClassesDirs = files(test.map { it.sources.output.classesDirs })
@@ -367,7 +357,7 @@ models.forEachIndexed { i, model ->
       shouldRunAfter("test")
       useJUnitPlatform()
       filter {
-        includeTestsMatching("$packagePrefix.${model.testPackageName}.*")
+        includeTestsMatching("$packagePrefix.$testPackageName.*")
       }
       maxHeapSize = "1024m"
     }
@@ -376,12 +366,17 @@ models.forEachIndexed { i, model ->
 }
 
 tasks.test {
+  dependsOn(gradle.includedBuild("build-logic").task(":test"))
   filter {
     separateTestPackages.forEach {
       excludeTestsMatching("$packagePrefix.$it.*")
     }
   }
   maxHeapSize = "1024m"
+}
+
+tasks.ktlintCheck {
+  dependsOn(gradle.includedBuild("build-logic").task(":ktlintCheck"))
 }
 
 val configValues = mapOf(
