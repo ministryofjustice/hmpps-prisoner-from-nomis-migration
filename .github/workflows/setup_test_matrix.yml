@@ -12,6 +12,8 @@ on:
     outputs:
       matrix:
         value: ${{ jobs.create_matrix.outputs.task_output }}
+      has_tests:
+        value: ${{ jobs.create_matrix.outputs.has_tests }}
 
 permissions:
   contents: read
@@ -21,6 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       task_output: ${{ steps.create_matrix.outputs.taskoutput }}
+      has_tests: ${{ steps.create_matrix.outputs.has_tests }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -41,3 +44,4 @@ jobs:
         run: |
           TASKS=$(./gradlew tasks | awk 'BEGIN { print "test"} /- Run tests/ {print $1}')
           echo "taskoutput=$(echo "$TASKS" | jq -cRn "{"tests":[inputs]}")" >> $GITHUB_OUTPUT
+          echo "has_tests=$(echo "$TASKS" | jq -cRn '[inputs]|length>0')" >> "$GITHUB_OUTPUT"
