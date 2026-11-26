@@ -295,7 +295,7 @@ class CorePersonSynchronisationAliasIdentifierIntTest(
         mappingApiMock.stubGetByNomisAliasIdOrNull(offenderId, aliasMapping())
         nomisApiMock.stubGetOffenderIdentifiers(
           offenderId,
-          listOf(nomisIdentifier(sequence = 1, type = "PASS", value = "123456789")),
+          listOf(nomisIdentifier(sequence = 1, type = "LIDS", value = "123456789")),
         )
         mappingApiMock.stubGetIdentifierMappingsByNomisOffenderId(offenderId, emptyList())
         sendIdentifierEvent()
@@ -314,7 +314,7 @@ class CorePersonSynchronisationAliasIdentifierIntTest(
       @Test
       fun `will track the error for each attempt`() {
         verifyTelemetry("coreperson-identifier-synchronisation-updated-error", times = 2) {
-          assertThat(it["error"]).contains("PASS")
+          assertThat(it["error"]).contains("LIDS")
         }
       }
     }

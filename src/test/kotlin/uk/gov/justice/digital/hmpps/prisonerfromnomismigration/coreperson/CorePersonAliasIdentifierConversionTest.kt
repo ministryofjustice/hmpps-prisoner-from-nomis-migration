@@ -128,7 +128,7 @@ class CorePersonAliasIdentifierConversionTest {
   @Nested
   inner class IdentifierType {
     @ParameterizedTest
-    @CsvSource("NINO,NATIONAL_INSURANCE_NUMBER", "DL,DRIVER_LICENSE_NUMBER", "PNC,PNC", "CRO,CRO", "NOMS,NOMS", "SPNC,SPNC", "NHS,NHS")
+    @CsvSource("NINO,NINO", "DL,DL", "PNC,PNC", "CRO,CRO", "NOMS,NOMS", "SPNC,SPNC", "NHS,NHS", "PORT REF,PORT_REF", "SHARED ALIAS,SHARED_ALIAS", "STAFF,STAFF", "PASS,PASS", "MERGE_HMPS,MERGE_HMPS")
     fun `will map NOMIS identifier type to CPR identifier type`(nomisCode: String, cprCode: String) {
       val identifier = alias.identifiers.first().copy(type = CodeDescription(nomisCode, nomisCode))
 
@@ -137,11 +137,11 @@ class CorePersonAliasIdentifierConversionTest {
 
     @Test
     fun `will fail for an unmapped identifier type`() {
-      val identifier = alias.identifiers.first().copy(type = CodeDescription("STAFF", "Staff Pass"))
+      val identifier = alias.identifiers.first().copy(type = CodeDescription("LIDS", "LIDS Number"))
 
       assertThatThrownBy { identifier.toPrisonIdentifier() }
         .isInstanceOf(IllegalArgumentException::class.java)
-        .hasMessageContaining("identifier type code 'STAFF'")
+        .hasMessageContaining("identifier type code 'LIDS'")
     }
   }
 }
