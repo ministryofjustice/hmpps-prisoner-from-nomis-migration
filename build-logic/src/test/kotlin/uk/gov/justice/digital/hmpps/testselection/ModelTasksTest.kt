@@ -4,6 +4,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.gradle.api.Project
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.testfixtures.ProjectBuilder
+import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+import org.jlleitschuh.gradle.ktlint.tasks.KtLintCheckTask
+import org.jlleitschuh.gradle.ktlint.tasks.KtLintFormatTask
 import org.junit.jupiter.api.Test
 import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
 import java.io.ByteArrayOutputStream
@@ -22,9 +25,8 @@ class ModelTasksTest {
     hasProductionVersion = hasProductionVersion,
   )
 
-  private fun evaluate(vararg models: ModelConfiguration) = with(project) {
-    pluginManager.apply("java")
-    pluginManager.apply("org.openapi.generator")
+  private fun evaluate(vararg models: ModelConfiguration, plugins: List<String> = emptyList()) = with(project) {
+    (listOf("java", "org.openapi.generator") + plugins).forEach { pluginManager.apply(it) }
     pluginManager.apply(SelectiveTestsPlugin::class.java)
     extensions.configure(SelectiveTestsExtension::class.java) {
       modelConfigurations.set(models.toList())
@@ -110,5 +112,41 @@ class ModelTasksTest {
     assertThat(alerts.ignoreFileOverride.isPresent).isFalse()
     assertThat(visitBalance.ignoreFileOverride.get().asFile).isEqualTo(project.file("openapi-generator-ignore-visit-balance"))
     assertThat(visitBalance.globalProperties.get()).isEmpty()
+  }
+
+  @Test
+  fun `kotlin compiles generated sources after building the models`() {
+    evaluate(model("alerts"), model("core-person"), plugins = listOf("org.jetbrains.kotlin.jvm"))
+    val buildModelTasks = listOf("buildAlertsApiModel", "buildCorePersonApiModel").map { project.tasks.getByName(it) }
+
+    val srcDirs = project.extensions.getByType(KotlinJvmProjectExtension::class.java).sourceSets.getByName("main").kotlin.srcDirs
+    assertThat(srcDirs).contains(
+      project.file("build/generated/alerts/src/main/kotlin"),
+      project.file("build/generated/core-person/src/main/kotlin"),
+    )
+    listOf("compileKotlin", "compileTestKotlin").map { project.tasks.getByName(it) }.forEach { task ->
+      assertThat(task.taskDependencies.getDependencies(task)).containsAll(buildModelTasks)
+    }
+  }
+
+  @Test
+  fun `ktlint runs after building the models and ignores generated sources`() {
+    val handwritten = project.file("src/main/kotlin/Handwritten.kt").apply {
+      parentFile.mkdirs()
+      writeText("")
+    }
+    val generated = project.file("build/generated/alerts/src/main/kotlin/Generated.kt").apply {
+      parentFile.mkdirs()
+      writeText("")
+    }
+    evaluate(model("alerts"), model("core-person"), plugins = listOf("org.jetbrains.kotlin.jvm", "org.jlleitschuh.gradle.ktlint"))
+    val buildModelTasks = listOf("buildAlertsApiModel", "buildCorePersonApiModel").map { project.tasks.getByName(it) }
+
+    val ktlintTasks = project.tasks.withType(KtLintCheckTask::class.java) + project.tasks.withType(KtLintFormatTask::class.java)
+    assertThat(ktlintTasks.map { it.name }).contains("runKtlintCheckOverMainSourceSet", "runKtlintFormatOverMainSourceSet")
+    ktlintTasks.forEach { assertThat(it.mustRunAfter.getDependencies(it)).containsAll(buildModelTasks) }
+
+    val mainSources = (project.tasks.getByName("runKtlintCheckOverMainSourceSet") as KtLintCheckTask).source.files
+    assertThat(mainSources).contains(handwritten).doesNotContain(generated)
   }
 }
