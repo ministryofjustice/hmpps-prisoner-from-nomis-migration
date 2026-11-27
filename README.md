@@ -70,6 +70,25 @@ model configuration, including:
 Models with a `testPackageName` also get their own `test<ModelName>` task. `./gradlew -q selectTests` prints all test tasks to run
 (`test` plus each of these) as a GitHub matrix, which CI uses to run the test suites in parallel.
 
+`selectTests` can also work out which suites a change needs, from the paths of the changed files:
+
+| Option | Meaning |
+| --- | --- |
+| `--changed-files=<file>` | file of newline-separated changed paths (missing or empty means run everything) |
+| `--run-all` | run every suite whatever the changed files |
+| `--mode=off\|shadow\|on` | `off` (default locally) prints every suite; `shadow` also writes what it *would* run; `on` prints only the selected suites |
+| `--summary-file=<file>` | where `shadow` writes the markdown summary |
+
+To see what your current branch would need, run `./gradlew -q explainSelectTests` (optionally `--base=<branch>`, default
+`origin/main`). It prints the same information as the CI summary as an aligned text table, from the committed, uncommitted and untracked changes since the
+branch left the base.
+
+Anything the rules in `build-logic` don't recognise, or that is shared by all features, selects every suite.
+In CI the mode comes from the `TEST_SELECTION` repository variable (`off`, `shadow` or `on`, default `shadow`), and the
+shadow summary is added to the workflow run summary. In `shadow` mode the matrix still runs every suite.
+Every suite always runs on `main`, in the nightly run, when the pipeline is run manually, and when the head commit message
+contains `[run-all]`. An unrecognised `TEST_SELECTION` value fails the test matrix job.
+
 So, for example, running
 ```shell
 ./gradlew writeNonAssociationsJson compileKotlin compileTestKotlin
