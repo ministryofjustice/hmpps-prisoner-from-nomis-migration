@@ -1,15 +1,4 @@
-@file:Suppress("UnstableApiUsage")
-
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.jlleitschuh.gradle.ktlint.tasks.KtLintCheckTask
-import org.jlleitschuh.gradle.ktlint.tasks.KtLintFormatTask
-import org.openapitools.generator.gradle.plugin.tasks.GenerateTask
-import tools.jackson.databind.json.JsonMapper
 import uk.gov.justice.digital.hmpps.testselection.ModelConfiguration
-import java.net.URI
-import kotlin.io.path.exists
-import kotlin.io.path.pathString
-import kotlin.io.path.Path as KotlinPath
 
 plugins {
   id("uk.gov.justice.hmpps.gradle-spring-boot") version "11.1.1"
@@ -81,50 +70,6 @@ kotlin {
   }
 }
 
-@CacheableTask
-abstract class WriteJsonTask : DefaultTask() {
-  private companion object {
-    private val mapper = JsonMapper()
-  }
-
-  @get:Input
-  abstract val url: Property<String>
-
-  @get:OutputFile
-  abstract val outputFile: RegularFileProperty
-
-  @TaskAction
-  fun run() {
-    val json = URI.create(url.get()).toURL().readText()
-    val formattedJson = mapper.let { mapper ->
-      mapper.writerWithDefaultPrettyPrinter().writeValueAsString(mapper.readTree(json))
-    }
-    outputFile.get().asFile.writeText(formattedJson)
-    logger.lifecycle("Written ${outputFile.get()} from ${url.get()}")
-  }
-}
-
-@CacheableTask
-abstract class ReadProductionVersionTask : DefaultTask() {
-  private companion object {
-    private val mapper = JsonMapper()
-  }
-
-  @get:Input
-  abstract val url: Property<String>
-
-  @TaskAction
-  fun run() {
-    val productionUrl = url.get().replace("-dev".toRegex(), "")
-      .replace("dev.".toRegex(), "")
-      .replace("/v3/api-docs".toRegex(), "/info")
-    val json = URI.create(productionUrl).toURL().readText()
-    val version = mapper.readTree(json).at("/build/version").asString()
-    println(version)
-  }
-}
-
-val packagePrefix = "uk.gov.justice.digital.hmpps.prisonerfromnomismigration"
 val models = listOf(
   ModelConfiguration(
     name = "bedassignment",
@@ -285,93 +230,11 @@ val models = listOf(
 
 selectiveTests {
   modelConfigurations.set(models)
-}
-
-tasks {
-  withType<KotlinCompile> {
-    dependsOn(models.map { it.toBuildModelTaskName() })
-  }
-  withType<KtLintCheckTask> {
-    mustRunAfter(models.map { it.toBuildModelTaskName() })
-  }
-  withType<KtLintFormatTask> {
-    mustRunAfter(models.map { it.toBuildModelTaskName() })
-  }
-}
-val separateTestPackages = mutableListOf<String>()
-models.forEachIndexed { i, model ->
-  tasks.register<GenerateTask>(model.toBuildModelTaskName()) {
-    val buildDirectory: DirectoryProperty = project.layout.buildDirectory
-    group = "Generate model from API JSON definition"
-    description = "Generate model from API JSON definition for ${model.name}"
-    generatorName.set("kotlin")
-    library.set("jvm-spring-webclient")
-    skipValidateSpec.set(true)
-    inputSpec.set(model.input(projectDir))
-    outputDir.set(buildDirectory.dir("generated/${model.output}").get().asFile.path)
-    cleanupOutput.set(true)
-    modelPackage.set("$packagePrefix.${model.packageName}.model")
-    apiPackage.set("$packagePrefix.${model.packageName}.api")
-    configOptions.set(configValues)
-    KotlinPath("$projectDir/openapi-generator-ignore-${model.name}")
-      .takeIf { p -> p.exists() }?.apply { ignoreFileOverride.set(this.pathString) }
-      ?: globalProperties.set(mapOf("models" to model.models))
-    generateModelTests.set(false)
-    generateModelDocumentation.set(false)
-    mustRunAfter(model.toWriteJsonTaskName())
-    // GenerateTask is not safe to run in parallel so need to ensure that only one runs at once
-    if (i != 0) mustRunAfter(models[i - 1].toBuildModelTaskName())
-  }
-  tasks.register<WriteJsonTask>(model.toWriteJsonTaskName()) {
-    val buildDirectory: DirectoryProperty = project.layout.buildDirectory
-    group = "Write JSON"
-    description = "Write JSON for ${model.name}"
-    url.set(model.url)
-    outputFile.set(buildDirectory.file(model.input(projectDir)))
-    // ensure that the write task happens every time
-    outputs.upToDateWhen { false }
-  }
-  if (model.hasProductionVersion) {
-    tasks.register<ReadProductionVersionTask>(model.toReadProductionVersionTaskName()) {
-      group = "Read current production version"
-      description = "Read current production version for ${model.name}"
-      url.set(model.url)
-    }
-  } else {
-    tasks.register(model.toReadProductionVersionTaskName()) {
-      group = "Read current production version"
-      description = "Read current production version for ${model.name}"
-      doLast {
-        println("no production version")
-      }
-    }
-  }
-  model.testPackageName?.let { testPackageName ->
-    separateTestPackages.add(testPackageName)
-    val test by testing.suites.existing(JvmTestSuite::class)
-    val task = tasks.register<Test>(model.toTestTaskName()) {
-      testClassesDirs = files(test.map { it.sources.output.classesDirs })
-      classpath = files(test.map { it.sources.runtimeClasspath })
-      group = "Run tests"
-      description = "Run tests for ${model.name}"
-      shouldRunAfter("test")
-      useJUnitPlatform()
-      filter {
-        includeTestsMatching("$packagePrefix.$testPackageName.*")
-      }
-      maxHeapSize = "1024m"
-    }
-    tasks.check { dependsOn(task) }
-  }
+  packagePrefix.set("uk.gov.justice.digital.hmpps.prisonerfromnomismigration")
 }
 
 tasks.test {
   dependsOn(gradle.includedBuild("build-logic").task(":test"))
-  filter {
-    separateTestPackages.forEach {
-      excludeTestsMatching("$packagePrefix.$it.*")
-    }
-  }
   maxHeapSize = "1024m"
 }
 
@@ -379,29 +242,6 @@ tasks.ktlintCheck {
   dependsOn(gradle.includedBuild("build-logic").task(":ktlintCheck"))
 }
 
-val configValues = mapOf(
-  "dateLibrary" to "java8-localdatetime",
-  "serializationLibrary" to "jackson",
-  "enumPropertyNaming" to "original",
-  "useSpringBoot3" to "true",
-)
-
-kotlin {
-  val buildDirectory: DirectoryProperty = project.layout.buildDirectory
-  sourceSets["main"].apply {
-    models.map { it.output }.forEach { generatedProject ->
-      kotlin.srcDir(buildDirectory.dir("generated/$generatedProject/src/main/kotlin").get().toString())
-    }
-  }
-}
-
-ktlint {
-  val buildDirectory: DirectoryProperty = project.layout.buildDirectory
-  models.map { it.output }.forEach { generatedProject ->
-    filter {
-      exclude {
-        it.file.path.contains(buildDirectory.dir("generated/$generatedProject/src/main/").get().toString())
-      }
-    }
-  }
+tasks.ktlintFormat {
+  dependsOn(gradle.includedBuild("build-logic").task(":ktlintFormat"))
 }
