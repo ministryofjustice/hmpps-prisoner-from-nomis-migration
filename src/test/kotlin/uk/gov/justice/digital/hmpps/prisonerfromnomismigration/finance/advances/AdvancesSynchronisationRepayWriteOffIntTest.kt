@@ -254,46 +254,287 @@ class AdvancesSynchronisationRepayWriteOffIntTest(
     @Nested
     @DisplayName("When the transaction contains multiple entry types")
     inner class MultipleEntryTypes {
-      @BeforeEach
-      fun setUp() {
+
+      private fun stubMultiEntryTransaction() {
         financeNomisApiMockServer.stubGetPrisonerTransaction(
           bookingId = BOOKING_ID,
           transactionId = NOMIS_TRANSACTION_ID,
           response = transactionWithMultipleTypes,
         )
+      }
+
+      private fun stubMultiEntryAdvances(missingMappingForDeductionId: Long? = null) {
         multiEntryAdvanceMappings.forEach { (deductionId, nomisAdvanceId, dpsId) ->
           advancesNomisApiMockServer.stubGetAdvanceByDeductionId(
             deductionId = deductionId,
             prisonerAdvance = advance.copy(id = nomisAdvanceId),
           )
-          advancesMappingApiMockServer.stubGetAdvanceByNomisIdOrNull(
-            nomisAdvanceId = nomisAdvanceId,
-            dpsId = dpsId.toString(),
-          )
+          if (deductionId == missingMappingForDeductionId) {
+            advancesMappingApiMockServer.stubGetAdvanceByNomisIdOrNull(
+              nomisAdvanceId = nomisAdvanceId,
+              mapping = null,
+            )
+          } else {
+            advancesMappingApiMockServer.stubGetAdvanceByNomisIdOrNull(
+              nomisAdvanceId = nomisAdvanceId,
+              dpsId = dpsId.toString(),
+            )
+          }
           financeApi.stubRepayAdvance(advanceUuid = dpsId)
         }
-        sendRepaymentEvent(entrySequence = multiEntryRepaymentTransaction.transactionEntrySequence)
+      }
+
+      private fun sendMultiEntryRepaymentEvent(auditModuleName: String = "OTIDTACC") {
+        sendRepaymentEvent(
+          entrySequence = multiEntryRepaymentTransaction.transactionEntrySequence,
+          auditModuleName = auditModuleName,
+        )
+      }
+
+      private fun waitForMultiEntryRepayments() {
         waitForAnyProcessingToComplete("transactions-synchronisation-created-success")
         waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-success", times = 3)
       }
 
-      @Test
-      fun `will repay all deduction entries in the transaction`() {
-        multiEntryAdvanceMappings.forEachIndexed { index, (deductionId, nomisAdvanceId, dpsId) ->
-          advancesNomisApiMockServer.verify(
-            1,
-            getRequestedFor(urlPathEqualTo("/finance/advances/deduction-id/$deductionId")),
-          )
+      private fun verifyMultiEntryRepayment(index: Int, expectedCount: Int = 1) {
+        val (_, _, dpsId) = multiEntryAdvanceMappings[index]
+        financeApi.verify(
+          expectedCount,
+          postRequestedFor(urlPathEqualTo("/sync/advances/$dpsId/repay"))
+            .withRequestBodyJsonPath("entrySequence", index + 3)
+            .withRequestBodyJsonPath("amount", listOf("15.59", "1.5", "3.12")[index]),
+        )
+      }
+
+      @Nested
+      @DisplayName("When the repayment originates in DPS")
+      inner class DpsCreated {
+        @BeforeEach
+        fun setUp() {
+          stubMultiEntryTransaction()
+          sendMultiEntryRepaymentEvent(auditModuleName = "DPS_SYNCHRONISATION")
+          waitForAnyProcessingToComplete("transactions-synchronisation-created-skipped")
+        }
+
+        @Test
+        fun `will skip advance lookups and all repayments`() {
+          financeNomisApiMockServer.verify(0, getRequestedFor(urlPathEqualTo("/transactions/$NOMIS_TRANSACTION_ID")))
+          financeApi.verify(0, postRequestedFor(urlPathMatching("/sync/advances/.*/repay")))
+          multiEntryAdvanceMappings.forEach { (deductionId) ->
+            advancesNomisApiMockServer.verify(
+              0,
+              getRequestedFor(urlPathEqualTo("/finance/advances/deduction-id/$deductionId")),
+            )
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When transaction mapping already exists")
+      inner class TransactionAlreadyMapped {
+        @BeforeEach
+        fun setUp() {
+          stubMultiEntryTransaction()
+          stubMultiEntryAdvances()
+          financeMappingApiMockServer.stubGetByNomisId(NOMIS_TRANSACTION_ID)
+          financeApi.stubPostPrisonerTransaction(receipt.copy(action = SyncTransactionReceipt.Action.PROCESSED))
+          sendMultiEntryRepaymentEvent()
+          waitForAnyProcessingToComplete("transactions-synchronisation-created-success-additional")
+          waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-success", times = 3)
+        }
+
+        @Test
+        fun `will repay all deduction entries without creating another transaction mapping`() {
+          financeMappingApiMockServer.verify(0, postRequestedFor(urlPathEqualTo("/mapping/transactions")))
+          (0..2).forEach { verifyMultiEntryRepayment(it) }
+        }
+      }
+
+      @Nested
+      @DisplayName("When a deduction advance mapping is missing")
+      inner class AdvanceMappingMissing {
+        private val missingDeductionId = 3497592L
+        private val missingNomisAdvanceId = 7001L
+
+        @BeforeEach
+        fun setUp() {
+          stubMultiEntryTransaction()
+          stubMultiEntryAdvances(missingMappingForDeductionId = missingDeductionId)
+          sendMultiEntryRepaymentEvent()
+        }
+
+        @Test
+        fun `will retry the event after earlier repayments and fail at the unmapped deduction`() {
+          await untilCallTo {
+            awsSqsFinanceOffenderEventsDlqClient.countAllMessagesOnQueue(financeQueueOffenderEventsDlqUrl).get()
+          } matches { it == 1 }
+
+          verifyMultiEntryRepayment(index = 0, expectedCount = 2)
+          verifyMultiEntryRepayment(index = 1, expectedCount = 0)
+          verifyMultiEntryRepayment(index = 2, expectedCount = 0)
           advancesMappingApiMockServer.verify(
-            1,
-            getRequestedFor(urlPathEqualTo("/mapping/advances/nomis-id/$nomisAdvanceId")),
+            exactly(2),
+            getRequestedFor(urlPathEqualTo("/mapping/advances/nomis-id/$missingNomisAdvanceId")),
           )
-          financeApi.verify(
-            1,
-            postRequestedFor(urlPathEqualTo("/sync/advances/$dpsId/repay"))
-              .withRequestBodyJsonPath("entrySequence", index + 3)
-              .withRequestBodyJsonPath("amount", listOf("15.59", "1.5", "3.12")[index]),
+          verify(telemetryClient, atLeastOnce()).trackEvent(
+            eq("finance-advances-synchronisation-updated-error"),
+            check {
+              assertThat(it["offenderDeductionId"]).isEqualTo(missingDeductionId.toString())
+            },
+            isNull(),
           )
+        }
+      }
+
+      @Nested
+      @DisplayName("When transaction mapping creation detects a duplicate")
+      inner class DuplicateTransactionMapping {
+        private val duplicateMapping = TransactionMappingDto(
+          nomisBookingId = BOOKING_ID,
+          dpsTransactionId = DPS_TRANSACTION_ID,
+          nomisTransactionId = NOMIS_TRANSACTION_ID,
+          offenderNo = OFFENDER_ID_DISPLAY,
+          mappingType = TransactionMappingDto.MappingType.NOMIS_CREATED,
+        )
+        private val existingMapping = duplicateMapping.copy(dpsTransactionId = UUID.randomUUID().toString())
+
+        @BeforeEach
+        fun setUp() {
+          stubMultiEntryTransaction()
+          stubMultiEntryAdvances()
+          financeMappingApiMockServer.stubPostMapping(
+            error = DuplicateErrorResponse(
+              moreInfo = DuplicateErrorContent(
+                duplicate = duplicateMapping,
+                existing = existingMapping,
+              ),
+            ),
+          )
+          sendMultiEntryRepaymentEvent()
+          waitForAnyProcessingToComplete("transaction-from-nomis-synch-duplicate")
+          waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-success", times = 3)
+        }
+
+        @Test
+        fun `will repay all deduction entries despite duplicate transaction mapping`() {
+          financeMappingApiMockServer.verify(1, postRequestedFor(urlPathEqualTo("/mapping/transactions")))
+          (0..2).forEach { verifyMultiEntryRepayment(it) }
+        }
+      }
+
+      @Nested
+      @DisplayName("When transaction mapping creation fails")
+      inner class TransactionMappingFailure {
+        @Nested
+        @DisplayName("Fails once")
+        inner class FailsOnce {
+          @BeforeEach
+          fun setUp() {
+            stubMultiEntryTransaction()
+            stubMultiEntryAdvances()
+            financeMappingApiMockServer.stubPostMappingFailureFollowedBySuccess()
+            sendMultiEntryRepaymentEvent()
+            waitForAnyProcessingToComplete("transactions-mapping-created-synchronisation-success")
+            waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-success", times = 3)
+          }
+
+          @Test
+          fun `will repay all entries after retrying transaction mapping creation`() {
+            financeMappingApiMockServer.verify(exactly(2), postRequestedFor(urlPathEqualTo("/mapping/transactions")))
+            (0..2).forEach { verifyMultiEntryRepayment(it) }
+          }
+        }
+
+        @Nested
+        @DisplayName("Fails constantly")
+        inner class FailsConstantly {
+          @BeforeEach
+          fun setUp() {
+            stubMultiEntryTransaction()
+            stubMultiEntryAdvances()
+            financeMappingApiMockServer.stubPostMapping(status = HttpStatus.INTERNAL_SERVER_ERROR)
+            sendMultiEntryRepaymentEvent()
+            waitForAnyProcessingToComplete("transactions-synchronisation-created-success")
+            waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-success", times = 3)
+            await untilCallTo {
+              awsSqsFinanceOffenderEventsDlqClient.countAllMessagesOnQueue(financeQueueOffenderEventsDlqUrl).get()
+            } matches { it == 1 }
+          }
+
+          @Test
+          fun `will repay all entries even when transaction mapping retries fail`() {
+            financeMappingApiMockServer.verify(exactly(3), postRequestedFor(urlPathEqualTo("/mapping/transactions")))
+            (0..2).forEach { verifyMultiEntryRepayment(it) }
+          }
+        }
+      }
+
+      @Nested
+      @DisplayName("When a later DPS repayment fails")
+      inner class PartialRepaymentFailure {
+        private val failedRepaymentIndex = 1
+        private val failedRepaymentDpsId = multiEntryAdvanceMappings[failedRepaymentIndex].third
+
+        @BeforeEach
+        fun setUp() {
+          stubMultiEntryTransaction()
+          stubMultiEntryAdvances()
+          financeApi.stubFor(
+            post("/sync/advances/$failedRepaymentDpsId/repay").willReturn(serverError()),
+          )
+          sendMultiEntryRepaymentEvent()
+          await untilCallTo {
+            awsSqsFinanceOffenderEventsDlqClient.countAllMessagesOnQueue(financeQueueOffenderEventsDlqUrl).get()
+          } matches { it == 1 }
+        }
+
+        @Test
+        fun `will replay earlier successful repayments on retry and stop at the failing entry`() {
+          verifyMultiEntryRepayment(index = 0, expectedCount = 2)
+          verifyMultiEntryRepayment(index = failedRepaymentIndex, expectedCount = 2)
+          verifyMultiEntryRepayment(index = 2, expectedCount = 0)
+          verify(telemetryClient, atLeastOnce()).trackEvent(
+            eq("finance-advances-synchronisation-updated-success"),
+            check {
+              assertThat(it["nomisTransactionEntrySequence"]).isEqualTo("3")
+            },
+            isNull(),
+          )
+          verify(telemetryClient, atLeastOnce()).trackEvent(
+            eq("finance-advances-synchronisation-updated-error"),
+            check {
+              assertThat(it["nomisTransactionEntrySequence"]).isEqualTo("4")
+              assertThat(it["offenderDeductionId"]).isEqualTo("3497592")
+            },
+            isNull(),
+          )
+        }
+      }
+
+      @Nested
+      @DisplayName("Happy path for multiple advance repayments")
+      inner class HappyPath {
+        @BeforeEach
+        fun setUp() {
+          stubMultiEntryTransaction()
+          stubMultiEntryAdvances()
+          sendMultiEntryRepaymentEvent()
+          waitForMultiEntryRepayments()
+        }
+
+        @Test
+        fun `will repay all deduction entries in the transaction`() {
+          multiEntryAdvanceMappings.forEachIndexed { index, (deductionId, nomisAdvanceId, _) ->
+            advancesNomisApiMockServer.verify(
+              1,
+              getRequestedFor(urlPathEqualTo("/finance/advances/deduction-id/$deductionId")),
+            )
+            advancesMappingApiMockServer.verify(
+              1,
+              getRequestedFor(urlPathEqualTo("/mapping/advances/nomis-id/$nomisAdvanceId")),
+            )
+            verifyMultiEntryRepayment(index)
+          }
         }
       }
     }
@@ -533,8 +774,10 @@ class AdvancesSynchronisationRepayWriteOffIntTest(
       }
     }
 
-    fun sendRepaymentEvent(entrySequence: Int = 1) {
-      financeOffenderEventsQueue.sendMessage(offenderTransactionEvent(entrySequence = entrySequence))
+    fun sendRepaymentEvent(entrySequence: Int = 1, auditModuleName: String = "OTIDTACC") {
+      financeOffenderEventsQueue.sendMessage(
+        offenderTransactionEvent(entrySequence = entrySequence, auditModuleName = auditModuleName),
+      )
     }
 
     fun verifyRepayment() {
