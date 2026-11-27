@@ -79,6 +79,10 @@ Models with a `testPackageName` also get their own `test<ModelName>` task. `./gr
 | `--mode=off\|shadow\|on` | `off` (default locally) prints every suite; `shadow` also writes what it *would* run; `on` prints only the selected suites |
 | `--summary-file=<file>` | where `shadow` writes the markdown summary |
 
+To see what your current branch would need, run `./gradlew -q explainTestSelection` (optionally `--base=<branch>`, default
+`origin/main`). It prints the same table as the CI summary, from the committed, uncommitted and untracked changes since the
+branch left the base.
+
 Anything the rules in `build-logic` don't recognise, or that is shared by all features, selects every suite.
 In CI the mode comes from the `TEST_SELECTION` repository variable (`off`, `shadow` or `on`, default `shadow`), and the
 shadow summary is added to the workflow run summary. In `shadow` mode the matrix still runs every suite.

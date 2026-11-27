@@ -110,4 +110,21 @@ class SelectiveTestsPluginTest {
     task.runAll.set(true)
     assertThat(run()).isEqualTo(allMatrix)
   }
+
+  @Test
+  fun `explainTestSelection prints the summary for the supplied files`() {
+    val explain = project.tasks.getByName("explainTestSelection") as ExplainTestSelectionTask
+    explain.changedFilesProvider = { listOf("$base/agency/A.kt", "README.md") }
+
+    val out = ByteArrayOutputStream()
+    val original = System.out
+    System.setOut(PrintStream(out))
+    try {
+      explain.print()
+    } finally {
+      System.setOut(original)
+    }
+
+    assertThat(out.toString()).contains("would run 1 of 2", "`testAgencyRegisters`", "README.md")
+  }
 }
