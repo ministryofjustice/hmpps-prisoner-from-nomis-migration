@@ -9,6 +9,10 @@ on:
         type: string
         required: false
         default: '25'
+      run-all:
+        type: boolean
+        required: false
+        default: false
     outputs:
       matrix:
         value: ${{ jobs.create_matrix.outputs.task_output }}
@@ -29,6 +33,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
       - name: Setup Java
         uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
@@ -41,8 +46,30 @@ jobs:
       - name: Create test matrix
         id: create_matrix
         shell: bash
+        env:
+          TEST_SELECTION: ${{ vars.TEST_SELECTION }}
+          RUN_ALL_INPUT: ${{ inputs.run-all }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
         run: |
           set -euo pipefail
-          MATRIX=$(./gradlew -q selectTests | grep '^{"tests"')
+          CHANGED_FILES="$RUNNER_TEMP/changed-files.txt"
+          SUMMARY_FILE="$RUNNER_TEMP/test-selection-summary.md"
+          RUN_ALL=false
+          # Only pushes to a feature branch have a meaningful diff against main
+          if [[ "$RUN_ALL_INPUT" == "true" || "$EVENT_NAME" != "push" || "$REF_NAME" == "main" || "$COMMIT_MESSAGE" == *"[run-all]"* ]]; then
+            RUN_ALL=true
+          elif git fetch --no-tags origin main && git diff --name-only "$(git merge-base origin/main HEAD)" HEAD > "$CHANGED_FILES"; then
+            :
+          else
+            echo "Unable to work out the changed files, running all tests"
+            RUN_ALL=true
+          fi
+          [[ -f "$CHANGED_FILES" ]] || : > "$CHANGED_FILES"
+          ARGS=(--mode="${TEST_SELECTION:-shadow}" --changed-files="$CHANGED_FILES" --summary-file="$SUMMARY_FILE")
+          if [[ "$RUN_ALL" == "true" ]]; then ARGS+=(--run-all); fi
+          MATRIX=$(./gradlew -q selectTests "${ARGS[@]}" | grep '^{"tests"')
           echo "taskoutput=$MATRIX" >> "$GITHUB_OUTPUT"
           echo "has_tests=$(echo "$MATRIX" | jq '.tests|length>0')" >> "$GITHUB_OUTPUT"
+          if [[ -f "$SUMMARY_FILE" ]]; then cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"; fi

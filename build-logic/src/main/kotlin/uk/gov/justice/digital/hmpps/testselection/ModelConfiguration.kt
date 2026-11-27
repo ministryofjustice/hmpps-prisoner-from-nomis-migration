@@ -1,8 +1,9 @@
 package uk.gov.justice.digital.hmpps.testselection
 
 import java.io.File
+import java.io.Serializable
 
-data class ModelConfiguration(val name: String, val packageName: String, val testPackageName: String? = null, val url: String, val models: String = "", val hasProductionVersion: Boolean = true) {
+data class ModelConfiguration(val name: String, val packageName: String, val testPackageName: String? = null, val url: String, val models: String = "", val hasProductionVersion: Boolean = true) : Serializable {
   fun toBuildModelTaskName(): String = "build${nameToCamel()}ApiModel"
   fun toWriteJsonTaskName(): String = "write${nameToCamel()}Json"
   fun toReadProductionVersionTaskName(): String = "read${nameToCamel()}ProductionVersion"

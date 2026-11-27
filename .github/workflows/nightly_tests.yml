@@ -10,6 +10,8 @@ jobs:
     name: Create test matrix
     uses: ./.github/workflows/setup_test_matrix.yml # LOCAL_VERSION
     secrets: inherit
+    with:
+      run-all: true
   gradle-verify:
     name: Run the tests
     if: needs.setup-test-matrix.outputs.has_tests == 'true'
