@@ -112,8 +112,22 @@ class SelectiveTestsPluginTest {
   }
 
   @Test
-  fun `explainTestSelection prints the summary for the supplied files`() {
-    val explain = project.tasks.getByName("explainTestSelection") as ExplainTestSelectionTask
+  fun `a missing changed files list is an empty diff, and is not read at all when off or run all`() {
+    val missing = File(dir, "missing.txt").path
+    task.changedFiles.set(missing)
+
+    assertThat(run()).isEqualTo(allMatrix)
+
+    task.mode.set(SelectionMode.ON)
+    assertThat(run()).isEqualTo(allMatrix)
+
+    task.runAll.set(true)
+    assertThat(run()).isEqualTo(allMatrix)
+  }
+
+  @Test
+  fun `explainSelectTests prints an aligned table for the supplied files`() {
+    val explain = project.tasks.getByName("explainSelectTests") as ExplainSelectTestsTask
     explain.changedFilesProvider = { listOf("$base/agency/A.kt", "README.md") }
 
     val out = ByteArrayOutputStream()
@@ -125,6 +139,7 @@ class SelectiveTestsPluginTest {
       System.setOut(original)
     }
 
-    assertThat(out.toString()).contains("would run 1 of 2", "`testAgencyRegisters`", "README.md")
+    assertThat(out.toString()).contains("Would run 1 of 2", "testAgencyRegisters", "README.md")
+      .doesNotContain("|", "`")
   }
 }

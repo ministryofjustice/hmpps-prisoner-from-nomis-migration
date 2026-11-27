@@ -12,7 +12,7 @@ class GitDiffTest {
 
   private fun git(vararg args: String) {
     val process = ProcessBuilder(listOf("git", "-c", "user.name=t", "-c", "user.email=t@t") + args).directory(dir).redirectErrorStream(true).start()
-    check(process.waitFor() == 0) { process.inputStream.readText() }
+    check(process.waitFor() == 0) { process.inputStream.bufferedReader().readText() }
   }
 
   private fun write(path: String, text: String = path) = File(dir, path).apply { parentFile.mkdirs() }.writeText(text)
@@ -51,6 +51,7 @@ class GitDiffTest {
 
   @Test
   fun `a rename reports both the old and the new path`() {
+    File(dir, "new").mkdirs()
     git("mv", "old/Moved.kt", "new/Moved.kt")
     git("commit", "-q", "-m", "move")
 

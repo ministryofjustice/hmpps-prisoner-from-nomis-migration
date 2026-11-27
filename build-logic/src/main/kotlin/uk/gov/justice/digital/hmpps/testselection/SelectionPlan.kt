@@ -26,6 +26,24 @@ data class SelectionPlan(
   }
 
   // file names come from the pull request, so keep them from being rendered as markdown or html
+  fun toText(maxRows: Int = 100): String = buildString {
+    appendLine("Would run ${suites.size} of ${allSuites.size} suites: ${suites.joinToString(", ").ifEmpty { "none" }}")
+    reason?.let { appendLine("Everything runs: $it") }
+    if (files.isNotEmpty()) {
+      val rows = files.take(maxRows).map { Triple(it.path, it.reason, it.impact.describeText()) }
+      val fileWidth = maxOf("File".length, rows.maxOf { it.first.length })
+      val ruleWidth = maxOf("Rule".length, rows.maxOf { it.second.length })
+      appendLine()
+      (listOf(Triple("File", "Rule", "Suites")) + rows).forEachIndexed { index, (file, rule, suites) ->
+        appendLine("${file.padEnd(fileWidth)}  ${rule.padEnd(ruleWidth)}  $suites")
+        if (index == 0) appendLine("${"-".repeat(fileWidth)}  ${"-".repeat(ruleWidth)}  ${"-".repeat("Suites".length)}")
+      }
+      if (files.size > maxRows) appendLine().appendLine("... and ${files.size - maxRows} more files")
+    }
+  }
+
+  private fun Impact.describeText() = if (this is Feature) testTask else describe().removeSurrounding("`")
+
   private fun String.escape() = replace("<", "&lt;").replace(">", "&gt;").replace(Regex("""[\\|`\[\]()]""")) { "\\${it.value}" }
 
   private fun Impact.describe() = when (this) {

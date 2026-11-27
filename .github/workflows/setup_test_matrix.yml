@@ -60,7 +60,7 @@ jobs:
           # Only pushes to a feature branch have a meaningful diff against main
           if [[ "$RUN_ALL_INPUT" == "true" || "$EVENT_NAME" != "push" || "$REF_NAME" == "main" || "$COMMIT_MESSAGE" == *"[run-all]"* ]]; then
             RUN_ALL=true
-          elif git fetch --no-tags origin main && git diff --name-only "$(git merge-base origin/main HEAD)" HEAD > "$CHANGED_FILES"; then
+          elif git fetch --no-tags origin main && git diff --name-only --no-renames "$(git merge-base origin/main HEAD)" HEAD > "$CHANGED_FILES"; then
             :
           else
             echo "Unable to work out the changed files, running all tests"

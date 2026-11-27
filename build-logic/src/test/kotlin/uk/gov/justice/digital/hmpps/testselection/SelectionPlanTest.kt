@@ -58,6 +58,25 @@ class SelectionPlanTest {
   }
 
   @Test
+  fun `terminal text aligns the table columns`() {
+    val lines = plan("$base/alerts/A.kt", "README.md").toText().lines()
+
+    assertThat(lines.first()).isEqualTo("Would run 1 of 4 suites: testAlerts")
+    val header = lines.first { it.startsWith("File") }
+    val rows = lines.filter { it.contains("A.kt") || it.contains("README.md") }
+    assertThat(rows).hasSize(2)
+    assertThat(rows.map { it.indexOf("feature package") }.filter { it >= 0 }).containsExactly(header.indexOf("Rule"))
+    assertThat(rows.map { it.indexOf("documentation") }.filter { it >= 0 }).containsExactly(header.indexOf("Rule"))
+    assertThat(rows.single { it.contains("README") }).endsWith("none")
+  }
+
+  @Test
+  fun `terminal text explains why everything runs and caps long lists`() {
+    assertThat(plan(runAll = true).toText()).contains("Would run 4 of 4", "Everything runs: run-all requested")
+    assertThat(plan(*Array(60) { "README$it.md" }).toText(maxRows = 50)).contains("... and 10 more files")
+  }
+
+  @Test
   fun `summary escapes markdown in file names`() {
     val markdown = plan("docs/a|b <img src=x> [link](http://x) `code`.md").toMarkdown()
 

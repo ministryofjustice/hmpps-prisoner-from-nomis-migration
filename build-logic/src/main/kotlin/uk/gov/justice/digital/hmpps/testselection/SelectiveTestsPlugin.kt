@@ -53,7 +53,12 @@ abstract class SelectTestsTask : DefaultTask() {
 
   @TaskAction
   fun print() {
-    val changed = changedFiles.orNull?.let { layout.projectDirectory.file(it).asFile.readLines() }.orEmpty()
+    val allSuites = selectTests(models.get())
+    if (mode.get() == SelectionMode.OFF) {
+      println(allSuites.toGithubMatrix())
+      return
+    }
+    val changed = changedFiles.orNull?.let { layout.projectDirectory.file(it).asFile }?.takeIf { it.exists() }?.readLines().orEmpty()
     val plan = select(changed, runAll.get(), models.get(), packagePrefix.get())
     val suites = if (mode.get() == SelectionMode.ON) plan.suites else plan.allSuites
     if (mode.get() == SelectionMode.SHADOW) {
@@ -63,7 +68,7 @@ abstract class SelectTestsTask : DefaultTask() {
   }
 }
 
-abstract class ExplainTestSelectionTask : DefaultTask() {
+abstract class ExplainSelectTestsTask : DefaultTask() {
   @get:Input
   abstract val models: ListProperty<ModelConfiguration>
 
@@ -88,7 +93,7 @@ abstract class ExplainTestSelectionTask : DefaultTask() {
   @TaskAction
   fun print() {
     val changed = changedFilesProvider?.invoke() ?: changedFilesSince(base.get(), layout.projectDirectory.asFile)
-    println(select(changed, false, models.get(), packagePrefix.get()).toMarkdown())
+    println(select(changed, false, models.get(), packagePrefix.get()).toText())
   }
 }
 
@@ -101,7 +106,7 @@ class SelectiveTestsPlugin : Plugin<Project> {
       models.set(extension.modelConfigurations)
       packagePrefix.set(extension.packagePrefix)
     }
-    project.tasks.register("explainTestSelection", ExplainTestSelectionTask::class.java) {
+    project.tasks.register("explainSelectTests", ExplainSelectTestsTask::class.java) {
       group = "Test selection"
       description = "Prints which test suites the changes on this branch (against origin/main) would need"
       models.set(extension.modelConfigurations)
