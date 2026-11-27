@@ -156,7 +156,7 @@ class TransactionSynchronisationService(
             )
           }
           additionalOffenderTransactionProcessing(
-            nomisTransactions.first(),
+            nomisTransactions,
             event.toTelemetryProperties(
               dpsTransactionId = dpsTransactionId,
             ),
@@ -166,11 +166,17 @@ class TransactionSynchronisationService(
     }
   }
 
-  suspend fun additionalOffenderTransactionProcessing(transaction: OffenderTransactionDto, telemetry: Map<String, String>, eventType: String) {
-    if (processHoldTransaction && transaction.isHoldTransaction()) {
-      sendHoldTransactionToDps(transaction, telemetry, eventType)
-    } else if (processAdvanceTransaction && transaction.isRepaymentTransaction()) {
-      advancesSynchronisationService.sendRepaymentToDps(transaction)
+  suspend fun additionalOffenderTransactionProcessing(
+    transactions: List<OffenderTransactionDto>,
+    telemetry: Map<String, String>,
+    eventType: String,
+  ) {
+    if (processHoldTransaction && transactions.first().isHoldTransaction()) {
+      sendHoldTransactionToDps(transactions.first(), telemetry, eventType)
+    }
+    if (processAdvanceTransaction) {
+      transactions.filter { it.isRepaymentTransaction() }
+        .forEach { advancesSynchronisationService.sendRepaymentToDps(it) }
     }
   }
 

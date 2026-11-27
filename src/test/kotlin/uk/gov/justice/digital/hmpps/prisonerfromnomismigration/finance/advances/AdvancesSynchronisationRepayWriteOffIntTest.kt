@@ -36,6 +36,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.Transacti
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.model.SyncTransactionReceipt
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.nomisGLTransactions
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.offenderTransactionDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.finance.prisonerAdvanceWithMultipleTxnTypes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorContent
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.history.DuplicateErrorResponse
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.integration.sendMessage
@@ -43,6 +44,7 @@ import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.EventTy
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.MessageAttributes
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.listeners.SQSMessage
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomismappings.model.TransactionMappingDto
+import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.nomisprisoner.model.OffenderTransactionDto
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.persistence.repository.TransactionIdBufferRepository
 import uk.gov.justice.digital.hmpps.prisonerfromnomismigration.wiremock.withRequestBodyJsonPath
 import uk.gov.justice.hmpps.sqs.countAllMessagesOnQueue
@@ -88,11 +90,22 @@ class AdvancesSynchronisationRepayWriteOffIntTest(
     val repaymentTransaction = offenderTransactionDto(bookingId = BOOKING_ID, transactionId = NOMIS_TRANSACTION_ID).let {
       it.copy(
         type = "DED",
+        postingType = OffenderTransactionDto.PostingType.DR,
         generalLedgerTransactions = it.generalLedgerTransactions.map { gl ->
           gl.copy(offenderDeductionId = deductionId)
         },
       )
     }
+    val multiEntryAdvanceMappings = listOf(
+      Triple(3497205L, 7000L, UUID.fromString("70000000-0000-0000-0000-000000000001")),
+      Triple(3497592L, 7001L, UUID.fromString("70000000-0000-0000-0000-000000000002")),
+      Triple(3499845L, 7002L, UUID.fromString("70000000-0000-0000-0000-000000000003")),
+    )
+    val transactionWithMultipleTypes = prisonerAdvanceWithMultipleTxnTypes(
+      bookingId = BOOKING_ID,
+      transactionId = NOMIS_TRANSACTION_ID,
+    )
+    val multiEntryRepaymentTransaction = transactionWithMultipleTypes.first { it.transactionEntrySequence == 3 }
 
     @BeforeEach
     fun setUp() {
@@ -235,6 +248,53 @@ class AdvancesSynchronisationRepayWriteOffIntTest(
       fun `will not call the add or release hold transaction in DPS`() {
         financeApi.verify(0, postRequestedFor(urlPathEqualTo("/sync/holds")))
         financeApi.verify(0, postRequestedFor(urlPathMatching("/sync/holds/.*/release")))
+      }
+    }
+
+    @Nested
+    @DisplayName("When the transaction contains multiple entry types")
+    inner class MultipleEntryTypes {
+      @BeforeEach
+      fun setUp() {
+        financeNomisApiMockServer.stubGetPrisonerTransaction(
+          bookingId = BOOKING_ID,
+          transactionId = NOMIS_TRANSACTION_ID,
+          response = transactionWithMultipleTypes,
+        )
+        multiEntryAdvanceMappings.forEach { (deductionId, nomisAdvanceId, dpsId) ->
+          advancesNomisApiMockServer.stubGetAdvanceByDeductionId(
+            deductionId = deductionId,
+            prisonerAdvance = advance.copy(id = nomisAdvanceId),
+          )
+          advancesMappingApiMockServer.stubGetAdvanceByNomisIdOrNull(
+            nomisAdvanceId = nomisAdvanceId,
+            dpsId = dpsId.toString(),
+          )
+          financeApi.stubRepayAdvance(advanceUuid = dpsId)
+        }
+        sendRepaymentEvent(entrySequence = multiEntryRepaymentTransaction.transactionEntrySequence)
+        waitForAnyProcessingToComplete("transactions-synchronisation-created-success")
+        waitForAnyProcessingToComplete("finance-advances-synchronisation-updated-success", times = 3)
+      }
+
+      @Test
+      fun `will repay all deduction entries in the transaction`() {
+        multiEntryAdvanceMappings.forEachIndexed { index, (deductionId, nomisAdvanceId, dpsId) ->
+          advancesNomisApiMockServer.verify(
+            1,
+            getRequestedFor(urlPathEqualTo("/finance/advances/deduction-id/$deductionId")),
+          )
+          advancesMappingApiMockServer.verify(
+            1,
+            getRequestedFor(urlPathEqualTo("/mapping/advances/nomis-id/$nomisAdvanceId")),
+          )
+          financeApi.verify(
+            1,
+            postRequestedFor(urlPathEqualTo("/sync/advances/$dpsId/repay"))
+              .withRequestBodyJsonPath("entrySequence", index + 3)
+              .withRequestBodyJsonPath("amount", listOf("15.59", "1.5", "3.12")[index]),
+          )
+        }
       }
     }
 
@@ -473,8 +533,8 @@ class AdvancesSynchronisationRepayWriteOffIntTest(
       }
     }
 
-    fun sendRepaymentEvent() {
-      financeOffenderEventsQueue.sendMessage(offenderTransactionEvent())
+    fun sendRepaymentEvent(entrySequence: Int = 1) {
+      financeOffenderEventsQueue.sendMessage(offenderTransactionEvent(entrySequence = entrySequence))
     }
 
     fun verifyRepayment() {
@@ -764,12 +824,13 @@ class AdvancesSynchronisationRepayWriteOffIntTest(
 
   private fun offenderTransactionEvent(
     auditModuleName: String = "OTIDTACC",
+    entrySequence: Int = 1,
   ) = SQSMessage(
     MessageId = "abcdef01-1111-2222-3333-111122223333",
     Type = "Notification",
     Message = TransactionEvent(
       transactionId = NOMIS_TRANSACTION_ID,
-      entrySequence = 1,
+      entrySequence = entrySequence,
       caseload = "SWI",
       offenderIdDisplay = OFFENDER_ID_DISPLAY,
       bookingId = BOOKING_ID,
